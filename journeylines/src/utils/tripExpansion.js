@@ -29,6 +29,49 @@ export function expandTrip(trip, locationsById, homeBases) {
   return { ...trip, route, legs };
 }
 
+
+export function buildHomeMoveTrips(homeBases, locationsById) {
+  return [...homeBases]
+    .sort((a, b) => String(a.start).localeCompare(String(b.start)))
+    .slice(1)
+    .map((home, index, arr) => {
+      const sorted = [...homeBases].sort((a, b) => String(a.start).localeCompare(String(b.start)));
+      const prev = sorted[index];
+      const from = locationsById[prev.locationId];
+      const to = locationsById[home.locationId];
+      const [year, month] = String(home.start || '').split('-').map(Number);
+      return {
+        id: `home-move-${home.locationId}-${home.start}`,
+        year: year || 2000,
+        month: month || null,
+        day: null,
+        displayDate: formatHomeMoveDate(home.start),
+        sortKey: `${home.start || year}-000-home-move`,
+        label: `Moved to ${to?.name || home.name}`,
+        travelers: ['joey', 'bonnie'],
+        mode: 'move',
+        roundTrip: false,
+        isHomeMove: true,
+        route: [
+          { locationId: from?.id || prev.locationId, modeFromPrevious: null },
+          { locationId: to?.id || home.locationId, modeFromPrevious: 'move' }
+        ],
+        notes: 'New home base',
+        occasion: ''
+      };
+    });
+}
+
+function formatHomeMoveDate(value) {
+  const [year, month] = String(value || '').split('-').map(Number);
+  if (!year) return 'Move';
+  if (!month) return String(year);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
 export function flattenLegs(trips, locationsById, homeBases) {
-  return trips.flatMap(trip => expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex })));
+  const homeMoves = buildHomeMoveTrips(homeBases, locationsById);
+  const timeline = [...trips, ...homeMoves]
+    .sort((a, b) => String(a.sortKey ?? `${a.year}-999`).localeCompare(String(b.sortKey ?? `${b.year}-999`)));
+  return timeline.flatMap(trip => expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex })));
 }

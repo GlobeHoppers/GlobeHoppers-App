@@ -46,3 +46,7 @@ journeylines/
 ```
 
 Do not commit `package-lock.json` for this version. The workflow intentionally uses `npm install` against the public npm registry.
+
+
+## v2.4
+Glide-focused playback polish: persistent visited dots, softer camera movement, arrival settle, landing ripple, vehicle grow/shrink, red home-base move routes, and first-pass waypoint routing for drive/boat/train modes.

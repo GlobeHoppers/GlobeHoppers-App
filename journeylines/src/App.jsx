@@ -26,6 +26,7 @@ export default function App() {
   const [admin, setAdmin] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
+  const SETTLE_MS = 2200;
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
 
@@ -52,10 +53,11 @@ export default function App() {
       const dt = ts - tRef.current.last;
       tRef.current.last = ts;
       const dur = legDurationMs(legs[Math.min(activeIndex, legs.length - 1)]?.leg.miles || 500, speed);
+      const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
       tRef.current.elapsed += dt;
       const p = Math.min(1, tRef.current.elapsed / dur);
       setLegProgress(p);
-      if (p >= 1) {
+      if (tRef.current.elapsed >= dur + settle) {
         tRef.current.elapsed = 0;
         tRef.current.last = null;
         setLegProgress(0);

@@ -1,25 +1,16 @@
-# JourneyLines v2.3.0 — North-Up Globe + Label Cleanup
-
-## Summary
-This update keeps the MapLibre cinematic globe renderer but locks the camera bearing to north-up during playback so the globe pans, zooms, and glides without rotating/spinning the map orientation. It also removes faint base-map city labels from the raster overlay so only active JourneyLines trip endpoint labels are shown.
+# JourneyLines v2.4 — Glide Playback + Arrival Polish
 
 ## Changes
-- Camera bearing locked to 0 degrees for north-up playback.
-- Globe can still pan, zoom, pitch, and glide cinematically.
-- Disabled globe rotation/drag-rotate while paused; panning/zooming remain available while paused.
-- Removed faint CARTO label raster layer from the MapLibre style.
-- Active origin/destination labels remain app-rendered HTML overlays.
-- Increased active place label contrast and readability.
-- Kept terrain/satellite imagery globe surface.
-- Kept v2.x MapLibre renderer and gh-pages workflow.
-- `package-lock.json` intentionally remains excluded.
+- Visited city dots now persist instead of disappearing after each leg.
+- Fixed flashing visited-point behavior by centralizing visited point updates.
+- Slowed camera smoothing so playback glides instead of snapping.
+- Added a 2.2 second settle period after each arrival before departure.
+- Vehicle icons grow from size zero on departure and shrink to size zero on arrival.
+- Added landing ripple/puddle pulse at the destination.
+- Added red home-base move legs from old home to new home.
+- Added first-pass waypoint paths for drive/boat/train segments so they follow more realistic road/water corridors where known.
+- Kept north-up cinematic glide.
+- Kept gh-pages deployment workflow and no package-lock.json.
 
-## Upload structure
-Upload the extracted contents to the root of the existing GitHub repo:
-
-```text
-.github/workflows/deploy.yml
-.gitignore
-VERSION.md
-journeylines/
-```
+## Note
+Actual turn-by-turn roadway/boat routing will require a routing provider or adding more manual route waypoint data. v2.4 includes an initial offline/manual waypoint approach for known routes.

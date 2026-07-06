@@ -323,7 +323,8 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 }
 .jl-vehicle-overlay[data-mode='drive'],
 .jl-vehicle-overlay[data-mode='boat'],
-.jl-vehicle-overlay[data-mode='train'] {
+.jl-vehicle-overlay[data-mode='train'],
+.jl-vehicle-overlay[data-mode='move'] {
   width: 48px;
   height: 48px;
 }
@@ -356,4 +357,33 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 }
 .maplibre-shell.terrain-mode .maplibregl-marker {
   z-index: 9;
+}
+
+/* v2.4 glide polish */
+.jl-arrival-ripple {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid var(--pulse-color, #00e5ff);
+  box-shadow: 0 0 18px var(--pulse-color, #00e5ff), inset 0 0 12px color-mix(in srgb, var(--pulse-color, #00e5ff), transparent 35%);
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: center center;
+}
+.jl-arrival-ripple.is-active {
+  animation: jl-puddle-ripple 1.45s cubic-bezier(.16, .84, .26, 1) infinite;
+}
+@keyframes jl-puddle-ripple {
+  0% { width: 8px; height: 8px; opacity: .72; filter: blur(0); }
+  58% { width: 58px; height: 58px; opacity: .28; filter: blur(.2px); }
+  100% { width: 86px; height: 86px; opacity: 0; filter: blur(1px); }
+}
+.jl-place-label-overlay {
+  transition: opacity 0.55s ease, filter 0.55s ease;
+}
+.jl-vehicle-overlay {
+  transition: opacity 0.28s ease;
 }
