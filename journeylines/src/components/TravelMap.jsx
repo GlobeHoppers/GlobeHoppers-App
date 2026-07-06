@@ -7,6 +7,7 @@ import { flattenLegs, getTravelerKey } from '../utils/tripExpansion.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
+import generatedRoutes from '../data/generatedRoutes.json';
 
 const MAP_STYLE = {
   version: 8,
@@ -65,7 +66,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const currentOverlayStateRef = useRef(null);
   const userCameraOverrideRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
-  const [routedGeometries, setRoutedGeometries] = useState(() => loadStoredRouteCache());
+  const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
@@ -218,7 +219,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
-    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found. Check /JourneyLines/runtime-config.js. If it is empty, the GitHub Action did not receive the VITE_MAPBOX_TOKEN repository secret or the updated root .github/workflows/deploy.yml was not uploaded.'); return; }
+    if (!token) { console.info('JourneyLines: browser-side Mapbox fetch disabled. Driving routes should come from generatedRoutes.json created privately during GitHub Actions. Missing routes will use manual/simple fallback geometry.'); return; }
     const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
     console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
@@ -647,7 +648,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.15'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || generatedRoutes?.version || 'v2.16'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
@@ -675,11 +676,10 @@ function getManualRoute(leg) {
 }
 
 function getMapboxToken() {
-  const runtimeToken = typeof window !== 'undefined' ? window.JOURNEYLINES_CONFIG?.mapboxToken || '' : '';
-  const viteToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
+  // Published JourneyLines builds do not include the Mapbox token.
+  // GitHub Actions uses the repository secret privately to generate src/data/generatedRoutes.json.
+  // This browser-side fallback is only for local development or manual debugging.
   return (
-    runtimeToken ||
-    viteToken ||
     routingSettings?.mapbox?.publicToken ||
     localStorage.getItem('journeylines.mapboxToken') ||
     ''
@@ -702,6 +702,14 @@ async function fetchMapboxRoute(leg, token) {
   const data = await res.json();
   const geometry = data?.routes?.[0]?.geometry?.coordinates;
   return Array.isArray(geometry) ? geometry : null;
+}
+
+function loadInitialRouteCache() {
+  const generated = generatedRoutes?.routes || {};
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {}; } catch {}
+  // Build-time generated routes win over older browser cache entries.
+  return { ...stored, ...generated };
 }
 
 function loadStoredRouteCache() {

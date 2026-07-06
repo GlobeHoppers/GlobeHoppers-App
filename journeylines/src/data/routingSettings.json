@@ -7,9 +7,9 @@
     "overview": "full",
     "cacheInLocalStorage": true,
     "maxRoutesPerSession": 120,
-    "cacheVersion": "v2.15",
+    "cacheVersion": "v2.16",
     "concurrency": 4
   },
   "manualOverridesEnabled": true,
-  "notes": "v2.15 hardens GitHub secret token injection and replaces pin drop bounce with one direct drop."
+  "notes": "v2.16 generates Mapbox driving route geometry privately during GitHub Actions and does not publish the Mapbox token."
 }
