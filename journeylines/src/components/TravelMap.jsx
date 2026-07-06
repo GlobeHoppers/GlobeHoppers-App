@@ -652,11 +652,19 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     let inner = el.querySelector('.jl-map-pin-inner');
     const displayName = displayNameForLocation(loc);
     if (!inner) {
-      el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-name"></span><span class="jl-map-pin-tail"></span></span>`;
+      el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span></span>`;
       inner = el.querySelector('.jl-map-pin-inner');
+    } else if (!el.querySelector('.jl-map-pin-ticks')) {
+      // Upgrade older live DOM nodes to the v2.30 visit-tick structure without
+      // recreating the outer MapLibre marker. This avoids placard wobble/reset.
+      const nameText = el.querySelector('.jl-map-pin-name')?.textContent || displayName;
+      inner.innerHTML = `<span class="jl-map-pin-dot"></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span>`;
+      const upgradedName = el.querySelector('.jl-map-pin-name');
+      if (upgradedName) upgradedName.textContent = nameText;
     }
     const nameEl = el.querySelector('.jl-map-pin-name');
     if (nameEl && nameEl.textContent !== displayName) nameEl.textContent = displayName;
+    updateVisitTicks(el.querySelector('.jl-map-pin-ticks'), visitColors);
 
     if (isNew && inner) {
       droppedIdsRef.current.add(loc.id);
@@ -676,6 +684,27 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     }
   }
   refreshPersistentPinPositions(map, labelsRef);
+}
+
+function updateVisitTicks(container, visitColors = []) {
+  if (!container) return;
+  const colors = (visitColors.length ? visitColors : ['#00e5ff']).filter(Boolean);
+  const oldColors = container.__jlTickColors || [];
+  const samePrefix = oldColors.length <= colors.length && oldColors.every((c, i) => c === colors[i]);
+  if (!samePrefix) {
+    container.innerHTML = '';
+    container.__jlTickColors = [];
+  }
+  const current = container.__jlTickColors || [];
+  for (let i = current.length; i < colors.length; i++) {
+    const tick = document.createElement('span');
+    tick.className = 'jl-visit-tick is-new';
+    tick.dataset.visit = String(i + 1);
+    tick.style.setProperty('--tick-color', colors[i]);
+    container.appendChild(tick);
+    window.setTimeout(() => tick.classList.remove('is-new'), 900);
+  }
+  container.__jlTickColors = colors;
 }
 
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
@@ -700,13 +729,20 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const pt = map.project([loc.lon, loc.lat]);
     const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
     const onScreen = pt.x > -110 && pt.x < w + 110 && pt.y > -110 && pt.y < h + 110;
-    // v2.27: keep historical placards, but cull anything hidden by or too close
-    // to the globe horizon. No focus-distance fade and no max-label cap.
-    const visibleHemisphere = distance <= horizonCutoffDeg(zoom);
-    const nearScreenEdge = pt.x < 6 || pt.x > w - 6 || pt.y < 6 || pt.y > h - 6;
+    // v2.30: hard cull placards before they become semi-transparent at
+    // the globe edge, with hysteresis to prevent rapid on/off flicker while the
+    // camera glides. We keep historical placards, but only when they are clearly
+    // on the front face of the globe.
+    const baseCutoff = Math.max(34, horizonCutoffDeg(zoom) - horizonSafetyMarginDeg(zoom));
+    const wasVisible = el.__jlVisible !== false;
+    const hysteresis = 3.5;
+    const visibleHemisphere = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
+    const nearScreenEdge = pt.x < 10 || pt.x > w - 10 || pt.y < 10 || pt.y > h - 10;
     const visible = onScreen && visibleHemisphere && !nearScreenEdge;
+    el.__jlVisible = visible;
     el.style.opacity = visible ? '1' : '0';
     el.style.visibility = visible ? 'visible' : 'hidden';
+    el.style.display = visible ? '' : 'none';
     el.style.pointerEvents = 'none';
   }
 }
@@ -752,6 +788,17 @@ function horizonCutoffDeg(zoom) {
   if (zoom < 4.2) return 68;
   if (zoom < 5.5) return 73;
   return 76;
+}
+
+function horizonSafetyMarginDeg(zoom) {
+  // Hide placards well before the visual horizon. Higher pitch and close zooms
+  // can keep points projectable even when they visually sit behind the globe;
+  // this margin prevents edge shimmer and the dim/full flicker.
+  if (zoom < 2.0) return 12;
+  if (zoom < 3.0) return 14;
+  if (zoom < 4.5) return 16;
+  if (zoom < 6.0) return 18;
+  return 20;
 }
 
 function labelFocusCutoffDeg(zoom) {
@@ -1110,7 +1157,13 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
   const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.48 : 0;
   const settleLocalPush = phase === 'settle' ? 0.42 * (1 - 0.35 * Math.sin(settleT * Math.PI)) : 0;
-  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop + settleLocalPush;
+  // v2.30: arrival should feel like a local-region/county view rather than a
+  // broad regional view. +0.58 zoom is roughly 50% closer; ease it in near the
+  // destination and keep it during the settle drift.
+  const countyArrivalPush = phase === 'settle'
+    ? 0.58
+    : p > 0.78 ? 0.58 * smoothstep((p - 0.78) / 0.22) : 0;
+  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop + settleLocalPush + countyArrivalPush;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;

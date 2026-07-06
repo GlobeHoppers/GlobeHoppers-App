@@ -8,3 +8,7 @@ v2.29 keeps the existing routing architecture:
 - Caribbean cruise overrides from v2.28 remain in place.
 
 v2.29 also adds subtle Natural Earth country and state/province boundary overlays at runtime.
+
+## v2.30 Notes
+
+This release does not change routing providers. It focuses on local arrival camera zoom, placard culling stability, and visit tick visualization.

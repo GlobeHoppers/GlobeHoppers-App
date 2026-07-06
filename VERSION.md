@@ -1,8 +1,6 @@
-# JourneyLines v2.29 — Boundaries + Segmented Visit Pins
+# JourneyLines v2.30 — Local Arrival Zoom + Hard Culling + Visit Ticks
 
-- Hard-hides edge/horizon placards instead of fading them semi-transparent.
-- Adds faint country and state/province boundary lines over the terrain globe.
-- Adds multi-visit segmented placards and location dots.
-- Revisited locations now preserve the sequence of traveler colors over time.
-- Two-visit locations split left/right; three or more visits use segmented rings/dots.
-- Keeps v2.28 local destination zoom, Caribbean boat route updates, and private build-time Mapbox route cache architecture.
+- Adds a stronger local/county-style destination push-in on arrival and settle.
+- Hard-culls edge/horizon placards with hysteresis so they do not flicker between dim and bright.
+- Adds visit tick marks under each location name; ticks animate in as repeat visits are reached and match each visit's traveler color.
+- Keeps segmented multi-visit border and circle styling from v2.29.

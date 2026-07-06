@@ -1133,3 +1133,48 @@ body { background: #000; }
 .jl-map-pin[data-visit-count='1'] .jl-map-pin-inner {
   border-color: color-mix(in srgb, var(--place-color, #00e5ff), white 36%) !important;
 }
+
+/* v2.30 local arrival zoom, hard horizon culling, and visit tick marks */
+.jl-map-pin-inner {
+  align-items: center;
+  gap: 8px;
+}
+.jl-map-pin-text {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.jl-map-pin-name {
+  line-height: 1;
+}
+.jl-map-pin-ticks {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 5px;
+  max-width: 112px;
+  overflow: hidden;
+}
+.jl-visit-tick {
+  width: 9px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--tick-color, var(--place-color, #00e5ff));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tick-color, #00e5ff), transparent 35%);
+  transform-origin: left center;
+  flex: 0 0 auto;
+}
+.jl-visit-tick.is-new {
+  animation: jl-visit-tick-draw-v230 .72s cubic-bezier(.18,.72,.18,1) both;
+}
+@keyframes jl-visit-tick-draw-v230 {
+  0% { opacity: 0; transform: scaleX(0); filter: blur(.7px); }
+  24% { opacity: 1; }
+  100% { opacity: 1; transform: scaleX(1); filter: blur(0); }
+}
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin {
+  transition: none !important;
+}
