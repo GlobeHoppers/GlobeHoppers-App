@@ -27,7 +27,7 @@ export default function App() {
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
-  const SETTLE_MS = settings.arrivalSettleMs || 3200;
+  const SETTLE_MS = settings.arrivalSettleMs || 4000;
   const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);

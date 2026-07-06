@@ -1145,6 +1145,7 @@ body { background: #000; }
   align-items: flex-start;
   gap: 4px;
   min-width: 0;
+  max-width: 190px;
 }
 .jl-map-pin-name {
   line-height: 1;
@@ -1152,10 +1153,13 @@ body { background: #000; }
 .jl-map-pin-ticks {
   display: flex;
   align-items: center;
+  align-content: center;
+  flex-wrap: wrap;
   gap: 3px;
-  height: 5px;
-  max-width: 112px;
-  overflow: hidden;
+  row-gap: 3px;
+  min-height: 5px;
+  max-width: min(168px, 100%);
+  overflow: visible;
 }
 .jl-visit-tick {
   width: 9px;

@@ -1,14 +1,9 @@
 # JourneyLines Routing Notes
 
-v2.29 keeps the existing routing architecture:
+JourneyLines uses private build-time Mapbox route generation for driving routes and manual overrides for boat/train routes.
 
-- Driving routes are generated privately in GitHub Actions from the Mapbox token stored as `VITE_MAPBOX_TOKEN`.
-- The deployed site contains generated route geometry only, not the token.
-- Boat and train routes continue to use manual route overrides.
-- Caribbean cruise overrides from v2.28 remain in place.
+## v2.31 Notes
 
-v2.29 also adds subtle Natural Earth country and state/province boundary overlays at runtime.
-
-## v2.30 Notes
-
-This release does not change routing providers. It focuses on local arrival camera zoom, placard culling stability, and visit tick visualization.
+- No routing provider changes in this version.
+- Playback pacing was slowed to make the route follow feel more relaxed on a wall display.
+- Home-base return arrivals are excluded from visit tick/color history so repeat ticks represent actual destination visits rather than returning home.

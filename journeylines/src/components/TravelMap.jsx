@@ -152,7 +152,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
@@ -217,7 +217,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
-    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
+    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
   }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById]);
@@ -553,10 +553,11 @@ function colorForLeg(active, travelersById) {
   return travelersById[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 
-function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}) {
+function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}, homeBases = []) {
   const pointMap = new Map();
   const addVisit = (loc, legWrapper, isNew = false) => {
     if (!loc?.id || !legWrapper) return;
+    if (shouldSkipVisitTick(loc, legWrapper, homeBases)) return;
     const color = colorForLeg(legWrapper, travelersById);
     const existing = pointMap.get(loc.id);
     const visits = existing?.visits ? [...existing.visits] : [];
@@ -591,6 +592,19 @@ function buildVisitedLocations(completedLegs, active, completedMode, scene, trav
     if (scene?.arrivalLabelVisible) addVisit(active.leg.to, active, true);
   }
   return [...pointMap.values()];
+}
+
+function shouldSkipVisitTick(loc, legWrapper, homeBases = []) {
+  if (!loc?.id || !legWrapper?.trip) return false;
+  const trip = legWrapper.trip;
+  if (trip.isHomeMove || legWrapper.leg?.mode === 'move') return true;
+  const key = `${trip.year}-${String(trip.month || 1).padStart(2, '0')}`;
+  const activeHome = homeBases.find(h => h.start <= key && (!h.end || h.end >= key));
+  // Returning to the active home base is not a new visit. If that same city is
+  // visited after it is no longer home, it will count normally because the
+  // activeHome locationId will be different for that date.
+  if (activeHome?.locationId && loc.id === activeHome.locationId && legWrapper.legIndex > 0) return true;
+  return false;
 }
 
 function cssSegmentGradient(colors = [], fallback = '#00e5ff') {
