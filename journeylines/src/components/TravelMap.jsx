@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { geoInterpolate } from 'd3-geo';
@@ -8,24 +8,59 @@ import { milesBetween } from '../utils/distanceUtils.js';
 
 const MAP_STYLE = {
   version: 8,
-  name: 'JourneyLines Cinematic Dark Globe',
+  name: 'JourneyLines Terrain Globe',
   glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
-    cartoDark: {
+    terrainImagery: {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
-        'https://d.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png'
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      attribution: 'Tiles &copy; Esri'
+    },
+    terrainReference: {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        'https://b.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        'https://c.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        'https://d.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png'
       ],
       tileSize: 256,
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
     }
   },
   layers: [
-    { id: 'background', type: 'background', paint: { 'background-color': '#07101f' } },
-    { id: 'carto-dark', type: 'raster', source: 'cartoDark', minzoom: 0, maxzoom: 19, paint: { 'raster-opacity': 0.86, 'raster-saturation': -0.18, 'raster-contrast': -0.08, 'raster-brightness-min': 0.12, 'raster-brightness-max': 0.96 } }
+    { id: 'background', type: 'background', paint: { 'background-color': '#020814' } },
+    {
+      id: 'terrain-imagery',
+      type: 'raster',
+      source: 'terrainImagery',
+      minzoom: 0,
+      maxzoom: 19,
+      paint: {
+        'raster-opacity': 0.92,
+        'raster-saturation': -0.18,
+        'raster-contrast': 0.08,
+        'raster-brightness-min': 0.0,
+        'raster-brightness-max': 0.72
+      }
+    },
+    {
+      id: 'terrain-reference',
+      type: 'raster',
+      source: 'terrainReference',
+      minzoom: 0,
+      maxzoom: 19,
+      paint: {
+        'raster-opacity': 0.28,
+        'raster-saturation': -0.55,
+        'raster-contrast': -0.08,
+        'raster-brightness-min': 0.0,
+        'raster-brightness-max': 0.56
+      }
+    }
   ]
 };
 
@@ -37,11 +72,13 @@ export default function TravelMap(props) {
 function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const endpointMarkerRefs = useRef([]);
-  const endpointKeyRef = useRef('');
+  const vehicleRef = useRef(null);
+  const originLabelRef = useRef(null);
+  const destLabelRef = useRef(null);
+  const overlayRef = useRef(null);
   const lastCameraRef = useRef(null);
-  const arrivalRef = useRef(null);
+  const arrivalTimerRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
@@ -56,29 +93,44 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE,
-      center: [-38, 26],
-      zoom: 1.35,
+      center: [-78, 31],
+      zoom: 1.55,
       bearing: 0,
       pitch: 0,
       attributionControl: false,
-      dragRotate: true,
-      interactive: true
+      interactive: true,
+      renderWorldCopies: false
     });
+
     mapRef.current = map;
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.on('load', () => {
       try { map.setProjection({ type: 'globe' }); } catch {}
-      try { map.setFog({ color: '#07101f', 'horizon-blend': 0.08, 'space-color': '#020711', 'star-intensity': 0.14 }); } catch {}
+      try {
+        map.setFog({
+          color: '#08172a',
+          'horizon-blend': 0.08,
+          'space-color': '#020711',
+          'star-intensity': 0.24
+        });
+      } catch {}
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
+      setMapReady(true);
     });
 
-    return () => { markerRef.current?.remove(); endpointMarkerRefs.current.forEach(m => m.remove()); map.remove(); mapRef.current = null; };
+    return () => {
+      clearTimeout(arrivalTimerRef.current);
+      map.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,19 +145,20 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
+    if (!mapReady || !map) return;
     syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth);
-  }, [completedLegs, travById, showTrails, trailOpacity, trailWidth]);
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
+    if (!mapReady || !map) return;
+
     if (!scene || !active) {
       syncActiveRoute(map, null);
-      updateVehicle(null);
-      updateEndpointMarkers(null);
+      syncPulse(map, null, 'transparent');
+      setOverlayVisibility(false);
       if (completedMode) {
-        map.easeTo({ center: [-38, 23], zoom: 1.35, bearing: 0, pitch: 0, duration: 900, essential: true });
+        map.easeTo({ center: [-38, 23], zoom: 1.55, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
       return;
     }
@@ -113,104 +166,82 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const color = travById[getTravelerKey(active.trip)]?.color || '#00e5ff';
     syncActiveRoute(map, active, scene.routeProgress, color);
     syncPulse(map, active.leg.to, scene.phase === 'arrival' ? color : 'transparent');
-    updateVehicle({ point: scene.vehicle, mode: active.leg.mode, color, heading: scene.heading, scale: scene.vehicleScale });
-    updateEndpointMarkers(active, color);
 
-    const camera = smoothCamera(lastCameraRef.current, scene.camera, 0.26);
+    const camera = smoothCamera(lastCameraRef.current, scene.camera, scene.phase === 'takeoff' ? 0.42 : 0.32);
     lastCameraRef.current = camera;
     map.jumpTo({ ...camera, essential: true });
-  }, [scene?.frameKey, active, completedMode, travById]);
+
+    updateOverlay(map, active, scene, color);
+  }, [mapReady, scene?.frameKey, active, completedMode, travById]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
-    if (!active || completedMode || scene?.phase !== 'arrival') return;
+    if (!mapReady || !map || !active || completedMode || scene?.phase !== 'arrival') return;
     const color = travById[getTravelerKey(active.trip)]?.color || '#00e5ff';
-    clearTimeout(arrivalRef.current);
+    clearTimeout(arrivalTimerRef.current);
     syncPulse(map, active.leg.to, color);
-    arrivalRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
-    return () => clearTimeout(arrivalRef.current);
-  }, [activeIndex, scene?.phase, active, completedMode, travById]);
+    arrivalTimerRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
+    return () => clearTimeout(arrivalTimerRef.current);
+  }, [mapReady, activeIndex, scene?.phase, active, completedMode, travById]);
 
-  function updateVehicle(state) {
-    if (!mapRef.current) return;
-    if (!state) {
-      markerRef.current?.remove();
-      markerRef.current = null;
-      return;
+  function setOverlayVisibility(visible) {
+    for (const ref of [vehicleRef, originLabelRef, destLabelRef]) {
+      if (ref.current) ref.current.style.opacity = visible ? '1' : '0';
     }
-    if (!markerRef.current) {
-      markerRef.current = new maplibregl.Marker({ element: makeVehicleElement(), anchor: 'center', pitchAlignment: 'viewport', rotationAlignment: 'viewport' })
-        .setLngLat([state.point.lon, state.point.lat])
-        .addTo(mapRef.current);
-    }
-    const el = markerRef.current.getElement();
-    const glyph = el.querySelector('.jl-vehicle-glyph');
-    glyph.innerHTML = vehicleSvg(state.mode);
-    glyph.style.color = state.color;
-    glyph.style.setProperty('--vehicle-color', state.color);
-    glyph.style.transform = `rotate(${state.mode === 'plane' ? state.heading : 0}deg) scale(${state.scale})`;
-    el.dataset.mode = state.mode;
-    markerRef.current.setLngLat([state.point.lon, state.point.lat]);
   }
 
-  function updateEndpointMarkers(activeLeg, color) {
-    if (!mapRef.current || !activeLeg) {
-      endpointMarkerRefs.current.forEach(m => m.remove());
-      endpointMarkerRefs.current = [];
-      endpointKeyRef.current = '';
-      return;
-    }
-    const key = `${activeLeg.leg.from.id}:${activeLeg.leg.to.id}:${color}`;
-    if (endpointKeyRef.current === key) return;
-    endpointKeyRef.current = key;
-    endpointMarkerRefs.current.forEach(m => m.remove());
-    endpointMarkerRefs.current = [];
-    const endpoints = [
-      { loc: activeLeg.leg.from, kind: 'Depart' },
-      { loc: activeLeg.leg.to, kind: 'Arrive' }
-    ];
-    endpointMarkerRefs.current = endpoints.map(({ loc, kind }) => {
-      const el = document.createElement('div');
-      el.className = 'jl-place-label';
-      el.style.setProperty('--place-color', color);
-      el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(loc.name)}</span>`;
-      el.title = `${kind}: ${loc.name}`;
-      return new maplibregl.Marker({ element: el, anchor: 'bottom', pitchAlignment: 'viewport', rotationAlignment: 'viewport' })
-        .setLngLat([loc.lon, loc.lat])
-        .addTo(mapRef.current);
-    });
+  function updateOverlay(map, activeLeg, sceneState, color) {
+    if (!vehicleRef.current || !originLabelRef.current || !destLabelRef.current) return;
+    const { leg } = activeLeg;
+    const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
+    const originPt = map.project([leg.from.lon, leg.from.lat]);
+    const destPt = map.project([leg.to.lon, leg.to.lat]);
+
+    const mode = leg.mode;
+    const rotation = mode === 'plane' ? sceneState.screenHeading : 0;
+    vehicleRef.current.innerHTML = vehicleSvg(mode);
+    vehicleRef.current.dataset.mode = mode;
+    vehicleRef.current.style.setProperty('--vehicle-color', color);
+    vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) scale(${sceneState.vehicleScale})`;
+    vehicleRef.current.style.opacity = sceneState.vehicleVisible ? '1' : '0.92';
+
+    updatePlaceLabel(originLabelRef.current, leg.from.name, originPt, color, 'origin');
+    updatePlaceLabel(destLabelRef.current, leg.to.name, destPt, color, 'destination');
   }
 
-  return <div className="maplibre-shell">
-    <div className="cinema-vignette" />
+  return <div className="maplibre-shell terrain-mode">
     <div className="maplibre-map" ref={containerRef} />
+    <div className="cinema-vignette" />
+    <div className="map-overlay" ref={overlayRef}>
+      <div className="jl-vehicle-overlay" ref={vehicleRef} />
+      <div className="jl-place-label-overlay" ref={originLabelRef} />
+      <div className="jl-place-label-overlay is-destination" ref={destLabelRef} />
+    </div>
   </div>;
 }
 
 function addRouteSourcesAndLayers(map) {
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 5 } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 4.5 } });
     map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 9, 'line-opacity': 0.34, 'line-blur': 7 } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.4, 'line-opacity': 0.96 } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 8, 'line-opacity': 0.32, 'line-blur': 7 } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.2, 'line-opacity': 0.98 } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 7, 'circle-color': '#061224', 'circle-opacity': 0.8 } });
-    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 3.8, 'circle-color': '#e7f7ff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.4, 'circle-opacity': 0.95 } });
-    map.addLayer({ id: 'active-labels', type: 'symbol', source: 'visited-points', layout: { 'text-field': ['case', ['get', 'active'], ['get', 'name'], ''], 'text-font': ['Open Sans Regular'], 'text-size': 12, 'text-offset': [0, -1.45], 'text-anchor': 'bottom', 'text-allow-overlap': false }, paint: { 'text-color': '#ecfbff', 'text-halo-color': '#07101f', 'text-halo-width': 2 } });
+    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 7, 'circle-color': '#061224', 'circle-opacity': 0.84 } });
+    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 3.9, 'circle-color': '#effcff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.5, 'circle-opacity': 0.96 } });
   }
 }
 
 function addPulseLayer(map) {
   if (map.getSource('arrival-pulse')) return;
   map.addSource('arrival-pulse', { type: 'geojson', data: emptyCollection() });
-  map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 9, 6, 18], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
+  map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
 }
 
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width) {
@@ -227,7 +258,7 @@ function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opac
   }
   map.getSource('visited-points')?.setData({
     type: 'FeatureCollection',
-    features: [...pointMap.values()].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name, active: false }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
+    features: [...pointMap.values()].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }))
   });
 }
 
@@ -236,7 +267,7 @@ function syncActiveRoute(map, active, progress = 1, color = '#00e5ff') {
   const feature = routeFeature(active.leg, color, active.trip.id, active.legIndex, 1, 2, true, progress);
   map.getSource('active-route')?.setData({ type: 'FeatureCollection', features: [feature] });
 
-  const endpoints = [active.leg.from, active.leg.to].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name, active: true }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }));
+  const endpoints = [active.leg.from, active.leg.to].map(loc => ({ type: 'Feature', properties: { id: loc.id, name: loc.name }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }));
   map.getSource('visited-points')?.setData({ type: 'FeatureCollection', features: endpoints });
 }
 
@@ -252,47 +283,59 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       tripId,
       index,
       color,
-      width: active ? 3.4 : width,
-      opacity: active ? 0.96 : opacity,
-      glowWidth: active ? 9 : width * 3.2,
-      glowOpacity: active ? 0.34 : opacity * 0.42,
+      width: active ? 3.2 : width,
+      opacity: active ? 0.98 : opacity,
+      glowWidth: active ? 8 : width * 3.1,
+      glowOpacity: active ? 0.32 : opacity * 0.34,
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeSamples(leg.from, leg.to, progress, active ? 90 : 40) }
+    geometry: { type: 'LineString', coordinates: routeSamples(leg.from, leg.to, progress, active ? 110 : 42) }
   };
 }
 
 function getScene(active, rawProgress, cameraMode) {
   const p = Math.max(0, Math.min(1, rawProgress));
-  const e = takeoffCruiseLandingEase(p);
   const leg = active.leg;
   const distance = milesBetween(leg.from, leg.to);
-  const vehicle = interpolateGeo(leg.from, leg.to, e);
-  const lead = interpolateGeo(leg.from, leg.to, Math.min(1, e + lookAhead(distance, p)));
-  const focus = blendGeo(vehicle, lead, p < 0.15 ? 0.34 : p > 0.83 ? 0.52 : 0.62);
+  const routeProgress = takeoffCruiseLandingEase(p);
+  const vehicle = interpolateGeo(leg.from, leg.to, routeProgress);
+  const future = interpolateGeo(leg.from, leg.to, Math.min(1, routeProgress + lookAhead(distance, p)));
   const routeMid = interpolateGeo(leg.from, leg.to, 0.5);
-  const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.24);
-  const phase = p < 0.13 ? 'takeoff' : p > 0.88 ? 'arrival' : 'cruise';
-  const routeProgress = e;
-  const heading = bearingBetween(interpolateGeo(leg.from, leg.to, Math.max(0, e - 0.012)), interpolateGeo(leg.from, leg.to, Math.min(1, e + 0.012)));
+  const phase = p < 0.16 ? 'takeoff' : p > 0.84 ? 'arrival' : 'cruise';
+  const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
+  const cinematicFocus = blendGeo(vehicle, future, phase === 'cruise' ? 0.62 : 0.36);
 
-  let center = focus;
-  if (cameraMode === 'global') center = routeMid;
-  if (cameraMode === 'route' || cameraMode === 'continent') center = blendGeo(routeMid, focus, 0.28);
+  let center = cinematicFocus;
+  if (cameraMode === 'global') center = blendGeo(routeMid, cinematicFocus, 0.2);
+  if (cameraMode === 'route') center = blendGeo(routeMid, cinematicFocus, 0.52);
+  if (cameraMode === 'continent') center = blendGeo(routeMid, cinematicFocus, 0.4);
 
+  const heading = bearingBetween(interpolateGeo(leg.from, leg.to, Math.max(0, routeProgress - 0.01)), interpolateGeo(leg.from, leg.to, Math.min(1, routeProgress + 0.01)));
+  const bearing = cameraBearing(cameraMode, heading, phase);
   const zoom = cameraZoom(cameraMode, distance, endpointBias, p);
   const pitch = cameraPitch(cameraMode, phase, distance);
-  const bearing = cameraBearing(cameraMode, heading, phase);
 
   return {
     phase,
     routeProgress,
     vehicle,
     heading,
+    screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias),
+    vehicleVisible: p > 0.01 && p < 0.995,
     camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
     frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(p * 1000)}:${cameraMode}`
   };
+}
+
+function updatePlaceLabel(el, name, point, color, kind) {
+  el.style.setProperty('--place-color', color);
+  el.classList.toggle('is-origin', kind === 'origin');
+  el.classList.toggle('is-destination', kind === 'destination');
+  el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(name)}</span>`;
+  const offsetY = kind === 'destination' ? -42 : 30;
+  el.style.transform = `translate3d(${point.x}px, ${point.y + offsetY}px, 0) translate(-50%, -50%)`;
+  el.style.opacity = '1';
 }
 
 function interpolateGeo(a, b, t) {
@@ -304,7 +347,8 @@ function interpolateGeo(a, b, t) {
 function routeSamples(a, b, progress = 1, n = 64) {
   const interp = geoInterpolate([a.lon, a.lat], [b.lon, b.lat]);
   const maxT = Math.max(0, Math.min(1, progress));
-  const steps = Math.max(2, Math.ceil(n * Math.max(0.06, maxT)));
+  if (maxT <= 0.001) return [[a.lon, a.lat], [a.lon, a.lat]];
+  const steps = Math.max(2, Math.ceil(n * Math.max(0.05, maxT)));
   return Array.from({ length: steps + 1 }, (_, i) => interp((i / steps) * maxT));
 }
 
@@ -321,36 +365,41 @@ function smoothCamera(prev, next, amount) {
 }
 function takeoffCruiseLandingEase(t) {
   const u = Math.max(0, Math.min(1, t));
-  return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  if (u < 0.18) return 0.5 * Math.pow(u / 0.18, 2.2) * 0.18;
+  if (u > 0.82) return 1 - 0.5 * Math.pow((1 - u) / 0.18, 2.2) * 0.18;
+  const mid = (u - 0.18) / 0.64;
+  return 0.09 + mid * 0.82;
 }
 function lookAhead(distance, p) {
-  const base = distance > 4500 ? 0.05 : distance > 1500 ? 0.075 : 0.11;
-  const endpoints = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
-  return base * (1 - 0.45 * endpoints);
+  const base = distance > 4500 ? 0.055 : distance > 1500 ? 0.085 : 0.13;
+  const endpoint = Math.max(0, 1 - Math.min(p, 1 - p) / 0.18);
+  return base * (1 - 0.5 * endpoint);
 }
 function cameraZoom(mode, distance, endpointBias, p) {
-  if (mode === 'global') return distance > 3500 ? 1.45 : 2.25;
-  if (mode === 'continent') return distance > 3500 ? 2.15 : 3.35;
-  if (mode === 'route') return distance > 4500 ? 2.75 : distance > 1500 ? 3.55 : 4.65;
-  const cruise = distance > 4500 ? 2.65 : distance > 1500 ? 3.55 : distance > 500 ? 4.85 : 6.15;
-  const close = distance > 4500 ? 4.05 : distance > 1500 ? 4.95 : distance > 500 ? 5.95 : 6.85;
-  const takeoffPop = p < 0.12 ? smoothstep(1 - p / 0.12) * 0.45 : 0;
-  const landingPop = p > 0.88 ? smoothstep((p - 0.88) / 0.12) * 0.55 : 0;
+  if (mode === 'global') return distance > 3500 ? 1.75 : 2.65;
+  if (mode === 'continent') return distance > 3500 ? 2.65 : 4.15;
+  if (mode === 'route') return distance > 4500 ? 3.0 : distance > 1500 ? 4.1 : 5.4;
+  const cruise = distance > 4500 ? 3.1 : distance > 1500 ? 4.15 : distance > 500 ? 5.4 : 6.7;
+  const close = distance > 4500 ? 4.7 : distance > 1500 ? 5.7 : distance > 500 ? 6.7 : 7.6;
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.34 : 0;
+  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.46 : 0;
   return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop;
 }
 function cameraPitch(mode, phase, distance) {
-  if (mode === 'global') return 8;
-  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 54 : 62;
-  return mode === 'follow' ? 52 : 38;
+  if (mode === 'global') return 0;
+  if (phase === 'takeoff' || phase === 'arrival') return distance > 1500 ? 56 : 63;
+  return mode === 'follow' ? 58 : 42;
 }
 function cameraBearing(mode, heading, phase) {
   if (mode === 'global') return 0;
   if (mode === 'route') return heading * 0.35;
-  return phase === 'cruise' ? heading * 0.75 : heading * 0.9;
+  if (mode === 'continent') return heading * 0.45;
+  return phase === 'cruise' ? heading * 0.72 : heading * 0.88;
 }
+function headingToScreenRotation(heading, mapBearing) { return ((heading - mapBearing + 540) % 360) - 180; }
 function vehicleScale(mode, phase, endpointBias) {
-  const base = mode === 'plane' ? 0.9 : 0.74;
-  return base + (phase === 'cruise' ? 0.12 : 0.26) * smoothstep(endpointBias);
+  const base = mode === 'plane' ? 0.72 : 0.66;
+  return base + (phase === 'cruise' ? 0.10 : 0.22) * smoothstep(endpointBias);
 }
 function bearingBetween(a, b) {
   const toRad = d => d * Math.PI / 180;
@@ -366,23 +415,13 @@ function dashForMode(mode) {
   if (mode === 'train') return [2.5, 1.2];
   return [1, 0];
 }
-function makeVehicleElement() {
-  const el = document.createElement('div');
-  el.className = 'jl-vehicle';
-  const glyph = document.createElement('div');
-  glyph.className = 'jl-vehicle-glyph';
-  el.appendChild(glyph);
-  return el;
-}
 function vehicleSvg(mode) {
   if (mode === 'drive') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 3 L-14 -8 L-6 -13 L8 -13 L16 -7 L20 3 L17 10 L-17 10 Z"/><circle cx="-9" cy="10" r="4"/><circle cx="10" cy="10" r="4"/></svg>';
   if (mode === 'boat') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 6 C-10 16 10 16 18 6 Z"/><path d="M-1 6 L-1 -18 L14 3 Z"/><path d="M-4 6 L-4 -14 L-15 4 Z"/></svg>';
   if (mode === 'train') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><rect x="-12" y="-18" width="24" height="34" rx="6"/><path d="M-7 -10 H7 M-7 0 H7"/><circle cx="-6" cy="18" r="3"/><circle cx="6" cy="18" r="3"/></svg>';
   return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0 -22 L6 -4 L23 3 L23 9 L5 6 L2 18 L8 22 L8 25 L0 21 L-8 25 L-8 22 L-2 18 L-5 6 L-23 9 L-23 3 L-6 -4 Z"/></svg>';
 }
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-}
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 function smoothstep(x) { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function lerpAngle(a, b, t) { let d = ((b - a + 540) % 360) - 180; return a + d * t; }
