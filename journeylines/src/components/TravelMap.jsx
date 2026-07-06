@@ -856,14 +856,14 @@ const ROUTE_WAYPOINTS = {
   'geneva-ch->interlaken-ch:drive': [[6.63, 46.52], [7.44, 46.95]],
   'interlaken-ch->evian-fr:drive': [[7.05, 46.61], [6.63, 46.52]],
   'evian-fr->geneva-ch:drive': [[6.46, 46.38]],
-  'melbourne-fl->nassau-bs:boat': [[-80.12, 25.77], [-79.10, 25.65]],
+  'melbourne-fl->nassau-bs:boat': [[-80.6077, 28.4058], [-79.50, 27.10], [-78.35, 25.85]],
   'miami-fl->nassau-bs:boat': [[-79.50, 25.55]],
-  'melbourne-fl->montego-bay-jm:boat': [[-80.12, 25.77], [-78.20, 23.50], [-77.10, 20.20]],
+  'melbourne-fl->montego-bay-jm:boat': [[-79.20, 27.40], [-77.20, 25.35], [-75.25, 22.35], [-74.25, 20.35], [-75.95, 18.95]],
   'montego-bay-jm->george-town-ky:boat': [[-79.60, 18.85]],
-  'george-town-ky->melbourne-fl:boat': [[-82.20, 21.80], [-80.12, 25.77]],
-  'miami-fl->george-town-ky:boat': [[-82.20, 21.80]],
-  'george-town-ky->montego-bay-jm:boat': [[-79.60, 18.85]],
-  'nassau-bs->melbourne-fl:boat': [[-79.10, 25.65], [-80.12, 25.77]]
+  'george-town-ky->melbourne-fl:boat': [[-79.05, 19.10], [-76.15, 19.45], [-74.25, 20.35], [-75.25, 22.35], [-77.20, 25.35], [-79.20, 27.40]],
+  'miami-fl->george-town-ky:boat': [[-79.90, 25.25], [-78.30, 23.15], [-76.15, 19.45], [-79.05, 19.10]],
+  'george-town-ky->montego-bay-jm:boat': [[-80.20, 18.95], [-79.10, 18.82]],
+  'nassau-bs->melbourne-fl:boat': [[-78.35, 25.85], [-79.50, 27.10], [-80.6077, 28.4058]]
 };
 
 
@@ -1017,7 +1017,7 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   // v2.27: roughly 60% closer than v2.26. Additive zoom is the correct control
   // for map scale; +0.68 is about 1.6x closer, with drive/boat/train getting a
   // little extra to regain the localized, screensaver-style cinematic feel.
-  const modeBoost = isDrive ? 0.95 : (isBoat || isTrain) ? 0.82 : 0.72;
+  const modeBoost = isDrive ? 1.08 : (isBoat || isTrain) ? 0.92 : 0.82;
 
   if (mode === 'global') return (distance > 3500 ? 1.9 : 2.75) + 0.35;
   if (mode === 'continent') return (distance > 3500 ? 2.65 : 4.0) + 0.55;
@@ -1032,20 +1032,20 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   let cruise;
   let close;
   if (isDrive) {
-    cruise = distance > 700 ? 6.75 : distance > 250 ? 7.18 : 7.55;
-    close = distance > 700 ? 7.65 : distance > 250 ? 8.05 : 8.35;
+    cruise = distance > 700 ? 6.95 : distance > 250 ? 7.38 : 7.75;
+    close = distance > 700 ? 8.15 : distance > 250 ? 8.58 : 8.88;
   } else if (isBoat || isTrain) {
-    cruise = distance > 1500 ? 3.95 : distance > 500 ? 5.2 : 6.1;
-    close = distance > 1500 ? 4.9 : distance > 500 ? 6.05 : 6.85;
+    cruise = distance > 1500 ? 4.10 : distance > 500 ? 5.38 : 6.28;
+    close = distance > 1500 ? 5.35 : distance > 500 ? 6.52 : 7.32;
   } else {
-    cruise = distance > 4500 ? 3.05 : distance > 1500 ? 3.9 : distance > 500 ? 5.15 : 6.25;
-    close = distance > 4500 ? 4.55 : distance > 1500 ? 5.35 : distance > 500 ? 6.25 : 7.05;
+    cruise = distance > 4500 ? 3.18 : distance > 1500 ? 4.05 : distance > 500 ? 5.30 : 6.40;
+    close = distance > 4500 ? 4.95 : distance > 1500 ? 5.82 : distance > 500 ? 6.70 : 7.50;
   }
 
   const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
-  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.22 : 0;
-  const settleBreath = phase === 'settle' ? 0.18 * Math.sin(settleT * Math.PI) : 0;
-  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
+  const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.48 : 0;
+  const settleLocalPush = phase === 'settle' ? 0.42 * (1 - 0.35 * Math.sin(settleT * Math.PI)) : 0;
+  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop + settleLocalPush;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;

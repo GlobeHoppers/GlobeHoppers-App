@@ -23,7 +23,17 @@
       "fromLocationId": "melbourne-fl",
       "toLocationId": "montego-bay-jm",
       "source": "manual-carnival-style-caribbean",
-      "coordinates": [[-80.6081, 28.0836], [-80.6077, 28.4058], [-79.15, 26.55], [-78.05, 24.15], [-77.35, 21.65], [-77.9188, 18.4762]]
+      "coordinates": [[-80.6081, 28.0836], [-80.6077, 28.4058], [-79.20, 27.40], [-77.20, 25.35], [-75.25, 22.35], [-74.25, 20.35], [-75.95, 18.95], [-77.9188, 18.4762]]
+    },
+
+    {
+      "id": "cruise-port-canaveral-to-cayman",
+      "mode": "boat",
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "george-town-ky",
+      "source": "manual-carnival-style-caribbean-open-water",
+      "description": "Port Canaveral-area cruise-style route to Grand Cayman, kept offshore and south/east of Cuba to avoid crossing land.",
+      "coordinates": [[-80.6081, 28.0836], [-80.6077, 28.4058], [-79.20, 27.40], [-77.20, 25.35], [-75.25, 22.35], [-74.25, 20.35], [-76.15, 19.45], [-79.05, 19.10], [-81.3792, 19.2866]]
     },
     {
       "id": "cruise-jamaica-to-cayman",
@@ -39,7 +49,7 @@
       "fromLocationId": "george-town-ky",
       "toLocationId": "melbourne-fl",
       "source": "manual-carnival-style-caribbean",
-      "coordinates": [[-81.3792, 19.2866], [-81.95, 21.20], [-80.85, 24.15], [-80.6077, 28.4058], [-80.6081, 28.0836]]
+      "coordinates": [[-81.3792, 19.2866], [-79.05, 19.10], [-76.15, 19.85], [-74.35, 20.95], [-75.60, 23.35], [-77.70, 25.75], [-79.35, 27.45], [-80.6077, 28.4058], [-80.6081, 28.0836]]
     },
     {
       "id": "long-beach-to-catalina",
