@@ -1,16 +1,17 @@
-# JourneyLines v2.8 — Anchored Labels + Mapbox Driving Polish
+# JourneyLines v2.9 — Persistent Pins + Driving Route Diagnostics
 
-This release focuses on the deployed issues from v2.7:
+Date: 2026-07-06
 
-- Visited labels are now MapLibre symbol labels anchored to globe coordinates instead of static HTML overlays.
-- Labels and route content move correctly when the globe is panned/zoomed while paused.
-- Locations behind the globe horizon are handled by MapLibre instead of staying visible as fixed screen overlays.
-- Destination label animation is simplified to a pin-drop from above instead of the previous two-phase/checkmark-like animation.
-- Arrival ripple/pulse is gated to actual arrival/settle, not early approach.
-- US locations display with state abbreviations where available, e.g. New York, NY; Chicago, IL; Atlanta, GA.
-- Route glow was strengthened for both active and completed routes.
-- Mapbox driving route cache keys were bumped to v2.8 so older generic/fallback routes do not mask newly fetched Mapbox routes.
-- Driving route fetch now attempts all drive routes in the trip archive when a Mapbox token is available, instead of only routes already reached in playback.
-- Plane/trail alignment was adjusted so the active tail stops farther behind the aircraft.
+## Changes
 
-Deployment model remains the working `gh-pages` branch workflow. `package-lock.json` remains excluded.
+- Restored persistent colored visited pins on the globe.
+- Visited pins now keep their own traveler color instead of recoloring when a different traveler trip becomes active.
+- Destination pin now drops in as a simple dot when the vehicle arrives, then remains visible as a persistent map-anchored pin/label.
+- Previous route legs remain visible with stronger glow.
+- Added an active airplane air-arc overlay so the live flight trail feels less flat against the terrain.
+- Plane route trail endpoint is offset farther behind the aircraft to better align with the tail.
+- Mapbox driving route fetching now runs in parallel and logs cache/fetch status to the browser console.
+- Mapbox route cache version bumped to v2.9 so old fallback routes do not mask newly fetched Directions routes.
+- Keeps GitHub secret token support via `VITE_MAPBOX_TOKEN`.
+- Keeps working `gh-pages` deployment workflow.
+- Keeps `package-lock.json` out of the repo.

@@ -506,3 +506,49 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   72% { opacity: 1; translate: 0 2px; scale: 1; filter: blur(0); }
   100% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
 }
+
+/* v2.9 pinned visited dots + air-arc overlay */
+.jl-air-arc-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 18;
+  overflow: visible;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.jl-air-arc-overlay path {
+  fill: none;
+  stroke: var(--air-arc-color, #00e5ff);
+  stroke-width: 3.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter:
+    drop-shadow(0 0 5px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 0 14px var(--air-arc-color, #00e5ff))
+    drop-shadow(0 12px 18px rgba(0,0,0,0.34));
+}
+.jl-arrival-dot-drop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--place-color, #00e5ff);
+  border: 2px solid #f7feff;
+  box-shadow:
+    0 0 12px var(--place-color, #00e5ff),
+    0 0 28px color-mix(in srgb, var(--place-color, #00e5ff), transparent 35%),
+    0 10px 18px rgba(0,0,0,0.55);
+  pointer-events: none;
+  animation: jl-dot-pin-drop-v29 0.72s cubic-bezier(.16,.9,.18,1) both;
+  z-index: 28;
+}
+@keyframes jl-dot-pin-drop-v29 {
+  0% { opacity: 0; translate: 0 -58px; scale: .42; filter: blur(1.5px); }
+  68% { opacity: 1; translate: 0 5px; scale: 1.22; filter: blur(0); }
+  100% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+}

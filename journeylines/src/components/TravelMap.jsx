@@ -51,6 +51,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
+  const airArcRef = useRef(null);
   const originLabelRef = useRef(null);
   const destLabelRef = useRef(null);
   const pulseRef = useRef(null);
@@ -108,7 +109,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
       syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
       setMapReady(true);
@@ -130,6 +131,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       const state = currentOverlayStateRef.current;
       if (!state) return;
       updateOverlay(map, state.active, state.scene, state.color);
+      updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
     };
@@ -158,7 +160,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = mapRef.current;
     if (!mapReady || !map) return;
     syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById));
   }, [mapReady, completedLegs, active, completedMode, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
@@ -180,7 +182,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 
     const color = colorForLeg(active, travById);
     syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
-    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene);
+    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId);
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
@@ -192,6 +194,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
+    updateAirArcOverlay(map, airArcRef.current, active, scene, color);
   }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries]);
 
   useEffect(() => {
@@ -211,32 +214,44 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because VITE_MAPBOX_TOKEN was not available at build time.'); return; }
     const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
+    console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
     let cancelled = false;
-    async function runQueue() {
-      for (const item of candidates.slice(0, routingSettings?.mapbox?.maxRoutesPerSession || 80)) {
-        const key = routeCacheKey(item.leg);
-        if (cancelled || routeRequestsRef.current.has(key)) continue;
-        routeRequestsRef.current.add(key);
-        try {
-          const coords = await fetchMapboxRoute(item.leg, token);
-          if (!cancelled && coords?.length > 1) {
-            setRoutedGeometries(prev => {
-              const next = { ...prev, [key]: coords };
-              persistRouteCache(next);
-              return next;
-            });
-          }
-        } catch (err) {
-          console.warn('JourneyLines Mapbox route fetch failed', key, err);
+    async function fetchOne(item) {
+      const key = routeCacheKey(item.leg);
+      if (cancelled || routeRequestsRef.current.has(key)) return;
+      routeRequestsRef.current.add(key);
+      try {
+        const coords = await fetchMapboxRoute(item.leg, token);
+        if (!cancelled && coords?.length > 1) {
+          setRoutedGeometries(prev => {
+            const next = { ...prev, [key]: coords };
+            persistRouteCache(next);
+            return next;
+          });
+          console.info('JourneyLines: Mapbox route cached', key, coords.length, 'points');
         }
+      } catch (err) {
+        console.warn('JourneyLines Mapbox route fetch failed', key, err);
       }
+    }
+    async function runQueue() {
+      const max = routingSettings?.mapbox?.maxRoutesPerSession || 120;
+      const queue = candidates.slice(0, max);
+      const concurrency = Math.max(1, Math.min(5, routingSettings?.mapbox?.concurrency || 4));
+      let cursor = 0;
+      await Promise.all(Array.from({ length: concurrency }, async () => {
+        while (!cancelled && cursor < queue.length) {
+          const item = queue[cursor++];
+          await fetchOne(item);
+        }
+      }));
     }
     runQueue();
     return () => { cancelled = true; };
   }, [legs, routedGeometries]);
 
   function setOverlayVisibility(visible) {
-    for (const ref of [vehicleRef, pulseRef]) {
+    for (const ref of [vehicleRef, pulseRef, airArcRef]) {
       if (ref.current) ref.current.style.opacity = visible ? '1' : '0';
     }
   }
@@ -262,6 +277,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />
     <div className="map-overlay" ref={overlayRef}>
+      <svg className="jl-air-arc-overlay" aria-hidden="true"><path ref={airArcRef} /></svg>
       <div className="jl-vehicle-overlay" ref={vehicleRef} />
       <div className="jl-visited-labels-overlay" ref={visitedLabelsRef} />
       <div className="jl-arrival-ripple" ref={pulseRef} />
@@ -272,18 +288,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
 function addRouteSourcesAndLayers(map) {
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 6.5 } });
+    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18 } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5 } });
     map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 10.5, 'line-opacity': 0.46, 'line-blur': 9 } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': 3.8, 'line-opacity': 1 } });
+    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18 } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10 } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'] } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 8.5, 'circle-color': '#061224', 'circle-opacity': 0.88 } });
-    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 4.4, 'circle-color': '#effcff', 'circle-stroke-color': '#061224', 'circle-stroke-width': 1.7, 'circle-opacity': 0.98 } });
+    map.addLayer({ id: 'visited-points-glow', type: 'circle', source: 'visited-points', paint: { 'circle-radius': ['case', ['boolean', ['get', 'isNew'], false], 16, 11.5], 'circle-color': ['get', 'color'], 'circle-opacity': 0.35, 'circle-blur': 0.7 } });
+    map.addLayer({ id: 'visited-points-halo', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 8.5, 'circle-color': '#061224', 'circle-opacity': 0.94 } });
+    map.addLayer({ id: 'visited-points', type: 'circle', source: 'visited-points', paint: { 'circle-radius': 5.1, 'circle-color': ['get', 'color'], 'circle-stroke-color': '#f6feff', 'circle-stroke-width': 1.8, 'circle-opacity': 1 } });
     map.addLayer({
       id: 'visited-labels',
       type: 'symbol',
@@ -293,7 +312,7 @@ function addRouteSourcesAndLayers(map) {
         'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
         'text-size': ['interpolate', ['linear'], ['zoom'], 1, 10, 4, 13, 7, 15],
         'text-anchor': 'left',
-        'text-offset': [0.82, -1.15],
+        'text-offset': [0.86, -1.22],
         'text-allow-overlap': true,
         'text-ignore-placement': true,
         'text-optional': false
@@ -318,7 +337,7 @@ function addPulseLayer(map) {
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}) {
   const features = showTrails ? completedLegs.map((l, i) => {
     const color = colorForLeg(l, travelersById);
-    return routeFeature(l.leg, color, l.trip.id, i, 0.9, width, false, 1, routedGeometries);
+    return routeFeature(l.leg, color, l.trip.id, i, Math.max(0.9, opacity), width, false, 1, routedGeometries);
   }) : [];
   map.getSource('completed-routes')?.setData({ type: 'FeatureCollection', features });
 
@@ -337,19 +356,25 @@ function syncPulse(map, loc, color) {
 }
 
 function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+  const isAir = leg.mode === 'plane' || leg.mode === 'move';
+  const mainOpacity = active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity);
+  const mainWidth = active ? (isAir ? 2.6 : 4.25) : Math.max(width, 2.15);
   return {
     type: 'Feature',
     properties: {
       tripId,
       index,
       color,
-      width: active ? 3.8 : Math.max(width, 1.9),
-      opacity: active ? 1 : Math.max(0.78, opacity),
-      glowWidth: active ? 10.5 : Math.max(width * 4.1, 7.2),
-      glowOpacity: active ? 0.48 : Math.min(0.52, Math.max(0.34, opacity * 0.55)),
+      mode: leg.mode,
+      width: mainWidth,
+      opacity: mainOpacity,
+      glowWidth: active ? (isAir ? 12.0 : 12.5) : Math.max(width * 5.2, 8.8),
+      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.min(0.62, Math.max(0.42, opacity * 0.68)),
+      outerGlowWidth: active ? (isAir ? 24 : 26) : Math.max(width * 9.0, 16),
+      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 180 : 96, routedGeometries) }
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 220 : 128, routedGeometries) }
   };
 }
 
@@ -420,58 +445,91 @@ function updatePlaceLabel(el, name, point, color, kind) {
 }
 
 
+
+function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
+  if (!pathEl || !activeLeg || !sceneState) return;
+  const { leg } = activeLeg;
+  const isAir = leg.mode === 'plane' || leg.mode === 'move';
+  if (!isAir || !sceneState.vehicleVisible) {
+    pathEl.style.opacity = '0';
+    pathEl.setAttribute('d', '');
+    return;
+  }
+  const fromPt = map.project([leg.from.lon, leg.from.lat]);
+  const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
+  const heading = projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
+  const rad = (heading - 90) * Math.PI / 180;
+  const tailOffset = 23 * Math.max(0.55, sceneState.vehicleScale || 1);
+  const tail = { x: vehiclePt.x - Math.cos(rad) * tailOffset, y: vehiclePt.y - Math.sin(rad) * tailOffset };
+  const dx = tail.x - fromPt.x;
+  const dy = tail.y - fromPt.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 8) { pathEl.style.opacity = '0'; pathEl.setAttribute('d', ''); return; }
+  const lift = Math.min(150, Math.max(32, dist * 0.18));
+  const cx = (fromPt.x + tail.x) / 2 - dy / dist * lift;
+  const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.45;
+  pathEl.setAttribute('d', `M ${fromPt.x.toFixed(1)} ${fromPt.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${tail.x.toFixed(1)} ${tail.y.toFixed(1)}`);
+  pathEl.style.setProperty('--air-arc-color', color);
+  pathEl.style.opacity = String(Math.min(1, 0.25 + sceneState.lineProgress * 1.1));
+}
+
 function colorForLeg(active, travelersById) {
   if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return '#ff3b3b';
   return travelersById[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 
-function buildVisitedLocations(completedLegs, active, completedMode, scene) {
+function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}) {
   const pointMap = new Map();
+  const add = (loc, legWrapper, isNew = false) => {
+    if (!loc?.id) return;
+    const existing = pointMap.get(loc.id);
+    const color = colorForLeg(legWrapper, travelersById);
+    // Keep the first color assigned to a visited pin so old pins do not recolor when a Joey/Bonnie-only trip becomes active.
+    pointMap.set(loc.id, { ...(existing || loc), ...loc, color: existing?.color || color, isNew: Boolean(existing?.isNew || isNew) });
+  };
   for (const l of completedLegs || []) {
-    pointMap.set(l.leg.from.id, l.leg.from);
-    pointMap.set(l.leg.to.id, l.leg.to);
+    add(l.leg.from, l, false);
+    add(l.leg.to, l, false);
   }
   if (active && !completedMode) {
-    pointMap.set(active.leg.from.id, active.leg.from);
-    if (scene?.arrivalLabelVisible) pointMap.set(active.leg.to.id, active.leg.to);
+    add(active.leg.from, active, false);
+    if (scene?.arrivalLabelVisible) add(active.leg.to, active, true);
   }
   return [...pointMap.values()];
 }
 
 function syncVisitedPoints(map, visitedLocations, sigRef) {
-  const sig = visitedLocations.map(l => `${l.id}:${displayNameForLocation(l)}`).sort().join('|');
+  const sig = visitedLocations.map(l => `${l.id}:${displayNameForLocation(l)}:${l.color || '#00e5ff'}:${l.isNew ? 1 : 0}`).sort().join('|');
   if (sigRef?.current === sig) return;
   if (sigRef) sigRef.current = sig;
   map.getSource('visited-points')?.setData({
     type: 'FeatureCollection',
     features: visitedLocations.map(loc => ({
       type: 'Feature',
-      properties: { id: loc.id, name: loc.name, displayName: displayNameForLocation(loc), showLabel: true },
+      properties: { id: loc.id, name: loc.name, displayName: displayNameForLocation(loc), showLabel: true, color: loc.color || '#00e5ff', isNew: Boolean(loc.isNew) },
       geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] }
     }))
   });
 }
 
 function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null) {
-  // v2.8: persistent labels are now MapLibre symbol layers so they stay attached to the globe,
-  // move while paused, and hide naturally behind the globe horizon. This overlay is used only
-  // for the one-time destination pin-drop animation on arrival.
+  // MapLibre circle/symbol layers are the persistent pins and labels. They stay attached to the globe.
+  // This overlay only creates a one-time pin drop accent at the arrival point; it does not replace the persistent pin.
   const container = containerRef.current;
   if (!container || !newArrivalId) return;
   const loc = visitedLocations.find(l => l.id === newArrivalId);
   if (!loc) return;
-  const existing = labelsRef.current.get(`pin-${newArrivalId}`);
+  const key = `drop-${newArrivalId}`;
+  const existing = labelsRef.current.get(key);
   if (existing) return;
   const pt = map.project([loc.lon, loc.lat]);
   const el = document.createElement('div');
-  el.className = 'jl-arrival-pin-drop';
-  el.style.setProperty('--place-color', color);
-  el.innerHTML = `<span class="jl-place-dot"></span><span class="jl-place-name">${escapeHtml(displayNameForLocation(loc))}</span>`;
-  el.style.transform = `translate3d(${pt.x + 12}px, ${pt.y - 28}px, 0)`;
+  el.className = 'jl-arrival-dot-drop';
+  el.style.setProperty('--place-color', loc.color || color);
+  el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, -50%)`;
   container.appendChild(el);
-  labelsRef.current.set(`pin-${newArrivalId}`, el);
-  setTimeout(() => { el.classList.add('fade-out'); }, 1400);
-  setTimeout(() => { el.remove(); labelsRef.current.delete(`pin-${newArrivalId}`); }, 2050);
+  labelsRef.current.set(key, el);
+  setTimeout(() => { el.remove(); labelsRef.current.delete(key); }, 950);
 }
 
 function updatePulseOverlay(el, point, color, active) {
@@ -483,7 +541,7 @@ function updatePulseOverlay(el, point, color, active) {
 }
 
 function routeCoordinates(leg, progress = 1, n = 64, routedGeometries = {}) {
-  if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, n);
+  if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, Math.max(n, 160));
   const routed = getRoutedGeometry(leg, routedGeometries);
   if (routed?.length > 1) return samplePolyline(routed, progress, n);
   const pts = waypointPathForLeg(leg);
@@ -513,12 +571,13 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.9'; }
 function routeCacheKey(leg) {
-  return `v2.8:${leg.from.id}->${leg.to.id}:${leg.mode}`;
+  return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
 
 function reverseRouteCacheKey(leg) {
-  return `v2.8:${leg.to.id}->${leg.from.id}:${leg.mode}`;
+  return `${routeCacheVersion()}:${leg.to.id}->${leg.from.id}:${leg.mode}`;
 }
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
