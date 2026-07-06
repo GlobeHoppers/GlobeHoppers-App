@@ -1051,3 +1051,24 @@ body { background: #000; }
 .progress--scrubbable input[type='range'] {
   opacity: 0.001;
 }
+
+/* v2.24 globe culling + playback performance polish */
+.trip-drawer {
+  z-index: 80 !important;
+}
+.trip-drawer.is-open {
+  box-shadow: 0 24px 90px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+.jl-visited-labels-overlay {
+  will-change: transform;
+  contain: layout style;
+}
+.jl-map-pin {
+  will-change: transform, opacity;
+  transition: opacity .18s ease;
+  contain: layout style paint;
+}
+.jl-air-arc-overlay path,
+.jl-vehicle-overlay {
+  will-change: transform, opacity;
+}

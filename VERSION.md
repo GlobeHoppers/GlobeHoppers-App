@@ -1,8 +1,11 @@
-# JourneyLines v2.23 — Playback Performance + Route Direction Fix
+# JourneyLines v2.24 — Globe Culling + Playback Performance
 
-- Removed colored glow from vessel icons and location placards.
-- Timeline scrubbing and trip drawer jumps now autoplay immediately.
-- Playback state updates are capped around 30fps to reduce MapLibre/React churn on wall displays.
-- Active route geometry sampling is lighter to reduce per-frame `setData` work.
-- Plane routes now unwrap across the antimeridian so California-to-Tokyo goes west across the Pacific instead of east around the globe.
-- Distance calculations now normalize longitude delta to the shortest path.
+- Adds more aggressive horizon culling for labels, pins, vehicle, and active air arc.
+- Keeps the custom HTML placard approach but throttles and caps label visibility at far/global zooms.
+- Moves the trips drawer above all map placards and overlays.
+- Prevents completed route history from being rebuilt on every animation frame.
+- Updates visited pins/labels only when a new point is reached rather than every playback tick.
+- Reduces completed airplane route sampling so inactive history is lighter.
+- Throttles active route source updates while keeping the camera glide smooth.
+- Keeps custom vessel icons and timeline/trip drawer navigation from v2.22/v2.23.
+- Keeps private build-time Mapbox route cache architecture.

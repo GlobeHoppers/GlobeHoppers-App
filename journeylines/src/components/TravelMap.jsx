@@ -70,6 +70,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const currentOverlayStateRef = useRef(null);
   const userCameraOverrideRef = useRef(false);
   const tilePreloadRef = useRef(new Set());
+  const lastActiveRouteUpdateRef = useRef(0);
+  const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -82,7 +84,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const active = legs[safeActiveIndex];
   const nextActive = !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
   const scene = active && !completedMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries) : null;
-  const completedLegs = completedMode ? legs : legs.slice(0, Math.max(0, activeIndex));
+  const completedLegs = useMemo(() => completedMode ? legs : legs.slice(0, Math.max(0, activeIndex)), [completedMode, legs, activeIndex]);
   const visibleLegs = useMemo(() => completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1)), [completedMode, legs, activeIndex]);
 
   useEffect(() => {
@@ -145,7 +147,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
-      refreshPersistentPinPositions(map, persistentLabelElsRef);
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
     };
     map.on('move', refresh);
     map.on('render', refresh);
@@ -174,11 +176,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
+    // Completed route history is static map data. Only rebuild it when a leg
+    // completes, route cache changes, or display settings change. Avoid doing
+    // this in the per-frame playback loop.
     syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
-      syncVisitedPoints(map, visited, lastVisitedSigRef);
-      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, active, completedMode, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
+  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    // Visited points and labels change only when the timeline reaches a new
+    // destination, not on every animation frame.
+    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
+    syncVisitedPoints(map, visited, lastVisitedSigRef);
+    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, completedMode, scene?.newArrivalId, travById]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -196,10 +208,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     }
 
     const color = colorForLeg(active, travById);
-    syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
-    const visited = buildVisitedLocations(completedLegs, active, completedMode, scene, travById);
-    syncVisitedPoints(map, visited, lastVisitedSigRef);
-    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, color, scene.newArrivalId, droppedPinIdsRef);
+    const now = performance.now();
+    if (now - lastActiveRouteUpdateRef.current > 45 || scene.lineProgress >= 0.995) {
+      syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries);
+      lastActiveRouteUpdateRef.current = now;
+    }
     syncPulse(map, active.leg.to, scene.pulseActive ? color : 'transparent');
 
     const smoothing = scene.phase === 'settle' ? 0.0045 : scene.phase === 'predeparture' ? 0.0038 : scene.phase === 'takeoff' ? 0.0052 : 0.0048;
@@ -389,7 +402,7 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 96, routedGeometries) }
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 36, routedGeometries) }
   };
 }
 
@@ -595,24 +608,57 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
   refreshPersistentPinPositions(map, labelsRef);
 }
 
+function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
+  const now = performance.now();
+  const camera = map ? {
+    lng: map.getCenter().lng,
+    lat: map.getCenter().lat,
+    zoom: map.getZoom(),
+    pitch: map.getPitch(),
+    bearing: map.getBearing()
+  } : null;
+  const last = throttleRef?.current;
+  const changedEnough = !last?.camera || !camera ||
+    Math.abs(shortestLonDelta(camera.lng - last.camera.lng)) > 0.18 ||
+    Math.abs(camera.lat - last.camera.lat) > 0.12 ||
+    Math.abs(camera.zoom - last.camera.zoom) > 0.035 ||
+    Math.abs(camera.pitch - last.camera.pitch) > 0.8;
+  if (!changedEnough && now - (last?.t || 0) < 110) return;
+  if (throttleRef) throttleRef.current = { t: now, camera };
+  refreshPersistentPinPositions(map, labelsRef);
+}
+
 function refreshPersistentPinPositions(map, labelsRef) {
   if (!map || !labelsRef?.current) return;
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
   const h = canvas?.clientHeight || window.innerHeight;
+  const zoom = map.getZoom?.() || 1.5;
+  const visible = [];
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const onScreen = pt.x > -180 && pt.x < w + 180 && pt.y > -140 && pt.y < h + 140;
-    const visibleHemisphere = isCoordinateVisibleOnGlobe(map, loc.lon, loc.lat);
+    const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
+    const onScreen = pt.x > -120 && pt.x < w + 120 && pt.y > -120 && pt.y < h + 120;
+    const visibleHemisphere = distance <= horizonCutoffDeg(zoom);
     el.style.transform = `translate3d(${pt.x}px, ${pt.y}px, 0) translate(-50%, calc(-100% - 10px))`;
-    el.style.opacity = onScreen && visibleHemisphere ? '1' : '0';
+    if (onScreen && visibleHemisphere) visible.push({ el, distance, y: pt.y });
+    else el.style.opacity = '0';
   }
+
+  // Custom HTML placards are retained, but at far/global zooms we cap the number
+  // visible at once so completed history does not overload playback or clutter the globe.
+  const maxLabels = zoom < 1.75 ? 18 : zoom < 2.15 ? 28 : zoom < 2.8 ? 48 : 90;
+  visible.sort((a, b) => a.distance - b.distance || a.y - b.y);
+  visible.forEach((item, idx) => {
+    item.el.style.opacity = idx < maxLabels ? '1' : '0';
+  });
 }
 
-function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 96) {
+
+function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 82) {
   if (!map || lon == null || lat == null) return false;
   try {
     const center = map.getCenter();
@@ -634,6 +680,25 @@ function isVisibleOnGlobe(map, point, margin = 1.06) {
   return onScreen && Math.hypot(point.x - center.x, point.y - center.y) < globeRadius * margin;
 }
 
+function angularDistanceFromMapCenter(map, lon, lat) {
+  try {
+    const center = map.getCenter();
+    return angularDistanceDeg({ lon: center.lng, lat: center.lat }, { lon, lat });
+  } catch {
+    return 0;
+  }
+}
+
+function horizonCutoffDeg(zoom) {
+  // Hide labels before they reach the horizon. The lower the zoom, the more
+  // aggressive the culling, which keeps far-side labels like Tokyo/Seoul hidden
+  // when viewing the Atlantic face of the globe.
+  if (zoom < 1.7) return 72;
+  if (zoom < 2.2) return 76;
+  if (zoom < 3.0) return 80;
+  return 83;
+}
+
 function angularDistanceDeg(a, b) {
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
@@ -653,7 +718,7 @@ function updatePulseOverlay(el, point, color, active) {
 }
 
 function routeCoordinates(leg, progress = 1, n = 64, routedGeometries = {}) {
-  if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, Math.max(n, 160));
+  if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, Math.max(2, n));
   const routed = getRoutedGeometry(leg, routedGeometries);
   if (routed?.length > 1) return samplePolyline(routed, progress, n);
   const pts = waypointPathForLeg(leg);
