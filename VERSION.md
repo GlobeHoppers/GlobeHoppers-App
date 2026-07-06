@@ -1,21 +1,26 @@
-# JourneyLines v1.1 — Globe + GitHub Actions Fix
+# JourneyLines v1.2 — Dynamic Globe Polish
 
 ## Summary
 
-This repo update is intended to replace the current browser-uploaded JourneyLines repo contents.
+This update builds on v1.1 and focuses on making the globe mode feel smoother, less glitchy, and more cinematic.
 
-## Included fixes and updates
+## Included updates
 
-- Keeps the globe-first JourneyLines update.
+- Keeps the working `gh-pages` branch deployment workflow.
 - Keeps the nested repo structure currently used in GitHub:
   - `.github/workflows/deploy.yml`
   - `journeylines/`
-- Adds a complete GitHub Actions Pages workflow at `.github/workflows/deploy.yml`.
-- Removes `package-lock.json` to avoid the internal registry URLs that caused `npm ci` to hang.
-- Uses `npm install --registry=https://registry.npmjs.org/` in the workflow.
-- Uses Node 24 in GitHub Actions.
-- Keeps the build artifact path as `./journeylines/dist`.
-- Removes the unused `gh-pages` package/script because deployment now uses GitHub Actions.
+- Keeps `package-lock.json` out of the repo so installs use the public npm registry.
+- Smooths globe camera motion so leg-to-leg transitions no longer snap hard between globe states.
+- Adds dynamic globe zooming during playback:
+  - zooms closer near departure and arrival
+  - eases outward during cruise portions of longer legs
+  - keeps route/follow mode feeling more like a guided travel animation
+- Replaces emoji vehicle icons with clean inline SVG vehicle icons.
+- Removes the dark circular icon background.
+- Removes the visible circle around the aircraft/vehicle icon.
+- Keeps plane, car, boat, and train modes with distinct icon shapes.
+- Keeps globe as the default projection and Follow as the default camera mode.
 
 ## Upload instructions
 

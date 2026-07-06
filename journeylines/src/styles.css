@@ -65,3 +65,13 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 .app.is-playing .controls { opacity: .22; transform: translateY(18px); transition: opacity .25s ease, transform .25s ease; }
 .app.is-playing .controls:hover { opacity: 1; transform: translateY(0); }
 .app.is-playing .trip-card { transform: scale(.96); transform-origin: top right; }
+
+/* v1.2 dynamic globe polish */
+.vehicle { pointer-events: none; }
+.vehicle-shape { fill: var(--vehicle-color, #00e5ff); stroke: rgba(255,255,255,.92); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--vehicle-color, #00e5ff), transparent 28%)); }
+.vehicle-shape path, .vehicle-shape rect, .vehicle-shape circle { vector-effect: non-scaling-stroke; }
+.vehicle-shape--train path { fill: none; }
+.vehicle-shape--boat path:not(:first-child) { fill: color-mix(in srgb, var(--vehicle-color, #00e5ff), white 24%); }
+.map--globe .vehicle-shape { stroke-width: 1.55; }
+.map--globe .route.active { stroke-width: 3.6; }
+.map--globe .globe-disc, .map--globe .atmosphere { transition: r 220ms linear; }
