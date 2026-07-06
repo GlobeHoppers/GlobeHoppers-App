@@ -965,13 +965,36 @@ function buildVesselIconIndex(modules) {
   const index = new Map();
   for (const [rawPath, url] of Object.entries(modules || {})) {
     const normalized = rawPath
-      .replace(/^\.\.\//, '')
       .replace(/\\/g, '/')
+      .replace(/^\.\.\//, '')
+      .replace(/^\.\//, '')
       .toLowerCase();
-    const file = normalized.split('/').pop()?.replace(/\.png$/, '') || '';
-    const folder = normalized.split('/').slice(-2, -1)[0] || '';
-    const key = `${folder}/${file}`.replace(/\s+/g, ' ').trim();
-    index.set(key, url);
+
+    const parts = normalized.split('/').filter(Boolean);
+    const file = parts.at(-1)?.replace(/\.png$/, '') || '';
+    const folder = parts.at(-2) || '';
+    const fullNoExt = normalized.replace(/\.png$/, '');
+
+    // Support both likely folder layouts:
+    //   src/Icons/Airplanes/Airplane - Cyan.png
+    //   src/icons/airplanes/airplane - cyan.png
+    // Vite import.meta.glob('../Icons/**/*.png') returns paths like:
+    //   ../Icons/Airplanes/Airplane - Cyan.png
+    // The lookup keys below intentionally include both the short form and
+    // full normalized path forms so GitHub/browser upload casing does not matter.
+    const keys = [
+      `${folder}/${file}`,
+      `icons/${folder}/${file}`,
+      fullNoExt,
+      fullNoExt.replace(/^icons\//, ''),
+      fullNoExt.replace(/^src\//, ''),
+      fullNoExt.replace(/^src\/icons\//, ''),
+    ];
+
+    for (const key of keys) {
+      const cleanKey = key.replace(/\s+/g, ' ').trim().toLowerCase();
+      if (cleanKey) index.set(cleanKey, url);
+    }
   }
   return index;
 }
@@ -981,9 +1004,12 @@ function vesselIconUrl(mode, color) {
   const candidates = [
     vesselIconKey(family, preferredColor),
     vesselIconKey(family, 'Blue'),
+    `icons/${vesselIconKey(family, preferredColor)}`,
+    `icons/${vesselIconKey(family, 'Blue')}`,
+    'vessel - blue',
+    'vessels/vessel - blue',
     'icons/vessel - blue',
-    'icons/vessels/vessel - blue',
-    'vessels/vessel - blue'
+    'icons/vessels/vessel - blue'
   ];
   for (const key of candidates) {
     const found = VESSEL_ICON_INDEX.get(key.toLowerCase());
@@ -999,7 +1025,7 @@ function vesselFamilyForMode(mode) {
 }
 function vesselIconKey(family, colorName) {
   const folder = `${family}s`.toLowerCase();
-  return `icons/${folder}/${family} - ${colorName}`.toLowerCase();
+  return `${folder}/${family} - ${colorName}`.toLowerCase();
 }
 function colorToIconName(color) {
   const value = String(color || '').trim().toLowerCase();
