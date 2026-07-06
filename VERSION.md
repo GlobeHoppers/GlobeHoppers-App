@@ -1,7 +1,8 @@
-# JourneyLines v2.22 — Vessel Direction + Timeline Navigation
+# JourneyLines v2.23 — Playback Performance + Route Direction Fix
 
-- Rotates imported vessel PNG icons so the nose points along the active route segment.
-- Adds a scrubbable bottom timeline so playback can jump ahead/back in the journey.
-- Adds a right-side sliding Trips panel with all trips in timeline order.
-- Clicking a trip jumps JourneyLines to that point in the playback timeline.
-- Keeps v2.21 vessel icon index behavior and existing private Mapbox route-cache deployment.
+- Removed colored glow from vessel icons and location placards.
+- Timeline scrubbing and trip drawer jumps now autoplay immediately.
+- Playback state updates are capped around 30fps to reduce MapLibre/React churn on wall displays.
+- Active route geometry sampling is lighter to reduce per-frame `setData` work.
+- Plane routes now unwrap across the antimeridian so California-to-Tokyo goes west across the Pacific instead of east around the globe.
+- Distance calculations now normalize longitude delta to the shortest path.

@@ -28,6 +28,7 @@ export default function App() {
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const SETTLE_MS = settings.arrivalSettleMs || 3200;
+  const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
 
@@ -53,6 +54,10 @@ export default function App() {
     const step = (ts) => {
       if (tRef.current.last == null) tRef.current.last = ts;
       const dt = ts - tRef.current.last;
+      if (dt < FRAME_MS) {
+        raf = requestAnimationFrame(step);
+        return;
+      }
       tRef.current.last = ts;
       const dur = legDurationMs(legs[Math.min(activeIndex, legs.length - 1)]?.leg.miles || 500, speed);
       const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
@@ -89,13 +94,13 @@ export default function App() {
   }
   function pause() { setIsPlaying(false); }
   function reset() { setIsPlaying(false); setStarted(false); setActiveIndex(999999); setLegProgress(1); }
-  function jumpToLeg(index, progressWithinLeg = 0) {
+  function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
     const dur = legDurationMs(legs[safeIndex]?.leg?.miles || 500, speed);
     setStarted(true);
-    setIsPlaying(false);
+    setIsPlaying(Boolean(autoPlay));
     setActiveIndex(safeIndex);
     setLegProgress(safeProgress);
     tRef.current = { last: null, elapsed: safeProgress * dur };
@@ -106,7 +111,7 @@ export default function App() {
     const raw = p * legs.length;
     const index = Math.max(0, Math.min(legs.length - 1, Math.floor(raw)));
     const withinLeg = raw - index;
-    jumpToLeg(index, withinLeg);
+    jumpToLeg(index, withinLeg, true);
   }
   function titleClick() {
     clickRef.current += 1;
@@ -132,7 +137,7 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => setTripDrawerOpen(v => !v)} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0)} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} />
     <section className="about glass">
       <strong>About</strong> JourneyLines is an animated travel-history map that replays a lifetime of trips across a living world atlas. Five-click the title to open Admin Mode.
     </section>

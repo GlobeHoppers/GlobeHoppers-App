@@ -389,7 +389,7 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : 0.14,
       dash: dashForMode(leg.mode)
     },
-    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 220 : 128, routedGeometries) }
+    geometry: { type: 'LineString', coordinates: routeCoordinates(leg, progress, active ? 96 : 96, routedGeometries) }
   };
 }
 
@@ -887,9 +887,23 @@ function routeSamples(a, b, progress = 1, n = 64) {
   const maxT = Math.max(0, Math.min(1, progress));
   if (maxT <= 0.001) return [[a.lon, a.lat], [a.lon, a.lat]];
   const steps = Math.max(2, Math.ceil(n * Math.max(0.05, maxT)));
-  return Array.from({ length: steps + 1 }, (_, i) => interp((i / steps) * maxT));
+  return unwrapAntimeridianLine(Array.from({ length: steps + 1 }, (_, i) => interp((i / steps) * maxT)));
 }
 
+function unwrapAntimeridianLine(coords) {
+  if (!Array.isArray(coords) || coords.length < 2) return coords || [];
+  const out = [[coords[0][0], coords[0][1]]];
+  for (let i = 1; i < coords.length; i++) {
+    let lon = coords[i][0];
+    const lat = coords[i][1];
+    const prevLon = out[out.length - 1][0];
+    while (lon - prevLon > 180) lon -= 360;
+    while (lon - prevLon < -180) lon += 360;
+    out.push([lon, lat]);
+  }
+  return out;
+}
+function shortestLonDelta(delta) { return ((delta + 540) % 360) - 180; }
 function blendGeo(a, b, amount) { return interpolateGeo(a, b, amount); }
 function emptyCollection() { return { type: 'FeatureCollection', features: [] }; }
 function smoothCamera(prev, next, amount) {
@@ -952,7 +966,7 @@ function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
 function bearingBetween(a, b) {
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
-  const lat1 = toRad(a.lat), lat2 = toRad(b.lat), dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat), lat2 = toRad(b.lat), dLon = toRad(shortestLonDelta(b.lon - a.lon));
   const y = Math.sin(dLon) * Math.cos(lat2);
   const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;

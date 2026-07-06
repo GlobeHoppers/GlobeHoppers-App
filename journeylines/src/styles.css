@@ -1028,3 +1028,26 @@ body { background: #000; }
   width: 86px;
   height: 86px;
 }
+
+
+/* v2.23 interaction/performance polish */
+/* Remove colored glow from the moving vessel icon while keeping a subtle grounding shadow. */
+.jl-vehicle-overlay {
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.58)) !important;
+}
+.jl-vehicle-img {
+  filter: none !important;
+}
+/* Remove colored glow from location placards while keeping legibility. */
+.jl-map-pin-inner {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.58) !important;
+}
+.jl-map-pin-dot {
+  box-shadow: none !important;
+}
+.trip-card {
+  box-shadow: 0 14px 42px rgba(0,0,0,.38) !important;
+}
+.progress--scrubbable input[type='range'] {
+  opacity: 0.001;
+}
