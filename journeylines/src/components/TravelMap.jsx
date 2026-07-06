@@ -19,13 +19,14 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
   const active = legs[safeActiveIndex];
   const completedMode = activeIndex >= legs.length;
   const drawnLegs = legs.slice(0, Math.min(activeIndex, legs.length));
-  const progress = completedMode ? 1 : legProgress;
-  const currentPoint = active ? interpolateGeo(active.leg.from, active.leg.to, progress) : null;
+  const progress = completedMode ? 1 : Math.max(0, Math.min(1, legProgress));
+  const motionProgress = travelEase(progress);
+  const currentPoint = active ? interpolateGeo(active.leg.from, active.leg.to, motionProgress) : null;
 
   const globeCameraTarget = useMemo(() => {
     if (projectionName !== 'globe') return null;
-    return getGlobeCameraTarget(cameraMode, active, currentPoint, progress, completedMode);
-  }, [projectionName, cameraMode, active, currentPoint, progress, completedMode]);
+    return getGlobeCameraTarget(cameraMode, active, motionProgress, completedMode);
+  }, [projectionName, cameraMode, active, motionProgress, completedMode]);
 
   const smoothGlobeCamera = useSmoothGlobeCamera(globeCameraTarget);
 
@@ -48,19 +49,18 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
   const viewTransform = projectionName === 'globe' ? '' : cameraTransform(cameraMode, active, currentXY, projection);
   const visited = visitedLocations(expanded, activeIndex);
   const activeIds = new Set(active ? [active.leg.from.id, active.leg.to.id] : []);
-  const vehicleHeading = active && currentPoint ? screenHeading(active.leg.from, active.leg.to, progress, projection) : 0;
+  const vehicleHeading = active && currentPoint ? screenHeading(active.leg.from, active.leg.to, motionProgress, projection) : 0;
 
   return <svg className={`map map--${projectionName}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="JourneyLines travel map">
     <defs>
-      <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="terrainGlow"><feGaussianBlur stdDeviation="7" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <radialGradient id="globeOcean" cx="42%" cy="28%" r="76%">
-        <stop offset="0" stopColor="#214a72"/>
-        <stop offset="0.45" stopColor="#102944"/>
+      <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="terrainGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="globeOcean" cx="40%" cy="26%" r="78%">
+        <stop offset="0" stopColor="#1f4b73"/>
+        <stop offset="0.48" stopColor="#102944"/>
         <stop offset="1" stopColor="#050b17"/>
       </radialGradient>
       <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#09111f"/><stop offset="1" stopColor="#101b31"/></linearGradient>
-      <radialGradient id="atmosphere" cx="50%" cy="50%" r="50%"><stop offset="68%" stopColor="rgba(24,226,255,0)"/><stop offset="96%" stopColor="rgba(24,226,255,.12)"/><stop offset="100%" stopColor="rgba(24,226,255,.28)"/></radialGradient>
     </defs>
     <rect width={W} height={H} fill="url(#ocean)" />
     {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="url(#globeOcean)" className="globe-disc" />}
@@ -70,7 +70,7 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
       {projectionName === 'globe' && <g className="terrain-shade">{countries.features.map((c, i) => <path key={`s-${i}`} d={path(c)} />)}</g>}
       {showTrails && <g className="trails" opacity={trailOpacity} strokeWidth={trailWidth}>
         {drawnLegs.map((l, i) => <Route key={`${l.trip.id}-${l.legIndex}-${i}`} leg={l.leg} projection={projection} color={travById[getTravelerKey(l.trip)]?.color} mode={l.leg.mode} globe={projectionName === 'globe'} />)}
-        {active && !completedMode && <Route leg={{...active.leg, to: currentPoint}} projection={projection} color={travById[getTravelerKey(active.trip)]?.color} mode={active.leg.mode} active globe={projectionName === 'globe'} progress={progress} />}
+        {active && !completedMode && currentPoint && <Route leg={{...active.leg, to: currentPoint}} projection={projection} color={travById[getTravelerKey(active.trip)]?.color} mode={active.leg.mode} active globe={projectionName === 'globe'} progress={1} />}
       </g>}
       <g className="dots">
         {[...visited].map(id => {
@@ -82,16 +82,16 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
           return <g key={id} transform={`translate(${xy[0]},${xy[1]})`} className={showLabel ? 'dot dot--active' : 'dot'}><circle r={showLabel ? 5.8 : 3.6}/>{showLabel && <text y="-11">{l.name}</text>}</g>;
         })}
       </g>
-      {currentXY && active && !completedMode && <Vehicle xy={currentXY} heading={vehicleHeading} mode={active.leg.mode} color={travById[getTravelerKey(active.trip)]?.color || '#00e5ff'} projectionName={projectionName} />}
+      {currentXY && active && !completedMode && <Vehicle xy={currentXY} heading={vehicleHeading} mode={active.leg.mode} color={travById[getTravelerKey(active.trip)]?.color || '#00e5ff'} projectionName={projectionName} progress={progress} />}
     </g>
-    {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="url(#atmosphere)" className="atmosphere" />}
+    {projectionName === 'globe' && <circle cx={W/2} cy={H/2} r={projection.scale()} fill="none" className="atmosphere-rim" />}
   </svg>;
 }
 
 function Route({ leg, projection, color = '#00e5ff', mode = 'plane', active, globe, progress = 1 }) {
   const dash = mode === 'drive' ? '6 7' : mode === 'boat' ? '2 10' : mode === 'train' ? '10 5' : '';
   if (globe || mode === 'plane') {
-    const coords = routeSamples(leg.from, leg.to, active ? progress : 1, globe ? 58 : 26);
+    const coords = routeSamples(leg.from, leg.to, active ? progress : 1, globe ? 70 : 30);
     const d = geoPath(projection)({ type: 'LineString', coordinates: coords });
     if (!d) return null;
     return <path d={d} fill="none" stroke={color} strokeLinecap="round" strokeDasharray={dash} className={active ? 'route active' : 'route'} />;
@@ -105,10 +105,13 @@ function Route({ leg, projection, color = '#00e5ff', mode = 'plane', active, glo
   return <path d={`M${a[0]},${a[1]} Q${mx},${my} ${b[0]},${b[1]}`} fill="none" stroke={color} strokeLinecap="round" strokeDasharray={dash} className={active ? 'route active' : 'route'} />;
 }
 
-function Vehicle({ xy, mode, color, projectionName, heading }) {
-  const scale = projectionName === 'globe' ? 0.9 : 1.05;
-  const rotate = mode === 'boat' || mode === 'train' || mode === 'drive' || mode === 'plane' ? heading : 0;
-  return <g className="vehicle" transform={`translate(${xy[0]},${xy[1]}) rotate(${rotate}) scale(${scale})`} filter="url(#glow)" style={{ '--vehicle-color': color }}>
+function Vehicle({ xy, mode, color, projectionName, heading, progress }) {
+  const altitude = vehicleAltitude(progress);
+  const baseScale = projectionName === 'globe' ? 0.78 : 1.0;
+  const planeScale = mode === 'plane' ? (0.62 + 0.38 * altitude) : 0.82;
+  const rotate = mode === 'plane' ? heading : 0;
+  const lift = mode === 'plane' ? -8 * altitude : 0;
+  return <g className={`vehicle vehicle--${mode}`} transform={`translate(${xy[0]},${xy[1]}) rotate(${rotate}) translate(0,${lift}) scale(${baseScale * planeScale})`} filter="url(#glow)" style={{ '--vehicle-color': color }}>
     <VehicleShape mode={mode} />
   </g>;
 }
@@ -162,26 +165,34 @@ function visitedLocations(expanded, activeIndex) {
   return out;
 }
 
-function getGlobeCameraTarget(mode, active, currentPoint, progress, completedMode) {
+function getGlobeCameraTarget(mode, active, progress, completedMode) {
   if (completedMode) return { lon: -35, lat: 25, scale: 360 };
-  if (!active || !currentPoint) return { lon: -35, lat: 25, scale: 520 };
+  if (!active) return { lon: -35, lat: 25, scale: 520 };
 
   const distance = milesBetween(active.leg.from, active.leg.to);
   const mid = interpolateGeo(active.leg.from, active.leg.to, 0.5);
-  const routeTarget = mode === 'route' || mode === 'continent' ? mid : currentPoint;
-  const lead = mode === 'follow' ? interpolateGeo(active.leg.from, active.leg.to, Math.min(1, progress + 0.08)) : routeTarget;
-  const zoom = globeZoom(mode, distance, progress);
-  return { lon: lead.lon, lat: lead.lat, scale: zoom };
+  if (mode === 'global') return { lon: mid.lon, lat: mid.lat, scale: 430 };
+  if (mode === 'route' || mode === 'continent') return { lon: mid.lon, lat: mid.lat, scale: globeZoom(mode, distance, 0.5) };
+
+  // Mult.dev-like follow: keep the active vehicle slightly ahead of center, then glide the globe toward the destination.
+  const lookAhead = distance > 2500 ? 0.09 : distance > 700 ? 0.12 : 0.16;
+  const leadT = Math.max(0, Math.min(1, progress + lookAhead));
+  const lead = interpolateGeo(active.leg.from, active.leg.to, leadT);
+  const centerBlend = progress < 0.12 ? 0.45 : progress > 0.88 ? 0.72 : 0.62;
+  const current = interpolateGeo(active.leg.from, active.leg.to, progress);
+  const focus = blendGeo(current, lead, centerBlend);
+  return { lon: focus.lon, lat: focus.lat, scale: globeZoom(mode, distance, progress) };
 }
 
 function globeZoom(mode, distance, t) {
   if (mode === 'global') return 430;
-  if (mode === 'continent') return 520;
-  if (mode === 'route') return distance > 4500 ? 510 : distance > 1500 ? 590 : 710;
-  const edgeFocus = Math.cos((Math.max(0, Math.min(1, t)) - 0.5) * Math.PI * 2) * 0.5 + 0.5;
-  const closeScale = distance > 4500 ? 700 : distance > 1500 ? 760 : 850;
-  const cruiseScale = distance > 4500 ? 540 : distance > 1500 ? 620 : 760;
-  return cruiseScale + (closeScale - cruiseScale) * edgeFocus;
+  if (mode === 'continent') return 560;
+  if (mode === 'route') return distance > 4500 ? 560 : distance > 1500 ? 650 : 780;
+  const u = Math.max(0, Math.min(1, t));
+  const nearEndpoint = Math.max(0, 1 - Math.min(u, 1 - u) / 0.28);
+  const closeScale = distance > 4500 ? 780 : distance > 1500 ? 860 : 980;
+  const cruiseScale = distance > 4500 ? 560 : distance > 1500 ? 650 : 790;
+  return cruiseScale + (closeScale - cruiseScale) * smoothstep(nearEndpoint);
 }
 
 function useSmoothGlobeCamera(target) {
@@ -198,9 +209,9 @@ function useSmoothGlobeCamera(target) {
       if (target) {
         const current = cameraRef.current || target;
         const next = {
-          lon: lerpAngle(current.lon, target.lon, 0.075),
-          lat: lerp(current.lat, target.lat, 0.075),
-          scale: lerp(current.scale, target.scale, 0.07)
+          lon: lerpAngle(current.lon, target.lon, 0.052),
+          lat: lerp(current.lat, target.lat, 0.052),
+          scale: lerp(current.scale, target.scale, 0.05)
         };
         cameraRef.current = next;
         setCamera(next);
@@ -215,12 +226,33 @@ function useSmoothGlobeCamera(target) {
 }
 
 function screenHeading(a, b, t, projection) {
-  const p1 = interpolateGeo(a, b, Math.max(0, Math.min(1, t - 0.015)));
-  const p2 = interpolateGeo(a, b, Math.max(0, Math.min(1, t + 0.015)));
+  const delta = 0.01;
+  const p1 = interpolateGeo(a, b, Math.max(0, Math.min(1, t - delta)));
+  const p2 = interpolateGeo(a, b, Math.max(0, Math.min(1, t + delta)));
   const xy1 = projection([p1.lon, p1.lat]);
   const xy2 = projection([p2.lon, p2.lat]);
   if (!xy1 || !xy2) return 0;
   return Math.atan2(xy2[1] - xy1[1], xy2[0] - xy1[0]) * 180 / Math.PI + 90;
+}
+
+function travelEase(t) {
+  // Slow roll off the origin and slow into the destination, like a takeoff/cruise/landing pass.
+  const u = Math.max(0, Math.min(1, t));
+  return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+}
+
+function vehicleAltitude(t) {
+  const u = Math.max(0, Math.min(1, t));
+  return Math.sin(Math.PI * u);
+}
+
+function blendGeo(a, b, amount) {
+  return interpolateGeo(a, b, amount);
+}
+
+function smoothstep(x) {
+  const u = Math.max(0, Math.min(1, x));
+  return u * u * (3 - 2 * u);
 }
 
 function lerp(a, b, t) { return a + (b - a) * t; }

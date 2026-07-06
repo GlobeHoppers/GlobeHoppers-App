@@ -1,41 +1,22 @@
-# JourneyLines v1.2 — Dynamic Globe Polish
+# JourneyLines v1.3.0 — Globe Camera + Icon Polish
 
-## Summary
+## Update summary
+This version continues the globe-first direction and focuses on the Mult.dev-style motion feel.
 
-This update builds on v1.1 and focuses on making the globe mode feel smoother, less glitchy, and more cinematic.
+## Changes
+- Removes the oversized transparent glow/bubble that appeared over the globe.
+- Replaces the atmosphere overlay with a subtle rim-only glow.
+- Keeps the airplane icon background-free with no circular badge.
+- Airplane rotates to follow the route direction.
+- Car, boat, and train stay upright instead of rotating with the path.
+- Adds takeoff/cruise/landing motion easing so the vehicle rolls off the origin, cruises, and eases into arrival.
+- Adds more dynamic globe camera behavior in follow mode:
+  - closer at departure
+  - eases out during cruise
+  - closer at arrival
+  - uses a look-ahead focus point so the globe pans ahead of the vehicle
+- Keeps the working gh-pages deployment workflow.
+- Keeps package-lock.json out of the repo so GitHub Actions uses the public npm registry.
 
-## Included updates
-
-- Keeps the working `gh-pages` branch deployment workflow.
-- Keeps the nested repo structure currently used in GitHub:
-  - `.github/workflows/deploy.yml`
-  - `journeylines/`
-- Keeps `package-lock.json` out of the repo so installs use the public npm registry.
-- Smooths globe camera motion so leg-to-leg transitions no longer snap hard between globe states.
-- Adds dynamic globe zooming during playback:
-  - zooms closer near departure and arrival
-  - eases outward during cruise portions of longer legs
-  - keeps route/follow mode feeling more like a guided travel animation
-- Replaces emoji vehicle icons with clean inline SVG vehicle icons.
-- Removes the dark circular icon background.
-- Removes the visible circle around the aircraft/vehicle icon.
-- Keeps plane, car, boat, and train modes with distinct icon shapes.
-- Keeps globe as the default projection and Follow as the default camera mode.
-
-## Upload instructions
-
-Upload the contents of this folder to the root of the existing `JourneyLines` GitHub repo.
-
-The repo root should look like this after upload:
-
-```text
-.github/workflows/deploy.yml
-.gitignore
-VERSION.md
-journeylines/index.html
-journeylines/package.json
-journeylines/vite.config.js
-journeylines/src/...
-```
-
-Do not upload a `package-lock.json` file for this version.
+## Known limitation
+This version emulates the Mult.dev camera behavior using D3 orthographic globe rendering. It does not yet use satellite/terrain map tiles, so it cannot fully match Mult.dev's textured terrain flyover look without adding a tile/imagery source or moving to a globe engine such as Cesium or MapLibre/Mapbox.

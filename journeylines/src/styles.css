@@ -48,7 +48,7 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 /* Globe-first polish pass */
 .map--globe .sphere { fill: transparent; stroke: rgba(180,225,255,.18); stroke-width: 1.2; }
 .globe-disc { filter: drop-shadow(0 0 42px rgba(24,226,255,.12)); }
-.atmosphere { pointer-events: none; mix-blend-mode: screen; }
+.atmosphere-rim { pointer-events: none; stroke: rgba(90, 228, 255, .22); stroke-width: 1.2; filter: drop-shadow(0 0 18px rgba(24,226,255,.12)); }
 .terrain path { fill: rgba(55, 91, 89, .86); stroke: rgba(210,245,255,.12); stroke-width: .55; }
 .map--globe .terrain path { fill: rgba(64, 104, 88, .92); stroke: rgba(219,255,241,.13); stroke-width: .5; }
 .terrain-shade path { fill: rgba(148, 128, 86, .13); stroke: transparent; filter: url(#terrainGlow); mix-blend-mode: soft-light; transform: translate(2px, -2px); }
@@ -74,4 +74,14 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
 .vehicle-shape--boat path:not(:first-child) { fill: color-mix(in srgb, var(--vehicle-color, #00e5ff), white 24%); }
 .map--globe .vehicle-shape { stroke-width: 1.55; }
 .map--globe .route.active { stroke-width: 3.6; }
-.map--globe .globe-disc, .map--globe .atmosphere { transition: r 220ms linear; }
+.map--globe .globe-disc, .map--globe .atmosphere-rim { transition: r 220ms linear; }
+
+
+/* v1.3 globe camera/icon polish */
+.map--globe .globe-disc { filter: drop-shadow(0 0 34px rgba(24,226,255,.10)); }
+.map--globe .route { stroke-width: 1.45; opacity: .64; }
+.map--globe .route.active { stroke-width: 3.2; opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+.vehicle--plane .vehicle-shape { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--vehicle-color, #00e5ff), transparent 20%)); }
+.vehicle--drive .vehicle-shape,
+.vehicle--boat .vehicle-shape,
+.vehicle--train .vehicle-shape { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--vehicle-color, #00e5ff), transparent 36%)); }
