@@ -19,10 +19,7 @@ defaults:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    env:
-      VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+    timeout-minutes: 12
 
     steps:
       - name: Checkout
@@ -34,24 +31,27 @@ jobs:
           pwd
           echo "Files in project folder:"
           ls -la
-          echo "Repo commit:"
-          echo "${{ github.sha }}"
+          echo "Repo commit: ${{ github.sha }}"
+          test -f package.json && echo "package.json found"
+          test -f ../.github/workflows/deploy.yml && echo "root workflow is present"
 
-      - name: Verify Mapbox token secret
+      - name: Verify Mapbox token secret for private route generation
+        env:
+          MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
         run: |
-          if [ -z "$VITE_MAPBOX_TOKEN" ]; then
+          if [ -z "$MAPBOX_TOKEN" ]; then
             echo "::error::VITE_MAPBOX_TOKEN is missing. Check Repo Settings → Secrets and variables → Actions → Repository secrets."
             exit 1
           fi
 
-          if [[ "$VITE_MAPBOX_TOKEN" != pk.* ]]; then
-            echo "::error::VITE_MAPBOX_TOKEN exists, but it does not start with pk. Make sure this is a Mapbox public token, not a secret token."
+          if [[ "$MAPBOX_TOKEN" != pk.* ]]; then
+            echo "::error::VITE_MAPBOX_TOKEN exists, but it does not start with pk. Use a Mapbox public token."
             exit 1
           fi
 
-          echo "VITE_MAPBOX_TOKEN is present."
-          echo "Token prefix: ${VITE_MAPBOX_TOKEN:0:3}"
-          echo "Token length: ${#VITE_MAPBOX_TOKEN}"
+          echo "VITE_MAPBOX_TOKEN is present for private build-time route generation."
+          echo "Token prefix: ${MAPBOX_TOKEN:0:3}"
+          echo "Token length: ${#MAPBOX_TOKEN}"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -61,57 +61,65 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund --registry=https://registry.npmjs.org/
 
-      - name: Write runtime config before build
+      - name: Remove old runtime config from source
         run: |
-          mkdir -p public
-          cat > public/runtime-config.js <<EOF
-          window.JOURNEYLINES_CONFIG = {
-            mapboxToken: "$VITE_MAPBOX_TOKEN",
-            tokenSource: "github-actions-secret-public-runtime-config",
-            buildSha: "${{ github.sha }}",
-            buildTime: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          };
-          EOF
+          rm -f public/runtime-config.js
+          rm -f runtime-config.js
+          echo "Checked for old runtime-config.js files before build."
+          find . -name "runtime-config.js" -print
 
-          echo "Created public/runtime-config.js"
-          grep "tokenSource" public/runtime-config.js
-          grep "buildSha" public/runtime-config.js
-
-      - name: Build
-        run: npm run build
+      - name: Generate Mapbox driving route cache privately
         env:
-          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+          MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+        run: npm run generate:routes
 
-      - name: Write runtime config directly into dist
+      - name: Verify generated route cache
         run: |
-          cat > dist/runtime-config.js <<EOF
-          window.JOURNEYLINES_CONFIG = {
-            mapboxToken: "$VITE_MAPBOX_TOKEN",
-            tokenSource: "github-actions-secret-dist-runtime-config",
-            buildSha: "${{ github.sha }}",
-            buildTime: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          };
-          EOF
+          node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('src/data/generatedRoutes.json', 'utf8'));
+          console.log('generatedRoutes source:', data.source);
+          console.log('generatedRoutes version:', data.version);
+          console.log('generatedRoutes routeCount:', data.routeCount);
+          console.log('generatedRoutes failedRouteCount:', data.failedRouteCount);
+          if (!data.routes || Object.keys(data.routes).length === 0) {
+            console.error('No generated routes were found.');
+            process.exit(1);
+          }
+          NODE
 
-          echo "Created dist/runtime-config.js"
-          grep "tokenSource" dist/runtime-config.js
-          grep "buildSha" dist/runtime-config.js
+      - name: Build without exposing token to Vite
+        run: npm run build
 
-      - name: Verify runtime config artifact
+      - name: Remove runtime config from dist
         run: |
-          if ! grep -q "pk." dist/runtime-config.js; then
-            echo "::error::dist/runtime-config.js does not contain a Mapbox public token."
-            cat dist/runtime-config.js
+          rm -f dist/runtime-config.js
+          echo "Dist root after removing runtime-config.js:"
+          ls -la dist
+          echo "Any runtime-config.js files remaining?"
+          find dist -name "runtime-config.js" -print
+
+      - name: Verify dist contains no Mapbox token or runtime config
+        env:
+          MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+        run: |
+          if find dist -name "runtime-config.js" | grep -q .; then
+            echo "::error::runtime-config.js still exists in dist. It must not be published."
+            find dist -name "runtime-config.js" -print
             exit 1
           fi
 
-          if ! grep -q "github-actions-secret-dist-runtime-config" dist/runtime-config.js; then
-            echo "::error::dist/runtime-config.js does not contain the expected tokenSource."
-            cat dist/runtime-config.js
+          if grep -R -q -F "$MAPBOX_TOKEN" dist; then
+            echo "::error::The Mapbox token was found in dist. It must not be published."
             exit 1
           fi
 
-          echo "runtime-config.js contains a Mapbox public token and expected tokenSource."
+          if grep -R -q "mapboxToken" dist; then
+            echo "::warning::Found text mapboxToken in dist. Showing locations:"
+            grep -R -n "mapboxToken" dist || true
+          fi
+
+          echo "Verified: no runtime-config.js and no Mapbox token are present in dist."
 
       - name: Publish dist to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
