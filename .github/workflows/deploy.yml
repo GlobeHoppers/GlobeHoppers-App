@@ -21,6 +21,7 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -33,11 +34,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: journeylines/package-lock.json
+
+      - name: Check project files
+        run: |
+          pwd
+          ls -la
+          node --version
+          npm --version
+          test -f package.json && echo "package.json found"
+          test -f package-lock.json && echo "package-lock.json found"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund --loglevel=verbose
 
       - name: Build
         run: npm run build
