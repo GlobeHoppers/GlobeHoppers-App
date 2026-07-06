@@ -108,10 +108,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       try { map.setProjection({ type: 'globe' }); } catch {}
       try {
         map.setFog({
-          color: '#08172a',
-          'horizon-blend': 0.08,
+          color: '#071421',
+          'horizon-blend': 0.20,
           'space-color': '#000000',
-          'star-intensity': 0.08
+          'star-intensity': 0.0
         });
       } catch {}
       addRouteSourcesAndLayers(map);
