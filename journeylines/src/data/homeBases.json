@@ -1,0 +1,6 @@
+[
+  { "id": "melbourne-fl", "name": "Melbourne, Florida", "locationId": "melbourne-fl", "start": "2012-01", "end": "2016-12" },
+  { "id": "san-diego-ca-1", "name": "San Diego, California", "locationId": "san-diego-ca", "start": "2017-01", "end": "2020-11" },
+  { "id": "los-angeles-ca", "name": "Los Angeles, California", "locationId": "los-angeles-ca", "start": "2020-12", "end": "2023-09" },
+  { "id": "san-diego-ca-2", "name": "San Diego, California", "locationId": "san-diego-ca", "start": "2023-10", "end": null }
+]

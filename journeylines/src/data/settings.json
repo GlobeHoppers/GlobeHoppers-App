@@ -1,0 +1,11 @@
+{
+  "appName": "JourneyLines",
+  "defaultTheme": "minimalDark",
+  "defaultProjection": "equalEarth",
+  "defaultCameraMode": "global",
+  "showTrails": true,
+  "trailOpacity": 0.48,
+  "trailWidth": 2.2,
+  "playbackSpeed": 1,
+  "adminClickCount": 5
+}
