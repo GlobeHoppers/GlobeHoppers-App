@@ -1,9 +1,10 @@
-# JourneyLines v2.14 — Token Workflow + Stable Pin Drop Reapply
+# JourneyLines v2.15 — Direct Pin Drop + GitHub Secret Token Hardening
 
-- Reverts drag-while-playing behavior from earlier versions by keeping playback camera ownership.
-- Re-applies a stable stylized pin drop animation that animates the inner pin/nameplate only.
-- Hardens GitHub Actions Mapbox token handling with support for either repository secret or repository variable named `VITE_MAPBOX_TOKEN`.
-- Workflow now fails clearly if the Mapbox token is not available or does not start with `pk.`.
-- Runtime config is written before build and directly into `dist/runtime-config.js` after build.
-- Mapbox route cache fallback version bumped to v2.14.
-- No `package-lock.json` is included.
+- Replaces the pin arrival animation with a direct single-phase drop.
+- Removes bounce/overshoot/reposition behavior from the pin drop.
+- Simplifies GitHub Actions token handling to read `secrets.VITE_MAPBOX_TOKEN` directly in each step.
+- Workflow now fails if the token is missing or not a Mapbox public `pk.` token.
+- `runtime-config.js` is written before build and directly into `dist/` after build.
+- Route cache version bumped to v2.15.
+- Keeps gh-pages branch deployment.
+- No package-lock.json.

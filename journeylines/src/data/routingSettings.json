@@ -7,9 +7,9 @@
     "overview": "full",
     "cacheInLocalStorage": true,
     "maxRoutesPerSession": 120,
-    "cacheVersion": "v2.14",
+    "cacheVersion": "v2.15",
     "concurrency": 4
   },
   "manualOverridesEnabled": true,
-  "notes": "v2.14 re-applies stable pin drop animation and hardens GitHub Actions runtime Mapbox token injection."
+  "notes": "v2.15 hardens GitHub secret token injection and replaces pin drop bounce with one direct drop."
 }

@@ -218,7 +218,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
-    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found. Check /JourneyLines/runtime-config.js and confirm the GitHub Action log says tokenPresent=true. If it does not, upload the root .github/workflows/deploy.yml and confirm VITE_MAPBOX_TOKEN exists as a repository secret or variable.'); return; }
+    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found. Check /JourneyLines/runtime-config.js. If it is empty, the GitHub Action did not receive the VITE_MAPBOX_TOKEN repository secret or the updated root .github/workflows/deploy.yml was not uploaded.'); return; }
     const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
     console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
@@ -647,7 +647,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.14'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.15'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }

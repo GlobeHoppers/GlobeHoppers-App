@@ -685,3 +685,18 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   75% { opacity: 1; transform: translateY(-5px) scale(.995); }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
+
+
+/* v2.15 direct single-phase pin drop: no bounce, no second reposition.
+   The outer .jl-map-pin stays anchored to the city; only the inner pill drops to translateY(0). */
+.jl-map-pin.is-dropping,
+.jl-map-pin.is-dropping .jl-map-pin-inner {
+  animation: none !important;
+}
+.jl-map-pin .jl-map-pin-inner.is-dropping {
+  animation: jl-map-pin-direct-drop-v215 0.82s cubic-bezier(.16,.84,.18,1) both !important;
+}
+@keyframes jl-map-pin-direct-drop-v215 {
+  0% { opacity: 0; transform: translate3d(0, -82px, 0) scale(.96); filter: blur(1.2px); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+}
