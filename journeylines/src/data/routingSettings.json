@@ -7,9 +7,9 @@
     "overview": "full",
     "cacheInLocalStorage": true,
     "maxRoutesPerSession": 120,
-    "cacheVersion": "v2.13",
+    "cacheVersion": "v2.14",
     "concurrency": 4
   },
   "manualOverridesEnabled": true,
-  "notes": "v2.12 hardens pin-drop animation, globe backside culling for pins/vehicles, and drag-to-pause camera ownership."
+  "notes": "v2.14 re-applies stable pin drop animation and hardens GitHub Actions runtime Mapbox token injection."
 }

@@ -218,7 +218,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   useEffect(() => {
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
-    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found in runtime-config.js, VITE_MAPBOX_TOKEN, routingSettings.json, or localStorage. Check the deployed /runtime-config.js file and the GitHub Actions workflow.'); return; }
+    if (!token) { console.warn('JourneyLines: Mapbox driving routes disabled because no Mapbox token was found. Check /JourneyLines/runtime-config.js and confirm the GitHub Action log says tokenPresent=true. If it does not, upload the root .github/workflows/deploy.yml and confirm VITE_MAPBOX_TOKEN exists as a repository secret or variable.'); return; }
     const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
     if (!candidates.length) return;
     console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
@@ -524,15 +524,27 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     }
 
     el.style.setProperty('--place-color', loc.color || color);
-    el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-name">${escapeHtml(displayNameForLocation(loc))}</span><span class="jl-map-pin-tail"></span></span>`;
     el.__jlLocation = loc;
-    // v2.12: parent handles globe anchoring/culling; inner handles the visible drop animation.
-    if (isNew) {
+
+    // v2.14: keep the parent element stable for globe anchoring, and animate only
+    // the inner pin. Do not rewrite the full DOM every frame, because that can
+    // cancel or hide the arrival/drop animation in production builds.
+    let inner = el.querySelector('.jl-map-pin-inner');
+    const displayName = displayNameForLocation(loc);
+    if (!inner) {
+      el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-name"></span><span class="jl-map-pin-tail"></span></span>`;
+      inner = el.querySelector('.jl-map-pin-inner');
+    }
+    const nameEl = el.querySelector('.jl-map-pin-name');
+    if (nameEl && nameEl.textContent !== displayName) nameEl.textContent = displayName;
+
+    if (isNew && inner) {
       droppedIdsRef.current.add(loc.id);
-      el.classList.remove('is-dropping');
-      void el.offsetWidth;
-      el.classList.add('is-dropping');
-      window.setTimeout(() => el?.classList?.remove('is-dropping'), 1150);
+      inner.classList.remove('is-dropping');
+      // Force a reflow so the drop animation restarts exactly once on arrival.
+      void inner.offsetWidth;
+      inner.classList.add('is-dropping');
+      window.setTimeout(() => inner?.classList?.remove('is-dropping'), 1250);
     }
   }
 
@@ -635,7 +647,7 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.13'; }
+function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || 'v2.14'; }
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }

@@ -1,32 +1,15 @@
-# JourneyLines Routing Notes — v2.13
+# JourneyLines Routing Notes v2.14
 
-## Mapbox token source
-JourneyLines uses a Mapbox public token for driving route geometry. In v2.13 the GitHub Actions workflow writes the token into:
+Mapbox driving routes require a public Mapbox token named `VITE_MAPBOX_TOKEN` in GitHub.
 
-`dist/runtime-config.js`
+Preferred setup:
+1. Repository → Settings → Secrets and variables → Actions.
+2. Add a repository secret named `VITE_MAPBOX_TOKEN` with your `pk.` Mapbox token.
+3. As an optional fallback, add the same value as a repository variable named `VITE_MAPBOX_TOKEN`.
+4. Upload the root `.github/workflows/deploy.yml` from this repo update. Uploading only the `journeylines/` folder will not fix token injection.
 
-The app reads tokens in this order:
-
-1. `window.JOURNEYLINES_CONFIG.mapboxToken` from `runtime-config.js`
-2. `import.meta.env.VITE_MAPBOX_TOKEN`
-3. `src/data/routingSettings.json` public token field, intentionally blank by default
-4. `localStorage.getItem('journeylines.mapboxToken')` fallback
-
-## Required GitHub Secret
-Repo → Settings → Secrets and variables → Actions → Repository secrets:
-
-`VITE_MAPBOX_TOKEN`
-
-## How to confirm after deploy
-Open:
+After deploy, open:
 
 `https://jonathanjoelneptune.github.io/JourneyLines/runtime-config.js`
 
-It should contain:
-
-`window.JOURNEYLINES_CONFIG = {"mapboxToken":"pk...."};`
-
-If it is blank, the updated `.github/workflows/deploy.yml` did not deploy or the secret is not available to the workflow.
-
-## Driving route behavior
-Driving routes use Mapbox Directions with profile `mapbox/driving` when a token is available. If the token is missing, JourneyLines falls back to manual/generic geometry and logs a console warning.
+It should contain a `pk.` token and a `tokenSource` field. If it shows an empty token, the updated workflow was not used or the GitHub secret/variable is not available to Actions.

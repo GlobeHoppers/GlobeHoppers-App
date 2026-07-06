@@ -674,3 +674,14 @@ button.big { font-size: 1.05rem; padding: .8rem 1.2rem; }
   82% { opacity: 1; transform: translateY(-2px) scale(1.00); }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
+
+/* v2.14 stable stylized pin drop: animate only the inner pin/nameplate so map anchoring remains stable. */
+.jl-map-pin .jl-map-pin-inner.is-dropping {
+  animation: jl-map-pin-inner-drop-v214 1.18s cubic-bezier(.12,.84,.18,1) both;
+}
+@keyframes jl-map-pin-inner-drop-v214 {
+  0% { opacity: 0; transform: translateY(-115px) scale(.78); filter: blur(2px); }
+  55% { opacity: 1; transform: translateY(10px) scale(1.035); filter: blur(0); }
+  75% { opacity: 1; transform: translateY(-5px) scale(.995); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
