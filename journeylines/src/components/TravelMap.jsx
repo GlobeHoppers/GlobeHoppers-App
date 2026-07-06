@@ -218,7 +218,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     // v2.26: glide faster toward the route lead point. The old smoothing was so
     // conservative that the camera could fall behind the vessel and then catch
     // up in visible steps. These values still ease, but keep the camera ahead.
-    const smoothing = scene.phase === 'settle' ? 0.012 : scene.phase === 'predeparture' ? 0.010 : scene.phase === 'takeoff' ? 0.020 : scene.phase === 'arrival' ? 0.022 : 0.019;
+    const smoothing = scene.phase === 'settle' ? 0.018 : scene.phase === 'predeparture' ? 0.014 : scene.phase === 'takeoff' ? 0.030 : scene.phase === 'arrival' ? 0.033 : 0.028;
     const camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     lastCameraRef.current = camera;
     if (!userCameraOverrideRef.current) {
@@ -558,8 +558,7 @@ function syncVisitedPoints(map, visitedLocations, sigRef) {
 }
 
 function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, color = '#00e5ff', newArrivalId = null, droppedIdsRef = { current: new Set() }) {
-  const container = containerRef.current;
-  if (!container) return;
+  if (!map) return;
   const seen = new Set();
 
   for (const loc of visitedLocations || []) {
@@ -572,16 +571,20 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       el = document.createElement('div');
       el.className = 'jl-map-pin';
       el.dataset.locationId = loc.id;
-      container.appendChild(el);
+      // Use MapLibre's marker transform for the outer wrapper. This anchors the
+      // placard to the globe on the same render path as the map and removes the
+      // projection-vs-camera wobble caused by manually setting translate3d().
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8] })
+        .setLngLat([loc.lon, loc.lat])
+        .addTo(map);
       labelsRef.current.set(loc.id, el);
+    } else if (el.__jlMarker) {
+      el.__jlMarker.setLngLat([loc.lon, loc.lat]);
     }
 
     el.style.setProperty('--place-color', loc.color || color);
     el.__jlLocation = loc;
 
-    // v2.14: keep the parent element stable for globe anchoring, and animate only
-    // the inner pin. Do not rewrite the full DOM every frame, because that can
-    // cancel or hide the arrival/drop animation in production builds.
     let inner = el.querySelector('.jl-map-pin-inner');
     const displayName = displayNameForLocation(loc);
     if (!inner) {
@@ -594,16 +597,15 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     if (isNew && inner) {
       droppedIdsRef.current.add(loc.id);
       inner.classList.remove('is-dropping');
-      // Force a reflow so the drop animation restarts exactly once on arrival.
       void inner.offsetWidth;
       inner.classList.add('is-dropping');
-      window.setTimeout(() => inner?.classList?.remove('is-dropping'), 1250);
+      window.setTimeout(() => inner?.classList?.remove('is-dropping'), 1600);
     }
   }
 
-  // Remove only locations that have not been reached in the current filtered playback.
   for (const [id, el] of labelsRef.current.entries()) {
     if (!seen.has(id)) {
+      el.__jlMarker?.remove?.();
       el.remove();
       labelsRef.current.delete(id);
       droppedIdsRef.current.delete(id);
@@ -614,21 +616,10 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
 
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
   const now = performance.now();
-  const camera = map ? {
-    lng: map.getCenter().lng,
-    lat: map.getCenter().lat,
-    zoom: map.getZoom(),
-    pitch: map.getPitch(),
-    bearing: map.getBearing()
-  } : null;
-  const last = throttleRef?.current;
-  const changedEnough = !last?.camera || !camera ||
-    Math.abs(shortestLonDelta(camera.lng - last.camera.lng)) > 0.18 ||
-    Math.abs(camera.lat - last.camera.lat) > 0.12 ||
-    Math.abs(camera.zoom - last.camera.zoom) > 0.035 ||
-    Math.abs(camera.pitch - last.camera.pitch) > 0.8;
-  if (!changedEnough && now - (last?.t || 0) < 110) return;
-  if (throttleRef) throttleRef.current = { t: now, camera };
+  // Marker positions are now owned by MapLibre. We only update opacity/culling,
+  // so this can run at a moderate cadence without causing placard wobble.
+  if (throttleRef?.current?.t && now - throttleRef.current.t < 80) return;
+  if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef);
 }
 
@@ -638,44 +629,22 @@ function refreshPersistentPinPositions(map, labelsRef) {
   const w = canvas?.clientWidth || window.innerWidth;
   const h = canvas?.clientHeight || window.innerHeight;
   const zoom = map.getZoom?.() || 1.5;
-  const visible = [];
 
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    // Use sub-pixel positioning for smooth camera motion. Whole-pixel rounding
-    // caused placards to visibly wobble as MapLibre eased the globe underneath.
-    const x = roundTo(pt.x, 0.1);
-    const y = roundTo(pt.y, 0.1);
     const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
-    const onScreen = x > -80 && x < w + 80 && y > -80 && y < h + 80;
+    const onScreen = pt.x > -110 && pt.x < w + 110 && pt.y > -110 && pt.y < h + 110;
+    // v2.27: keep historical placards, but cull anything hidden by or too close
+    // to the globe horizon. No focus-distance fade and no max-label cap.
     const visibleHemisphere = distance <= horizonCutoffDeg(zoom);
-    const focusVisible = distance <= labelFocusCutoffDeg(zoom);
-    const nearScreenEdge = x < 18 || x > w - 18 || y < 18 || y > h - 18;
-
-    // Keep the outer wrapper anchored to an integer-pixel map projection. This
-    // avoids the placard wobble caused by sub-pixel camera interpolation while
-    // the inner pin remains responsible for the one-time drop animation.
-    const tx = `translate3d(${x}px, ${y}px, 0) translate(-50%, calc(-100% - 10px))`;
-    if (el.__jlTransform !== tx) {
-      el.style.transform = tx;
-      el.__jlTransform = tx;
-    }
-
-    if (onScreen && visibleHemisphere && focusVisible && !nearScreenEdge) visible.push({ el, distance, y });
-    else el.style.opacity = '0';
+    const nearScreenEdge = pt.x < 6 || pt.x > w - 6 || pt.y < 6 || pt.y > h - 6;
+    const visible = onScreen && visibleHemisphere && !nearScreenEdge;
+    el.style.opacity = visible ? '1' : '0';
+    el.style.pointerEvents = 'none';
   }
-
-  // At far/global zooms, show mostly the local/current cluster. Pins remain in
-  // the map data, but expensive custom placards are aggressively capped.
-  const maxLabels = zoom < 1.75 ? 5 : zoom < 2.15 ? 8 : zoom < 2.8 ? 12 : zoom < 4.2 ? 18 : 38;
-  visible.sort((a, b) => a.distance - b.distance || a.y - b.y);
-  visible.forEach((item, idx) => {
-    item.el.style.opacity = idx < maxLabels ? '1' : '0';
-  });
 }
-
 
 function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 74) {
   if (!map || lon == null || lat == null) return false;
@@ -709,13 +678,15 @@ function angularDistanceFromMapCenter(map, lon, lat) {
 }
 
 function horizonCutoffDeg(zoom) {
-  // Hide overlays well before the visual horizon. A pitched globe can still
-  // project far-side points onto the screen, so labels need to be stricter than
-  // the mathematical 90-degree visible hemisphere.
-  if (zoom < 1.7) return 58;
-  if (zoom < 2.2) return 64;
-  if (zoom < 3.0) return 72;
-  return 78;
+  // v2.27: strict globe clipping. Placards should disappear before they reach
+  // the visual horizon, especially with a pitched globe, while still keeping all
+  // historical placards that are genuinely on the visible face.
+  if (zoom < 1.7) return 50;
+  if (zoom < 2.2) return 56;
+  if (zoom < 3.0) return 62;
+  if (zoom < 4.2) return 68;
+  if (zoom < 5.5) return 73;
+  return 76;
 }
 
 function labelFocusCutoffDeg(zoom) {
@@ -1035,30 +1006,32 @@ function lookAhead(distance, p, mode = 'plane') {
 function cameraLeadBias(mode, distance, phase, p) {
   if (phase === 'predeparture') return 0.04;
   if (phase === 'settle') return 0.12;
-  if (mode === 'drive') return phase === 'cruise' ? 0.82 : 0.64;
-  if (mode === 'boat' || mode === 'train') return phase === 'cruise' ? 0.74 : 0.54;
-  return phase === 'cruise' ? 0.70 : 0.42;
+  if (mode === 'drive') return phase === 'cruise' ? 0.90 : 0.72;
+  if (mode === 'boat' || mode === 'train') return phase === 'cruise' ? 0.84 : 0.64;
+  return phase === 'cruise' ? 0.78 : 0.50;
 }
 function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode = 'plane') {
   const isDrive = legMode === 'drive';
   const isBoat = legMode === 'boat';
   const isTrain = legMode === 'train';
+  // v2.27: roughly 60% closer than v2.26. Additive zoom is the correct control
+  // for map scale; +0.68 is about 1.6x closer, with drive/boat/train getting a
+  // little extra to regain the localized, screensaver-style cinematic feel.
+  const modeBoost = isDrive ? 0.95 : (isBoat || isTrain) ? 0.82 : 0.72;
 
-  if (mode === 'global') return distance > 3500 ? 1.9 : 2.75;
-  if (mode === 'continent') return distance > 3500 ? 2.65 : 4.0;
-  if (mode === 'route') return distance > 4500 ? 3.05 : distance > 1500 ? 4.0 : isDrive ? 6.2 : 5.2;
+  if (mode === 'global') return (distance > 3500 ? 1.9 : 2.75) + 0.35;
+  if (mode === 'continent') return (distance > 3500 ? 2.65 : 4.0) + 0.55;
+  if (mode === 'route') return (distance > 4500 ? 3.05 : distance > 1500 ? 4.0 : isDrive ? 6.2 : 5.2) + modeBoost;
 
   if (phase === 'predeparture') {
-    if (isDrive) return distance > 500 ? 7.25 : 7.75;
-    if (isBoat || isTrain) return distance > 500 ? 5.85 : 6.55;
-    return distance > 4500 ? 4.45 : distance > 1500 ? 5.25 : distance > 500 ? 6.15 : 6.85;
+    if (isDrive) return (distance > 500 ? 7.25 : 7.75) + modeBoost;
+    if (isBoat || isTrain) return (distance > 500 ? 5.85 : 6.55) + modeBoost;
+    return (distance > 4500 ? 4.45 : distance > 1500 ? 5.25 : distance > 500 ? 6.15 : 6.85) + modeBoost;
   }
 
   let cruise;
   let close;
   if (isDrive) {
-    // v2.26: road trips should feel regional/local, not like a continent view.
-    // Destin, Key West, Palm Springs, etc. now stay much closer to the route.
     cruise = distance > 700 ? 6.75 : distance > 250 ? 7.18 : 7.55;
     close = distance > 700 ? 7.65 : distance > 250 ? 8.05 : 8.35;
   } else if (isBoat || isTrain) {
@@ -1072,7 +1045,7 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
   const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.22 : 0;
   const settleBreath = phase === 'settle' ? 0.18 * Math.sin(settleT * Math.PI) : 0;
-  return cruise + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
+  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop - settleBreath;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;

@@ -1091,3 +1091,17 @@ body { background: #000; }
 .trip-card {
   z-index: 45;
 }
+
+
+/* v2.27 stable marker-backed placards + no historical fade */
+.maplibregl-marker.jl-map-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 100%;
+  transition: opacity .08s linear !important;
+  will-change: opacity;
+}
+.maplibregl-marker.jl-map-pin .jl-map-pin-inner {
+  transform-origin: 50% 100%;
+}

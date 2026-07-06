@@ -6,5 +6,5 @@ export function legDurationMs(miles, speed = 1) {
   else if (miles < 2000) seconds = 7;
   else if (miles < 6000) seconds = 10;
   else seconds = 13;
-  return (seconds * 1000) / s;
+  return (seconds * 1250) / s;
 }
