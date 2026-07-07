@@ -14,7 +14,7 @@ const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
 
 const MAP_STYLE = {
   version: 8,
-  name: 'JourneyLines Terrain Globe',
+  name: 'GlobeHoppers Terrain Globe',
   sources: {
     terrainImagery: {
       type: 'raster',

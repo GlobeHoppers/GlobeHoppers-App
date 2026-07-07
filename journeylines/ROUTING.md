@@ -1,4 +1,4 @@
-# JourneyLines Routing Notes
+# GlobeHoppers Routing Notes
 
 v2.36 keeps the private build-time Mapbox route cache architecture from prior versions. The Mapbox token remains in GitHub Actions and is not published to GitHub Pages.
 

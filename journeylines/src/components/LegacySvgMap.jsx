@@ -55,7 +55,7 @@ export default function TravelMap({ trips, locations, homeBases, travelers, acti
   const activeIds = new Set(active ? [active.leg.from.id, active.leg.to.id] : []);
   const vehicleHeading = active && currentPoint ? screenHeading(active.leg.from, active.leg.to, motionProgress, projection) : 0;
 
-  return <svg className={`map map--${projectionName} map--terrain-flat`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="JourneyLines travel map">
+  return <svg className={`map map--${projectionName} map--terrain-flat`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="GlobeHoppers travel map">
     <defs>
       <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       <filter id="terrainGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>

@@ -1,6 +1,6 @@
-# JourneyLines
+# GlobeHoppers
 
-JourneyLines is a public-facing animated travel-history site. It replays a lifetime of trips across a cinematic globe, then settles into a completed route web.
+GlobeHoppers is a public-facing animated travel-history site for all your hops, skips & jumps. It replays a lifetime of trips across a cinematic globe, then settles into a completed route web.
 
 ## v2.0 Renderer
 

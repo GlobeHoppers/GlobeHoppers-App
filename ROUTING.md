@@ -1,4 +1,4 @@
-# JourneyLines Routing Notes
+# GlobeHoppers Routing Notes
 
 Driving routes are generated privately during GitHub Actions from the `VITE_MAPBOX_TOKEN` repository secret and saved as route geometry. The token is not published to GitHub Pages.
 

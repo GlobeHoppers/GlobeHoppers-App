@@ -32,7 +32,7 @@ export default function AdminPanel({ trips, setTrips, locations }) {
     const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
     const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, { headers });
     const existing = getRes.ok ? await getRes.json() : null;
-    const body = { message: 'Update JourneyLines trips data', content: btoa(unescape(encodeURIComponent(JSON.stringify(trips, null, 2)))), branch: 'main' };
+    const body = { message: 'Update GlobeHoppers trips data', content: btoa(unescape(encodeURIComponent(JSON.stringify(trips, null, 2)))), branch: 'main' };
     if (existing?.sha) body.sha = existing.sha;
     const putRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, { method: 'PUT', headers, body: JSON.stringify(body) });
     if (!putRes.ok) throw new Error(await putRes.text());

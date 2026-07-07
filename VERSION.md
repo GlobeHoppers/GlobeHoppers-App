@@ -1,7 +1,7 @@
-# JourneyLines v2.35 — Home Base Layering + Distance Culling
+# GlobeHoppers v2.37 — Front-Facing Branding Rename
 
-- Home-base return arrivals no longer re-trigger the pin drop animation.
-- Home-base placards now layer above nearby regular destination placards.
-- Home-base placards use a black fill with a gray border/tail treatment.
-- Added a hard distance-based placard culling guard in addition to horizon culling.
-- This should prevent Alaska, Seoul, Tokyo, and other far-side placards from showing while focused on Europe or another distant local region.
+- Public-facing app name changed from JourneyLines to GlobeHoppers.
+- Added tagline: “All your hops, skips & jumps.”
+- Kept repository folder, deployment path, Vite base path, workflow, and localStorage keys unchanged for now.
+- Updated browser title, visible app header, about copy, README, routing notes, settings, and accessibility label.
+- No routing, animation, projection, or deployment behavior changes.

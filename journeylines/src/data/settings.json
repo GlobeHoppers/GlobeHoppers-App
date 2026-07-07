@@ -1,5 +1,6 @@
 {
-  "appName": "JourneyLines",
+  "appName": "GlobeHoppers",
+  "tagline": "All your hops, skips & jumps.",
   "defaultTheme": "minimalDark",
   "defaultProjection": "globe",
   "defaultCameraMode": "follow",

@@ -123,23 +123,23 @@ export default function App() {
 
   return <main className={`app ${isPlaying ? 'is-playing' : ''}`}>
     <header className="topbar">
-      <button className="brand" onClick={titleClick} title="JourneyLines">JourneyLines</button>
-      <div className="tagline">Animated travel history across a living world atlas</div>
+      <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
+      <div className="tagline">All your hops, skips & jumps.</div>
       <button onClick={() => setTripDrawerOpen(v => !v)}>Trips</button>
       <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
     </header>
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} />
     {!started && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
-      <h1>JourneyLines</h1>
-      <p>A living map that replays where you have been, then settles into the web of every route.</p>
+      <h1>GlobeHoppers</h1>
+      <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <button className="primary big" onClick={play}>Play Travel History</button>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => setTripDrawerOpen(v => !v)} />
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} />
     <section className="about glass">
-      <strong>About</strong> JourneyLines is an animated travel-history map that replays a lifetime of trips across a living world atlas. Five-click the title to open Admin Mode.
+      <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open Admin Mode.
     </section>
     {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} />}
   </main>;
