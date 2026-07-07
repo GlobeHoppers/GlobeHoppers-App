@@ -1,6 +1,7 @@
-# JourneyLines v2.34 — Black Vessel Stroke + Relaxed Visible Placards
+# JourneyLines v2.35 — Home Base Layering + Distance Culling
 
-- Changed imported vessel icon outline/drop treatment from white to black.
-- Relaxed placard culling for front-facing locations so nearby regional placards remain visible.
-- Removed the local focus cutoff from persistent placard visibility; placards now hide only when offscreen or behind the globe horizon.
-- Kept MapLibre `occludedOpacity: 0` and hard hidden state for true backside globe culling.
+- Home-base return arrivals no longer re-trigger the pin drop animation.
+- Home-base placards now layer above nearby regular destination placards.
+- Home-base placards use a black fill with a gray border/tail treatment.
+- Added a hard distance-based placard culling guard in addition to horizon culling.
+- This should prevent Alaska, Seoul, Tokyo, and other far-side placards from showing while focused on Europe or another distant local region.

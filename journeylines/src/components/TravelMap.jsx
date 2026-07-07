@@ -708,7 +708,10 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     if (!loc?.id) continue;
     seen.add(loc.id);
     let el = labelsRef.current.get(loc.id);
-    const isNew = loc.id === newArrivalId && !droppedIdsRef.current.has(loc.id);
+    // Only animate a drop when this location is actually becoming a new visited
+    // destination. Returning to an already-established active home base keeps the
+    // home placard visible and should not re-drop the pin.
+    const isNew = Boolean(loc.isNew && loc.id === newArrivalId && !loc.isActiveHomeBase && !droppedIdsRef.current.has(loc.id));
 
     if (!el) {
       el = document.createElement('div');
@@ -734,6 +737,9 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     el.dataset.visitCount = String(visitColors.length);
     el.dataset.homeBase = loc.isHomeBase ? 'true' : 'false';
     el.dataset.activeHomeBase = loc.isActiveHomeBase ? 'true' : 'false';
+    // Keep home-base placards visually above nearby destination pins. This is
+    // important for clustered places such as San Diego / Rosarito.
+    el.style.zIndex = loc.isHomeBase ? (loc.isActiveHomeBase ? '95' : '88') : '42';
     el.__jlLocation = loc;
 
     let inner = el.querySelector('.jl-map-pin-inner');
@@ -819,23 +825,30 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
+    const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
+    const milesFromFocus = milesFromMapCenter(map, loc.lon, loc.lat);
     const onScreen = pt.x > -130 && pt.x < w + 130 && pt.y > -130 && pt.y < h + 130;
 
-    // v2.32: single source of truth for placard culling. Do not fade at the
-    // horizon; snap fully hidden before MapLibre's globe occlusion can dim the
-    // marker and then let our styles force it bright again. This removes the
-    // dim -> bright flicker caused by competing opacity logic.
-    const baseCutoff = hardPlacardHorizonCutoffDeg(zoom);
+    // v2.35: two independent culling guards:
+    // 1) hard horizon guard so placards do not dim/reappear on the back side
+    //    of the globe, and
+    // 2) maximum distance guard so places on the far side of the visible
+    //    hemisphere, such as Tokyo/Seoul/Alaska while focused on Amsterdam, do
+    //    not remain visible just because MapLibre can still project them.
+    // The distance limits are intentionally relaxed enough to keep regional
+    // context like Chicago/Atlanta/Kentucky visible while focused on Florida.
+    const horizonCutoff = hardPlacardHorizonCutoffDeg(zoom);
+    const maxMiles = maxPlacardDistanceMiles(zoom);
     const wasVisible = el.__jlVisible === true;
-    const hysteresis = 0.8;
-    const frontSide = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
-    // v2.34: do not hide front-facing regional placards just because the
-    // camera is zoomed in. Previous versions applied a local focus cutoff and
-    // screen-edge guard here; that made nearby historical placards such as
-    // Chicago, Atlanta, and Kentucky disappear while viewing Florida. The only
-    // hard rules now are: on screen and safely on the visible globe face.
-    const visible = Boolean(onScreen && frontSide);
+    const horizonHysteresis = 1.8;
+    const milesHysteresis = 180;
+    const frontSide = wasVisible
+      ? angularDistance <= horizonCutoff + horizonHysteresis
+      : angularDistance <= horizonCutoff - horizonHysteresis;
+    const closeEnough = wasVisible
+      ? milesFromFocus <= maxMiles + milesHysteresis
+      : milesFromFocus <= maxMiles - milesHysteresis;
+    const visible = Boolean(onScreen && frontSide && closeEnough);
 
     el.classList.toggle('is-culled', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
@@ -886,6 +899,15 @@ function angularDistanceFromMapCenter(map, lon, lat) {
   }
 }
 
+function milesFromMapCenter(map, lon, lat) {
+  try {
+    const center = map.getCenter();
+    return milesBetween({ lon: center.lng, lat: center.lat }, { lon, lat });
+  } catch {
+    return 0;
+  }
+}
+
 function horizonCutoffDeg(zoom) {
   // v2.27: strict globe clipping. Placards should disappear before they reach
   // the visual horizon, especially with a pitched globe, while still keeping all
@@ -911,16 +933,29 @@ function horizonSafetyMarginDeg(zoom) {
 
 
 function hardPlacardHorizonCutoffDeg(zoom) {
-  // v2.34: relax the front-facing cutoff so placards on the visible hemisphere
-  // remain available. This keeps nearby regional placards visible while still
-  // hiding anything truly beyond the globe horizon before MapLibre can dim it.
-  if (zoom < 1.7) return 64;
-  if (zoom < 2.2) return 68;
-  if (zoom < 3.0) return 72;
-  if (zoom < 4.2) return 76;
-  if (zoom < 5.5) return 80;
-  if (zoom < 7.0) return 83;
-  return 85;
+  // v2.35: slightly tighten from v2.34. The distance guard below preserves
+  // useful regional labels, so this can focus on preventing true backside/edge
+  // bleed-through.
+  if (zoom < 1.7) return 58;
+  if (zoom < 2.2) return 62;
+  if (zoom < 3.0) return 66;
+  if (zoom < 4.2) return 70;
+  if (zoom < 5.5) return 74;
+  if (zoom < 7.0) return 78;
+  return 80;
+}
+
+function maxPlacardDistanceMiles(zoom) {
+  // Hard distance guard against far-side placards while preserving useful
+  // regional context. At closer cinematic zooms, only the current broad region
+  // should label; at wide views, allow more of the visible hemisphere.
+  if (zoom < 1.7) return 6200;
+  if (zoom < 2.2) return 5600;
+  if (zoom < 3.0) return 4700;
+  if (zoom < 4.2) return 3600;
+  if (zoom < 5.5) return 2300;
+  if (zoom < 7.0) return 1500;
+  return 950;
 }
 
 function localPlacardFocusCutoffDeg(zoom) {

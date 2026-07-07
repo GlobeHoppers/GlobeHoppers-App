@@ -1231,3 +1231,22 @@ body { background: #000; }
   border-right-color: #050607 !important;
   border-bottom-color: #050607 !important;
 }
+
+/* v2.35 home-base layering and gray-border styling */
+.jl-map-pin[data-home-base='true'] {
+  z-index: 88 !important;
+}
+.jl-map-pin[data-active-home-base='true'] {
+  z-index: 95 !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-inner {
+  border-color: #9aa4ad !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot {
+  background: #050607 !important;
+  border: 1.8px solid #9aa4ad !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-tail {
+  border-right-color: #9aa4ad !important;
+  border-bottom-color: #9aa4ad !important;
+}
