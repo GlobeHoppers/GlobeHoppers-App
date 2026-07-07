@@ -585,11 +585,11 @@
   {
     "id": "2017-030-las-vegas",
     "year": 2017,
-    "month": null,
+    "month": 7,
     "day": null,
-    "displayDate": "2017",
-    "sortKey": "2017-13-99-002",
-    "label": "Las Vegas",
+    "displayDate": "July 2017",
+    "sortKey": "2017-07-99-008",
+    "label": "Las Vegas Baby! ",
     "travelers": [
       "joey",
       "bonnie"
@@ -600,7 +600,12 @@
     "toLocationId": "las-vegas-nv",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "returnMode": "drive"
   },
   {
     "id": "2017-031-miami",
