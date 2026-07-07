@@ -1,57 +1,22 @@
 # GlobeHoppers
 
-GlobeHoppers is a public-facing animated travel-history site for all your hops, skips & jumps. It replays a lifetime of trips across a cinematic globe, then settles into a completed route web.
+**All your hops, skips & jumps.**
 
-## v2.0 Renderer
+GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 
-v2.0 pivots the default globe view to MapLibre GL JS for a more Mult.dev-like experience:
+## v3.0
 
-- cinematic globe camera
-- route-following pan, zoom, pitch, and bearing
-- takeoff, cruise, and arrival phases
-- detailed raster basemap
-- route reveal and destination pulse
-- clean SVG vehicle markers
+This version introduces **GlobeHoppers Studio**, a polished edit interface for maintaining travel history directly from the app.
 
-Equal Earth and Gall-Peters are still available as alternate SVG atlas projections.
+Studio includes:
 
-## Local development
+- Add Trip and Edit Trip modals
+- Traveler and transport icon selectors
+- Destination autocomplete
+- Optional From override
+- Additional legs for chained trips
+- Drag-and-drop reorder mode within date buckets
+- Repository settings for GitHub commits
+- A placeholder for future photo uploads
 
-```bash
-cd journeylines
-npm install --no-audit --no-fund --registry=https://registry.npmjs.org/
-npm run dev
-```
-
-## GitHub Pages deployment
-
-This repo uses a GitHub Actions workflow that builds the Vite app from `main` and publishes the built `dist` folder to the `gh-pages` branch.
-
-GitHub Pages should be configured as:
-
-- Source: Deploy from a branch
-- Branch: `gh-pages`
-- Folder: `/ root`
-
-## Repo structure
-
-```text
-.github/workflows/deploy.yml
-VERSION.md
-journeylines/
-  index.html
-  package.json
-  vite.config.js
-  src/
-```
-
-Do not commit `package-lock.json` for this version. The workflow intentionally uses `npm install` against the public npm registry.
-
-
-## v2.4
-Glide-focused playback polish: persistent visited dots, softer camera movement, arrival settle, landing ripple, vehicle grow/shrink, red home-base move routes, and first-pass waypoint routing for drive/boat/train modes.
-
-
-## Mapbox token
-
-For Mapbox Directions driving routes, create a GitHub repository secret named `VITE_MAPBOX_TOKEN` with your Mapbox public token. The GitHub Actions workflow injects it during `npm run build`. Do not commit a token into `routingSettings.json` unless you intentionally want it in the public repo.
+The repo and GitHub Pages path remain `JourneyLines` for now.

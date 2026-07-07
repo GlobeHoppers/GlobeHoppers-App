@@ -7,13 +7,14 @@ import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
 import baseTrips from './data/trips.json';
-import locations from './data/locations.json';
+import baseLocations from './data/locations.json';
 import homeBases from './data/homeBases.json';
 import travelers from './data/travelers.json';
 import settings from './data/settings.json';
 
 export default function App() {
   const [trips, setTrips] = useState(() => JSON.parse(localStorage.getItem('journeylines.trips') || 'null') || baseTrips);
+  const [locations, setLocations] = useState(() => JSON.parse(localStorage.getItem('journeylines.locations') || 'null') || baseLocations);
   const [isPlaying, setIsPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(999999);
@@ -32,6 +33,12 @@ export default function App() {
   const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
   useEffect(() => localStorage.setItem('journeylines.trips', JSON.stringify(trips)), [trips]);
+  useEffect(() => localStorage.setItem('journeylines.locations', JSON.stringify(locations)), [locations]);
+  useEffect(() => {
+    const closeStudio = () => setAdmin(false);
+    window.addEventListener('globehoppers-close-studio', closeStudio);
+    return () => window.removeEventListener('globehoppers-close-studio', closeStudio);
+  }, []);
 
   const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
   const filteredTrips = useMemo(() => sortedTrips.filter(t => {
@@ -41,7 +48,7 @@ export default function App() {
     if (filter === 'together') return hasJ && hasB;
     return true;
   }), [sortedTrips, filter]);
-  const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), []);
+  const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), []);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
   const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, travById), [filteredTrips, legs, locById, travById]);
@@ -157,9 +164,9 @@ export default function App() {
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => setTripDrawerOpen(v => !v)} />
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} />
     <section className="about glass">
-      <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open Admin Mode.
+      <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} />}
   </main>;
 }
 
