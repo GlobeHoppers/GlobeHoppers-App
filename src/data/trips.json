@@ -2666,10 +2666,10 @@
   {
     "id": "2026-127-chicago",
     "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-127",
+    "month": 2,
+    "day": 14,
+    "displayDate": "February 14, 2026",
+    "sortKey": "2026-02-14-011",
     "label": "Chicago",
     "travelers": [
       "joey",
