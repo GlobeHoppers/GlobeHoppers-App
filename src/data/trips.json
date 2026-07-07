@@ -2835,10 +2835,10 @@
   {
     "id": "2026-135-cabo",
     "year": 2026,
-    "month": null,
-    "day": null,
-    "displayDate": "2026",
-    "sortKey": "2026-135",
+    "month": 7,
+    "day": 2,
+    "displayDate": "July 2, 2026",
+    "sortKey": "2026-07-02-011",
     "label": "Cabo",
     "travelers": [
       "joey",
