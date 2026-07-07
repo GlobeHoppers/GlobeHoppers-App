@@ -27,7 +27,7 @@ const MONTH_OPTIONS = [
 ];
 const empty = {
   year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: ['joey','bonnie'], mode: 'plane',
-  roundTrip: true, fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
+  roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, onConsumedInitialEdit }) {
@@ -74,15 +74,26 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setModal('add');
   }
   function openEdit(trip) {
-    const to = locById[trip.toLocationId];
-    const routeStops = trip.route?.length ? trip.route.slice(1) : [];
+    const route = Array.isArray(trip.route) ? trip.route : [];
+    const hasRoute = route.length > 1;
+    const routeStart = hasRoute ? route[0] : null;
+    const routeDestination = hasRoute ? route[1] : null;
+    const routeEnd = hasRoute ? route[route.length - 1] : null;
+    const returnsToStart = !!(trip.roundTrip && routeStart?.locationId && routeEnd?.locationId === routeStart.locationId && route.length > 2);
+    const extraRouteStops = hasRoute ? route.slice(2, returnsToStart ? -1 : undefined) : [];
+    const to = locById[routeDestination?.locationId || trip.toLocationId];
+    const derivedReturnMode = returnsToStart ? (routeEnd?.modeFromPrevious || trip.returnMode || trip.mode || 'plane') : (trip.returnMode || trip.mode || 'plane');
     setEditingId(trip.id);
     setDraft({
       ...empty,
       ...trip,
-      overrideFrom: !!trip.fromLocationId || !!trip.route?.length,
+      returnMode: derivedReturnMode,
+      overrideFrom: !!trip.fromLocationId || !!route.length,
+      fromLocationId: routeStart?.locationId || trip.fromLocationId || null,
+      fromLocationText: routeStart?.locationId ? displayLocation(locById[routeStart.locationId]) : '',
+      toLocationId: routeDestination?.locationId || trip.toLocationId || '',
       toLocationText: to ? displayLocation(to) : (trip.toLocationName || trip.label || ''),
-      extraLegs: routeStops.slice(1).map(r => ({ locationId: r.locationId || '', locationText: displayLocation(locById[r.locationId]) || '', modeFromPrevious: r.modeFromPrevious || trip.mode || 'plane' }))
+      extraLegs: extraRouteStops.map(r => ({ locationId: r.locationId || '', locationText: displayLocation(locById[r.locationId]) || '', modeFromPrevious: r.modeFromPrevious || trip.mode || 'plane' }))
     });
     setModal('edit');
   }
@@ -111,6 +122,12 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
   function addLeg() { setDraft({ ...draft, extraLegs: [...(draft.extraLegs || []), { locationId: '', locationText: '', modeFromPrevious: draft.mode || 'plane' }] }); }
   function removeLeg(index) { setDraft({ ...draft, extraLegs: (draft.extraLegs || []).filter((_, i) => i !== index) }); }
+  function setReturnMode(mode) { setDraft({ ...draft, returnMode: mode }); }
+  function setPreviewLegMode(target, mode) {
+    if (target === 'main') setDraft({ ...draft, mode, returnMode: draft.returnMode || mode });
+    else if (target === 'return') setDraft({ ...draft, returnMode: mode });
+    else if (typeof target === 'number') setExtraLeg(target, { modeFromPrevious: mode });
+  }
 
   async function saveTripFromModal() {
     try {
@@ -334,12 +351,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onSetExtraLeg={setExtraLeg}
       onAddLeg={addLeg}
       onRemoveLeg={removeLeg}
+      onSetReturnMode={setReturnMode}
+      onSetPreviewLegMode={setPreviewLegMode}
       homeBases={homeBases}
     />}
   </section>;
 }
 
-function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg }) {
+function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
   const title = mode === 'add' ? 'Add a trip' : draft.label || draft.toLocationText || 'Edit trip';
@@ -423,6 +442,15 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
               {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
               <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
               <label className="check premium-check"><input type="checkbox" checked={!!draft.roundTrip} onChange={e => setDraft({...draft, roundTrip:e.target.checked})}/> Round trip</label>
+              {draft.roundTrip && <div className="return-mode-card">
+                <div>
+                  <span>Return home method</span>
+                  <small>Defaults to Leg 1, but can be changed for chained trips.</small>
+                </div>
+                <div className="return-mode-options">
+                  {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={(draft.returnMode || draft.mode || 'plane') === m.id ? 'is-selected' : ''} onClick={() => onSetReturnMode(m.id)}><span>{m.icon}</span>{m.label}</button>)}
+                </div>
+              </div>}
               <div className="legs-block">
                 <div className="legs-header"><strong>Additional legs</strong><button type="button" onClick={onAddLeg}>Add leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
@@ -444,7 +472,7 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
           </section>
         </div>
 
-        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} />
+        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} />
 
         {dateRangeOpen && <DateRangePopover
           draft={draft}
@@ -459,14 +487,14 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
   </div>;
 }
 
-function TripRoutePreview({ draft, locById, locs, startLocation, destination }) {
+function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode }) {
   const rows = [];
-  rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null });
-  rows.push({ label: 'Leg 1', place: displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending', mode: draft.mode || 'plane' });
+  rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null, target: null });
+  rows.push({ label: 'Leg 1', place: displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending', mode: draft.mode || 'plane', target: 'main' });
   const previewExtraLegs = (draft.extraLegs || []);
   previewExtraLegs.forEach((leg, i) => {
     const loc = locById[leg.locationId] || findLocationByText(locs, leg.locationText) || { name: leg.locationText };
-    rows.push({ label: `Leg ${i + 2}`, place: displayLocation(loc) || loc?.name || 'Destination pending', mode: leg.modeFromPrevious || draft.mode || 'plane' });
+    rows.push({ label: `Leg ${i + 2}`, place: displayLocation(loc) || loc?.name || 'Destination pending', mode: leg.modeFromPrevious || draft.mode || 'plane', target: i });
   });
   const lastExtra = previewExtraLegs.length ? previewExtraLegs[previewExtraLegs.length - 1] : null;
   const lastExtraLoc = lastExtra ? (locById[lastExtra.locationId] || findLocationByText(locs, lastExtra.locationText) || { name: lastExtra.locationText }) : null;
@@ -475,21 +503,32 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination }) 
     : previewExtraLegs.length
       ? (displayLocation(lastExtraLoc) || lastExtraLoc?.name || 'End pending')
       : (displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending');
-  const endMode = draft.roundTrip
-    ? (previewExtraLegs.length ? (lastExtra?.modeFromPrevious || draft.mode || 'plane') : (draft.mode || 'plane'))
-    : null;
-  rows.push({ label: 'End location', place: endPlace, mode: endMode });
+  const endMode = draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : null;
+  rows.push({ label: 'End location', place: endPlace, mode: endMode, target: draft.roundTrip ? 'return' : null });
   return <aside className="route-preview-card">
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
-        <span className="route-preview-icon">{r.mode ? modeIcon(r.mode) : '●'}</span>
+        <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
         <span className="route-preview-people">{travelerSummary(draft.travelers)}</span>
       </div>)}
     </div>
   </aside>;
+}
+
+function PreviewModeButton({ mode, target, onSetLegMode }) {
+  if (!mode || target == null) return <span className="route-preview-icon">●</span>;
+  const currentIndex = Math.max(0, MODE_OPTIONS.findIndex(m => m.id === mode));
+  const current = MODE_OPTIONS[currentIndex] || MODE_OPTIONS[0];
+  function cycle() {
+    const next = MODE_OPTIONS[(currentIndex + 1) % MODE_OPTIONS.length]?.id || 'plane';
+    onSetLegMode?.(target, next);
+  }
+  return <button type="button" className="route-preview-icon route-preview-icon-button" title={`Change ${current.label} leg mode`} onClick={cycle}>
+    <span>{current.icon}</span>
+  </button>;
 }
 
 function DateRangePopover({ draft, cursor, setCursor, phase, onClose, onSelectDay }) {
@@ -565,8 +604,8 @@ function normalizeTrip(draft, trips, locations, homeBases) {
       if (id) route.push({ locationId: id, modeFromPrevious: leg.modeFromPrevious || draft.mode || 'plane' });
     }
     if (draft.roundTrip && homeId && route[route.length - 1]?.locationId !== homeId) {
-      const lastMode = route[route.length - 1]?.modeFromPrevious || draft.mode || 'plane';
-      route.push({ locationId: homeId, modeFromPrevious: lastMode });
+      const returnMode = draft.returnMode || draft.mode || 'plane';
+      route.push({ locationId: homeId, modeFromPrevious: returnMode });
     }
   }
 
@@ -587,6 +626,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     travelers: draft.travelers?.length ? draft.travelers : ['joey','bonnie'],
     mode: draft.mode || 'plane',
     roundTrip: !!draft.roundTrip,
+    returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
     fromLocationId,
     toLocationId,
     route,

@@ -20,7 +20,7 @@ export function expandTrip(trip, locationsById, homeBases) {
     const home = locationsById[trip.fromLocationId || activeHomeBase(homeBases, trip)?.locationId];
     const to = locationsById[trip.toLocationId];
     route = [home, { ...to, modeFromPrevious: trip.mode }];
-    if (trip.roundTrip) route.push({ ...home, modeFromPrevious: trip.mode });
+    if (trip.roundTrip) route.push({ ...home, modeFromPrevious: trip.returnMode || trip.mode });
   }
   const legs = route.slice(1).map((to, idx) => {
     const from = route[idx];

@@ -11,3 +11,8 @@ The Studio editor now preserves scroll position across commits, supports right-c
 
 - Chained trips with Round trip enabled return to the original start location after the final additional leg.
 - The Studio preview now shows Start, Leg 1, Additional legs, and End Location in the correct order.
+
+
+## v3.6 Return-home mode
+
+Round trips now support an explicit `returnMode` field. For simple round trips, the return method defaults to Leg 1. For chained trips, the final return-home leg uses `returnMode` instead of blindly copying the previous leg. This allows routes such as plane → train → plane home.

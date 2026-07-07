@@ -219,48 +219,56 @@ function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump, onEditTr
     window.addEventListener('keydown', close);
     return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', close); };
   }, [menu]);
-  return <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
-    <div className="trip-drawer__header">
-      <div>
-        <p className="eyebrow">Timeline</p>
-        <h2>Trips</h2>
+  function openMenu(e, row) {
+    e.preventDefault();
+    e.stopPropagation();
+    const x = Math.min(e.clientX || window.innerWidth - 180, window.innerWidth - 170);
+    const y = Math.min(e.clientY || 120, window.innerHeight - 90);
+    setMenu({ x, y, row });
+  }
+  function editFromMenu() {
+    const id = menu?.row?.id;
+    setMenu(null);
+    if (id) onEditTrip?.(id);
+  }
+  return <>
+    <aside className={`trip-drawer glass ${open ? 'is-open' : ''}`} aria-hidden={!open}>
+      <div className="trip-drawer__header">
+        <div>
+          <p className="eyebrow">Timeline</p>
+          <h2>Trips</h2>
+        </div>
+        <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
       </div>
-      <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
-    </div>
-    <div className="trip-drawer__list">
-      {rows.map(row => {
-        const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
-        return <button
-          key={row.id}
-          className={`trip-drawer__row ${active ? 'is-active' : ''}`}
-          style={{ '--accent': row.color }}
-          onClick={() => onJump(row.firstIndex)}
-          onMouseDown={(e) => {
-            if (e.button === 2) {
-              e.preventDefault();
-              e.stopPropagation();
-              setMenu({ x: e.clientX, y: e.clientY, row });
-            }
-          }}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setMenu({ x: e.clientX, y: e.clientY, row });
-          }}
-        >
-          <span className="trip-drawer__date">{row.date}</span>
-          <span className="trip-drawer__main">
-            <strong>{row.title}</strong>
-            <small>{row.route}</small>
-          </span>
-          <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
-        </button>;
-      })}
-    </div>
-    {menu && <div className="trip-context-menu glass" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => { const id = menu.row.id; setMenu(null); onEditTrip?.(id); }}>Edit</button>
+      <div className="trip-drawer__list">
+        {rows.map(row => {
+          const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
+          return <div
+            key={row.id}
+            role="button"
+            tabIndex={0}
+            className={`trip-drawer__row ${active ? 'is-active' : ''}`}
+            style={{ '--accent': row.color }}
+            onClick={() => onJump(row.firstIndex)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onJump(row.firstIndex); } }}
+            onContextMenu={(e) => openMenu(e, row)}
+            title="Click to play from here. Right-click or use ⋯ to edit."
+          >
+            <span className="trip-drawer__date">{row.date}</span>
+            <span className="trip-drawer__main">
+              <strong>{row.title}</strong>
+              <small>{row.route}</small>
+            </span>
+            <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
+            <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>
+          </div>;
+        })}
+      </div>
+    </aside>
+    {menu && <div className="trip-context-menu glass" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.preventDefault()}>
+      <button onClick={editFromMenu}>Edit</button>
     </div>}
-  </aside>;
+  </>;
 }
 
 function formatLocation(loc) {
