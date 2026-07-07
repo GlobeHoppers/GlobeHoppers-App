@@ -2631,56 +2631,6 @@
     "occasion": ""
   },
   {
-    "id": "2026-137-detroit",
-    "year": 2026,
-    "month": 8,
-    "day": 1,
-    "endYear": 2026,
-    "endMonth": 8,
-    "endDay": 6,
-    "displayDate": "August 1, 2026",
-    "displayEndDate": "August 6, 2026",
-    "sortKey": "2026-08-01-012",
-    "label": "Detroit",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "detroit-mi",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null
-      },
-      {
-        "locationId": "detroit-mi",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "locationId": "seattle-wa",
-        "modeFromPrevious": "drive"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "train"
-      },
-      {
-        "locationId": "palm-springs-ca",
-        "modeFromPrevious": "drive"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
-      }
-    ],
-    "notes": "",
-    "occasion": ""
-  },
-  {
     "id": "2026-126-washington-dc",
     "year": 2026,
     "month": null,
