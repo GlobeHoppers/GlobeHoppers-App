@@ -21,7 +21,7 @@
     "endMonth": null,
     "endDay": null,
     "displayEndDate": "",
-    "returnMode": "train"
+    "returnMode": "drive"
   },
   {
     "id": "2012-001-kentucky",
