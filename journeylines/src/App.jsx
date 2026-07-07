@@ -262,15 +262,11 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
   const grouped = groupRowsByYear(rows);
   return <>
     <aside className={`trip-drawer glass ${open ? 'is-open' : ''} trip-drawer--${viewType}`} aria-hidden={!open}>
-      <div className="trip-drawer__header">
-        <div>
-          <p className="eyebrow">GlobeHoppers Studio</p>
-          <h2>Travel Timeline</h2>
-        </div>
-        <div className="drawer-header-controls">
-          <ViewTypeSelector value={viewType} onChange={onViewTypeChange} />
-          <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
-        </div>
+      <div className="trip-drawer__header drawer-header-unified">
+        <p className="eyebrow">GlobeHoppers Studio</p>
+        <ViewTypeSelector value={viewType} onChange={onViewTypeChange} />
+        <button className="drawer-close-button" onClick={() => { setMenu(null); onClose(); }}>Close</button>
+        <h2>Travel Timeline</h2>
       </div>
       <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
         {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>
@@ -305,7 +301,7 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
       <small>{row.route}</small>
     </span>
     <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
-    <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>
+    {viewType !== 'card' && <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>}
   </div>;
 }
 

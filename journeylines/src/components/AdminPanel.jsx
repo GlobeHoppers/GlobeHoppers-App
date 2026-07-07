@@ -339,16 +339,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   return <section className={`studio-shell ${closing ? 'is-closing' : ''}`}>
     <aside className={`studio-panel glass studio-panel--${viewType}`}>
-      <div className="studio-header">
-        <div>
-          <p className="eyebrow">GlobeHoppers Studio</p>
-          <h2>Edit Travel History</h2>
-          <p>Curate trips, reorder timeline entries, and commit updates directly to GitHub.</p>
-        </div>
-        <div className="drawer-header-controls">
-          <StudioViewTypeSelector value={viewType} onChange={onViewTypeChange} />
-          <button className="studio-close" onClick={requestCloseStudio}>Close</button>
-        </div>
+      <div className="studio-header drawer-header-unified">
+        <p className="eyebrow">GlobeHoppers Studio</p>
+        <StudioViewTypeSelector value={viewType} onChange={onViewTypeChange} />
+        <button className="studio-close drawer-close-button" onClick={requestCloseStudio}>Close</button>
+        <h2>Edit Travel History</h2>
       </div>
 
       <div className="studio-actions-main">
@@ -406,10 +401,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete }) {
+  const openIfCard = () => { if (!reorderMode && viewType === 'card') onEdit(trip); };
   return <div
     className={`studio-trip-row studio-trip-row--${viewType}`}
     style={{ '--accent': tripAccent(trip) }}
     draggable={reorderMode}
+    onClick={openIfCard}
+    onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
     onDragStart={() => setDragId(trip.id)}
     onDragOver={e => e.preventDefault()}
     onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
@@ -417,7 +415,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
     <span className="studio-trip-buttons">
-      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? <button className="studio-card-edit" onClick={() => onEdit(trip)}>Edit</button> : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
     </span>
   </div>;
 }
@@ -644,7 +642,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>
     <div className="route-preview-meta">
-      <span>{formatDateRangeLabel(draft) || (draft.year ? `${monthLabel(draft.month) || 'Month'} ${draft.year}` : 'Dates pending')}</span>
+      <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
       <span><b></b>{travelerSummary(draft.travelers)} · {groupNameForTravelers(draft.travelers)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
@@ -813,8 +811,9 @@ function groupNameForTravelers(travelers = []) { const hasJ = travelers.includes
 function formatDateRangeLabel(t) {
   const start = toDateInputValue(t.year, t.month, t.day);
   const end = toDateInputValue(t.endYear, t.endMonth, t.endDay);
-  if (start && end) return `${new Date(start + 'T00:00:00').toLocaleDateString()} → ${new Date(end + 'T00:00:00').toLocaleDateString()}`;
-  if (start) return new Date(start + 'T00:00:00').toLocaleDateString();
+  const fmt = { month: 'long', day: 'numeric', year: 'numeric' };
+  if (start && end) return `${new Date(start + 'T00:00:00').toLocaleDateString(undefined, fmt)} → ${new Date(end + 'T00:00:00').toLocaleDateString(undefined, fmt)}`;
+  if (start) return new Date(start + 'T00:00:00').toLocaleDateString(undefined, fmt);
   return '';
 }
 function dateKey(year, month, day) {

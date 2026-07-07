@@ -3222,3 +3222,182 @@ option {
   .studio-card-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
   .trip-card-stack { left: 18px; right: 18px; width: auto; }
 }
+
+/* GlobeHoppers v3.14 timeline drawer + modal alignment polish */
+.drawer-header-unified,
+.trip-drawer__header.drawer-header-unified,
+.studio-header.drawer-header-unified {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  grid-template-areas:
+    "eyebrow switcher close"
+    "title title title" !important;
+  gap: 8px 12px !important;
+  align-items: center !important;
+  padding-bottom: 10px !important;
+}
+.drawer-header-unified > .eyebrow { grid-area: eyebrow; margin: 0 !important; min-width: 0; white-space: nowrap; }
+.drawer-header-unified > .view-type-selector { grid-area: switcher; align-self: center !important; }
+.drawer-header-unified > .drawer-close-button,
+.drawer-header-unified > .studio-close { grid-area: close; align-self: center !important; }
+.drawer-header-unified > h2 { grid-area: title; margin: 0 !important; font-size: clamp(1.75rem, 4vw, 2.25rem) !important; line-height: .95 !important; white-space: nowrap; }
+
+/* Card view: shared denser card look for Trips + Studio */
+.trip-drawer--card .timeline-card-grid,
+.studio-trip-list--card .timeline-card-grid,
+.studio-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)) !important;
+  gap: 8px !important;
+}
+.trip-drawer--card .trip-drawer__row,
+.studio-trip-row--card {
+  min-height: 82px !important;
+  height: 82px !important;
+  padding: 9px 9px !important;
+  border-radius: 15px !important;
+  grid-template-columns: 1fr !important;
+  align-content: space-between !important;
+  cursor: pointer;
+  overflow: hidden;
+}
+.trip-drawer--card .trip-drawer__row { border: 1px solid color-mix(in srgb, var(--accent, #00e5ff), transparent 38%) !important; }
+.trip-drawer--card .trip-drawer__more { display: none !important; }
+.trip-drawer--card .trip-drawer__main strong,
+.studio-trip-row--card .studio-trip-main strong {
+  font-size: .84rem !important;
+  line-height: 1.04 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal !important;
+  overflow: hidden;
+}
+.trip-drawer--card .trip-drawer__date,
+.studio-trip-row--card .studio-trip-date {
+  font-size: .72rem !important;
+  line-height: 1.04 !important;
+  font-weight: 950 !important;
+  grid-column: auto !important;
+}
+.studio-trip-row--card .studio-trip-buttons { display: none !important; }
+
+/* Compact rows: vertically centered content with right-justified actions. */
+.studio-trip-list--compact .studio-trip-row,
+.trip-drawer--compact .trip-drawer__row {
+  min-height: 42px !important;
+  height: 42px !important;
+  align-items: center !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+.studio-trip-list--compact .studio-trip-row { grid-template-columns: 126px minmax(0,1fr) auto !important; }
+.studio-trip-list--compact .studio-trip-buttons { justify-self: end !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+.studio-trip-list--compact .studio-trip-buttons button { min-height: 28px !important; height: 28px !important; padding: 0 12px !important; }
+.studio-trip-list--compact .studio-trip-date,
+.studio-trip-list--compact .studio-trip-main,
+.trip-drawer--compact .trip-drawer__date,
+.trip-drawer--compact .trip-drawer__main { align-self: center !important; }
+
+/* Modal alignment fixes */
+.studio-form-grid--dates label,
+.bubble-select-field,
+.date-range-field { gap: 5px !important; }
+.bubble-select-field { display: grid !important; grid-template-columns: auto auto; align-items: center; column-gap: 7px; }
+.bubble-select-field .bubble-select-button { grid-column: 1 / -1; }
+.required-dot {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  transform: none !important;
+  font-size: .58rem !important;
+  padding: 2px 6px !important;
+  line-height: 1 !important;
+}
+.transport-triptype-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr) !important;
+  align-items: end !important;
+}
+.transport-choice-group,
+.trip-type-selector { min-width: 0; }
+.mode-selectors,
+.trip-type-options { min-height: 34px !important; }
+.mode-tile,
+.trip-type-tile {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 4px 10px !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+}
+.override-check { max-width: 150px !important; white-space: normal !important; line-height: 1.08 !important; text-align: left; padding-left: 12px !important; padding-right: 12px !important; }
+.date-range-field { position: relative !important; }
+.date-range-popover {
+  left: 50% !important;
+  right: auto !important;
+  top: calc(100% + 10px) !important;
+  transform: translateX(-50%) !important;
+  width: min(330px, 86vw) !important;
+  z-index: 8000 !important;
+}
+
+/* Playback queue cards: simpler queued cards, lower opacity, lighter indentation, animated changes. */
+.trip-card-stack {
+  gap: 7px !important;
+  perspective: 1200px;
+}
+.trip-card-stack .trip-card {
+  animation: gh-card-enter-v314 .34s cubic-bezier(.18,.82,.22,1) both;
+  will-change: transform, opacity;
+}
+.trip-card-stack .trip-card--stack-0 { opacity: .78 !important; }
+.trip-card-stack .trip-card--stack-1,
+.trip-card-stack .trip-card--stack-2,
+.trip-card-stack .trip-card--stack-3 {
+  opacity: .42 !important;
+  margin-left: 8px !important;
+  padding: 8px 11px !important;
+  border-radius: 15px !important;
+}
+.trip-card-stack:hover .trip-card--stack-1,
+.trip-card-stack:hover .trip-card--stack-2,
+.trip-card-stack:hover .trip-card--stack-3 { opacity: .74 !important; }
+.trip-card-stack .trip-card--stack-1 h2,
+.trip-card-stack .trip-card--stack-2 h2,
+.trip-card-stack .trip-card--stack-3 h2 { font-size: .94rem !important; margin: 2px 0 !important; }
+.trip-card-stack .trip-card--stack-1 .trip-card__eyebrow,
+.trip-card-stack .trip-card--stack-2 .trip-card__eyebrow,
+.trip-card-stack .trip-card--stack-3 .trip-card__eyebrow { display: none !important; }
+.trip-card__queued-date { margin: 0 !important; font-size: .72rem !important; color: rgba(235,248,255,.66); }
+@keyframes gh-card-enter-v314 {
+  from { opacity: 0; transform: translateY(16px) scale(.98); }
+  to { opacity: var(--card-target-opacity, .78); transform: translateY(0) scale(1); }
+}
+
+/* Placard pointer regression fix: keep the tail vertical, outside clipping, and above route lines. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin { overflow: visible !important; padding-bottom: 24px !important; z-index: 2450 !important; }
+.jl-map-pin-inner { overflow: visible !important; transform: none !important; }
+.jl-map-pin-tail {
+  left: 50% !important;
+  bottom: -15px !important;
+  width: 14px !important;
+  height: 14px !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  transform-origin: center center !important;
+  clip-path: none !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+}
+.maplibregl-marker.jl-map-pin[aria-hidden='true'],
+.jl-map-pin[aria-hidden='true'],
+.maplibregl-marker.jl-map-pin.is-culled,
+.jl-map-pin.is-culled { opacity: 0 !important; visibility: hidden !important; display: none !important; }
+.jl-vehicle-overlay { z-index: 2600 !important; }
+
+@media (max-width: 1000px) {
+  .transport-triptype-row { grid-template-columns: 1fr !important; }
+  .drawer-header-unified > h2 { white-space: normal; }
+}

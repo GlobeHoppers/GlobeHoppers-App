@@ -1,15 +1,12 @@
-# GlobeHoppers v3.13 — Cinematic Cards + Studio Density Polish
+# GlobeHoppers v3.14 — Timeline Drawer + Modal Alignment Polish
 
-- Added a four-card active trip stack that appears only during active playback.
-- Current trip card now shows trip position, trip-of-year context, and visit count.
-- Next three trips appear beneath the active trip and brighten on hover.
-- Added a subtle airplane landing flourish: aircraft pitches down and shrinks on approach.
-- Tightened Studio modal spacing while keeping travelers on their own row.
-- Mode of Transportation and Trip Type now share the compact return-method tile proportions.
-- Trip Preview now includes date, traveler/group color, and notes/occasion context.
-- Joey + Bonnie traveler selection lights switch to the group cyan color.
-- Drawer header layout is consistent between Travel Timeline and Edit Travel History.
-- Compact timeline view gives the date column more breathing room.
-- Card view is denser, with up to six cards per row and Edit buttons in Studio cards.
-- Play Travel History closes open Trips/Studio menus before playback starts.
-- Map placards are layered higher and given additional pointer clearance to avoid tail clipping.
+- Standardized Trips and Edit Travel History drawer headers.
+- Trips card view now matches the Studio card look and removes the visible ellipsis button while keeping right-click edit.
+- Studio card view opens Edit Trip directly when a card is clicked or right-clicked.
+- Compact rows are vertically centered with right-justified actions.
+- Mode of Transportation and Trip Type use matching compact tile sizing on the same row.
+- Trip preview date formatting now uses Month Day, Year and omits placeholder month text when no month is selected.
+- Required pills are aligned inline with Year and Month labels.
+- Date range calendar is anchored under the Trip Dates control.
+- Queued playback cards are more compact and secondary, with simpler year/title content and entry animation.
+- Map placard pointer clipping/tilt regression was tightened with a dedicated vertical tail treatment.

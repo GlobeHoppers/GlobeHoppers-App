@@ -18,8 +18,7 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
         <p className="trip-card__stats">Trip {activeRow?.totalIndex || '—'} of {activeRow?.totalTrips || '—'} · {activeRow?.year ? `Trip ${activeRow.tripOfYear || '—'} of ${activeRow.year}` : ''}{activeRow?.visitCount ? ` · Visit #${activeRow.visitCount}` : ''}</p>
         {trip.notes && <p className="trip-card__notes">{trip.notes}</p>}
       </> : <>
-        <p>{row.mode} · {row.traveler}</p>
-        <p className="trip-card__stats">Trip {row.totalIndex} of {row.totalTrips}{row.visitCount ? ` · Visit #${row.visitCount}` : ''}</p>
+        <p className="trip-card__queued-date">{row.date}</p>
       </>}
     </article>)}
   </aside>;
