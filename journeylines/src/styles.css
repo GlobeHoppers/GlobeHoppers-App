@@ -4052,3 +4052,36 @@ option {
   transform-style: preserve-3d !important;
   filter: drop-shadow(0 8px 5px rgba(0,0,0,.38));
 }
+
+
+/* GlobeHoppers v3.23 playback pause, globe overview, and jump transition polish */
+.timeline-jump-fade {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6000;
+  transition: opacity 120ms ease;
+}
+.timeline-jump-fade.is-active {
+  opacity: 1;
+}
+.trip-drawer,
+.studio-shell,
+.studio-panel {
+  overscroll-behavior: contain !important;
+}
+.trip-drawer__list,
+.studio-trip-list {
+  overscroll-behavior: contain !important;
+  contain: paint !important;
+}
+
+/* Extra visual attitude on the airplane image itself, so takeoff is visible. */
+.jl-vehicle-overlay[data-mode='plane'] .jl-vehicle-img,
+.jl-vehicle-overlay[data-mode='move'] .jl-vehicle-img {
+  transform-origin: 50% 64% !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: visible !important;
+}

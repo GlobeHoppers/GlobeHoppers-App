@@ -34,6 +34,7 @@ export default function App() {
   const [timelineView, setTimelineView] = useState(() => localStorage.getItem('globehoppers.timelineView') || 'expanded');
   const [showHero, setShowHero] = useState(true);
   const [globeOverview, setGlobeOverview] = useState(false);
+  const [jumpFade, setJumpFade] = useState(false);
   const [addTripNoun] = useState(() => ['Hop', 'Skip', 'Jump'][Math.floor(Math.random() * 3)]);
   const [resetNonce, setResetNonce] = useState(0);
   const clickRef = useRef(0);
@@ -51,6 +52,7 @@ export default function App() {
       setAdmin(false);
       if (resumeAfterStudioRef.current) {
         resumeAfterStudioRef.current = false;
+        tRef.current.last = null;
         setIsPlaying(true);
       }
     };
@@ -103,7 +105,7 @@ export default function App() {
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); tRef.current.last = null; };
   }, [isPlaying, activeIndex, legs, speed]);
 
   function play() {
@@ -147,6 +149,7 @@ export default function App() {
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
+    tRef.current.last = null;
     setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
@@ -158,10 +161,11 @@ export default function App() {
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
+    tRef.current.last = null;
     setIsPlaying(false);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-open-new-trip')), 80);
   }
-  function pause() { setIsPlaying(false); }
+  function pause() { tRef.current.last = null; setIsPlaying(false); }
   function viewGlobe() {
     setAdmin(false);
     setTripDrawerOpen(false);
@@ -188,18 +192,26 @@ export default function App() {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
-    const selectedLeg = legs[safeIndex]?.leg;
-    const dur = legDurationMs(selectedLeg?.miles || 500, speed);
-    if (selectedLeg?.from) {
-      window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
-        detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode }
-      }));
-    }
-    setStarted(true);
-    setIsPlaying(Boolean(autoPlay));
-    setActiveIndex(safeIndex);
-    setLegProgress(safeProgress);
-    tRef.current = { last: null, elapsed: safeProgress * dur };
+    const applyJump = () => {
+      const selectedLeg = legs[safeIndex]?.leg;
+      const dur = legDurationMs(selectedLeg?.miles || 500, speed);
+      if (selectedLeg?.from) {
+        window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
+          detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode }
+        }));
+      }
+      setGlobeOverview(false);
+      setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
+      setStarted(true);
+      setIsPlaying(Boolean(autoPlay));
+      setActiveIndex(safeIndex);
+      setLegProgress(safeProgress);
+      tRef.current = { last: null, elapsed: safeProgress * dur };
+    };
+
+    setJumpFade(true);
+    window.setTimeout(applyJump, 115);
+    window.setTimeout(() => setJumpFade(false), 360);
   }
   function seekTimeline(fraction) {
     if (!legs.length) return;
@@ -237,6 +249,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
+    <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>

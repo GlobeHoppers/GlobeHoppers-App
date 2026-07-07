@@ -188,6 +188,20 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     } catch { resetAnimatingRef.current = false; }
   }, [resetNonce, mapReady]);
 
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !globeOverview) return;
+    try {
+      userCameraOverrideRef.current = false;
+      resetAnimatingRef.current = true;
+      lastCameraRef.current = null;
+      map.stop();
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
+    } catch { resetAnimatingRef.current = false; }
+  }, [globeOverview, mapReady]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -1457,10 +1471,10 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
   const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.70) / 0.30)));
-  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.24)));
-  // More pronounced aircraft attitude: nose-high on takeoff, nose-down/tail-up
-  // on landing. This applies at home bases and normal destinations alike.
-  return Math.round((landing * 68 - takeoff * 48) * 10) / 10;
+  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.30)));
+  // Pronounced aircraft attitude: nose-high on takeoff, nose-down/tail-up on landing.
+  // Takeoff is intentionally cranked up to match the visible landing flourish.
+  return Math.round((landing * 72 - takeoff * 78) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
