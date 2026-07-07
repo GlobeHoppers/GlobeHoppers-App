@@ -1,13 +1,13 @@
-# GlobeHoppers v3.16
+# GlobeHoppers v3.17
 
-Interaction and UI polish update:
-- fixed Trips drawer expanded row layout/text regression
-- matched Trips row left-edge shading to Edit Trips
-- clicking the map now animates Edit Trips closed
-- added View Globe hero action and globe/play topbar actions
-- moved advanced playback controls behind a 3-dot menu
-- hidden placards while in spinning globe view
-- lowered placards closer to the location marker and restored pin-drop motion
-- home-base placards now use a home icon
-- enhanced year section bars in card mode
-- package intentionally omits src/data/trips.json to avoid overwriting user-edited trip history
+Queue navigation, placard, and camera polish:
+- queued trip cards are clickable and jump directly to that trip
+- added a timeline arrow under the queued cards
+- top-right play button becomes pause while playing
+- play buttons use the same intro launch behavior
+- home placard arrow now has a gray border
+- restored stronger arrival pin-drop animation
+- added 5-second hidden settle period for edge/far-side placards to reduce flicker
+- compact Studio rows push Edit/Delete controls farther right
+- car follow camera is pulled back slightly to help keep the vehicle onscreen
+- package intentionally omits src/data/trips.json and package-lock.json

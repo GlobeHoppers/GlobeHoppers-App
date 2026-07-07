@@ -1,7 +1,7 @@
 import { displayDate } from '../utils/dateUtils.js';
 import { routeMiles } from '../utils/distanceUtils.js';
 
-export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [] }) {
+export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [], onJumpToTrip, onOpenTrips }) {
   if (!trip || !expanded || !isPlaying) return null;
   const miles = Math.round(routeMiles(expanded.route));
   const mode = trip.mode === 'mixed' ? 'Mixed route' : capitalize(trip.mode || 'plane');
@@ -9,18 +9,30 @@ export default function TripCard({ trip, expanded, traveler, isPlaying, rows = [
   const activeRow = rows[0];
   const stack = rows.length ? rows : [{ title: trip.label, date: displayDate(trip), mode, traveler: traveler?.name || 'Travel', color: traveler?.color || '#00e5ff' }];
   return <aside className="trip-card-stack" style={{ '--accent': traveler?.color || '#00e5ff' }}>
-    {stack.map((row, index) => <article key={`${row.id || row.title}-${index}`} className={`trip-card trip-card--stack-${index}`} style={{ '--accent': row.color || traveler?.color || '#00e5ff' }}>
-      <div className="trip-card__eyebrow">{index === 0 ? displayDate(trip) : (String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date)}</div>
-      <h2>{index === 0 ? trip.label : row.title}</h2>
-      {index === 0 ? <>
-        <p>{mode} · {returnText} · {miles.toLocaleString()} miles</p>
-        <p className="trip-card__traveler">{traveler?.name || 'Travel'}</p>
-        <p className="trip-card__stats">Trip {activeRow?.totalIndex || '—'} of {activeRow?.totalTrips || '—'} · {activeRow?.year ? `Trip ${activeRow.tripOfYear || '—'} of ${activeRow.year}` : ''}{activeRow?.visitCount ? ` · ${ordinal(activeRow.visitCount)} visit to ${activeRow.visitDestination || trip.label}` : ''}</p>
-        {trip.notes && <p className="trip-card__notes">{trip.notes}</p>}
-      </> : <>
-        <p className="trip-card__queued-date">{String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date}</p>
-      </>}
-    </article>)}
+    {stack.map((row, index) => {
+      const queued = index > 0;
+      const CardTag = queued ? 'button' : 'article';
+      return <CardTag
+        key={`${row.id || row.title}-${index}`}
+        type={queued ? 'button' : undefined}
+        className={`trip-card trip-card--stack-${index} ${queued ? 'trip-card--queued-clickable' : ''}`}
+        style={{ '--accent': row.color || traveler?.color || '#00e5ff' }}
+        onClick={queued ? () => onJumpToTrip?.(row.firstIndex) : undefined}
+        title={queued ? `Jump to ${row.title}` : undefined}
+      >
+        <div className="trip-card__eyebrow">{index === 0 ? displayDate(trip) : (String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date)}</div>
+        <h2>{index === 0 ? trip.label : row.title}</h2>
+        {index === 0 ? <>
+          <p>{mode} · {returnText} · {miles.toLocaleString()} miles</p>
+          <p className="trip-card__traveler">{traveler?.name || 'Travel'}</p>
+          <p className="trip-card__stats">Trip {activeRow?.totalIndex || '—'} of {activeRow?.totalTrips || '—'} · {activeRow?.year ? `Trip ${activeRow.tripOfYear || '—'} of ${activeRow.year}` : ''}{activeRow?.visitCount ? ` · ${ordinal(activeRow.visitCount)} visit to ${activeRow.visitDestination || trip.label}` : ''}</p>
+          {trip.notes && <p className="trip-card__notes">{trip.notes}</p>}
+        </> : <>
+          <p className="trip-card__queued-date">{String(row.year || row.date || '').match(/\d{4}/)?.[0] || row.date}</p>
+        </>}
+      </CardTag>;
+    })}
+    <button type="button" className="trip-card-stack__timeline-link" onClick={onOpenTrips} title="Open Travel Timeline">←</button>
   </aside>;
 }
 function capitalize(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }

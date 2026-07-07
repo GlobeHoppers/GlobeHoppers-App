@@ -189,7 +189,7 @@ export default function App() {
       <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Trips</button>
       <button className="topbar-pill" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
-      <button className="topbar-pill topbar-icon-pill" title="Play Travel History" onClick={play}>▶</button>
+      <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
     <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
@@ -202,7 +202,7 @@ export default function App() {
         <button className="secondary big" onClick={viewGlobe}>View Globe</button>
       </div>
     </section>}
-    <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} />
+    <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">

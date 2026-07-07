@@ -105,6 +105,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
   const tilePreloadRef = useRef(new Set());
   const lastActiveRouteUpdateRef = useRef(0);
   const labelRefreshThrottleRef = useRef({ t: 0, camera: null });
+  const labelHiddenUntilRef = useRef(new Map());
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -233,7 +234,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       updateAirArcOverlay(map, airArcRef.current, state.active, state.scene, state.color);
       const destPt = state.active?.leg?.to ? map.project([state.active.leg.to.lon, state.active.leg.to.lat]) : null;
       if (destPt) updatePulseOverlay(pulseRef.current, destPt, state.color, state.scene?.pulseActive);
-      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef);
+      throttledRefreshPersistentPinPositions(map, persistentLabelElsRef, labelRefreshThrottleRef, labelHiddenUntilRef);
     };
     map.on('move', refresh);
     map.on('render', refresh);
@@ -793,7 +794,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     // Only animate a drop when this location is actually becoming a new visited
     // destination. Returning to an already-established active home base keeps the
     // home placard visible and should not re-drop the pin.
-    const isNew = Boolean(loc.isNew && loc.id === newArrivalId && !loc.isActiveHomeBase && !droppedIdsRef.current.has(loc.id));
+    const isNew = Boolean(loc.id === newArrivalId && !loc.isActiveHomeBase && !droppedIdsRef.current.has(loc.id));
 
     if (!el) {
       el = document.createElement('div');
@@ -802,7 +803,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8], occludedOpacity: 0 })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -2], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
@@ -819,6 +820,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     el.dataset.visitCount = String(visitColors.length);
     el.dataset.homeBase = loc.isHomeBase ? 'true' : 'false';
     el.dataset.activeHomeBase = loc.isActiveHomeBase ? 'true' : 'false';
+    el.classList.toggle('is-home-base', Boolean(loc.isHomeBase));
     // Keep home-base placards visually above nearby destination pins. This is
     // important for clustered places such as San Diego / Rosarito.
     el.style.zIndex = loc.isHomeBase ? (loc.isActiveHomeBase ? '1950' : '1900') : '1800';
@@ -827,13 +829,13 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
     let inner = el.querySelector('.jl-map-pin-inner');
     const displayName = displayNameForLocation(loc);
     if (!inner) {
-      el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span></span>`;
+      el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"><span class="jl-map-pin-home-icon">⌂</span></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span></span>`;
       inner = el.querySelector('.jl-map-pin-inner');
     } else if (!el.querySelector('.jl-map-pin-ticks')) {
       // Upgrade older live DOM nodes to the v2.30 visit-tick structure without
       // recreating the outer MapLibre marker. This avoids placard wobble/reset.
       const nameText = el.querySelector('.jl-map-pin-name')?.textContent || displayName;
-      inner.innerHTML = `<span class="jl-map-pin-dot"></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span>`;
+      inner.innerHTML = `<span class="jl-map-pin-dot"><span class="jl-map-pin-home-icon">⌂</span></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span>`;
       const upgradedName = el.querySelector('.jl-map-pin-name');
       if (upgradedName) upgradedName.textContent = nameText;
     }
@@ -858,7 +860,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       droppedIdsRef.current.delete(id);
     }
   }
-  refreshPersistentPinPositions(map, labelsRef);
+  refreshPersistentPinPositions(map, labelsRef, null, null);
 }
 
 function updateVisitTicks(container, visitColors = []) {
@@ -887,16 +889,16 @@ function updateVisitTicks(container, visitColors = []) {
   container.__jlTickColors = colors;
 }
 
-function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef) {
+function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, hiddenUntilRef) {
   const now = performance.now();
   // Marker positions are now owned by MapLibre. We only update opacity/culling,
   // so this can run at a moderate cadence without causing placard wobble.
   if (throttleRef?.current?.t && now - throttleRef.current.t < 80) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
-  refreshPersistentPinPositions(map, labelsRef);
+  refreshPersistentPinPositions(map, labelsRef, hiddenUntilRef, throttleRef);
 }
 
-function refreshPersistentPinPositions(map, labelsRef) {
+function refreshPersistentPinPositions(map, labelsRef, hiddenUntilRef, throttleRef) {
   if (!map || !labelsRef?.current) return;
   const canvas = map.getCanvas();
   const w = canvas?.clientWidth || window.innerWidth;
@@ -930,7 +932,17 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const closeEnough = wasVisible
       ? milesFromFocus <= maxMiles + milesHysteresis
       : milesFromFocus <= maxMiles - milesHysteresis;
-    const visible = Boolean(onScreen && frontSide && closeEnough);
+    const rawVisible = Boolean(onScreen && frontSide && closeEnough);
+    const now = performance.now();
+    const hiddenUntil = hiddenUntilRef?.current?.get?.(loc.id) || 0;
+    let visible = rawVisible && now >= hiddenUntil;
+
+    if (!rawVisible) {
+      hiddenUntilRef?.current?.set?.(loc.id, now + 5000);
+      visible = false;
+    } else if (visible) {
+      hiddenUntilRef?.current?.delete?.(loc.id);
+    }
 
     el.classList.toggle('is-culled', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
@@ -1379,7 +1391,7 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   // v2.27: roughly 60% closer than v2.26. Additive zoom is the correct control
   // for map scale; +0.68 is about 1.6x closer, with drive/boat/train getting a
   // little extra to regain the localized, screensaver-style cinematic feel.
-  const modeBoost = isDrive ? 1.08 : (isBoat || isTrain) ? 0.92 : 0.82;
+  const modeBoost = isDrive ? 0.74 : (isBoat || isTrain) ? 0.92 : 0.82;
 
   if (mode === 'global') return (distance > 3500 ? 1.9 : 2.75) + 0.35;
   if (mode === 'continent') return (distance > 3500 ? 2.65 : 4.0) + 0.55;
@@ -1394,8 +1406,10 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
   let cruise;
   let close;
   if (isDrive) {
-    cruise = distance > 700 ? 6.95 : distance > 250 ? 7.38 : 7.75;
-    close = distance > 700 ? 8.15 : distance > 250 ? 8.58 : 8.88;
+    // v3.17: pull back slightly for car follow mode so the vehicle stays on-screen
+    // instead of the camera feeling like it is chasing from too close.
+    cruise = distance > 700 ? 6.55 : distance > 250 ? 6.95 : 7.25;
+    close = distance > 700 ? 7.55 : distance > 250 ? 7.88 : 8.12;
   } else if (isBoat || isTrain) {
     cruise = distance > 1500 ? 4.10 : distance > 500 ? 5.38 : 6.28;
     close = distance > 1500 ? 5.35 : distance > 500 ? 6.52 : 7.32;
