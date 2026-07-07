@@ -11,7 +11,7 @@ const TRAVELER_OPTIONS = [
   { id: 'bonnie', label: 'Bonnie', color: '#ff4fd8' }
 ];
 const MONTH_OPTIONS = [
-  { value: '', label: 'Unknown month' },
+  { value: '', label: 'Choose month' },
   { value: 1, label: 'January' },
   { value: 2, label: 'February' },
   { value: 3, label: 'March' },
@@ -95,6 +95,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function saveTripFromModal() {
     try {
       setBusy(true);
+      if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
       setTrips(nextTrips);
@@ -316,11 +317,34 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
   const title = mode === 'add' ? 'Add a trip' : draft.label || draft.toLocationText || 'Edit trip';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
+  const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
+  const effectiveDestination = locById[draft.toLocationId] || findLocationByText(locs, draft.toLocationText) || (draft.toLocationText ? { name: draft.toLocationText } : null);
   const yearOptions = buildYearOptions(locs, draft.year);
-  const startDateValue = toDateInputValue(draft.year, draft.month, draft.day);
-  const endDateValue = toDateInputValue(draft.endYear, draft.endMonth, draft.endDay);
+  const dateRangeLabel = formatDateRangeLabel(draft);
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [rangePhase, setRangePhase] = useState('start');
+  const [calendarCursor, setCalendarCursor] = useState(() => ({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || new Date().getMonth() + 1 }));
+
+  function selectCalendarDay(day) {
+    const selected = { year: calendarCursor.year, month: calendarCursor.month, day };
+    if (rangePhase === 'start') {
+      setDraft({ ...draft, ...selected, endYear: null, endMonth: null, endDay: null });
+      setRangePhase('end');
+    } else {
+      const startKey = dateKey(draft.year, draft.month, draft.day);
+      const endKey = dateKey(selected.year, selected.month, selected.day);
+      if (startKey && endKey && endKey < startKey) {
+        setDraft({ ...draft, ...selected, endYear: draft.year || selected.year, endMonth: draft.month || selected.month, endDay: draft.day || selected.day });
+      } else {
+        setDraft({ ...draft, endYear: selected.year, endMonth: selected.month, endDay: selected.day });
+      }
+      setDateRangeOpen(false);
+      setRangePhase('start');
+    }
+  }
+
   return <div className="studio-modal-backdrop">
-    <div className="studio-modal glass">
+    <div className="studio-modal glass studio-modal--wide">
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
@@ -335,73 +359,120 @@ function TripModal({ mode, draft, setDraft, busy, locs, locById, homeBases, onCl
 
         <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
           <label className="title-field">Trip title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
-          <label>Year<select value={draft.year || ''} onChange={e => setDraft({...draft, year:Number(e.target.value)})}>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></label>
-          <label>Month<select value={draft.month || ''} onChange={e => setDraft({...draft, month:e.target.value ? Number(e.target.value) : null, day:e.target.value ? draft.day : null})}>{MONTH_OPTIONS.map(m => <option key={m.value || 'unknown'} value={m.value}>{m.label}</option>)}</select></label>
-          <label>Start date<input type="date" value={startDateValue} onChange={e => setDraft({...draft, ...datePartsFromInput(e.target.value)})} /></label>
-          <label>End date<input type="date" value={endDateValue} onChange={e => setDraft({...draft, ...datePartsFromInput(e.target.value, 'end')})} /></label>
+          <label>Year<select className={!draft.year ? 'needs-choice' : ''} value={draft.year || ''} onChange={e => setDraft({...draft, year:Number(e.target.value)})}><option value="">Choose year</option>{yearOptions.map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+          <label>Month<select className={!draft.month ? 'needs-choice' : ''} value={draft.month || ''} onChange={e => setDraft({...draft, month:e.target.value ? Number(e.target.value) : null, day:e.target.value ? draft.day : null})}>{MONTH_OPTIONS.map(m => <option key={m.value || 'choose'} value={m.value}>{m.label}</option>)}</select></label>
+          <label className="date-range-field">Trip dates<button type="button" className="date-range-button" onClick={() => { setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose start and end dates'}<span>▾</span></button></label>
         </div>
       </div>
 
-      <div className="studio-modal-scroll-content">
-        <section className="studio-pick-section">
-          <h3>Travelers</h3>
-          <div className="pill-selectors">
-            {TRAVELER_OPTIONS.map(t => <button key={t.id} type="button" className={`traveler-pill ${draft.travelers?.includes(t.id) ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span></span>{t.label}</button>)}
-          </div>
-        </section>
+      <div className="studio-modal-scroll-content studio-modal-layout">
+        <div className="studio-modal-maincol">
+          <section className="studio-pick-section compact-section">
+            <h3>Travelers</h3>
+            <div className="pill-selectors">
+              {TRAVELER_OPTIONS.map(t => <button key={t.id} type="button" className={`traveler-pill ${draft.travelers?.includes(t.id) ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span></span>{t.label}</button>)}
+            </div>
+          </section>
 
-        <section className="studio-pick-section">
-          <h3>Travel mode</h3>
-          <div className="mode-selectors">
-            {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
-          </div>
-        </section>
+          <section className="studio-pick-section compact-section">
+            <h3>Travel mode</h3>
+            <div className="mode-selectors">
+              {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
+            </div>
+          </section>
 
-        <section className="studio-pick-section">
-          <h3>Route</h3>
-          <div className="route-form">
-            <div className="default-start-row">
-              <div className="default-start-card">
-                <span>Start location</span>
-                <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
-                <small>Auto-derived from trip date and active home base</small>
+          <section className="studio-pick-section route-section compact-section">
+            <h3>Route</h3>
+            <div className="route-form">
+              <div className="default-start-row">
+                <div className="default-start-card">
+                  <span>Start location</span>
+                  <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
+                  <small>Auto-derived from trip date and active home base</small>
+                </div>
+                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start</label>
               </div>
-              <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start</label>
+              {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
+              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
+              <label className="check premium-check"><input type="checkbox" checked={!!draft.roundTrip} onChange={e => setDraft({...draft, roundTrip:e.target.checked})}/> Round trip</label>
+              <div className="legs-block">
+                <div className="legs-header"><strong>Additional legs</strong><button type="button" onClick={onAddLeg}>Add leg</button></div>
+                {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
+                  <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '' })} matches={filterLocations(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
+                </div>)}
+              </div>
             </div>
-            {draft.overrideFrom && <AutocompleteField label="From" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />}
-            <AutocompleteField label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
-            <label className="check premium-check"><input type="checkbox" checked={!!draft.roundTrip} onChange={e => setDraft({...draft, roundTrip:e.target.checked})}/> Round trip</label>
-            <div className="legs-block">
-              <div className="legs-header"><strong>Additional legs</strong><button type="button" onClick={onAddLeg}>Add leg</button></div>
-              {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
-                <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '' })} matches={filterLocations(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
-                <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
-              </div>)}
-            </div>
+          </section>
+
+          <div className="studio-form-grid single compact-section">
+            <label>Notes<textarea value={draft.notes || ''} onChange={e => setDraft({...draft, notes:e.target.value})} placeholder="Vacation, work trip, birthday, etc." /></label>
           </div>
-        </section>
 
-        <div className="studio-form-grid single">
-          <label>Notes<textarea value={draft.notes || ''} onChange={e => setDraft({...draft, notes:e.target.value})} placeholder="Vacation, work trip, birthday, etc." /></label>
+          <section className="photo-placeholder compact-section">
+            <button type="button" disabled><span>＋</span> Upload photos</button>
+            <p>Photo uploads are reserved for the next media pass.</p>
+          </section>
         </div>
 
-        <section className="photo-placeholder">
-          <button type="button" disabled><span>＋</span> Upload photos</button>
-          <p>Photo uploads are reserved for the next media pass.</p>
-        </section>
+        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} />
 
-        <div className="studio-modal-actions">
-          <button onClick={onClose}>Cancel</button>
-          <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save and commit'}</button>
-        </div>
+        {dateRangeOpen && <DateRangePopover
+          draft={draft}
+          cursor={calendarCursor}
+          setCursor={setCalendarCursor}
+          phase={rangePhase}
+          onClose={() => setDateRangeOpen(false)}
+          onSelectDay={selectCalendarDay}
+        />}
       </div>
     </div>
   </div>;
 }
 
-function AutocompleteField({ label, value, onChange, matches, onChoose, compact }) {
-  return <label className={`autocomplete-field ${compact ? 'compact' : ''}`}>{label}
+function TripRoutePreview({ draft, locById, locs, startLocation, destination }) {
+  const rows = [];
+  rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null });
+  rows.push({ label: 'Leg 1', place: displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending', mode: draft.mode || 'plane' });
+  (draft.extraLegs || []).filter(l => l.locationId || l.locationText).forEach((leg, i) => {
+    const loc = locById[leg.locationId] || findLocationByText(locs, leg.locationText) || { name: leg.locationText };
+    rows.push({ label: `Leg ${i + 2}`, place: displayLocation(loc) || loc?.name || 'Destination pending', mode: leg.modeFromPrevious || draft.mode || 'plane' });
+  });
+  if (draft.roundTrip && !(draft.extraLegs || []).some(l => l.locationId || l.locationText)) rows.push({ label: 'End location', place: displayLocation(startLocation) || startLocation?.name || 'Return to start', mode: draft.mode || 'plane' });
+  return <aside className="route-preview-card">
+    <p className="eyebrow">Trip preview</p>
+    <h3>{draft.label || destination?.name || 'New trip'}</h3>
+    <div className="route-preview-list">
+      {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
+        <span className="route-preview-icon">{r.mode ? modeIcon(r.mode) : '●'}</span>
+        <div><strong>{r.label}</strong><small>{r.place}</small></div>
+        <span className="route-preview-people">{travelerSummary(draft.travelers)}</span>
+      </div>)}
+    </div>
+  </aside>;
+}
+
+function DateRangePopover({ draft, cursor, setCursor, phase, onClose, onSelectDay }) {
+  const days = calendarDays(cursor.year, cursor.month);
+  const monthName = new Date(cursor.year, cursor.month - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const startKey = dateKey(draft.year, draft.month, draft.day);
+  const endKey = dateKey(draft.endYear, draft.endMonth, draft.endDay);
+  function move(delta) {
+    const d = new Date(cursor.year, cursor.month - 1 + delta, 1);
+    setCursor({ year: d.getFullYear(), month: d.getMonth() + 1 });
+  }
+  return <div className="date-range-popover glass">
+    <div className="date-range-head"><button type="button" onClick={() => move(-1)}>‹</button><strong>{monthName}</strong><button type="button" onClick={() => move(1)}>›</button></div>
+    <p>{phase === 'start' ? 'Choose a start date' : 'Choose an end date'}</p>
+    <div className="date-weekdays">{['S','M','T','W','T','F','S'].map(d => <span key={d}>{d}</span>)}</div>
+    <div className="date-grid">{days.map((d, i) => d ? <button key={i} type="button" className={`${dateKey(cursor.year, cursor.month, d) === startKey ? 'is-start' : ''} ${dateKey(cursor.year, cursor.month, d) === endKey ? 'is-end' : ''}`} onClick={() => onSelectDay(d)}>{d}</button> : <span key={i}></span>)}</div>
+    <div className="date-range-foot"><button type="button" onClick={onClose}>Done</button></div>
+  </div>;
+}
+
+function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent }) {
+  return <label className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
     <input value={value} onChange={e => onChange(e.target.value)} placeholder="Start typing a destination" />
     {!!value && matches.length > 0 && <div className="autocomplete-menu">
       {matches.slice(0, 8).map(l => <button type="button" key={l.id} onClick={() => onChoose(l)}><strong>{l.name}</strong><small>{[l.region, l.country].filter(Boolean).join(', ')}</small></button>)}
@@ -410,6 +481,7 @@ function AutocompleteField({ label, value, onChange, matches, onChoose, compact 
 }
 
 function normalizeTrip(draft, trips, locations, homeBases) {
+  if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
   let nextLocations = locations;
   let toLocationId = draft.toLocationId;
   if (!toLocationId && draft.toLocationText) {
@@ -467,7 +539,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     endDay: draft.endDay ? Number(draft.endDay) : null,
     displayDate: formatDisplayDate(draft),
     displayEndDate: formatEndDisplayDate(draft),
-    sortKey: buildSortKey(draft, count),
+    sortKey: draft.id && draft.sortKey && String(draft.sortKey).startsWith(bucketKey(draft)) ? draft.sortKey : buildSortKey(draft, count),
     label,
     travelers: draft.travelers?.length ? draft.travelers : ['joey','bonnie'],
     mode: draft.mode || 'plane',
@@ -508,6 +580,28 @@ function tripAccent(trip) {
   if (hasJ && hasB) return '#00e5ff';
   if (hasB) return '#ff4fd8';
   return '#ff8a00';
+}
+
+
+function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
+function travelerSummary(travelers = []) { const hasJ = travelers.includes('joey'); const hasB = travelers.includes('bonnie'); return hasJ && hasB ? 'Joey + Bonnie' : hasB ? 'Bonnie' : 'Joey'; }
+function formatDateRangeLabel(t) {
+  const start = toDateInputValue(t.year, t.month, t.day);
+  const end = toDateInputValue(t.endYear, t.endMonth, t.endDay);
+  if (start && end) return `${new Date(start + 'T00:00:00').toLocaleDateString()} → ${new Date(end + 'T00:00:00').toLocaleDateString()}`;
+  if (start) return new Date(start + 'T00:00:00').toLocaleDateString();
+  return '';
+}
+function dateKey(year, month, day) {
+  if (!year || !month || !day) return '';
+  return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+function calendarDays(year, month) {
+  const first = new Date(year, month - 1, 1);
+  const last = new Date(year, month, 0).getDate();
+  const out = Array(first.getDay()).fill(null);
+  for (let d = 1; d <= last; d++) out.push(d);
+  return out;
 }
 
 function insertChronologically(trips) { return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: t.sortKey || buildSortKey(t, i + 1) })); }

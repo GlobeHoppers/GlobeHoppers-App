@@ -1659,3 +1659,248 @@ option {
   .default-start-row { grid-template-columns: 1fr; }
   .override-check { justify-content: flex-start; }
 }
+
+/* GlobeHoppers v3.3 Studio form polish + route preview */
+.trip-drawer {
+  width: min(560px, calc(100vw - 36px)) !important;
+}
+.trip-drawer__main strong {
+  color: var(--accent, #45efff);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%);
+}
+.trip-drawer__row.is-active,
+.studio-trip-row.is-active {
+  border-color: rgba(255,255,255,.78) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.28) inset, 0 0 26px rgba(255,255,255,.10) !important;
+}
+.trip-drawer__row.is-active .trip-drawer__date,
+.trip-drawer__row.is-active .trip-drawer__main strong {
+  color: #ffffff !important;
+}
+.traveler-pill.is-selected,
+.mode-tile.is-selected {
+  border-color: rgba(255,255,255,.86) !important;
+  background: rgba(255,255,255,.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 0 24px rgba(255,255,255,.08) !important;
+}
+.studio-modal--wide {
+  width: min(1180px, calc(100vw - 56px)) !important;
+}
+.studio-modal-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+  padding-top: 16px !important;
+}
+.studio-modal-maincol {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.compact-section,
+.studio-pick-section.compact-section {
+  margin-top: 0 !important;
+}
+.studio-pick-section {
+  padding: 0 !important;
+}
+.studio-pick-section h3 {
+  margin-bottom: 8px !important;
+}
+.mode-selectors,
+.pill-selectors {
+  gap: 8px !important;
+}
+.traveler-pill,
+.mode-tile {
+  padding: 10px 13px !important;
+}
+.mode-tile span {
+  font-size: 21px !important;
+  margin-bottom: 3px !important;
+}
+.route-section {
+  border: 1px solid rgba(0,229,255,.24);
+  background: linear-gradient(135deg, rgba(0,229,255,.08), rgba(255,255,255,.025));
+  border-radius: 22px;
+  padding: 14px !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025), 0 12px 34px rgba(0,0,0,.20);
+}
+.route-form {
+  gap: 10px !important;
+}
+.default-start-card {
+  padding: 10px 12px !important;
+}
+.autocomplete-field.is-prominent {
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(38,244,255,.26);
+  background: rgba(0,229,255,.055);
+}
+.autocomplete-field.is-prominent input {
+  min-height: 48px;
+  border-color: rgba(38,244,255,.45) !important;
+  box-shadow: inset 0 0 0 1px rgba(38,244,255,.08), 0 0 26px rgba(0,229,255,.08);
+}
+.legs-block {
+  padding: 10px !important;
+}
+.leg-row {
+  gap: 8px !important;
+}
+.photo-placeholder {
+  margin-top: 0 !important;
+  padding: 10px 0 0;
+}
+.route-preview-card {
+  position: sticky;
+  top: 144px;
+  border: 1px solid rgba(0,229,255,.22);
+  background: linear-gradient(180deg, rgba(5,13,25,.94), rgba(3,9,18,.88));
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.route-preview-card h3 {
+  margin: 2px 0 14px;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+.route-preview-list {
+  display: grid;
+  gap: 8px;
+}
+.route-preview-row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.045);
+}
+.route-preview-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(0,229,255,.10);
+  border: 1px solid rgba(0,229,255,.20);
+  font-size: 18px;
+}
+.route-preview-row strong {
+  display: block;
+  color: #eff8ff;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.route-preview-row small {
+  display: block;
+  color: rgba(226,241,255,.64);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+.route-preview-people {
+  color: rgba(226,241,255,.58);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.date-range-field {
+  position: relative;
+}
+.date-range-button {
+  width: 100%;
+  justify-content: space-between;
+  border-radius: 14px !important;
+  padding: 12px 13px !important;
+  min-height: 47px;
+  text-align: left;
+  color: #f3fbff !important;
+  background: #04101f !important;
+  border-color: rgba(0,229,255,.18) !important;
+}
+.date-range-button span { margin-left: auto; }
+.date-range-popover {
+  position: absolute;
+  z-index: 20400;
+  top: 104px;
+  right: 344px;
+  width: 330px;
+  padding: 16px;
+  border-radius: 22px;
+}
+.date-range-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.date-range-head button,
+.date-range-foot button {
+  padding: 8px 12px !important;
+}
+.date-range-popover p {
+  color: rgba(226,241,255,.66);
+  margin: 8px 0 10px;
+  font-size: 13px;
+}
+.date-weekdays,
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.date-weekdays span {
+  color: rgba(226,241,255,.48);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+.date-grid button,
+.date-grid span {
+  min-height: 34px;
+  border-radius: 11px !important;
+  padding: 0 !important;
+  display: grid;
+  place-items: center;
+}
+.date-grid button {
+  background: rgba(255,255,255,.055) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+.date-grid button:hover,
+.date-grid button.is-start,
+.date-grid button.is-end {
+  background: linear-gradient(135deg, rgba(38,244,255,.42), rgba(255,179,33,.36)) !important;
+  border-color: rgba(255,255,255,.75) !important;
+  color: #fff !important;
+}
+.date-range-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.studio-modal select.needs-choice {
+  color: rgba(226,241,255,.58) !important;
+}
+.studio-form-grid--dates {
+  grid-template-columns: minmax(220px, 1.4fr) minmax(105px,.62fr) minmax(145px,.8fr) minmax(210px,1fr) !important;
+}
+.studio-modal input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.8) !important;
+}
+@media (max-width: 1120px) {
+  .studio-modal-layout { grid-template-columns: 1fr; }
+  .route-preview-card { position: static; order: -1; }
+  .date-range-popover { right: 24px; top: 152px; }
+}
+@media (max-width: 760px) {
+  .studio-form-grid--dates { grid-template-columns: 1fr !important; }
+  .date-range-popover { left: 16px; right: 16px; width: auto; }
+}
