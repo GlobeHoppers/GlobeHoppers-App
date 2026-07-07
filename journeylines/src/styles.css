@@ -1192,3 +1192,42 @@ body { background: #000; }
 .jl-map-pin.maplibregl-marker {
   transition: none !important;
 }
+
+/* v2.33 black home-base placards, larger vessels, and hard globe-side culling */
+.jl-vehicle-overlay:has(.jl-vehicle-img) {
+  width: 108px !important;
+  height: 108px !important;
+  filter:
+    drop-shadow(0 0 1.4px rgba(255,255,255,0.98))
+    drop-shadow(0 0 3px rgba(255,255,255,0.82))
+    drop-shadow(0 12px 18px rgba(0,0,0,0.68)) !important;
+}
+.jl-vehicle-overlay[data-mode='plane']:has(.jl-vehicle-img),
+.jl-vehicle-overlay[data-mode='move']:has(.jl-vehicle-img) {
+  width: 129px !important;
+  height: 129px !important;
+}
+.jl-vehicle-img {
+  filter:
+    drop-shadow(0 0 1.1px rgba(255,255,255,0.96))
+    drop-shadow(0 0 2.4px rgba(0,0,0,0.9)) !important;
+}
+.maplibregl-marker.jl-map-pin.is-culled,
+.jl-map-pin.is-culled,
+.maplibregl-marker.jl-map-pin[aria-hidden='true'],
+.jl-map-pin[aria-hidden='true'] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-inner {
+  border-color: #050607 !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-dot {
+  background: #050607 !important;
+  border: 1.5px solid rgba(255,255,255,.96) !important;
+}
+.jl-map-pin[data-home-base='true'] .jl-map-pin-tail {
+  border-right-color: #050607 !important;
+  border-bottom-color: #050607 !important;
+}

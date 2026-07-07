@@ -555,45 +555,115 @@ function colorForLeg(active, travelersById) {
 
 function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}, homeBases = []) {
   const pointMap = new Map();
+  const currentKey = timelineKeyForLegState(completedLegs, active, completedMode);
+  const activeHome = activeHomeBaseForKey(homeBases, currentKey);
+  const establishedHomes = establishedHomeBasesForKey(homeBases, currentKey);
+  const establishedHomeIds = new Set(establishedHomes.map(h => h.locationId).filter(Boolean));
+  const activeHomeId = activeHome?.locationId || null;
+
+  const upsertPoint = (loc, patch = {}) => {
+    if (!loc?.id) return null;
+    const existing = pointMap.get(loc.id) || loc;
+    const merged = {
+      ...existing,
+      ...loc,
+      ...patch,
+      visits: patch.visits || existing.visits || [],
+      visitColors: patch.visitColors || existing.visitColors || []
+    };
+    // Any home base that has become active stays on the map. It is styled black
+    // while it is acting as an inception/home point, but visit ticks remain the
+    // historical traveler colors.
+    if (establishedHomeIds.has(loc.id)) {
+      merged.isHomeBase = true;
+      merged.isActiveHomeBase = loc.id === activeHomeId;
+      merged.color = '#050607';
+      merged.placardColor = '#050607';
+      merged.pinSegmentsOverride = '#050607';
+    }
+    pointMap.set(loc.id, merged);
+    return merged;
+  };
+
   const addVisit = (loc, legWrapper, isNew = false) => {
     if (!loc?.id || !legWrapper) return;
-    if (shouldSkipVisitTick(loc, legWrapper, homeBases)) return;
+    if (shouldSkipVisitTick(loc, legWrapper, homeBases)) {
+      upsertPoint(loc, { isNew: false });
+      return;
+    }
     const color = colorForLeg(legWrapper, travelersById);
     const existing = pointMap.get(loc.id);
     const visits = existing?.visits ? [...existing.visits] : [];
     visits.push({ color, tripId: legWrapper.trip?.id, legIndex: legWrapper.legIndex, mode: legWrapper.leg?.mode });
-    pointMap.set(loc.id, {
-      ...(existing || loc),
-      ...loc,
+    upsertPoint(loc, {
       color,
       visits,
       visitColors: visits.map(v => v.color),
       isNew: Boolean(existing?.isNew || isNew)
     });
   };
-  const addSeed = (loc, legWrapper) => {
+
+  const addSeed = (loc, legWrapper, options = {}) => {
     if (!loc?.id || pointMap.has(loc.id)) return;
-    const color = colorForLeg(legWrapper, travelersById);
-    const visits = [{ color, tripId: legWrapper?.trip?.id || 'seed', legIndex: -1, mode: legWrapper?.leg?.mode || 'seed' }];
-    pointMap.set(loc.id, { ...loc, color, visits, visitColors: [color], isNew: false });
+    const seedColor = options.homeSeed ? '#050607' : colorForLeg(legWrapper, travelersById);
+    const visits = options.homeSeed ? [] : [{ color: seedColor, tripId: legWrapper?.trip?.id || 'seed', legIndex: -1, mode: legWrapper?.leg?.mode || 'seed' }];
+    upsertPoint(loc, { color: seedColor, visits, visitColors: visits.map(v => v.color), isNew: false });
   };
 
-  // Seed the first origin so the initial home/base point can appear, then record
-  // each arrival as the actual visit. This avoids counting round-trip departure
-  // points twice while still telling the color story of repeat destinations.
+  // Seed every home base that has become active by this point in the timeline.
+  // This makes Melbourne black at the start and keeps Los Angeles/San Diego on
+  // the map after they become inception points, even between route legs.
+  for (const h of establishedHomes) {
+    const loc = h.locationId ? active?.leg?.from?.id === h.locationId ? active.leg.from : null : null;
+    const fromKnown = loc || findLocationInLegsById(completedLegs, active, h.locationId);
+    if (fromKnown) addSeed(fromKnown, active || completedLegs?.[completedLegs.length - 1], { homeSeed: true });
+  }
+
   const firstCompleted = completedLegs?.[0];
-  if (firstCompleted?.leg?.from) addSeed(firstCompleted.leg.from, firstCompleted);
+  if (firstCompleted?.leg?.from) addSeed(firstCompleted.leg.from, firstCompleted, { homeSeed: establishedHomeIds.has(firstCompleted.leg.from.id) });
 
   for (const l of completedLegs || []) {
     addVisit(l.leg.to, l, false);
   }
   if (active && !completedMode) {
-    addSeed(active.leg.from, active);
+    addSeed(active.leg.from, active, { homeSeed: establishedHomeIds.has(active.leg.from.id) });
     if (scene?.arrivalLabelVisible) addVisit(active.leg.to, active, true);
   }
+
+  // If a home base was never part of completed legs yet (initial Melbourne, for
+  // example), seed it from the location table carried inside home-base legs when available.
+  for (const h of establishedHomes) {
+    if (!h.locationId || pointMap.has(h.locationId)) continue;
+    const loc = findLocationInLegsById(completedLegs, active, h.locationId);
+    if (loc) addSeed(loc, active || completedLegs?.[completedLegs.length - 1], { homeSeed: true });
+  }
+
   return [...pointMap.values()];
 }
 
+function timelineKeyForLegState(completedLegs = [], active = null, completedMode = false) {
+  const sourceTrip = completedMode
+    ? (completedLegs?.[completedLegs.length - 1]?.trip || active?.trip)
+    : (active?.trip || completedLegs?.[completedLegs.length - 1]?.trip);
+  if (!sourceTrip?.year) return '9999-12';
+  return `${sourceTrip.year}-${String(sourceTrip.month || 1).padStart(2, '0')}`;
+}
+
+function activeHomeBaseForKey(homeBases = [], key = '9999-12') {
+  return homeBases.find(h => h.start <= key && (!h.end || h.end >= key)) || null;
+}
+
+function establishedHomeBasesForKey(homeBases = [], key = '9999-12') {
+  return homeBases.filter(h => h.locationId && h.start <= key);
+}
+
+function findLocationInLegsById(completedLegs = [], active = null, id = '') {
+  if (!id) return null;
+  const candidates = [];
+  if (active?.leg) candidates.push(active.leg.from, active.leg.to);
+  for (const l of completedLegs || []) candidates.push(l.leg?.from, l.leg?.to);
+  return candidates.find(loc => loc?.id === id) || null;
+}
 function shouldSkipVisitTick(loc, legWrapper, homeBases = []) {
   if (!loc?.id || !legWrapper?.trip) return false;
   const trip = legWrapper.trip;
@@ -655,12 +725,15 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       el.__jlMarker.setLngLat([loc.lon, loc.lat]);
     }
 
-    const visitColors = loc.visitColors?.length ? loc.visitColors : [loc.color || color];
-    const gradient = cssSegmentGradient(visitColors, loc.color || color);
-    el.style.setProperty('--place-color', loc.color || color);
+    const visitColors = loc.visitColors?.length ? loc.visitColors : [];
+    const placardColor = loc.placardColor || loc.color || color;
+    const gradient = loc.pinSegmentsOverride || cssSegmentGradient(visitColors, placardColor);
+    el.style.setProperty('--place-color', placardColor);
     el.style.setProperty('--pin-segments', gradient);
-    el.style.setProperty('--pin-tail-color', visitColors[visitColors.length - 1] || loc.color || color);
+    el.style.setProperty('--pin-tail-color', loc.pinSegmentsOverride || visitColors[visitColors.length - 1] || placardColor);
     el.dataset.visitCount = String(visitColors.length);
+    el.dataset.homeBase = loc.isHomeBase ? 'true' : 'false';
+    el.dataset.activeHomeBase = loc.isActiveHomeBase ? 'true' : 'false';
     el.__jlLocation = loc;
 
     let inner = el.querySelector('.jl-map-pin-inner');
@@ -702,12 +775,17 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
 
 function updateVisitTicks(container, visitColors = []) {
   if (!container) return;
-  const colors = (visitColors.length ? visitColors : ['#00e5ff']).filter(Boolean);
+  const colors = (visitColors || []).filter(Boolean);
   const oldColors = container.__jlTickColors || [];
   const samePrefix = oldColors.length <= colors.length && oldColors.every((c, i) => c === colors[i]);
   if (!samePrefix) {
     container.innerHTML = '';
     container.__jlTickColors = [];
+  }
+  if (!colors.length) {
+    container.innerHTML = '';
+    container.__jlTickColors = [];
+    return;
   }
   const current = container.__jlTickColors || [];
   for (let i = current.length; i < colors.length; i++) {
@@ -750,19 +828,20 @@ function refreshPersistentPinPositions(map, labelsRef) {
     // dim -> bright flicker caused by competing opacity logic.
     const baseCutoff = hardPlacardHorizonCutoffDeg(zoom);
     const wasVisible = el.__jlVisible === true;
-    const hysteresis = 2.0;
+    const hysteresis = 0.8;
     const frontSide = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
-    const nearScreenEdge = pt.x < 4 || pt.x > w - 4 || pt.y < 4 || pt.y > h - 4;
-    const visible = Boolean(onScreen && frontSide && !nearScreenEdge);
+    const nearScreenEdge = pt.x < 10 || pt.x > w - 10 || pt.y < 10 || pt.y > h - 10;
+    const localFocus = distance <= localPlacardFocusCutoffDeg(zoom);
+    const visible = Boolean(onScreen && frontSide && localFocus && !nearScreenEdge);
 
+    el.classList.toggle('is-culled', !visible);
+    el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     if (visible !== el.__jlVisible) {
       el.__jlVisible = visible;
       if (visible) {
         el.style.display = '';
         el.style.visibility = 'visible';
-        // Leave opacity unset when visible so MapLibre marker occlusion can use
-        // occludedOpacity=0 without us fighting it.
-        el.style.opacity = '';
+        el.style.opacity = '1';
       } else {
         el.style.opacity = '0';
         el.style.visibility = 'hidden';
@@ -829,15 +908,28 @@ function horizonSafetyMarginDeg(zoom) {
 
 
 function hardPlacardHorizonCutoffDeg(zoom) {
-  // v2.32: visible placards must be comfortably on the front face of the
-  // globe. Values are intentionally stricter than route/vehicle visibility to
-  // prevent labels from hovering on the back side or dimming at the horizon.
-  if (zoom < 1.7) return 45;
-  if (zoom < 2.2) return 49;
-  if (zoom < 3.0) return 54;
-  if (zoom < 4.2) return 58;
-  if (zoom < 5.5) return 61;
-  return 64;
+  // v2.33: even stricter than v2.32. If a placard is at all approaching the
+  // globe horizon, hide it completely instead of allowing MapLibre to dim it.
+  if (zoom < 1.7) return 38;
+  if (zoom < 2.2) return 42;
+  if (zoom < 3.0) return 46;
+  if (zoom < 4.2) return 50;
+  if (zoom < 5.5) return 54;
+  if (zoom < 7.0) return 58;
+  return 62;
+}
+
+function localPlacardFocusCutoffDeg(zoom) {
+  // At close/local zooms, show labels for the local region rather than distant
+  // places on the same front-facing hemisphere. This prevents far-off labels
+  // from hanging around during Florida/California regional scenes.
+  if (zoom < 2.2) return 50;
+  if (zoom < 3.0) return 42;
+  if (zoom < 4.2) return 28;
+  if (zoom < 5.5) return 18;
+  if (zoom < 6.7) return 11;
+  if (zoom < 7.8) return 7;
+  return 5.2;
 }
 
 function labelFocusCutoffDeg(zoom) {
