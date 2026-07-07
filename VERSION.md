@@ -1,9 +1,12 @@
-# GlobeHoppers v3.6 — Trips Context Menu + Return Home Mode
+# GlobeHoppers v3.7 — Studio Form Interaction Polish
 
-- Trips drawer rows are now non-button interactive rows with hardened right-click handling.
-- Added a visible ⋯ menu button on each Trips row as a reliable edit-menu fallback.
-- Selecting Edit from the Trips row menu opens GlobeHoppers Studio and the selected trip modal.
-- Added selectable Return home method for round trips, defaulting to Leg 1.
-- Chained round trips can now fly home even if the last outbound leg was train, car, or boat.
-- Trip Preview vessel icons are clickable and cycle the mode for Leg 1, added legs, and return-home legs.
-- Saved route data now preserves returnMode and uses it for the final return leg.
+- Center add/edit modal now animates in and out.
+- Year and month controls are now GlobeHoppers-themed bubble selectors.
+- Year selection is capped at the current calendar year.
+- Calendar opens to the selected year/month.
+- Round trip is now a themed selection tile under travel mode.
+- Additional legs now appear above return-home method.
+- Add leg button is green with a clear plus affordance.
+- Trip preview vessel buttons are centered more reliably.
+- Trips drawer overflow menu has more room to breathe.
+- Trips and Studio drawers preserve scroll position when switching between them.

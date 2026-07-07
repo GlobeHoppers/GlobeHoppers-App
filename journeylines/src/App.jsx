@@ -27,6 +27,8 @@ export default function App() {
   const [admin, setAdmin] = useState(false);
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
   const [studioEditTripId, setStudioEditTripId] = useState(null);
+  const tripDrawerScrollRef = useRef(0);
+  const studioDrawerScrollRef = useRef(0);
   const [introLaunching, setIntroLaunching] = useState(false);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
@@ -175,11 +177,11 @@ export default function App() {
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} />
     <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
-    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} />
+    <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} onConsumedInitialEdit={() => setStudioEditTripId(null)} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} />}
   </main>;
 }
 
@@ -210,8 +212,13 @@ function buildTripTimeline(trips, legs, locById, travById) {
   });
 }
 
-function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump, onEditTrip }) {
+function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip }) {
   const [menu, setMenu] = useState(null);
+  const listRef = useRef(null);
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    requestAnimationFrame(() => { if (listRef.current) listRef.current.scrollTop = initialScroll || 0; });
+  }, [open, initialScroll]);
   useEffect(() => {
     if (!menu) return;
     const close = () => setMenu(null);
@@ -240,7 +247,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump, onEditTr
         </div>
         <button onClick={() => { setMenu(null); onClose(); }}>Close</button>
       </div>
-      <div className="trip-drawer__list">
+      <div ref={listRef} className="trip-drawer__list" onScroll={(e) => onScrollStore?.(e.currentTarget.scrollTop)}>
         {rows.map(row => {
           const active = activeIndex >= row.firstIndex && activeIndex < row.firstIndex + Math.max(1, row.legCount || 1);
           return <div
