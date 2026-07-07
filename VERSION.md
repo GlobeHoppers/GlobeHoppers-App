@@ -1,10 +1,7 @@
-# GlobeHoppers v3.4 — Studio Drawer + Preview Workflow Polish
+# GlobeHoppers v3.5 — Trip Preview + Drawer Interaction Fixes
 
-- Trip preview now updates immediately when an additional leg is added and keeps End Location pushed to the bottom of the preview.
-- Renamed the checkbox language to **Override start location** for clarity.
-- GlobeHoppers Studio panel now slides in/out with the same polished motion style as the Trips drawer.
-- Trips drawer spacing was widened so date/month labels do not collide with trip names.
-- Studio trip list scroll position is preserved after saving/committing edits.
-- All scrollbars now use GlobeHoppers dark/cyan/gold styling.
-- Trips drawer now supports right-click context menu with **Edit**. Choosing Edit switches to GlobeHoppers Studio and opens the selected trip modal.
-- Destination field remains emphasized as the primary route input.
+- Round-trip chained trip previews now keep the End Location as the original start location.
+- Saving chained round trips now appends the return leg back to the original start/home location.
+- GlobeHoppers Studio now animates out when the Close button is clicked.
+- Right-click handling in the Trips drawer was hardened so the Edit context menu appears reliably.
+- Keeps v3.4 drawer spacing, scroll preservation, themed scrollbars, and Studio modal polish.

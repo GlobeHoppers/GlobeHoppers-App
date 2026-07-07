@@ -2004,3 +2004,24 @@ option {
   .trip-drawer__row { grid-template-columns: 76px minmax(0, 1fr) !important; }
   .trip-drawer__meta { grid-column: 2; text-align: left; }
 }
+
+/* GlobeHoppers v3.5 drawer + trip-preview fixes */
+.studio-shell.is-closing .studio-panel {
+  animation: studioSlideOut .34s cubic-bezier(.58,.02,.78,.32) forwards !important;
+}
+@keyframes studioSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(calc(100% + 32px)); opacity: 0; }
+}
+.trip-context-menu {
+  pointer-events: auto;
+  animation: contextMenuPop .12s ease-out both;
+}
+@keyframes contextMenuPop {
+  from { opacity: 0; transform: translateY(-4px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.route-preview-row:last-child .route-preview-icon {
+  background: rgba(255,179,33,.16);
+  border-color: rgba(255,179,33,.38);
+}

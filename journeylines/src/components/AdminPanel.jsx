@@ -33,6 +33,7 @@ const empty = {
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, onConsumedInitialEdit }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
+  const [closing, setClosing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [reorderMode, setReorderMode] = useState(false);
   const [orderDraft, setOrderDraft] = useState(() => sortTripsForEditor(trips));
@@ -253,6 +254,12 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     next.splice(to, 0, item);
     setOrderDraft(next);
   }
+  function requestCloseStudio() {
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-close-studio')), 420);
+  }
+
   async function saveReorder() {
     try {
       setBusy(true);
@@ -264,7 +271,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     finally { setBusy(false); }
   }
 
-  return <section className="studio-shell">
+  return <section className={`studio-shell ${closing ? 'is-closing' : ''}`}>
     <aside className="studio-panel glass">
       <div className="studio-header">
         <div>
@@ -272,7 +279,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           <h2>Edit Travel History</h2>
           <p>Curate trips, reorder timeline entries, and commit updates directly to GitHub.</p>
         </div>
-        <button className="studio-close" onClick={() => window.dispatchEvent(new CustomEvent('globehoppers-close-studio'))}>Close</button>
+        <button className="studio-close" onClick={requestCloseStudio}>Close</button>
       </div>
 
       <div className="studio-actions-main">
@@ -463,12 +470,15 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination }) 
   });
   const lastExtra = previewExtraLegs.length ? previewExtraLegs[previewExtraLegs.length - 1] : null;
   const lastExtraLoc = lastExtra ? (locById[lastExtra.locationId] || findLocationByText(locs, lastExtra.locationText) || { name: lastExtra.locationText }) : null;
-  const endPlace = previewExtraLegs.length
-    ? (displayLocation(lastExtraLoc) || lastExtraLoc?.name || 'End pending')
-    : draft.roundTrip
-      ? (displayLocation(startLocation) || startLocation?.name || 'Return to start')
+  const endPlace = draft.roundTrip
+    ? (displayLocation(startLocation) || startLocation?.name || 'Return to start')
+    : previewExtraLegs.length
+      ? (displayLocation(lastExtraLoc) || lastExtraLoc?.name || 'End pending')
       : (displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending');
-  rows.push({ label: 'End location', place: endPlace, mode: previewExtraLegs.length ? null : (draft.roundTrip ? draft.mode || 'plane' : null) });
+  const endMode = draft.roundTrip
+    ? (previewExtraLegs.length ? (lastExtra?.modeFromPrevious || draft.mode || 'plane') : (draft.mode || 'plane'))
+    : null;
+  rows.push({ label: 'End location', place: endPlace, mode: endMode });
   return <aside className="route-preview-card">
     <p className="eyebrow">Trip preview</p>
     <h3>{draft.label || destination?.name || 'New trip'}</h3>
@@ -554,6 +564,10 @@ function normalizeTrip(draft, trips, locations, homeBases) {
       }
       if (id) route.push({ locationId: id, modeFromPrevious: leg.modeFromPrevious || draft.mode || 'plane' });
     }
+    if (draft.roundTrip && homeId && route[route.length - 1]?.locationId !== homeId) {
+      const lastMode = route[route.length - 1]?.modeFromPrevious || draft.mode || 'plane';
+      route.push({ locationId: homeId, modeFromPrevious: lastMode });
+    }
   }
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
@@ -572,7 +586,7 @@ function normalizeTrip(draft, trips, locations, homeBases) {
     label,
     travelers: draft.travelers?.length ? draft.travelers : ['joey','bonnie'],
     mode: draft.mode || 'plane',
-    roundTrip: route.length ? false : !!draft.roundTrip,
+    roundTrip: !!draft.roundTrip,
     fromLocationId,
     toLocationId,
     route,

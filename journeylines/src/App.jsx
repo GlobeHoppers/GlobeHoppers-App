@@ -235,7 +235,18 @@ function TripTimelineDrawer({ open, rows, activeIndex, onClose, onJump, onEditTr
           className={`trip-drawer__row ${active ? 'is-active' : ''}`}
           style={{ '--accent': row.color }}
           onClick={() => onJump(row.firstIndex)}
-          onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, row }); }}
+          onMouseDown={(e) => {
+            if (e.button === 2) {
+              e.preventDefault();
+              e.stopPropagation();
+              setMenu({ x: e.clientX, y: e.clientY, row });
+            }
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenu({ x: e.clientX, y: e.clientY, row });
+          }}
         >
           <span className="trip-drawer__date">{row.date}</span>
           <span className="trip-drawer__main">
