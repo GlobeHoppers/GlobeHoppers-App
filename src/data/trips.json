@@ -2687,9 +2687,9 @@
     "id": "2026-128-charlotte",
     "year": 2026,
     "month": 2,
-    "day": null,
-    "displayDate": "February 2026",
-    "sortKey": "2026-02-99-011",
+    "day": 21,
+    "displayDate": "February 21, 2026",
+    "sortKey": "2026-02-21-011",
     "label": "Charlotte",
     "travelers": [
       "joey",
