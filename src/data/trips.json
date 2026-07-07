@@ -2442,10 +2442,10 @@
   {
     "id": "2025-115-fort-lauderdale",
     "year": 2025,
-    "month": null,
+    "month": 5,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-007",
+    "displayDate": "May 2025",
+    "sortKey": "2025-05-99-018",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey"
@@ -2456,7 +2456,11 @@
     "toLocationId": "fort-lauderdale-fl",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-116-houston",
