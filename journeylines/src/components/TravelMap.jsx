@@ -549,7 +549,7 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
 }
 
 function colorForLeg(active, travelersById) {
-  if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return '#ff3b3b';
+  if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return '#050607';
   return travelersById[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 
@@ -647,7 +647,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       // Use MapLibre's marker transform for the outer wrapper. This anchors the
       // placard to the globe on the same render path as the map and removes the
       // projection-vs-camera wobble caused by manually setting translate3d().
-      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8] })
+      el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -8], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       labelsRef.current.set(loc.id, el);
@@ -742,21 +742,33 @@ function refreshPersistentPinPositions(map, labelsRef) {
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
     const distance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
-    const onScreen = pt.x > -110 && pt.x < w + 110 && pt.y > -110 && pt.y < h + 110;
-    // v2.30: hard cull placards before they become semi-transparent at
-    // the globe edge, with hysteresis to prevent rapid on/off flicker while the
-    // camera glides. We keep historical placards, but only when they are clearly
-    // on the front face of the globe.
-    const baseCutoff = Math.max(34, horizonCutoffDeg(zoom) - horizonSafetyMarginDeg(zoom));
-    const wasVisible = el.__jlVisible !== false;
-    const hysteresis = 3.5;
-    const visibleHemisphere = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
-    const nearScreenEdge = pt.x < 10 || pt.x > w - 10 || pt.y < 10 || pt.y > h - 10;
-    const visible = onScreen && visibleHemisphere && !nearScreenEdge;
-    el.__jlVisible = visible;
-    el.style.opacity = visible ? '1' : '0';
-    el.style.visibility = visible ? 'visible' : 'hidden';
-    el.style.display = visible ? '' : 'none';
+    const onScreen = pt.x > -130 && pt.x < w + 130 && pt.y > -130 && pt.y < h + 130;
+
+    // v2.32: single source of truth for placard culling. Do not fade at the
+    // horizon; snap fully hidden before MapLibre's globe occlusion can dim the
+    // marker and then let our styles force it bright again. This removes the
+    // dim -> bright flicker caused by competing opacity logic.
+    const baseCutoff = hardPlacardHorizonCutoffDeg(zoom);
+    const wasVisible = el.__jlVisible === true;
+    const hysteresis = 2.0;
+    const frontSide = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
+    const nearScreenEdge = pt.x < 4 || pt.x > w - 4 || pt.y < 4 || pt.y > h - 4;
+    const visible = Boolean(onScreen && frontSide && !nearScreenEdge);
+
+    if (visible !== el.__jlVisible) {
+      el.__jlVisible = visible;
+      if (visible) {
+        el.style.display = '';
+        el.style.visibility = 'visible';
+        // Leave opacity unset when visible so MapLibre marker occlusion can use
+        // occludedOpacity=0 without us fighting it.
+        el.style.opacity = '';
+      } else {
+        el.style.opacity = '0';
+        el.style.visibility = 'hidden';
+        el.style.display = 'none';
+      }
+    }
     el.style.pointerEvents = 'none';
   }
 }
@@ -813,6 +825,19 @@ function horizonSafetyMarginDeg(zoom) {
   if (zoom < 4.5) return 16;
   if (zoom < 6.0) return 18;
   return 20;
+}
+
+
+function hardPlacardHorizonCutoffDeg(zoom) {
+  // v2.32: visible placards must be comfortably on the front face of the
+  // globe. Values are intentionally stricter than route/vehicle visibility to
+  // prevent labels from hovering on the back side or dimming at the horizon.
+  if (zoom < 1.7) return 45;
+  if (zoom < 2.2) return 49;
+  if (zoom < 3.0) return 54;
+  if (zoom < 4.2) return 58;
+  if (zoom < 5.5) return 61;
+  return 64;
 }
 
 function labelFocusCutoffDeg(zoom) {

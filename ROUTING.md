@@ -1,9 +1,5 @@
-# JourneyLines Routing Notes
+# JourneyLines Routing Notes — v2.32
 
-JourneyLines uses private build-time Mapbox route generation for driving routes and manual overrides for boat/train routes.
+Routing remains unchanged from v2.31. Mapbox driving geometry is generated privately during GitHub Actions and no token is published to `gh-pages`.
 
-## v2.31 Notes
-
-- No routing provider changes in this version.
-- Playback pacing was slowed to make the route follow feel more relaxed on a wall display.
-- Home-base return arrivals are excluded from visit tick/color history so repeat ticks represent actual destination visits rather than returning home.
+v2.32 changes home-base move route color to black and hardens globe horizon culling for placards.

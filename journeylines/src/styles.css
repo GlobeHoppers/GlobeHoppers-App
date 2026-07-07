@@ -1182,3 +1182,13 @@ body { background: #000; }
 .jl-map-pin {
   transition: none !important;
 }
+
+
+/* v2.32 hard horizon clipping: placards should never dim at the globe edge.
+   They are either fully visible or fully hidden, controlled by JS display/visibility. */
+.jl-map-pin {
+  transition: none !important;
+}
+.jl-map-pin.maplibregl-marker {
+  transition: none !important;
+}
