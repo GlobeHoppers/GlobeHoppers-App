@@ -830,9 +830,12 @@ function refreshPersistentPinPositions(map, labelsRef) {
     const wasVisible = el.__jlVisible === true;
     const hysteresis = 0.8;
     const frontSide = wasVisible ? distance <= baseCutoff + hysteresis : distance <= baseCutoff - hysteresis;
-    const nearScreenEdge = pt.x < 10 || pt.x > w - 10 || pt.y < 10 || pt.y > h - 10;
-    const localFocus = distance <= localPlacardFocusCutoffDeg(zoom);
-    const visible = Boolean(onScreen && frontSide && localFocus && !nearScreenEdge);
+    // v2.34: do not hide front-facing regional placards just because the
+    // camera is zoomed in. Previous versions applied a local focus cutoff and
+    // screen-edge guard here; that made nearby historical placards such as
+    // Chicago, Atlanta, and Kentucky disappear while viewing Florida. The only
+    // hard rules now are: on screen and safely on the visible globe face.
+    const visible = Boolean(onScreen && frontSide);
 
     el.classList.toggle('is-culled', !visible);
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
@@ -908,15 +911,16 @@ function horizonSafetyMarginDeg(zoom) {
 
 
 function hardPlacardHorizonCutoffDeg(zoom) {
-  // v2.33: even stricter than v2.32. If a placard is at all approaching the
-  // globe horizon, hide it completely instead of allowing MapLibre to dim it.
-  if (zoom < 1.7) return 38;
-  if (zoom < 2.2) return 42;
-  if (zoom < 3.0) return 46;
-  if (zoom < 4.2) return 50;
-  if (zoom < 5.5) return 54;
-  if (zoom < 7.0) return 58;
-  return 62;
+  // v2.34: relax the front-facing cutoff so placards on the visible hemisphere
+  // remain available. This keeps nearby regional placards visible while still
+  // hiding anything truly beyond the globe horizon before MapLibre can dim it.
+  if (zoom < 1.7) return 64;
+  if (zoom < 2.2) return 68;
+  if (zoom < 3.0) return 72;
+  if (zoom < 4.2) return 76;
+  if (zoom < 5.5) return 80;
+  if (zoom < 7.0) return 83;
+  return 85;
 }
 
 function localPlacardFocusCutoffDeg(zoom) {

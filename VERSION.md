@@ -1,9 +1,6 @@
-# JourneyLines v2.33 — Home Base Black Placards + Vessel Scale + Clipping Fix
+# JourneyLines v2.34 — Black Vessel Stroke + Relaxed Visible Placards
 
-- Initial Melbourne home-base placard is seeded at timeline start and styled black.
-- Established home bases stay on the map after they become inception points.
-- Current/established home-base placards use black dot/border styling while visit ticks retain traveler-color history.
-- Home-base returns still do not add visit ticks.
-- Vessel PNG icons are about 50% larger and now have a subtle outer stroke/drop shadow for readability.
-- Horizon/backside placard clipping is stricter, with a hard hidden state rather than dimming.
-- Added CSS-level culling protection so MapLibre marker occlusion cannot leave dim labels visible on the back side.
+- Changed imported vessel icon outline/drop treatment from white to black.
+- Relaxed placard culling for front-facing locations so nearby regional placards remain visible.
+- Removed the local focus cutoff from persistent placard visibility; placards now hide only when offscreen or behind the globe horizon.
+- Kept MapLibre `occludedOpacity: 0` and hard hidden state for true backside globe culling.
