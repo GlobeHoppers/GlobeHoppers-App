@@ -2618,10 +2618,10 @@
   {
     "id": "2025-124-atlanta",
     "year": 2025,
-    "month": null,
+    "month": 12,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-016",
+    "displayDate": "December 2025",
+    "sortKey": "2025-12-99-018",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -2633,7 +2633,11 @@
     "toLocationId": "atlanta-ga",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-125-fort-lauderdale",
