@@ -2519,10 +2519,10 @@
   {
     "id": "2025-119-seattle",
     "year": 2025,
-    "month": null,
+    "month": 7,
     "day": null,
-    "displayDate": "2025",
-    "sortKey": "2025-13-99-011",
+    "displayDate": "July 2025",
+    "sortKey": "2025-07-99-018",
     "label": "Seattle",
     "travelers": [
       "joey"
@@ -2533,7 +2533,11 @@
     "toLocationId": "seattle-wa",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": ""
   },
   {
     "id": "2025-120-las-vegas",
