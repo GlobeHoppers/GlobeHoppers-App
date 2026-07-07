@@ -211,6 +211,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
         userCameraOverrideRef.current = false;
         resetAnimatingRef.current = true;
         lastCameraRef.current = null;
+        if (pulseRef.current) {
+          pulseRef.current.classList.remove('is-active');
+          pulseRef.current.style.opacity = '0';
+        }
         map.stop();
         map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
@@ -499,9 +503,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     <div className="cinema-vignette" />
     <div className="map-overlay" ref={overlayRef}>
       <svg className="jl-air-arc-overlay" aria-hidden="true"><path ref={airArcRef} /></svg>
+      <div className="jl-arrival-ripple" ref={pulseRef} />
       <div className="jl-vehicle-overlay" ref={vehicleRef} />
       <div className="jl-visited-labels-overlay" ref={visitedLabelsRef} />
-      <div className="jl-arrival-ripple" ref={pulseRef} />
     </div>
   </div>;
 }
@@ -1138,7 +1142,7 @@ function angularDistanceDeg(a, b) {
 function updatePulseOverlay(el, point, color, active) {
   if (!el) return;
   el.style.setProperty('--pulse-color', color);
-  el.style.transform = `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%)`;
+  el.style.transform = `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%) scaleY(0.46)`;
   el.classList.toggle('is-active', Boolean(active));
   el.style.opacity = active ? '1' : '0';
 }

@@ -20,7 +20,7 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(999999);
   const [legProgress, setLegProgress] = useState(1);
   const [projection, setProjection] = useState(settings.defaultProjection);
-  const [cameraMode, setCameraMode] = useState('route');
+  const [cameraMode, setCameraMode] = useState('follow');
   const [showTrails, setShowTrails] = useState(settings.showTrails);
   const [speed, setSpeed] = useState(settings.playbackSpeed);
   const [filter, setFilter] = useState('all');
@@ -117,7 +117,7 @@ export default function App() {
   function play() {
     const wasGlobeOverview = globeOverview;
     setGlobeOverview(false);
-    setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
+    setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
     setShowHero(false);
     setAdmin(false);
     setTripDrawerOpen(false);
@@ -185,6 +185,7 @@ export default function App() {
     setIntroLaunching(false);
     setShowHero(false);
     window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview'));
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview')), 12);
     setResetNonce(n => n + 1);
   }
   function reset() {
@@ -207,7 +208,7 @@ export default function App() {
 
     const applyJump = () => {
       setGlobeOverview(false);
-      setCameraMode(prev => prev === 'global' ? 'route' : (prev || 'route'));
+      setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
       setStarted(true);
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);

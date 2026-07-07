@@ -1,11 +1,10 @@
-# GlobeHoppers v3.24
+# GlobeHoppers v3.25
 
-First-click camera and pause fixes:
-- Edit Travel Timeline freezes the playback clock exactly where it is opened
-- Closing Edit Travel Timeline resumes from that exact frozen point
-- Globe button now sends an immediate map command so the first click zooms out/restores overview/spins
-- Timeline and queue-card jumps now force the next route camera immediately on the first click
-- Quick fade-to-black transition retained for timeline/queue jumps
-- Takeoff pitch is increased again to better match landing pitch
-- Travel Timeline and Studio scroll/pointer events are isolated from map playback more aggressively
+Follow-camera and arrival ripple polish:
+- Follow mode is restored as the default playback camera mode
+- Playing from globe/global mode returns to follow mode
+- Globe button sends a second overview command 12ms later to match the desired second-click behavior on the first click
+- Arrival pulse is layered below placards and vehicle
+- Arrival pulse is now an oval/ripple on the globe surface instead of a perfect circle
+- Active arrival pulse is hidden immediately when switching to globe overview
 - package intentionally omits src/data/trips.json and package-lock.json

@@ -4103,3 +4103,22 @@ option {
   touch-action: pan-y !important;
   scrollbar-gutter: stable !important;
 }
+
+
+/* GlobeHoppers v3.25 follow-camera default, globe double-command, and ripple layering */
+.jl-arrival-ripple {
+  z-index: 5 !important;
+  border-radius: 50% !important;
+  transform-origin: center center !important;
+}
+.jl-visited-labels-overlay {
+  z-index: 8 !important;
+}
+.jl-vehicle-overlay {
+  z-index: 12 !important;
+}
+@keyframes jl-puddle-ripple {
+  0% { width: 10px; height: 5px; opacity: .70; filter: blur(0); }
+  58% { width: 64px; height: 24px; opacity: .25; filter: blur(.2px); }
+  100% { width: 94px; height: 36px; opacity: 0; filter: blur(1px); }
+}
