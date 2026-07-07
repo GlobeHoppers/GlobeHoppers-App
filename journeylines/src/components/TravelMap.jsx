@@ -12,6 +12,9 @@ import generatedRoutes from '../data/generatedRoutes.json';
 const VESSEL_ICON_MODULES = import.meta.glob('../Icons/**/*.png', { eager: true, query: '?url', import: 'default' });
 const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
 
+const INTRO_GLOBE_CENTER = [-100, 37];
+const INTRO_GLOBE_ZOOM = 2.55;
+
 const MAP_STYLE = {
   version: 8,
   name: 'GlobeHoppers Terrain Globe',
@@ -123,8 +126,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE,
-      center: [-38, 23],
-      zoom: 2.15,
+      center: INTRO_GLOBE_CENTER,
+      zoom: INTRO_GLOBE_ZOOM,
       bearing: 0,
       pitch: 0,
       attributionControl: false,
@@ -232,7 +235,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       currentOverlayStateRef.current = null;
       setOverlayVisibility(false);
       if (completedMode) {
-        map.easeTo({ center: [-38, 23], zoom: 2.15, bearing: 0, pitch: 0, duration: 900, essential: true });
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
       }
       return;
     }
