@@ -150,6 +150,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   function updateTraveler(id) {
+    setFormError('');
     const set = new Set(draft.travelers || []);
     if (set.has(id)) set.delete(id); else set.add(id);
     const next = Array.from(set);
@@ -157,6 +158,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   function chooseDestination(location) {
+    setFormError('');
     setDraft({ ...draft, toLocationId: location.id, toLocationText: displayLocation(location), label: draft.label || location.name });
     previewMapLocation(location);
   }
@@ -186,9 +188,10 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   async function saveTripFromModal() {
     try {
+      if (!draft.year || !draft.month) throw new Error('Please choose both a year and a month before saving this hop.');
+      if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Please select at least one Hopper or Guest Hopper before saving this hop.');
+      if (!draft.toLocationId && !draft.toLocationText?.trim()) throw new Error('Please choose a destination before saving this hop.');
       setBusy(true);
-      if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
-      if (!draft.travelers?.length) throw new Error('Select at least one traveler before saving.');
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases);
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
@@ -418,7 +421,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onRemoveLeg={removeLeg}
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
-      addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers}
+      addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers} formError={formError} setFormError={setFormError}
       onDelete={modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
     />}
@@ -484,7 +487,7 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers }) {
+function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError }) {
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
@@ -534,6 +537,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     setGuestDraft(g => ({ ...g, colorName: c.name, color: c.color }));
   }
   function addGuestFromPopup() {
+    setFormError('');
     if (!guestDraft.name.trim()) return;
     setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { ...guestDraft, name: guestDraft.name.trim() }] }));
     setGuestPopupOpen(false);
@@ -558,6 +562,11 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   }
 
   return <div className={`studio-modal-backdrop ${closing ? 'is-closing' : ''}`}>
+    {formError && <div className="studio-error-toast glass" role="alert">
+      <strong>Almost there</strong>
+      <span>{formError}</span>
+      <button type="button" className="primary" onClick={() => setFormError('')}>OK</button>
+    </div>}
     <div className={`studio-modal glass studio-modal--wide ${closing ? 'is-closing' : ''}`}>
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
@@ -595,7 +604,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
             <div className="pill-selectors">
-              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const comboColors = (visual.colors || []).filter(Boolean); const accent = selected && visual.isSquad ? visual.color : t.color; const mixed = selected && !visual.isSquad && comboColors.length > 1; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''} ${mixed ? 'is-mixed' : ''}`} style={{ '--accent': accent, '--accent-2': comboColors[1] || accent, '--pill-gradient': colorGradient(comboColors, accent) }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
                 {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
                 <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
@@ -692,7 +701,10 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
   const visual = resolveTripVisual(draft, hopperData || {});
   const noHoppers = !!visual.isEmpty;
-  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-gradient': colorGradient(visual.colors || [], visual.color || '#5d7288') }}>
+  const mixedColors = (visual.colors || []).filter(Boolean);
+  const accentColor = visual.accentColors?.[0] || mixedColors[1] || visual.color || '#5d7288';
+  const isMixed = !visual.isSquad && mixedColors.length > 1;
+  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''} ${isMixed ? 'route-preview-card--mixed' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-accent-2': accentColor, '--trip-gradient': colorGradient(mixedColors, visual.color || '#5d7288') }}>
     <p className="eyebrow">Hop preview</p>
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
@@ -701,7 +713,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
-      {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
+      {rows.map((r, i) => <div className={`route-preview-row ${isMixed ? 'is-mixed' : ''}`} style={{ '--row-gradient': colorGradient(mixedColors, visual.color || '#5d7288'), '--row-accent': visual.color || '#5d7288', '--row-accent-2': accentColor }} key={`${r.label}-${i}`}>
         <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
         <span className="route-preview-people">{visual.name}</span>

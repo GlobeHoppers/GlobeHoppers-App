@@ -1,12 +1,12 @@
-# GlobeHoppers v3.37
+# GlobeHoppers v3.38
 
-Hopper polish, validation popup, mixed colors, and culling strategy update:
-- No-hopper Hop Preview uses an unfilled neutral icon instead of cyan
-- Restored compact Edit Hoppers layout with one-line Hopper/Squad rows, color-circle pickers, and Delete buttons
-- Hop Squad unselected members are gray, unfilled, and diagonally striped
-- Add/Edit Hop required-field errors now use a themed GlobeHoppers popup instead of browser alerts
-- Guest Hopper add interface uses a popup with Name, color-circle picker, Delete/Cancel, and OK
-- Mixed no-squad groups use the first selected Hopper as the primary route/vessel color while rows/previews can show gradients/accent colors
-- Long dates wrap inside timeline/editor date cells
-- Playback placard culling now uses a geographic far-side gate based on angular distance plus lon/lat delta to avoid hiding nearby front-facing labels while hard-hiding far-side labels
+Mixed-color UI, validation popup, and Edit Hoppers drawer:
+- Mixed non-squad groups keep the first selected Hopper as the route/vessel primary color
+- Mixed groups now show secondary Hopper/Guest colors as accents in Add/Edit Hop UI and Hop Preview
+- Hop Preview rows/cards now expose mixed-color gradient/accent variables
+- Guest Hopper color picker is repositioned and given a higher z-index to avoid clipping
+- Add/Edit Hop required-field errors now render in the GlobeHoppers themed popup
+- Edit Hoppers now slides in from the right side of the screen with drawer-style animation
+- Edit Hoppers still keeps compact one-line rows, color-circle pickers, and delete buttons
+- Long date cells continue to support wrapping
 - package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json

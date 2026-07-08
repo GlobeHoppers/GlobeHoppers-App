@@ -302,6 +302,7 @@ export default function App() {
 
 function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
+  const [closing, setClosing] = useState(false);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
   const [busy, setBusy] = useState(false);
   const [openPicker, setOpenPicker] = useState(null);
@@ -342,6 +343,10 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     else updateSquad(id, { colorName: c.name, color: c.color });
     setOpenPicker(null);
   }
+  function requestClose() {
+    setClosing(true);
+    window.setTimeout(() => onClose?.(), 240);
+  }
   async function save() {
     const clean = {
       ...draft,
@@ -360,12 +365,12 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     }
     onClose?.();
   }
-  return <section className="hopper-editor-backdrop" onClick={onClose}>
-    <div className="hopper-editor glass hopper-editor--compact" onClick={e => e.stopPropagation()}>
+  return <section className={`hopper-editor-backdrop hopper-editor-drawer-backdrop ${closing ? 'is-closing' : ''}`} onClick={requestClose}>
+    <div className={`hopper-editor glass hopper-editor--compact hopper-editor-drawer ${closing ? 'is-closing' : ''}`} onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
         <p className="eyebrow">GlobeHoppers Studio</p>
         <h2>Edit Hoppers</h2>
-        <button className="drawer-close-button" onClick={onClose}>Close</button>
+        <button className="drawer-close-button" onClick={requestClose}>Close</button>
       </header>
       <div className="hopper-editor__body">
         <section>
@@ -403,7 +408,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
           </div>
         </section>
       </div>
-      <footer className="hopper-editor__footer"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button></footer>
+      <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button></footer>
     </div>
   </section>;
 }
