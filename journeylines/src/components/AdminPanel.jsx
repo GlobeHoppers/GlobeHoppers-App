@@ -599,8 +599,13 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     setGuestColorOpen(false);
     setGuestPopupOpen(true);
   }
-  function chooseGuestColor(name) {
-    const c = (normalizedHoppers?.palette || []).find(p => p.name === name) || { name: 'gray', color: '#8e99a8' };
+  function chooseGuestColor(name, customColor) {
+    if (name === 'custom') {
+      const color = normalizeHexColor(customColor || guestDraft.color || '#00e5ff');
+      setGuestDraft(g => ({ ...g, colorName: 'custom', color }));
+      return;
+    }
+    const c = (normalizedHoppers?.palette || []).find(x => x.name === name) || { name, color: guestDraft.color || '#00e5ff' };
     setGuestDraft(g => ({ ...g, colorName: c.name, color: c.color }));
   }
   function addGuestFromPopup() {
@@ -683,7 +688,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                 <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
                   <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
-                  <div className="guest-color-row"><span>Color</span><ColorPopover colors={normalizedHoppers?.palette || []} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name) => { chooseGuestColor(name); setGuestColorOpen(false); }} /></div>
+                  <div className="guest-color-row"><span>Color</span><ColorPopover colors={normalizedHoppers?.palette || []} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name, customColor) => { chooseGuestColor(name, customColor); if (name !== 'custom') setGuestColorOpen(false); }} /></div>
                   <div className="guest-popover-actions"><button type="button" className="danger" onClick={() => setGuestPopupOpen(false)}>Delete</button><button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button><button type="button" className="primary" onClick={addGuestFromPopup}>OK</button></div>
                 </div>}
             </div>
@@ -979,15 +984,46 @@ function tripAccent(trip, hopperData) {
 
 
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
-  const palette = colors?.length ? colors : [{ name: 'gray', label: 'Gray', color: '#8e99a8' }, { name: 'orange', label: 'Orange', color: '#ff8a00' }, { name: 'pink', label: 'Pink', color: '#ff4fd8' }, { name: 'green', label: 'Green', color: '#44f48a' }, { name: 'blue', label: 'Blue', color: '#2f80ff' }];
+  const palette = colors.length ? colors : [
+    { name: 'red', label: 'Red', color: '#ff3b30' },
+    { name: 'orange', label: 'Orange', color: '#ff8a00' },
+    { name: 'yellow', label: 'Yellow', color: '#ffd60a' },
+    { name: 'green', label: 'Green', color: '#44f48a' },
+    { name: 'cyan', label: 'Cyan', color: '#00e5ff' },
+    { name: 'blue', label: 'Blue', color: '#2f80ff' },
+    { name: 'pink', label: 'Pink', color: '#ff4fd8' },
+    { name: 'purple', label: 'Purple', color: '#9b5cff' },
+    { name: 'gray', label: 'Gray', color: '#8e99a8' },
+    { name: 'black', label: 'Black', color: '#050607' }
+  ];
+  const currentColor = normalizeHexColor(color || '#00e5ff');
+  function chooseCustom(nextColor) {
+    const clean = normalizeHexColor(nextColor);
+    onChoose?.('custom', clean);
+  }
   return <span className="color-popover">
-    <button type="button" className="color-popover__trigger" style={{ '--swatch': color || '#8e99a8' }} onClick={onToggle} title="Choose color" />
-    {open && <span className="color-popover__menu glass">
-      {palette.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
+    <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
+    {open && <span className="color-popover__menu glass color-popover__menu--custom">
+      {palette.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
+      <label className="custom-color-picker" title="Custom color">
+        <span>Custom</span>
+        <input type="color" value={currentColor} onChange={(e) => chooseCustom(e.target.value)} />
+      </label>
+      <label className="custom-color-hex">
+        <span>Hex</span>
+        <input value={currentColor} onChange={(e) => chooseCustom(e.target.value)} placeholder="#00e5ff" />
+      </label>
     </span>}
   </span>;
 }
 
+
+function normalizeHexColor(value = '#00e5ff') {
+  const raw = String(value || '').trim();
+  if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(raw)) return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
+  return '#00e5ff';
+}
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }

@@ -382,7 +382,13 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const id = `squad-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hopSquads: [...d.hopSquads, { id, name: 'New Hop Squad', hopperIds: [], colorName: 'cyan', color: '#00e5ff' }] }));
   }
-  function setColor(kind, id, colorName) {
+  function setColor(kind, id, colorName, customColor) {
+    if (colorName === 'custom') {
+      const color = normalizeHexColor(customColor || '#00e5ff');
+      if (kind === 'hopper') updateHopper(id, { colorName: 'custom', color });
+      else updateSquad(id, { colorName: 'custom', color });
+      return;
+    }
     const c = pickColor(colorName);
     if (kind === 'hopper') updateHopper(id, { colorName: c.name, color: c.color });
     else updateSquad(id, { colorName: c.name, color: c.color });
@@ -424,7 +430,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
             {draft.hoppers.map(h => <article className="hopper-card hopper-card--row" key={h.id} style={{ '--accent': h.color }}>
               <input aria-label="Hopper name" value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
               <span className="hopper-color-label">Color:</span>
-              <ColorPopover colors={colors} value={h.colorName || 'blue'} color={h.color || '#2f80ff'} open={openPicker === `hopper:${h.id}`} onToggle={() => setOpenPicker(openPicker === `hopper:${h.id}` ? null : `hopper:${h.id}`)} onChoose={(name) => setColor('hopper', h.id, name)} />
+              <ColorPopover colors={colors} value={h.colorName || 'blue'} color={h.color || '#2f80ff'} open={openPicker === `hopper:${h.id}`} onToggle={() => setOpenPicker(openPicker === `hopper:${h.id}` ? null : `hopper:${h.id}`)} onChoose={(name, customColor) => setColor('hopper', h.id, name, customColor)} />
               <button className="danger compact-delete" type="button" onClick={() => deleteHopper(h.id)}>Delete</button>
             </article>)}
           </div>
@@ -436,7 +442,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
               <div className="squad-row-top">
                 <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
                 <span className="hopper-color-label">Color:</span>
-                <ColorPopover colors={colors} value={s.colorName || 'cyan'} color={s.color || '#00e5ff'} open={openPicker === `squad:${s.id}`} onToggle={() => setOpenPicker(openPicker === `squad:${s.id}` ? null : `squad:${s.id}`)} onChoose={(name) => setColor('squad', s.id, name)} />
+                <ColorPopover colors={colors} value={s.colorName || 'cyan'} color={s.color || '#00e5ff'} open={openPicker === `squad:${s.id}`} onToggle={() => setOpenPicker(openPicker === `squad:${s.id}` ? null : `squad:${s.id}`)} onChoose={(name, customColor) => setColor('squad', s.id, name, customColor)} />
                 <button className="danger compact-delete" type="button" onClick={() => deleteSquad(s.id)}>Delete</button>
               </div>
               <div className="squad-members">
@@ -474,12 +480,32 @@ function HopperConfirmPopup({ request, busy, onCancel, onConfirm }) {
 }
 
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
+  const currentColor = normalizeHexColor(color || '#00e5ff');
+  function chooseCustom(nextColor) {
+    const clean = normalizeHexColor(nextColor);
+    onChoose?.('custom', clean);
+  }
   return <span className="color-popover">
-    <button type="button" className="color-popover__trigger" style={{ '--swatch': color || '#8e99a8' }} onClick={onToggle} title="Choose color" />
-    {open && <span className="color-popover__menu glass">
-      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
+    <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
+    {open && <span className="color-popover__menu glass color-popover__menu--custom">
+      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name, c.color)} />)}
+      <label className="custom-color-picker" title="Custom color">
+        <span>Custom</span>
+        <input type="color" value={currentColor} onChange={(e) => chooseCustom(e.target.value)} />
+      </label>
+      <label className="custom-color-hex">
+        <span>Hex</span>
+        <input value={currentColor} onChange={(e) => chooseCustom(e.target.value)} placeholder="#00e5ff" />
+      </label>
     </span>}
   </span>;
+}
+
+function normalizeHexColor(value = '#00e5ff') {
+  const raw = String(value || '').trim();
+  if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(raw)) return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
+  return '#00e5ff';
 }
 
 function slugify(value = '') {

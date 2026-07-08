@@ -5749,3 +5749,118 @@ textarea,
 .timeline-year-scale {
   margin-top: 1px !important;
 }
+
+
+/* GlobeHoppers v3.55 custom color picker + cleaner map-pin timeline */
+
+/* Custom color controls inside color popovers */
+.color-popover__menu--custom {
+  display: grid !important;
+  grid-template-columns: repeat(5, 24px) minmax(92px, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: 248px !important;
+}
+.custom-color-picker,
+.custom-color-hex {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  grid-column: 1 / -1 !important;
+  padding: 6px 7px !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.055) !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  color: rgba(231,243,255,.82) !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  text-transform: none !important;
+  letter-spacing: .02em !important;
+}
+.custom-color-picker input[type='color'] {
+  width: 42px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+.custom-color-hex input {
+  min-width: 0 !important;
+  flex: 1 !important;
+  height: 26px !important;
+  padding: 3px 7px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  text-transform: none !important;
+}
+
+/* Cleaner timeline: smaller pin heads, fewer visual fights, with stems below the timeline. */
+.timeline-marker {
+  top: 50% !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.45) !important;
+  background: color-mix(in srgb, var(--marker-color, #00e5ff), white 4%) !important;
+  box-shadow:
+    0 0 0 1px rgba(4,11,20,.72),
+    0 0 6px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 72%) !important;
+  opacity: .64 !important;
+  transform: translate(-50%, -50%) !important;
+}
+.timeline-marker::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 8px !important;
+  width: 1px !important;
+  height: 11px !important;
+  background: color-mix(in srgb, var(--marker-color, #00e5ff), transparent 34%) !important;
+  transform: translateX(-50%) !important;
+  opacity: .45 !important;
+}
+.timeline-marker::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 20px !important;
+  width: 3px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--marker-color, #00e5ff), transparent 18%) !important;
+  transform: translateX(-50%) !important;
+  opacity: .70 !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1.65) !important;
+  z-index: 6 !important;
+  border-color: rgba(255,255,255,.92) !important;
+  box-shadow:
+    0 0 0 2px rgba(4,11,20,.88),
+    0 0 15px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 38%) !important;
+}
+.timeline-marker:hover::before,
+.timeline-marker:focus-visible::before {
+  opacity: .85 !important;
+}
+.timeline-marker__tooltip {
+  bottom: calc(100% + 14px) !important;
+  transform: translate(-50%, 8px) !important;
+}
+.timeline-marker:hover .timeline-marker__tooltip,
+.timeline-marker:focus-visible .timeline-marker__tooltip {
+  transform: translate(-50%, 0) !important;
+}
+
+.timeline-scrubber-stack {
+  gap: 10px !important;
+}
+.progress--scrubbable {
+  margin-top: 0 !important;
+}
+.timeline-year-scale {
+  margin-top: 4px !important;
+}
