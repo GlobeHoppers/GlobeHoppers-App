@@ -1,1 +1,1 @@
-GlobeHoppers v3.48 — Correct Repository Data Paths
+GlobeHoppers v3.49 — Calm Add Hop + Clean Mixed Accents
