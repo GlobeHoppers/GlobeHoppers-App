@@ -1,14 +1,17 @@
-# GlobeHoppers v3.30
+# GlobeHoppers v3.31
 
-Hoppers and Hop Squads foundation:
-- Added src/data/hoppers.json with Joey, Bonnie, and The Neptunes squad
-- Added Edit Hoppers panel with editable hopper names/colors
-- Added Hop Squads section for named groups and exact-member group colors
-- Edit Hoppers can commit src/data/hoppers.json to GitHub using the stored repo/token
-- Top nav is now Add Hop, GlobeHopper Timeline, Edit Timeline, Edit Hoppers
-- Hero CTA now says Play GlobeHoppers Timeline and Add Hop
-- Add/Edit modal wording updated toward Hop language: Hoppers, Hop Type, Hop Title, Hop Dates
-- Add/Edit modal supports per-hop Guest Hoppers
-- Added a hoppers utility layer for exact squad matching and hopper colors
-- Placard culling tightened further around globe rim/backside while preserving front-facing local labels
-- package intentionally omits src/data/trips.json and package-lock.json
+Hoppers UI refinement and Hop language polish:
+- Hero Add Hop button now uses the same green style as the top Add Hop button
+- Edit Hoppers panel is more compact and streamlined
+- Hopper rows now keep name, color label, color selector, and delete button on one row
+- Hopper color options are hidden behind a single color circle until clicked
+- Added Delete Hopper and Delete Squad controls
+- Edit Timeline row colors now resolve from the current hopper/hop squad data
+- Edit Timeline title changed to Edit GlobeHopper Timeline
+- Timeline drawer title changed to Globehopper Timeline
+- Add/Edit Hop now shows the configured hoppers instead of hardcoded travelers
+- Add/Edit Hop includes a Guest Hopper popup with Name, color circle, OK, and Cancel
+- Hop Squad unselected hoppers now appear gray/diagonal to clearly show they are not selected
+- Vessel icon color matching includes the hopper palette colors
+- Continued rim/backside placard culling tuning
+- package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json

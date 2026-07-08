@@ -4,6 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { geoInterpolate } from 'd3-geo';
 import LegacySvgMap from './LegacySvgMap.jsx';
 import { flattenLegs, getTravelerKey } from '../utils/tripExpansion.js';
+import { resolveTripVisual } from '../utils/hopperUtils.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
@@ -84,7 +85,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -172,8 +173,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
       } catch {}
       addRouteSourcesAndLayers(map);
       addPulseLayer(map);
-      syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-      const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, travById, homeBases);
+      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
+      const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
       updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
       setMapReady(true);
@@ -335,7 +336,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     // Completed route history is static map data. Only rebuild it when a leg
     // completes, route cache changes, or display settings change. Avoid doing
     // this in the per-frame playback loop.
-    syncCompletedRoutes(map, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries);
+    syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
   }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
 
   useEffect(() => {
@@ -343,7 +344,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, activeIndex, le
     if (!mapReady || !map) return;
     // Visited points and labels change only when the timeline reaches a new
     // destination, not on every animation frame.
-    const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, travById, homeBases);
+    const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
     updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
   }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview]);
@@ -706,9 +707,10 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   pathEl.style.opacity = String(Math.min(1, 0.25 + sceneState.lineProgress * 1.1));
 }
 
-function colorForLeg(active, travelersById) {
+function colorForLeg(active, travelerData) {
   if (active?.trip?.isHomeMove || active?.leg?.mode === 'move') return '#050607';
-  return travelersById[getTravelerKey(active.trip)]?.color || '#00e5ff';
+  if (travelerData?.hoppers || travelerData?.hopSquads) return resolveTripVisual(active?.trip || {}, travelerData).color || '#00e5ff';
+  return travelerData?.[getTravelerKey(active.trip)]?.color || '#00e5ff';
 }
 
 function buildVisitedLocations(completedLegs, active, completedMode, scene, travelersById = {}, homeBases = []) {
@@ -1640,15 +1642,15 @@ function colorToIconName(color) {
   const aliases = {
     '#00e5ff': 'Cyan', '#00ffff': 'Cyan', cyan: 'Cyan',
     '#ff8a00': 'Orange', '#ffa500': 'Orange', orange: 'Orange',
-    '#ff4fb8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
+    '#ff4fb8': 'Pink', '#ff4fd8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
     '#000000': 'Black', black: 'Black',
-    '#808080': 'Gray', '#888888': 'Gray', gray: 'Gray', grey: 'Gray',
-    '#ffd700': 'Gold', gold: 'Gold',
-    '#ffff00': 'Yellow', yellow: 'Yellow',
-    '#00ff00': 'Green', green: 'Green',
-    '#800080': 'Purple', '#a020f0': 'Purple', purple: 'Purple',
-    '#ff0000': 'Red', red: 'Red',
-    '#0000ff': 'Blue', '#007bff': 'Blue', blue: 'Blue'
+    '#808080': 'Gray', '#888888': 'Gray', '#8e99a8': 'Gray', gray: 'Gray', grey: 'Gray',
+    '#ffd700': 'Gold', '#d7a300': 'Gold', gold: 'Gold',
+    '#ffff00': 'Yellow', '#ffd60a': 'Yellow', yellow: 'Yellow',
+    '#00ff00': 'Green', '#44f48a': 'Green', green: 'Green',
+    '#800080': 'Purple', '#a020f0': 'Purple', '#9b5cff': 'Purple', purple: 'Purple',
+    '#ff0000': 'Red', '#ff3b30': 'Red', red: 'Red',
+    '#0000ff': 'Blue', '#007bff': 'Blue', '#2f80ff': 'Blue', blue: 'Blue'
   };
   return aliases[value] || null;
 }

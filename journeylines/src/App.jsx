@@ -268,7 +268,7 @@ export default function App() {
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
-      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>GlobeHopper Timeline</button>
+      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Globehopper Timeline</button>
       <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Timeline</button>
       <button className="topbar-pill" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}>Edit Hoppers</button>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
@@ -276,14 +276,14 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
       <h1>GlobeHoppers</h1>
       <p>All your hops, skips & jumps, replayed across a living globe.</p>
       <div className="hero-actions">
-        <button className="primary big" onClick={play}>Play GlobeHoppers Timeline</button>
-        <button className="secondary big" onClick={addTravelTimelineEntry}>Add Hop</button>
+        <button className="primary big" onClick={play}>Play GlobeHopper Timeline</button>
+        <button className="primary big hero-add-hop" onClick={addTravelTimelineEntry}>Add Hop</button>
         <button className="secondary big" onClick={viewGlobe}>View Globe</button>
       </div>
     </section>}
@@ -294,7 +294,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} />}
   </main>;
 }
 
@@ -304,16 +304,35 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
   const [busy, setBusy] = useState(false);
+  const [openPicker, setOpenPicker] = useState(null);
   const token = localStorage.getItem('journeylines.githubToken') || '';
   const repo = localStorage.getItem('journeylines.repo') || '';
   const colors = palette?.length ? palette : [
+    { name: 'red', label: 'Red', color: '#ff3b30' },
     { name: 'orange', label: 'Orange', color: '#ff8a00' },
+    { name: 'yellow', label: 'Yellow', color: '#ffd60a' },
+    { name: 'gold', label: 'Gold', color: '#d7a300' },
+    { name: 'green', label: 'Green', color: '#44f48a' },
+    { name: 'blue', label: 'Blue', color: '#2f80ff' },
     { name: 'pink', label: 'Pink', color: '#ff4fd8' },
+    { name: 'purple', label: 'Purple', color: '#9b5cff' },
+    { name: 'gray', label: 'Gray', color: '#8e99a8' },
+    { name: 'black', label: 'Black', color: '#050607' },
     { name: 'cyan', label: 'Cyan', color: '#00e5ff' }
   ];
 
+  function pickColor(colorName) {
+    return colors.find(c => c.name === colorName) || colors.find(c => c.name === 'blue') || colors[0];
+  }
   function updateHopper(id, patch) {
     setDraft(d => ({ ...d, hoppers: d.hoppers.map(h => h.id === id ? { ...h, ...patch } : h) }));
+  }
+  function deleteHopper(id) {
+    setDraft(d => ({
+      ...d,
+      hoppers: d.hoppers.filter(h => h.id !== id),
+      hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) }))
+    }));
   }
   function addHopper() {
     const id = `hopper-${Date.now().toString(36)}`;
@@ -326,8 +345,14 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const id = `squad-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hopSquads: [...d.hopSquads, { id, name: 'New Hop Squad', hopperIds: [], colorName: 'cyan', color: '#00e5ff' }] }));
   }
-  function pickColor(colorName) {
-    return colors.find(c => c.name === colorName) || colors[0];
+  function deleteSquad(id) {
+    setDraft(d => ({ ...d, hopSquads: d.hopSquads.filter(s => s.id !== id) }));
+  }
+  function setColor(kind, id, colorName) {
+    const c = pickColor(colorName);
+    if (kind === 'hopper') updateHopper(id, { colorName: c.name, color: c.color });
+    else updateSquad(id, { colorName: c.name, color: c.color });
+    setOpenPicker(null);
   }
   async function save() {
     const clean = {
@@ -350,7 +375,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     onClose?.();
   }
   return <section className="hopper-editor-backdrop" onClick={onClose}>
-    <div className="hopper-editor glass" onClick={e => e.stopPropagation()}>
+    <div className="hopper-editor glass hopper-editor--compact" onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
         <p className="eyebrow">GlobeHoppers Studio</p>
         <h2>Edit Hoppers</h2>
@@ -363,9 +388,11 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
             <button className="primary small" onClick={addHopper}>Add Hopper</button>
           </div>
           <div className="hopper-list">
-            {draft.hoppers.map(h => <article className="hopper-card" key={h.id} style={{ '--accent': h.color }}>
-              <input value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
-              <ColorPicker colors={colors} value={h.colorName} onChange={(name) => { const c = pickColor(name); updateHopper(h.id, { colorName: c.name, color: c.color }); }} />
+            {draft.hoppers.map(h => <article className="hopper-card hopper-card--row" key={h.id} style={{ '--accent': h.color }}>
+              <input aria-label="Hopper name" value={h.name} onChange={e => updateHopper(h.id, { name: e.target.value })} />
+              <span className="hopper-color-label">Color:</span>
+              <ColorPopover colors={colors} value={h.colorName || 'blue'} color={h.color || '#2f80ff'} open={openPicker === `hopper:${h.id}`} onToggle={() => setOpenPicker(openPicker === `hopper:${h.id}` ? null : `hopper:${h.id}`)} onChoose={(name) => setColor('hopper', h.id, name)} />
+              <button className="danger compact-delete" type="button" onClick={() => deleteHopper(h.id)}>Delete</button>
             </article>)}
           </div>
         </section>
@@ -376,18 +403,22 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
           </div>
           <div className="hopper-list">
             {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
-              <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
+              <div className="squad-row-top">
+                <input value={s.name} onChange={e => updateSquad(s.id, { name: e.target.value })} />
+                <span className="hopper-color-label">Color:</span>
+                <ColorPopover colors={colors} value={s.colorName || 'cyan'} color={s.color || '#00e5ff'} open={openPicker === `squad:${s.id}`} onToggle={() => setOpenPicker(openPicker === `squad:${s.id}` ? null : `squad:${s.id}`)} onChoose={(name) => setColor('squad', s.id, name)} />
+                <button className="danger compact-delete" type="button" onClick={() => deleteSquad(s.id)}>Delete</button>
+              </div>
               <div className="squad-members">
                 {draft.hoppers.map(h => {
                   const selected = (s.hopperIds || []).includes(h.id);
-                  return <button type="button" key={h.id} className={selected ? 'is-selected' : ''} style={{ '--accent': h.color }} onClick={() => {
+                  return <button type="button" key={h.id} className={selected ? 'is-selected' : 'is-unselected'} style={{ '--accent': h.color }} onClick={() => {
                     const ids = new Set(s.hopperIds || []);
                     selected ? ids.delete(h.id) : ids.add(h.id);
                     updateSquad(s.id, { hopperIds: [...ids] });
                   }}><span />{h.name}</button>;
                 })}
               </div>
-              <ColorPicker colors={colors} value={s.colorName} onChange={(name) => { const c = pickColor(name); updateSquad(s.id, { colorName: c.name, color: c.color }); }} />
             </article>)}
           </div>
         </section>
@@ -400,10 +431,13 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   </section>;
 }
 
-function ColorPicker({ colors = [], value, onChange }) {
-  return <div className="color-picker">
-    {colors.filter(c => c.name !== 'cyan' || true).map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChange?.(c.name)} />)}
-  </div>;
+function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
+  return <span className="color-popover">
+    <button type="button" className="color-popover__trigger" style={{ '--swatch': color }} onClick={onToggle} title="Choose color" />
+    {open && <span className="color-popover__menu glass">
+      {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
+    </span>}
+  </span>;
 }
 
 function slugify(value = '') {
@@ -516,7 +550,7 @@ function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollSt
         <p className="eyebrow">GlobeHoppers Studio</p>
         <ViewTypeSelector value={viewType} onChange={onViewTypeChange} />
         <button className="drawer-close-button" onClick={() => { setMenu(null); onClose(); }}>Close</button>
-        <h2>Travel Timeline</h2>
+        <h2>Globehopper Timeline</h2>
       </div>
       <div ref={listRef} className={`trip-drawer__list trip-drawer__list--${viewType}`} onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => { userScrollingRef.current = true; e.stopPropagation(); }} onScroll={(e) => { userScrollingRef.current = true; window.clearTimeout(scrollTimerRef.current); scrollTimerRef.current = window.setTimeout(() => { userScrollingRef.current = false; }, 180); onScrollStore?.(e.currentTarget.scrollTop); }}>
         {viewType === 'card' ? grouped.map(group => <section className="timeline-year-section" key={group.year}>

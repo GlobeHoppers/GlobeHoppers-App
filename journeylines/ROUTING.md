@@ -1,1 +1,1 @@
-Mapbox routing behavior unchanged. This package intentionally omits src/data/trips.json and package-lock.json. This first hoppers update includes src/data/hoppers.json to seed the new Hoppers data model.
+Mapbox routing behavior unchanged. This package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json so website edits are not overwritten.
