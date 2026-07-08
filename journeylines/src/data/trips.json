@@ -2681,10 +2681,10 @@
     "sortKey": "2026-12-99-012",
     "label": "Atlanta",
     "travelers": [
-      "joey"
+      "bonnie"
     ],
     "guestHoppers": [],
-    "mode": "plane",
+    "mode": "train",
     "roundTrip": true,
     "returnMode": "drive",
     "fromLocationId": null,
