@@ -295,9 +295,9 @@ export default function App() {
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
-      <button className="topbar-pill" onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>GlobeHopper Timeline</button>
-      <button className="topbar-pill topbar-edit" onClick={editTravelHistory}>Edit Timeline</button>
-      <button className="topbar-pill" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}>Edit Hoppers</button>
+      <button className="topbar-pill topbar-old-timeline" aria-hidden="true" tabIndex={-1} onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Old Timeline</button>
+      <button className="topbar-pill" onClick={editTravelHistory}>GlobeHopper Timeline</button>
+      <button className="topbar-pill topbar-hoppers" onClick={() => { setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
       <button className="topbar-pill topbar-icon-pill topbar-fullscreen" title={document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'} onClick={() => document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.()}><span className="fullscreen-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
       <button className="topbar-pill topbar-icon-pill" title="View Globe" onClick={viewGlobe}>🌐</button>
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
@@ -420,7 +420,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     <div className={`hopper-editor glass hopper-editor--compact hopper-editor-drawer ${closing ? 'is-closing' : ''}`} onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
         <p className="eyebrow">GlobeHoppers Studio</p>
-        <h2>Edit Hoppers</h2>
+        <h2>Hoppers and Hop Squads</h2>
         <button className="drawer-close-button" onClick={requestClose}>Close</button>
       </header>
       <div className="hopper-editor__body">

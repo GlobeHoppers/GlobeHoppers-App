@@ -1,1 +1,1 @@
-GlobeHoppers v3.68 — Cancel Button + Neutral Timeline + Popup Restore
+GlobeHoppers v3.69 — Hoppers Menu + Cancel Alignment + Gray Timeline
