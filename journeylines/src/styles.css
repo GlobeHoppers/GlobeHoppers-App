@@ -5643,3 +5643,109 @@ textarea,
   color: rgba(225,240,255,.54) !important;
   font-size: .62rem !important;
 }
+
+
+/* GlobeHoppers v3.54 pin-style timeline + squad badge breathing room */
+
+/* Add permanent breathing room so the squad badge appearing does not shift the panel vertically. */
+.travelers-section .section-heading-inline {
+  min-height: 24px !important;
+  margin-bottom: 14px !important;
+}
+.travelers-section .pill-selectors {
+  padding-top: 2px !important;
+}
+
+/* Restyle the bottom timeline as a cleaner pin/tick timeline instead of a dense row of bright dots. */
+.timeline-marker {
+  top: -9px !important;
+  width: 11px !important;
+  height: 15px !important;
+  border: 0 !important;
+  border-radius: 9px 9px 9px 2px !important;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--marker-color, #00e5ff), white 10%),
+      color-mix(in srgb, var(--marker-color, #00e5ff), black 8%)) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.45),
+    0 2px 4px rgba(0,0,0,.32),
+    0 0 8px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 72%) !important;
+  opacity: .68 !important;
+  transform: translate(-50%, -50%) rotate(-45deg) !important;
+}
+.timeline-marker::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.88) !important;
+  transform: translate(-50%, -50%) !important;
+  box-shadow: 0 0 4px rgba(0,0,0,.25) !important;
+}
+.timeline-marker::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 13px !important;
+  width: 1px !important;
+  height: 13px !important;
+  background: color-mix(in srgb, var(--marker-color, #00e5ff), transparent 42%) !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  transform-origin: top center !important;
+  opacity: .55 !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) rotate(-45deg) scale(1.36) !important;
+  z-index: 5 !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.88),
+    0 4px 10px rgba(0,0,0,.42),
+    0 0 16px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 42%) !important;
+}
+
+/* The tooltip is custom now, so no white browser title box. Center the text and make it readable. */
+.timeline-marker__tooltip {
+  left: 50% !important;
+  bottom: calc(100% + 16px) !important;
+  transform: translate(-50%, 8px) rotate(45deg) !important;
+  min-width: 150px !important;
+  max-width: 230px !important;
+  text-align: center !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(8, 19, 34, .98), rgba(4, 11, 21, .96)) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), transparent 45%) !important;
+  color: #f3fbff !important;
+  box-shadow:
+    0 16px 36px rgba(0,0,0,.46),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  white-space: normal !important;
+  opacity: 0 !important;
+}
+.timeline-marker:hover .timeline-marker__tooltip,
+.timeline-marker:focus-visible .timeline-marker__tooltip {
+  opacity: 1 !important;
+  transform: translate(-50%, 0) rotate(45deg) !important;
+}
+.timeline-marker__tooltip small {
+  text-align: center !important;
+  margin-top: 5px !important;
+}
+
+/* Give the scrubber a little extra vertical room for the pins and labels. */
+.controls {
+  padding-top: 18px !important;
+}
+.progress--scrubbable {
+  margin-top: 6px !important;
+}
+.timeline-year-scale {
+  margin-top: 1px !important;
+}

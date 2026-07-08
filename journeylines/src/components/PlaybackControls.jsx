@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], yearSegments = [] }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const advancedRef = useRef(null);
@@ -26,8 +26,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
               type="button"
               className="timeline-marker"
               style={{ left: `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSeekProgress?.(marker.progress); }}
-              title={`${marker.title} · ${marker.date}`}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
             >
               <span className="timeline-marker__tooltip">{marker.title}<small>{marker.date}</small></span>
             </button>)}

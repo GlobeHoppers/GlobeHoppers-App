@@ -9,7 +9,7 @@ import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
-import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon } from '../utils/vesselIcons.js';
+import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 2.55;
@@ -111,6 +111,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const forceSceneJumpRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
+
+  useEffect(() => { preloadBaseVesselIcons(); }, []);
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);

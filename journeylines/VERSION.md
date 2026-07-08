@@ -1,1 +1,1 @@
-GlobeHoppers v3.53 — Timeline Calm + Studio Icon Cleanup
+GlobeHoppers v3.54 — Timeline Pins + Vessel Preload

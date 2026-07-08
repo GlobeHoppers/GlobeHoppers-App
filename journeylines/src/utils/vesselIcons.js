@@ -13,6 +13,19 @@ const BASE_ICON_URLS = {
   train: trainBlue
 };
 
+const BASE_ICON_PRELOAD_URLS = [...new Set(Object.values(BASE_ICON_URLS))];
+const baseImagePreloadCache = new Map();
+
+preloadBaseVesselIcons();
+
+export function preloadBaseVesselIcons() {
+  for (const src of BASE_ICON_PRELOAD_URLS) {
+    if (baseImagePreloadCache.has(src)) continue;
+    const promise = loadImage(src).catch(() => null);
+    baseImagePreloadCache.set(src, promise);
+  }
+}
+
 const iconPromiseCache = new Map();
 const iconValueCache = new Map();
 
@@ -79,7 +92,7 @@ function normalizeHex(color = '#00e5ff') {
 }
 
 async function recolorBlueIcon(src, targetColor) {
-  const img = await loadImage(src);
+  const img = await (baseImagePreloadCache.get(src) || loadImage(src));
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
