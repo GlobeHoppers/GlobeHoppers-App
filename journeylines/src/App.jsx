@@ -64,6 +64,17 @@ export default function App() {
     return () => window.removeEventListener('globehoppers-close-studio', closeStudio);
   }, []);
 
+  useEffect(() => {
+    const pauseForHopModal = () => {
+      resumeAfterStudioRef.current = isPlaying;
+      freezePlaybackClock();
+      tRef.current.last = null;
+      setIsPlaying(false);
+    };
+    window.addEventListener('globehoppers-pause-for-hop-modal', pauseForHopModal);
+    return () => window.removeEventListener('globehoppers-pause-for-hop-modal', pauseForHopModal);
+  }, [isPlaying, activeIndex, legProgress, legs, speed]);
+
   const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
   const filteredTrips = useMemo(() => sortedTrips.filter(t => {
     const hasJ = t.travelers?.includes('joey'), hasB = t.travelers?.includes('bonnie');
@@ -156,8 +167,6 @@ export default function App() {
     setIsPlaying(true);
   }, [activeIndex, legProgress, legs, speed]);
   function editTravelHistory() {
-    resumeAfterStudioRef.current = isPlaying;
-    freezePlaybackClock();
     setGlobeOverview(false);
     setShowHero(false);
     setTripDrawerOpen(false);
@@ -165,8 +174,6 @@ export default function App() {
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
-    tRef.current.last = null;
-    setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
     resumeAfterStudioRef.current = isPlaying;
@@ -294,7 +301,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} />}
+    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} />}
   </main>;
 }
 

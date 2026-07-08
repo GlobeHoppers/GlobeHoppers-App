@@ -4515,3 +4515,100 @@ button.danger.compact-delete,
   overflow-wrap: anywhere !important;
   word-break: normal !important;
 }
+
+
+/* GlobeHoppers v3.39 menu glass, active edit timeline, mixed accents */
+
+/* More transparent / glassy timeline, edit timeline, and hopper drawers */
+.trip-drawer.glass,
+.studio-panel.glass,
+.hopper-editor.glass {
+  background:
+    linear-gradient(180deg, rgba(8, 16, 31, .78), rgba(4, 10, 20, .68)) !important;
+  backdrop-filter: blur(18px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+}
+.trip-drawer__row,
+.studio-trip-row,
+.hopper-card {
+  background-color: rgba(14, 24, 39, .66) !important;
+}
+
+/* Edit timeline rows should show mixed-group accent corners */
+.studio-trip-row {
+  position: relative;
+  overflow: hidden;
+}
+.studio-trip-row.is-mixed::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent-2), transparent 64%);
+  opacity: .95;
+  pointer-events: none;
+}
+.studio-trip-row.is-mixed {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent), transparent 86%), color-mix(in srgb, var(--accent-2), transparent 94%)),
+    rgba(14, 24, 39, .68) !important;
+}
+.studio-trip-row.is-active {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent), transparent 10%),
+    0 0 18px color-mix(in srgb, var(--accent), transparent 75%) !important;
+  filter: saturate(1.15) brightness(1.08);
+}
+
+/* Date cells: allow more wrapping so September/December dates do not collide with title. */
+.studio-trip-date,
+.trip-drawer__row-date,
+.trip-date,
+.timeline-date {
+  white-space: normal !important;
+  line-height: 1.08 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+  min-width: 76px !important;
+  max-width: 94px !important;
+}
+.studio-trip-row--expanded .studio-trip-date,
+.studio-trip-row--compact .studio-trip-date {
+  display: block !important;
+}
+.studio-trip-row {
+  grid-template-columns: minmax(82px, 96px) minmax(0, 1fr) auto !important;
+}
+
+/* Active card: color each mixed traveler/guest name individually. */
+.trip-card__traveler-name {
+  font-weight: 950;
+}
+
+/* Keep the guest color picker on screen even when near the left side of the modal. */
+.guest-hopper-popover {
+  left: 64px !important;
+}
+.guest-hopper-popover .color-popover__menu {
+  left: 0 !important;
+  right: auto !important;
+  transform: translateX(-18px) !important;
+}
+
+/* Hopper squad unselected state, restated at end so it wins. */
+.squad-members button.is-unselected {
+  opacity: .55 !important;
+  color: rgba(230,248,255,.58) !important;
+  border-color: rgba(160,170,180,.30) !important;
+  background:
+    repeating-linear-gradient(135deg, rgba(160,170,180,.22) 0 4px, transparent 4px 9px),
+    rgba(120,130,145,.09) !important;
+}
+.squad-members button.is-unselected span {
+  background: transparent !important;
+  border: 2px solid rgba(180,190,200,.50) !important;
+  box-shadow: none !important;
+}
