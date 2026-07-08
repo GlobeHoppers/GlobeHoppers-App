@@ -64,6 +64,26 @@ export default function App() {
     return () => window.removeEventListener('globehoppers-close-studio', closeStudio);
   }, []);
 
+
+  const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
+  const filteredTrips = useMemo(() => sortedTrips.filter(t => {
+    const hasJ = t.travelers?.includes('joey'), hasB = t.travelers?.includes('bonnie');
+    if (filter === 'joey') return hasJ;
+    if (filter === 'bonnie') return hasB;
+    if (filter === 'together') return hasJ && hasB;
+    return true;
+  }), [sortedTrips, filter]);
+  const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
+  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const travelers = useMemo(() => travelerListForLegacy(normalizedHoppers), [normalizedHoppers]);
+  const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
+  const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
+  const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, normalizedHoppers), [filteredTrips, legs, locById, normalizedHoppers]);
+  const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
+  const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
+  const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
+  const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
+
   useEffect(() => {
     const pauseForHopModal = () => {
       resumeAfterStudioRef.current = isPlaying;
@@ -85,25 +105,6 @@ export default function App() {
       window.removeEventListener('globehoppers-resume-after-hop-modal', resumeAfterHopModal);
     };
   }, [isPlaying, activeIndex, legProgress, legs, speed]);
-
-  const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
-  const filteredTrips = useMemo(() => sortedTrips.filter(t => {
-    const hasJ = t.travelers?.includes('joey'), hasB = t.travelers?.includes('bonnie');
-    if (filter === 'joey') return hasJ;
-    if (filter === 'bonnie') return hasB;
-    if (filter === 'together') return hasJ && hasB;
-    return true;
-  }), [sortedTrips, filter]);
-  const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
-  const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
-  const travelers = useMemo(() => travelerListForLegacy(normalizedHoppers), [normalizedHoppers]);
-  const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
-  const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
-  const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, normalizedHoppers), [filteredTrips, legs, locById, normalizedHoppers]);
-  const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
-  const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
-  const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
-  const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
 
   useEffect(() => {
     if (!isPlaying || !legs.length) return;
