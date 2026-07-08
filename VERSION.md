@@ -1,1 +1,1 @@
-GlobeHoppers v3.46 — Preview Accent + Confirmation Cleanup
+GlobeHoppers v3.47 — Blended Timeline Accents + Preview Corner Fix
