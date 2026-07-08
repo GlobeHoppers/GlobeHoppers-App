@@ -6544,3 +6544,250 @@ textarea,
   height: 16px !important;
   margin-top: 1px !important;
 }
+
+
+/* GlobeHoppers v3.60 custom picker OK + thin timeline pins */
+
+/* The 6th second-row custom swatch is a true rainbow circle unless a custom color is selected. */
+.color-popover__menu--custom {
+  display: grid !important;
+  grid-template-columns: repeat(6, 28px) !important;
+  gap: 8px !important;
+  width: max-content !important;
+  min-width: auto !important;
+  align-items: center !important;
+}
+.color-popover__menu--custom > button,
+.color-popover__menu--custom .custom-rainbow-swatch {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+button.custom-rainbow-swatch,
+.color-popover__menu--custom button.custom-rainbow-swatch {
+  border: 1px solid rgba(255,255,255,.50) !important;
+  background:
+    radial-gradient(circle at 48% 45%, rgba(255,255,255,.18), transparent 28%),
+    conic-gradient(from 0deg, #ff3b30, #ff8a00, #ffd60a, #44f48a, #00e5ff, #2f80ff, #9b5cff, #ff4fd8, #ff3b30) !important;
+  box-shadow: 0 0 10px rgba(255,255,255,.14) !important;
+}
+button.custom-rainbow-swatch.is-selected,
+.color-popover__menu--custom button.custom-rainbow-swatch.is-selected {
+  background:
+    radial-gradient(circle at 48% 45%, rgba(255,255,255,.20), transparent 28%),
+    var(--custom-swatch, #00e5ff) !important;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.72),
+    0 0 13px color-mix(in srgb, var(--custom-swatch, #00e5ff), transparent 45%) !important;
+}
+.custom-color-hidden-input,
+.custom-color-actions,
+.custom-color-editor,
+.custom-color-picker,
+.custom-color-hex,
+.custom-color-wheel,
+.custom-color-hex-input {
+  display: none !important;
+}
+
+/* In-app custom picker panel. Color only commits when OK is clicked. */
+.custom-color-panel {
+  position: absolute !important;
+  left: calc(100% + 12px) !important;
+  top: 0 !important;
+  z-index: 120 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  width: 245px !important;
+  padding: 10px !important;
+  border-radius: 16px !important;
+}
+.custom-color-field {
+  position: relative !important;
+  display: block !important;
+  height: 142px !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background:
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, var(--hue-color, #00e5ff)) !important;
+}
+.custom-color-field input[type='color'] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: .01 !important;
+  cursor: crosshair !important;
+}
+.custom-color-row {
+  display: grid !important;
+  grid-template-columns: 32px 1fr !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.custom-color-preview {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  background: var(--swatch, #00e5ff) !important;
+  border: 1px solid rgba(255,255,255,.50) !important;
+}
+.custom-hue-slider {
+  width: 100% !important;
+  height: 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red) !important;
+}
+.custom-rgb-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+}
+.custom-rgb-row label {
+  display: grid !important;
+  gap: 3px !important;
+  color: rgba(230,242,255,.76) !important;
+  font-size: 10px !important;
+  text-align: center !important;
+}
+.custom-rgb-row input {
+  width: 100% !important;
+  height: 28px !important;
+  padding: 3px 5px !important;
+  text-align: center !important;
+}
+.custom-rgb-row b {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+.custom-color-ok {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: end !important;
+  height: 32px !important;
+  min-width: 48px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+/* Keep the original thin playback bar, bottom-justified with the label and year row. */
+.controls {
+  padding: 12px !important;
+  min-height: 0 !important;
+  align-items: end !important;
+}
+.timeline-scrubber {
+  align-items: end !important;
+  grid-template-columns: auto minmax(180px, 1fr) !important;
+}
+.timeline-scrubber-stack {
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  gap: 3px !important;
+  align-items: end !important;
+}
+.progress--scrubbable {
+  height: 9px !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+}
+.timeline-year-scale {
+  height: 16px !important;
+  margin-top: 0 !important;
+}
+.timeline-marker-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+}
+
+/* Small trip pins are back on the thin timeline without changing bar height. */
+.timeline-marker {
+  position: absolute !important;
+  top: -6px !important;
+  width: 8px !important;
+  height: 8px !important;
+  padding: 0 !important;
+  border-radius: 999px 999px 999px 2px !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.42), transparent 32%),
+    var(--marker-color, #00e5ff) !important;
+  box-shadow:
+    0 0 0 1px rgba(3,10,19,.78),
+    0 0 7px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 70%) !important;
+  opacity: .78 !important;
+  transform: translate(-50%, -50%) rotate(-45deg) !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 7 !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) rotate(-45deg) scale(1.45) !important;
+  z-index: 9 !important;
+}
+.timeline-marker::before,
+.timeline-marker::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* State-controlled tooltip, one line, vertically centered in the bubble. */
+.timeline-marker__tooltip {
+  position: absolute !important;
+  bottom: calc(100% + 10px) !important;
+  transform: translate(-50%, 0) !important;
+  min-width: max-content !important;
+  max-width: 260px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(8, 19, 34, .98), rgba(4, 11, 21, .96)) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), transparent 45%) !important;
+  color: #f3fbff !important;
+  font-size: clamp(.58rem, .72vw, .76rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: 40 !important;
+}
+.timeline-marker__tooltip.is-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.timeline-marker__tooltip strong,
+.timeline-marker__tooltip small {
+  display: inline !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+}
+.timeline-marker__tooltip small {
+  color: rgba(225,240,255,.76) !important;
+  font-size: .9em !important;
+  font-weight: 700 !important;
+}

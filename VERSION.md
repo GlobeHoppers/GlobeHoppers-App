@@ -1,1 +1,1 @@
-GlobeHoppers v3.59 — Thin Timeline Restore + Native Custom Color Picker
+GlobeHoppers v3.60 — Custom Picker OK + Thin Timeline Pins

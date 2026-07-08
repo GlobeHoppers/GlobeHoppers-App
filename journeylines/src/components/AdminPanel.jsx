@@ -985,23 +985,125 @@ function tripAccent(trip, hopperData) {
 
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
   const currentColor = normalizeHexColor(color || '#00e5ff');
-  const customInputId = useMemo(() => `custom-color-${Math.random().toString(36).slice(2)}`, []);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [draftColor, setDraftColor] = useState(currentColor);
+  useEffect(() => {
+    if (open) {
+      setCustomOpen(false);
+      setDraftColor(currentColor);
+    }
+  }, [open, currentColor]);
 
-  function chooseCustom(nextColor) {
-    onChoose?.('custom', normalizeHexColor(nextColor));
+  const draft = hexToRgbDraft(draftColor);
+  const hueColor = rgbHueColor(draft.r, draft.g, draft.b);
+
+  function openCustomPicker() {
+    setDraftColor(currentColor);
+    setCustomOpen(true);
+  }
+
+  function applyCustom() {
+    const clean = normalizeHexColor(draftColor);
+    onChoose?.('custom', clean);
+    setCustomOpen(false);
     onToggle?.();
+  }
+
+  function setDraftRgb(part, value) {
+    const next = { ...draft, [part]: clampRgb(value) };
+    setDraftColor(rgbToHexDraft(next.r, next.g, next.b));
+  }
+
+  function setHueFromInput(e) {
+    const hue = Number(e.target.value) || 0;
+    const rgb = hslToRgbDraft(hue / 360, 0.82, 0.52);
+    setDraftColor(rgbToHexDraft(rgb.r, rgb.g, rgb.b));
   }
 
   return <span className="color-popover">
     <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
     {open && <span className="color-popover__menu glass color-popover__menu--custom">
       {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
-      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} title="Custom color" onClick={() => document.getElementById(customInputId)?.click()} />
-      <input id={customInputId} className="custom-color-hidden-input" type="color" value={currentColor} onChange={(e) => chooseCustom(e.target.value)} />
+      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} style={{ '--custom-swatch': value === 'custom' ? currentColor : 'transparent' }} title="Custom color" onClick={openCustomPicker} />
+      {customOpen && <span className="custom-color-panel glass">
+        <span className="custom-color-field" style={{ '--hue-color': hueColor }}>
+          <input type="color" value={draftColor} onChange={(e) => setDraftColor(normalizeHexColor(e.target.value))} />
+        </span>
+        <span className="custom-color-row">
+          <span className="custom-color-preview" style={{ '--swatch': draftColor }} />
+          <input className="custom-hue-slider" type="range" min="0" max="360" value={Math.round(rgbToHslDraft(draft.r, draft.g, draft.b).h * 360)} onChange={setHueFromInput} />
+        </span>
+        <span className="custom-rgb-row">
+          <label><input value={draft.r} onChange={(e) => setDraftRgb('r', e.target.value)} /><b>R</b></label>
+          <label><input value={draft.g} onChange={(e) => setDraftRgb('g', e.target.value)} /><b>G</b></label>
+          <label><input value={draft.b} onChange={(e) => setDraftRgb('b', e.target.value)} /><b>B</b></label>
+        </span>
+        <button type="button" className="custom-color-ok" onClick={applyCustom}>OK</button>
+      </span>}
     </span>}
   </span>;
 }
 
+
+function hexToRgbDraft(hex = '#00e5ff') {
+  const clean = normalizeHexColor(hex).slice(1);
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16)
+  };
+}
+function clampRgb(value) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(255, n));
+}
+function rgbToHexDraft(r, g, b) {
+  return '#' + [r, g, b].map(v => clampRgb(v).toString(16).padStart(2, '0')).join('');
+}
+function rgbHueColor(r, g, b) {
+  const h = rgbToHslDraft(r, g, b).h;
+  const rgb = hslToRgbDraft(h, 0.82, 0.52);
+  return rgbToHexDraft(rgb.r, rgb.g, rgb.b);
+}
+function rgbToHslDraft(r, g, b) {
+  r = clampRgb(r) / 255; g = clampRgb(g) / 255; b = clampRgb(b) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+      case g: h = ((b - r) / d + 2); break;
+      default: h = ((r - g) / d + 4); break;
+    }
+    h /= 6;
+  }
+  return { h, s, l };
+}
+function hslToRgbDraft(h, s, l) {
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+}
 
 function normalizeHexColor(value = '#00e5ff') {
   const raw = String(value || '').trim();
