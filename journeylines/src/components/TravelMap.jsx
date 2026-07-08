@@ -325,14 +325,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
             center: [center.lng, center.lat],
             bearing: 0,
             pitch: 0,
-            duration: 1450,
+            duration: 700,
             essential: true,
             easing: t => 1 - Math.pow(1 - t, 3)
           });
           window.setTimeout(() => {
             resetAnimatingRef.current = false;
             manualSpinPauseRef.current = false;
-          }, 1500);
+          }, 760);
         } catch {
           resetAnimatingRef.current = false;
           manualSpinPauseRef.current = false;

@@ -8248,3 +8248,48 @@ button.primary:disabled {
   z-index: 7 !important;
   opacity: .9 !important;
 }
+
+
+/* GlobeHoppers v3.76: top-align Hoppers/HopSquads content and reduce vertical dead space. */
+.hopper-editor.hopper-editor-drawer .hopper-editor__body {
+  align-content: start !important;
+  justify-content: stretch !important;
+  grid-auto-rows: max-content !important;
+  padding-top: 8px !important;
+  gap: 10px !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-editor__body > section {
+  align-self: start !important;
+  align-content: start !important;
+  justify-content: start !important;
+  grid-auto-rows: max-content !important;
+  gap: 6px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-editor__body > section + section {
+  margin-top: 8px !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-section-title {
+  margin: 0 0 2px 0 !important;
+  padding: 0 !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-list {
+  align-content: start !important;
+  justify-content: stretch !important;
+  grid-auto-rows: max-content !important;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-card--row {
+  align-items: center !important;
+  min-height: 0 !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-card--squad {
+  align-self: start !important;
+  min-height: 0 !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
