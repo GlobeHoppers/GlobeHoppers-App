@@ -1,1 +1,1 @@
-GlobeHoppers v3.45 — Group Accent Placement + Themed Delete Popups
+GlobeHoppers v3.46 — Preview Accent + Confirmation Cleanup

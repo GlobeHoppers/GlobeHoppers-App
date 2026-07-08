@@ -332,6 +332,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
   const [busy, setBusy] = useState(false);
   const [openPicker, setOpenPicker] = useState(null);
+  const [confirmRequest, setConfirmRequest] = useState(null);
   const token = localStorage.getItem('journeylines.githubToken') || '';
   const repo = localStorage.getItem('journeylines.repo') || '';
   const colors = palette?.length ? palette : [
@@ -351,14 +352,30 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   function pickColor(colorName) { return colors.find(c => c.name === colorName) || colors.find(c => c.name === 'blue') || colors[0]; }
   function updateHopper(id, patch) { setDraft(d => ({ ...d, hoppers: d.hoppers.map(h => h.id === id ? { ...h, ...patch } : h) })); }
   function deleteHopper(id) {
-    setDraft(d => ({ ...d, hoppers: d.hoppers.filter(h => h.id !== id), hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) })) }));
+    const hopper = draft.hoppers.find(h => h.id === id);
+    const label = hopper?.name || 'this Hopper';
+    setConfirmRequest({
+      title: 'Delete Hopper?',
+      message: `Delete ${label}? This will also remove them from any Hop Squads.`,
+      confirmLabel: 'Delete Hopper',
+      onConfirm: () => setDraft(d => ({ ...d, hoppers: d.hoppers.filter(h => h.id !== id), hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) })) }))
+    });
   }
   function addHopper() {
     const id = `hopper-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hoppers: [...d.hoppers, { id, name: 'New Hopper', colorName: 'blue', color: '#2f80ff' }] }));
   }
   function updateSquad(id, patch) { setDraft(d => ({ ...d, hopSquads: d.hopSquads.map(s => s.id === id ? { ...s, ...patch } : s) })); }
-  function deleteSquad(id) { setDraft(d => ({ ...d, hopSquads: d.hopSquads.filter(s => s.id !== id) })); }
+  function deleteSquad(id) {
+    const squad = draft.hopSquads.find(s => s.id === id);
+    const label = squad?.name || 'this Hop Squad';
+    setConfirmRequest({
+      title: 'Delete Hop Squad?',
+      message: `Delete ${label}? Hoppers will stay saved, but this Hop Squad will be removed.`,
+      confirmLabel: 'Delete Squad',
+      onConfirm: () => setDraft(d => ({ ...d, hopSquads: d.hopSquads.filter(s => s.id !== id) }))
+    });
+  }
   function addSquad() {
     const id = `squad-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hopSquads: [...d.hopSquads, { id, name: 'New Hop Squad', hopperIds: [], colorName: 'cyan', color: '#00e5ff' }] }));
@@ -436,7 +453,22 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
       </div>
       <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button></footer>
     </div>
+    {confirmRequest && <HopperConfirmPopup request={confirmRequest} busy={busy} onCancel={() => setConfirmRequest(null)} onConfirm={() => { const action = confirmRequest.onConfirm; setConfirmRequest(null); action?.(); }} />}
   </section>;
+}
+
+function HopperConfirmPopup({ request, busy, onCancel, onConfirm }) {
+  return <div className="studio-confirm-backdrop" role="presentation" onClick={onCancel}>
+    <div className="studio-confirm-popup glass" role="dialog" aria-modal="true" aria-labelledby="hopper-confirm-title" onClick={(e) => e.stopPropagation()}>
+      <p className="eyebrow">Please confirm</p>
+      <h3 id="hopper-confirm-title">{request.title || 'Confirm action'}</h3>
+      <p>{request.message}</p>
+      <div className="studio-confirm-actions">
+        <button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button>
+        <button type="button" className="danger" disabled={busy} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
+      </div>
+    </div>
+  </div>;
 }
 
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {

@@ -457,15 +457,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 function validateHopDraftForSave(draft = {}) {
   const missing = [];
-  if (!draft.month) missing.push('Month');
-  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) missing.push('Hoppers');
-  if (!draft.toLocationId && !draft.toLocationText?.trim()) missing.push('Destination');
+  if (!draft.month) missing.push(['Month', 'Please choose a month']);
+  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) missing.push(['Hoppers', 'Please add at least one Hopper or Guest Hopper']);
+  if (!draft.toLocationId && !draft.toLocationText?.trim()) missing.push(['Destination', 'Please choose a destination']);
   if (!missing.length) return;
-  const actions = [];
-  if (missing.includes('Month')) actions.push('choose a month');
-  if (missing.includes('Hoppers')) actions.push('add at least one Hopper or Guest Hopper');
-  if (missing.includes('Destination')) actions.push('choose a destination');
-  throw new Error(`Missing required ${missing.length === 1 ? 'field' : 'fields'}: ${formatHumanList(missing)}. Please ${formatHumanList(actions)}.`);
+  throw new Error(`Missing Required Fields:\n${missing.map(([field, action]) => `• ${field} - ${action}`).join('\n')}`);
 }
 
 function formatHumanList(items = []) {
@@ -759,13 +755,12 @@ function previewDotBackground(colors = [], fallback = '#5d7288') {
   const list = colors.filter(Boolean);
   const base = list[0] || fallback;
   if (list.length <= 1) return base;
-  const c2 = list[1] || base;
-  const c3 = list[2] || base;
-  const c4 = list[3] || base;
-  // Primary Hopper owns the base circle. Additional Hoppers/Guests fill
-  // top-right, then bottom-right, then bottom-left so the dot matches the
-  // larger Hop Preview corner accents.
-  return `conic-gradient(from 0deg, ${c2} 0deg 90deg, ${c3} 90deg 180deg, ${c4} 180deg 270deg, ${base} 270deg 360deg)`;
+  const layers = [];
+  if (list[1]) layers.push(`linear-gradient(${list[1]}, ${list[1]}) top right / 50% 50% no-repeat`);
+  if (list[2]) layers.push(`linear-gradient(${list[2]}, ${list[2]}) bottom right / 50% 50% no-repeat`);
+  if (list[3]) layers.push(`linear-gradient(${list[3]}, ${list[3]}) bottom left / 50% 50% no-repeat`);
+  layers.push(base);
+  return layers.join(', ');
 }
 
 function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode, hopperData }) {

@@ -4954,3 +4954,107 @@ button.danger.compact-delete,
   color: #07101f !important;
   font-weight: 950;
 }
+
+/* GlobeHoppers v3.46 cleanup: preview corner placement, row stripes, selected outlines, bullet validation, and matching delete confirms */
+.studio-error-toast span {
+  white-space: pre-line !important;
+  line-height: 1.45 !important;
+  text-align: left !important;
+}
+
+/* Selected permanent Hoppers should outline in their own color, matching Guest Hopper chips. */
+.traveler-pill.is-selected:not(.guest-hopper-chip) {
+  border-color: color-mix(in srgb, var(--accent), white 10%) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent), transparent 34%),
+    0 0 14px color-mix(in srgb, var(--accent), transparent 62%) !important;
+}
+
+/* Keep Hop Preview accents in the intended corners only: 2nd person top-right, 3rd bottom-right, 4th bottom-left. */
+.route-preview-card--mixed::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background:
+    radial-gradient(circle at 100% 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 26%) 13%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 82%) 27%,
+      transparent 40%),
+    radial-gradient(circle at 100% 100%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 30%) 13%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 86%) 27%,
+      transparent 40%),
+    radial-gradient(circle at 0% 100%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 0%) 0%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 32%) 13%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 88%) 27%,
+      transparent 40%) !important;
+  opacity: .9 !important;
+  pointer-events: none !important;
+}
+
+/* Expanded/compact edit timeline: use clean right-side 10% bands instead of corner blobs. */
+.studio-trip-row--expanded.is-mixed::after,
+.studio-trip-row--compact.is-mixed::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: inherit !important;
+  background:
+    linear-gradient(to left,
+      color-mix(in srgb, var(--accent-2), transparent 16%) 0%,
+      color-mix(in srgb, var(--accent-2), transparent 16%) 10%,
+      color-mix(in srgb, var(--accent-3), transparent 20%) 10%,
+      color-mix(in srgb, var(--accent-3), transparent 20%) 20%,
+      color-mix(in srgb, var(--accent-4), transparent 24%) 20%,
+      color-mix(in srgb, var(--accent-4), transparent 24%) 30%,
+      transparent 30%) !important;
+  opacity: .92 !important;
+  pointer-events: none !important;
+}
+
+/* Leave card mode on the nicer corner style from prior version. */
+.studio-trip-row--card.is-mixed::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -2px !important;
+  border-radius: inherit !important;
+  background:
+    radial-gradient(circle at 100% 0%,
+      color-mix(in srgb, var(--accent-2), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-2), transparent 20%) 14%,
+      color-mix(in srgb, var(--accent-2), transparent 78%) 32%,
+      transparent 52%),
+    radial-gradient(circle at 100% 100%,
+      color-mix(in srgb, var(--accent-3), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-3), transparent 26%) 14%,
+      color-mix(in srgb, var(--accent-3), transparent 84%) 32%,
+      transparent 52%),
+    radial-gradient(circle at 0% 100%,
+      color-mix(in srgb, var(--accent-4), transparent 0%) 0%,
+      color-mix(in srgb, var(--accent-4), transparent 28%) 14%,
+      color-mix(in srgb, var(--accent-4), transparent 86%) 32%,
+      transparent 52%) !important;
+  opacity: .88 !important;
+  pointer-events: none !important;
+}
+
+/* Match delete confirmation color to the Delete Hop button in the edit modal. */
+.studio-confirm-actions .danger {
+  background: rgba(255, 77, 111, .14) !important;
+  color: #ffd7df !important;
+  border: 1px solid rgba(255, 77, 111, .42) !important;
+  box-shadow: 0 0 16px rgba(255, 77, 111, .10) !important;
+  font-weight: 950 !important;
+}
+.studio-confirm-actions .danger:hover {
+  background: rgba(255, 77, 111, .22) !important;
+  border-color: rgba(255, 77, 111, .68) !important;
+}
