@@ -2684,7 +2684,7 @@
       "joey"
     ],
     "guestHoppers": [],
-    "mode": "drive",
+    "mode": "train",
     "roundTrip": true,
     "returnMode": "drive",
     "fromLocationId": null,
