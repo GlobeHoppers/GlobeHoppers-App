@@ -3077,5 +3077,32 @@
     "route": [],
     "notes": "",
     "occasion": ""
+  },
+  {
+    "id": "2026-139-tokyo",
+    "year": 2026,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-09-99-013",
+    "label": "Tokyo",
+    "travelers": [
+      "joey",
+      "bonnie",
+      "hopper-mrbokhmr"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "tokyo-jp",
+    "route": [],
+    "notes": "",
+    "occasion": ""
   }
 ]
