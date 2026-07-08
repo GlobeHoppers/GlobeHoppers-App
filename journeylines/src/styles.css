@@ -5434,3 +5434,124 @@ textarea,
   background: var(--accent, #44f48a) !important;
   box-shadow: 0 0 8px color-mix(in srgb, var(--accent, #44f48a), transparent 16%) !important;
 }
+
+
+/* GlobeHoppers v3.52 timeline markers + year scale */
+.timeline-scrubber-stack {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 8px;
+}
+.timeline-marker-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.timeline-marker {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid rgba(255,255,255,.82);
+  border-radius: 999px;
+  background: var(--marker-color, #00e5ff);
+  box-shadow: 0 0 0 2px rgba(4,11,20,.9), 0 0 12px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 55%);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.timeline-marker__tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translate(-50%, 6px);
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(5, 12, 22, .94);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #eef8ff;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  box-shadow: 0 12px 28px rgba(0,0,0,.34);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  white-space: nowrap;
+}
+.timeline-marker__tooltip small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(223,239,255,.76);
+  font-size: .72rem;
+  font-weight: 650;
+}
+.timeline-marker:hover .timeline-marker__tooltip,
+.timeline-marker:focus-visible .timeline-marker__tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.timeline-year-scale {
+  position: relative;
+  height: 18px;
+  margin-top: -1px;
+}
+.timeline-year-scale__segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 34px;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+.timeline-year-scale__segment b {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  color: rgba(225,240,255,.72);
+  font-size: .67rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+/* Active squad badge placement */
+.section-heading-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.section-heading-inline h3 {
+  margin: 0;
+}
+.active-squad-badge {
+  font-size: inherit;
+  min-height: 0;
+  padding: 4px 10px;
+  line-height: 1;
+}
+
+/* Dynamic vessel icons in studio controls */
+.vessel-mode-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.vessel-mode-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.route-preview-icon .vessel-mode-icon {
+  width: 26px;
+  height: 26px;
+}
+.route-preview-icon .vessel-mode-icon img {
+  filter: drop-shadow(0 0 8px rgba(0,0,0,.22));
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual } from '../utils/hopperUtils.js';
+import { useRecoloredVesselIcon } from '../utils/vesselIcons.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -556,6 +557,8 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
+  const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
+  const currentVisualColor = currentHopSquadColor || currentDraftVisual?.color || '#00e5ff';
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -667,9 +670,11 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       <div className="studio-modal-scroll-content studio-modal-layout">
         <div className="studio-modal-maincol">
           <section className="studio-pick-section compact-section travelers-section">
-            <h3>Hoppers</h3>
+            <div className="section-heading-inline">
+              <h3>Hoppers</h3>
+              {currentHopSquad && <span className="active-squad-badge" style={{ '--accent': currentHopSquadColor }}><span></span>{currentHopSquad.name}</span>}
+            </div>
             <div className="pill-selectors">
-              {currentHopSquad && <span className="active-squad-badge" style={{ '--accent': currentHopSquadColor }}><span></span>{currentHopSquad.name} active</span>}
               {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => {
                 const selected = draft.travelers?.includes(t.id);
                 const chipColor = selected && currentHopSquadColor ? currentHopSquadColor : t.color;
@@ -688,7 +693,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section transport-triptype-row">
             <div className="transport-choice-group"><h3>Mode of Transportation</h3>
             <div className="mode-selectors">
-              {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
+              {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><VesselModeIcon mode={m.id} color={currentVisualColor} fallback={m.icon} />{m.label}</button>)}
             </div></div>
             <div className="trip-type-selector"><h3>Hop type</h3>
               <div className="trip-type-options">
@@ -726,7 +731,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                   <small>Defaults to Leg 1, but can be changed for chained trips.</small>
                 </div>
                 <div className="return-mode-options">
-                  {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={(draft.returnMode || draft.mode || 'plane') === m.id ? 'is-selected' : ''} onClick={() => onSetReturnMode(m.id)}><span>{m.icon}</span>{m.label}</button>)}
+                  {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={(draft.returnMode || draft.mode || 'plane') === m.id ? 'is-selected' : ''} onClick={() => onSetReturnMode(m.id)}><VesselModeIcon mode={m.id} color={currentVisualColor} fallback={m.icon} />{m.label}</button>)}
                 </div>
               </div>}
             </div>
@@ -820,7 +825,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     </div>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className={`route-preview-row ${isMixed ? 'is-mixed' : ''}`} style={{ '--row-gradient': colorGradient(mixedColors, visual.color || '#5d7288'), '--row-accent': visual.color || '#5d7288', '--row-accent-2': accentColor }} key={`${r.label}-${i}`}>
-        <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
+        <PreviewModeButton mode={r.mode} color={visual.color || '#00e5ff'} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
         <span className="route-preview-people">{visual.name}</span>
       </div>)}
@@ -828,7 +833,7 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   </aside>;
 }
 
-function PreviewModeButton({ mode, target, onSetLegMode }) {
+function PreviewModeButton({ mode, color, target, onSetLegMode }) {
   if (!mode || target == null) return <span className="route-preview-icon route-preview-pin" title="Location marker">📍</span>;
   const currentIndex = Math.max(0, MODE_OPTIONS.findIndex(m => m.id === mode));
   const current = MODE_OPTIONS[currentIndex] || MODE_OPTIONS[0];
@@ -837,8 +842,13 @@ function PreviewModeButton({ mode, target, onSetLegMode }) {
     onSetLegMode?.(target, next);
   }
   return <button type="button" className="route-preview-icon route-preview-icon-button" title={`Change ${current.label} leg mode`} onClick={cycle}>
-    <span>{current.icon}</span>
+    <VesselModeIcon mode={current.id} color={color} fallback={current.icon} />
   </button>;
+}
+
+function VesselModeIcon({ mode, color = '#00e5ff', fallback = '•', className = '' }) {
+  const url = useRecoloredVesselIcon(mode, color);
+  return <span className={`vessel-mode-icon ${className}`.trim()}>{url ? <img src={url} alt="" draggable="false" /> : fallback}</span>;
 }
 
 function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose, onSelectDay }) {

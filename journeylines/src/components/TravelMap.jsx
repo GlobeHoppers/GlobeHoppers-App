@@ -9,9 +9,7 @@ import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
-
-const VESSEL_ICON_MODULES = import.meta.glob('../Icons/**/*.png', { eager: true, query: '?url', import: 'default' });
-const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
+import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon } from '../utils/vesselIcons.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 2.55;
@@ -495,14 +493,15 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
     const rotation = projectedScreenHeading(map, leg, sceneState.routeProgress, sceneState.routedGeometries);
-    const iconUrl = vesselIconUrl(iconMode, color);
+    primeRecoloredVesselIcon(iconMode, color);
+    const iconUrl = getCachedRecoloredVesselIconUrl(iconMode, color);
     const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
     if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {
       vehicleRef.current.innerHTML = nextMarkup;
       vehicleRef.current.__jlVehicleMarkup = nextMarkup;
     }
     vehicleRef.current.dataset.mode = iconMode;
-    vehicleRef.current.dataset.iconColor = colorToIconName(color) || 'Blue';
+    vehicleRef.current.dataset.iconColor = String(color || '#00e5ff');
     vehicleRef.current.style.setProperty('--vehicle-color', color);
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(260px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
@@ -1561,90 +1560,6 @@ function dashForMode(mode) {
   if (mode === 'boat') return [0.8, 2.2];
   if (mode === 'train') return [2.5, 1.2];
   return [1, 0];
-}
-
-function buildVesselIconIndex(modules) {
-  const index = new Map();
-  for (const [rawPath, url] of Object.entries(modules || {})) {
-    const normalized = rawPath
-      .replace(/\\/g, '/')
-      .replace(/^\.\.\//, '')
-      .replace(/^\.\//, '')
-      .toLowerCase();
-
-    const parts = normalized.split('/').filter(Boolean);
-    const file = parts.at(-1)?.replace(/\.png$/, '') || '';
-    const folder = parts.at(-2) || '';
-    const fullNoExt = normalized.replace(/\.png$/, '');
-
-    // Support both likely folder layouts:
-    //   src/Icons/Airplanes/Airplane - Cyan.png
-    //   src/icons/airplanes/airplane - cyan.png
-    // Vite import.meta.glob('../Icons/**/*.png') returns paths like:
-    //   ../Icons/Airplanes/Airplane - Cyan.png
-    // The lookup keys below intentionally include both the short form and
-    // full normalized path forms so GitHub/browser upload casing does not matter.
-    const keys = [
-      `${folder}/${file}`,
-      `icons/${folder}/${file}`,
-      fullNoExt,
-      fullNoExt.replace(/^icons\//, ''),
-      fullNoExt.replace(/^src\//, ''),
-      fullNoExt.replace(/^src\/icons\//, ''),
-    ];
-
-    for (const key of keys) {
-      const cleanKey = key.replace(/\s+/g, ' ').trim().toLowerCase();
-      if (cleanKey) index.set(cleanKey, url);
-    }
-  }
-  return index;
-}
-function vesselIconUrl(mode, color) {
-  const family = vesselFamilyForMode(mode);
-  const preferredColor = colorToIconName(color) || 'Blue';
-  const candidates = [
-    vesselIconKey(family, preferredColor),
-    vesselIconKey(family, 'Blue'),
-    `icons/${vesselIconKey(family, preferredColor)}`,
-    `icons/${vesselIconKey(family, 'Blue')}`,
-    'vessel - blue',
-    'vessels/vessel - blue',
-    'icons/vessel - blue',
-    'icons/vessels/vessel - blue'
-  ];
-  for (const key of candidates) {
-    const found = VESSEL_ICON_INDEX.get(key.toLowerCase());
-    if (found) return found;
-  }
-  return '';
-}
-function vesselFamilyForMode(mode) {
-  if (mode === 'drive' || mode === 'car') return 'Car';
-  if (mode === 'boat') return 'Boat';
-  if (mode === 'train') return 'Train';
-  return 'Airplane';
-}
-function vesselIconKey(family, colorName) {
-  const folder = `${family}s`.toLowerCase();
-  return `${folder}/${family} - ${colorName}`.toLowerCase();
-}
-function colorToIconName(color) {
-  const value = String(color || '').trim().toLowerCase();
-  const aliases = {
-    '#00e5ff': 'Cyan', '#00ffff': 'Cyan', cyan: 'Cyan',
-    '#ff8a00': 'Orange', '#ffa500': 'Orange', orange: 'Orange',
-    '#ff4fb8': 'Pink', '#ff4fd8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
-    '#000000': 'Black', black: 'Black',
-    '#808080': 'Gray', '#888888': 'Gray', '#8e99a8': 'Gray', gray: 'Gray', grey: 'Gray',
-    '#ffd700': 'Gold', '#d7a300': 'Gold', gold: 'Gold',
-    '#ffff00': 'Yellow', '#ffd60a': 'Yellow', yellow: 'Yellow',
-    '#00ff00': 'Green', '#44f48a': 'Green', green: 'Green',
-    '#800080': 'Purple', '#a020f0': 'Purple', '#9b5cff': 'Purple', purple: 'Purple',
-    '#ff0000': 'Red', '#ff3b30': 'Red', red: 'Red',
-    '#0000ff': 'Blue', '#007bff': 'Blue', '#2f80ff': 'Blue', blue: 'Blue'
-  };
-  return aliases[value] || null;
 }
 
 function vehicleSvg(mode) {

@@ -5,9 +5,7 @@ import { feature } from 'topojson-client';
 import world from 'world-atlas/countries-110m.json';
 import { expandTrip, getTravelerKey } from '../utils/tripExpansion.js';
 import { milesBetween } from '../utils/distanceUtils.js';
-
-const VESSEL_ICON_MODULES = import.meta.glob('../Icons/**/*.png', { eager: true, query: '?url', import: 'default' });
-const VESSEL_ICON_INDEX = buildVesselIconIndex(VESSEL_ICON_MODULES);
+import { useRecoloredVesselIcon } from '../utils/vesselIcons.js';
 
 const W = 1400, H = 760;
 const STAR_POINTS = makeStars(185);
@@ -122,7 +120,7 @@ function Vehicle({ xy, mode, color, projectionName, heading, progress }) {
   const altitude = vehicleAltitude(progress);
   const baseScale = projectionName === 'globe' ? 0.78 : 1.0;
   const planeScale = mode === 'plane' ? (0.62 + 0.38 * altitude) : 0.92;
-  const iconUrl = vesselIconUrl(mode, color);
+  const iconUrl = useRecoloredVesselIcon(mode, color);
   // Imported PNG icons are authored nose-up, so rotate the icon toward the current segment.
   // The legacy fallback SVGs keep the older behavior for compatibility.
   const rotate = iconUrl ? heading : (mode === 'plane' ? heading : 0);
@@ -259,75 +257,7 @@ function travelEase(t) {
 }
 
 
-function buildVesselIconIndex(modules) {
-  const index = new Map();
-  for (const [rawPath, url] of Object.entries(modules || {})) {
-    const normalized = rawPath.replace(/\\/g, '/').replace(/^\.\.\//, '').replace(/^\.\//, '').toLowerCase();
-    const parts = normalized.split('/').filter(Boolean);
-    const file = parts.at(-1)?.replace(/\.png$/, '') || '';
-    const folder = parts.at(-2) || '';
-    const fullNoExt = normalized.replace(/\.png$/, '');
-    const keys = [
-      `${folder}/${file}`,
-      `icons/${folder}/${file}`,
-      fullNoExt,
-      fullNoExt.replace(/^icons\//, ''),
-      fullNoExt.replace(/^src\//, ''),
-      fullNoExt.replace(/^src\/icons\//, ''),
-    ];
-    for (const key of keys) {
-      const cleanKey = key.replace(/\s+/g, ' ').trim().toLowerCase();
-      if (cleanKey) index.set(cleanKey, url);
-    }
-  }
-  return index;
-}
-function vesselIconUrl(mode, color) {
-  const family = vesselFamilyForMode(mode);
-  const preferredColor = colorToIconName(color) || 'Blue';
-  const candidates = [
-    vesselIconKey(family, preferredColor),
-    vesselIconKey(family, 'Blue'),
-    `icons/${vesselIconKey(family, preferredColor)}`,
-    `icons/${vesselIconKey(family, 'Blue')}`,
-    'vessel - blue',
-    'vessels/vessel - blue',
-    'icons/vessel - blue',
-    'icons/vessels/vessel - blue'
-  ];
-  for (const key of candidates) {
-    const found = VESSEL_ICON_INDEX.get(key.toLowerCase());
-    if (found) return found;
-  }
-  return '';
-}
-function vesselFamilyForMode(mode) {
-  if (mode === 'drive' || mode === 'car') return 'Car';
-  if (mode === 'boat') return 'Boat';
-  if (mode === 'train') return 'Train';
-  return 'Airplane';
-}
-function vesselIconKey(family, colorName) {
-  const folder = `${family}s`.toLowerCase();
-  return `${folder}/${family} - ${colorName}`.toLowerCase();
-}
-function colorToIconName(color) {
-  const value = String(color || '').trim().toLowerCase();
-  const aliases = {
-    '#00e5ff': 'Cyan', '#00ffff': 'Cyan', cyan: 'Cyan',
-    '#ff8a00': 'Orange', '#ffa500': 'Orange', orange: 'Orange',
-    '#ff4fb8': 'Pink', '#ff69b4': 'Pink', pink: 'Pink',
-    '#000000': 'Black', black: 'Black',
-    '#808080': 'Gray', '#888888': 'Gray', gray: 'Gray', grey: 'Gray',
-    '#ffd700': 'Gold', gold: 'Gold',
-    '#ffff00': 'Yellow', yellow: 'Yellow',
-    '#00ff00': 'Green', green: 'Green',
-    '#800080': 'Purple', '#a020f0': 'Purple', purple: 'Purple',
-    '#ff0000': 'Red', red: 'Red',
-    '#0000ff': 'Blue', '#007bff': 'Blue', blue: 'Blue'
-  };
-  return aliases[value] || null;
-}
+
 function makeStars(count) {
   let seed = 24681357;
   const rand = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const advancedRef = useRef(null);
@@ -17,17 +17,36 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
   return <div className="controls glass">
     <button className="controls-play-pill" onClick={isPlaying ? onPause : onPlay}>{isPlaying ? 'Pause' : 'Play'}</button>
     <label className="timeline-scrubber" title="Scrub through the travel timeline">Timeline
-      <div className="progress progress--scrubbable">
-        <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
-        <input
-          aria-label="Travel timeline"
-          type="range"
-          min="0"
-          max="1000"
-          step="1"
-          value={pct}
-          onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
-        />
+      <div className="timeline-scrubber-stack">
+        <div className="progress progress--scrubbable">
+          <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
+          <div className="timeline-marker-layer" aria-hidden="true">
+            {tripMarkers.map(marker => <button
+              key={marker.id}
+              type="button"
+              className="timeline-marker"
+              style={{ left: `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSeekProgress?.(marker.progress); }}
+              title={`${marker.title} · ${marker.date}`}
+            >
+              <span className="timeline-marker__tooltip">{marker.title}<small>{marker.date}</small></span>
+            </button>)}
+          </div>
+          <input
+            aria-label="Travel timeline"
+            type="range"
+            min="0"
+            max="1000"
+            step="1"
+            value={pct}
+            onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
+          />
+        </div>
+        <div className="timeline-year-scale" aria-hidden="true">
+          {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
+            <b>{segment.year}</b>
+          </span>)}
+        </div>
       </div>
     </label>
     <div className="controls-advanced-wrap" ref={advancedRef}>

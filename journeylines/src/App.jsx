@@ -79,6 +79,8 @@ export default function App() {
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
   const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, normalizedHoppers), [filteredTrips, legs, locById, normalizedHoppers]);
+  const timelineMarkers = useMemo(() => buildTimelineMarkers(tripTimeline, legs.length), [tripTimeline, legs.length]);
+  const timelineYearSegments = useMemo(() => buildTimelineYearSegments(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
@@ -314,7 +316,7 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} />
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}  tripMarkers={timelineMarkers} yearSegments={timelineYearSegments} />
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
@@ -550,6 +552,35 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       trip
     };
   });
+}
+
+
+function buildTimelineMarkers(rows = [], totalLegs = 0) {
+  const denom = Math.max(1, totalLegs - 1);
+  return (rows || []).map((row) => ({
+    id: row.id,
+    title: row.title || 'Trip',
+    date: row.date || row.year || '',
+    color: row.color || '#00e5ff',
+    progress: Math.max(0, Math.min(1, (row.firstIndex || 0) / denom))
+  }));
+}
+
+function buildTimelineYearSegments(rows = [], totalLegs = 0) {
+  const denom = Math.max(1, totalLegs - 1);
+  const starts = [];
+  const seen = new Set();
+  for (const row of rows || []) {
+    const year = String(row.year || row.date || '').match(/\d{4}/)?.[0];
+    if (!year || seen.has(year)) continue;
+    seen.add(year);
+    starts.push({ year, start: Math.max(0, Math.min(1, (row.firstIndex || 0) / denom)) });
+  }
+  return starts.map((seg, index) => ({
+    year: seg.year,
+    start: seg.start,
+    end: index < starts.length - 1 ? starts[index + 1].start : 1
+  }));
 }
 
 function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip, viewType = 'expanded', onViewTypeChange }) {
