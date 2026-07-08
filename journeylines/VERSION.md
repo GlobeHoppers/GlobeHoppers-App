@@ -1,11 +1,11 @@
-# GlobeHoppers v3.32
+# GlobeHoppers v3.33
 
-Hopper bug fixes and color consistency:
-- Fixed black-screen risk when opening Add Hop / Edit Hop by adding safe Hopper data fallbacks
-- Hopper commits now use GitHub Contents API with SHA refetch/retry to avoid 422 stale-ref failures on back-to-back saves
-- Active in-flight route and vessel color now resolve from current Hop Squad / Hopper data
-- Updated vessel icon color matching for the Hopper palette
-- Hero Add Hop button keeps the green style
-- Add/Edit Hop labels remain in Hop language
-- Placard culling tightened further for rim/backside items while preserving local/front-facing placards
+Add/Edit Hop recovery, active squad color, and placard culling:
+- Simplified the Add/Edit Hop Hoppers selector to avoid the v3.31 black-screen regression
+- Add/Edit Hop now safely falls back to Joey and Bonnie if Hopper data is missing while rendering
+- In-flight active route color now uses current Hopper / Hop Squad data
+- In-flight vessel icon color now uses current Hopper / Hop Squad data
+- GitHub Hopper saves keep the v3.32 SHA refetch/retry behavior for back-to-back commits
+- Playback placard culling now uses a stricter angular front-side gate instead of permissive rim visibility
+- Rim/backside placards lock hidden longer before they are allowed to reappear
 - package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json

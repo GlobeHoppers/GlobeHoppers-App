@@ -176,7 +176,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
       const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
       syncVisitedPoints(map, visited, lastVisitedSigRef);
-      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), null, droppedPinIdsRef);
+      updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), null, droppedPinIdsRef);
       setMapReady(true);
     });
 
@@ -337,7 +337,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // completes, route cache changes, or display settings change. Avoid doing
     // this in the per-frame playback loop.
     syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries);
-  }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries]);
+  }, [mapReady, completedLegs, travById, hopperData, showTrails, trailOpacity, trailWidth, routedGeometries]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -346,8 +346,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // destination, not on every animation frame.
     const visited = buildVisitedLocations(completedLegs, active, labelCompletedMode, scene, hopperData || travById, homeBases);
     syncVisitedPoints(map, visited, lastVisitedSigRef);
-    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, travById), scene?.newArrivalId || null, droppedPinIdsRef);
-  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, isStarted, introLaunching, isPlaying, globeOverview]);
+    updatePersistentLabels(map, visited, persistentLabelElsRef, visitedLabelsRef, colorForLeg(active, hopperData || travById), scene?.newArrivalId || null, droppedPinIdsRef);
+  }, [mapReady, completedLegs, activeIndex, active?.trip?.id, active?.legIndex, labelCompletedMode, scene?.newArrivalId, travById, hopperData, isStarted, introLaunching, isPlaying, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -364,7 +364,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       return;
     }
 
-    const color = colorForLeg(active, travById);
+    const color = colorForLeg(active, hopperData || travById);
 
     if (introLaunching) {
       const launchKey = `${active.trip.id}:${active.legIndex}`;
@@ -416,17 +416,17 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, hopperData, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !active || completedMode || !scene?.pulseActive) return;
-    const color = colorForLeg(active, travById);
+    const color = colorForLeg(active, hopperData || travById);
     clearTimeout(arrivalTimerRef.current);
     syncPulse(map, active.leg.to, color);
     arrivalTimerRef.current = setTimeout(() => syncPulse(map, active.leg.to, 'transparent'), 900);
     return () => clearTimeout(arrivalTimerRef.current);
-  }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById]);
+  }, [mapReady, activeIndex, scene?.pulseActive, active, completedMode, travById, hopperData]);
 
 
   useEffect(() => {
@@ -1004,8 +1004,8 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     // stricter front-face threshold than globe overview, but no local-distance
     // filter. Separate show/hide thresholds prevent flutter.
     const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
-    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon - 18, 54) : baseHorizon - 1;
-    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon - 10, 60) : baseHorizon + 2.5;
+    const showCutoff = playback && !activePlacard ? 44 : baseHorizon - 1;
+    const hideCutoff = playback && !activePlacard ? 52 : baseHorizon + 2.5;
 
     const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff);
     const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff);
@@ -1021,10 +1021,10 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
       visible = false;
       if (prior.visible) prior.flips = (prior.flips || 0) + 1;
       prior.showSince = 0;
-      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 240 : 140));
+      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 1200 : 140));
     } else if (showCandidate) {
       if (!prior.showSince) prior.showSince = now;
-      const dwell = playback ? (prior.flips >= 2 ? 420 : 120) : 70;
+      const dwell = playback ? (prior.flips >= 2 ? 900 : 320) : 70;
       visible = now >= (prior.lockedUntil || 0) && now - prior.showSince >= dwell;
       if (visible) prior.flips = 0;
     } else {

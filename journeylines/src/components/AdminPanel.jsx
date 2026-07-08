@@ -527,7 +527,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     setGuestPopupOpen(true);
   }
   function chooseGuestColor(name) {
-    const c = (normalizedHoppers?.palette || []).find(p => p.name === name) || { name: 'gray', color: '#8e99a8' };
+    const c = ((normalizedHoppers?.palette?.length ? normalizedHoppers.palette : [{ name:'gray', label:'Gray', color:'#8e99a8' }, { name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }])).find(p => p.name === name) || { name: 'gray', color: '#8e99a8' };
     setGuestDraft(g => ({ ...g, colorName: c.name, color: c.color }));
   }
   function addGuestFromPopup() {
@@ -592,18 +592,19 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
             <div className="pill-selectors hoppers-picker">
-              {(normalizedHoppers?.hoppers || []).map(t => {
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [
+                { id: 'joey', name: 'Joey', color: '#ff8a00' },
+                { id: 'bonnie', name: 'Bonnie', color: '#ff4fd8' }
+              ])).map(t => {
                 const selected = draft.travelers?.includes(t.id);
-                const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers);
-                const accent = selected && visual.isSquad ? visual.color : t.color;
-                return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>;
+                return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': t.color || '#8e99a8' }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>;
               })}
               {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}</span>)}
               <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
             </div>
             {guestPopupOpen && <div className="guest-hopper-popover glass">
               <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
-              <div className="guest-color-row"><span>Color</span><ColorPopover colors={normalizedHoppers?.palette || []} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name) => { chooseGuestColor(name); setGuestColorOpen(false); }} /></div>
+              <div className="guest-color-row"><span>Color</span><ColorPopover colors={(normalizedHoppers?.palette?.length ? normalizedHoppers.palette : [{ name:'gray', label:'Gray', color:'#8e99a8' }, { name:'orange', label:'Orange', color:'#ff8a00' }, { name:'pink', label:'Pink', color:'#ff4fd8' }, { name:'green', label:'Green', color:'#44f48a' }, { name:'blue', label:'Blue', color:'#2f80ff' }])} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name) => { chooseGuestColor(name); setGuestColorOpen(false); }} /></div>
               <div className="guest-popover-actions">
                 <button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button>
                 <button type="button" className="primary" onClick={addGuestFromPopup}>OK</button>
