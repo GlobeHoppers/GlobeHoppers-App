@@ -29,6 +29,17 @@
       ],
       "colorName": "cyan",
       "color": "#00e5ff"
+    },
+    {
+      "id": "squad-mrceew0f",
+      "name": "Small Council",
+      "hopperIds": [
+        "hopper-mrcdkasg",
+        "bonnie",
+        "joey"
+      ],
+      "colorName": "green",
+      "color": "#44f48a"
     }
   ],
   "palette": [
