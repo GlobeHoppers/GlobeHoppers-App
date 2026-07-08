@@ -26,7 +26,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
               key={marker.id}
               type="button"
               className="timeline-marker"
-              style={{ left: `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
+              style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
               aria-label={`${marker.title} · ${marker.date}`}
               onMouseEnter={() => setHoverMarker(marker)}
               onMouseLeave={() => setHoverMarker(null)}
@@ -34,7 +34,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
               onBlur={() => setHoverMarker(null)}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
             />)}
-            {hoverMarker && <span className="timeline-marker__tooltip is-visible" style={{ left: `${hoverMarker.progress * 100}%`, '--marker-color': hoverMarker.color || '#00e5ff' }}>
+            {hoverMarker && <span className="timeline-marker__tooltip is-visible" style={{ '--marker-left': `${hoverMarker.progress * 100}%`, '--marker-color': hoverMarker.color || '#00e5ff' }}>
               <strong>{hoverMarker.title}</strong><small>{hoverMarker.date}</small>
             </span>}
           </div>

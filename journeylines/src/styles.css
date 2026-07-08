@@ -6962,31 +6962,94 @@ button.custom-rainbow-swatch.is-selected,
   pointer-events: none !important;
 }
 
-/* The previous v3.61 CSS accidentally overrode inline left values. This restores per-trip spacing. */
-.timeline-marker {
-  left: var(--timeline-marker-left, auto);
+
+/* GlobeHoppers v3.63: definitive timeline pin positioning + left-opening custom picker */
+
+/* Use a CSS variable for timeline marker position so older left:auto/unset rules cannot collapse pins. */
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  left: var(--marker-left, 0%) !important;
+}
+.timeline-marker__tooltip {
+  left: var(--marker-left, 0%) !important;
 }
 
-/* Inline React style left must win, so no fixed/auto left override. */
-.timeline-marker[style] {
-  left: attr(style) !important;
-}
-
-/* attr() cannot apply to left in CSS reliably, so reset the bad rule by not setting left at all below.
-   The actual inline `left: N%` from React is now allowed to control spacing. */
-.timeline-marker {
-  left: unset;
-}
-
-/* Higher-specificity correction: do not override inline left, only define shape/position. */
-.timeline-marker-layer > .timeline-marker {
+/* Keep all trip pins spread by actual timeline progress. */
+.timeline-marker-layer > button.timeline-marker {
   top: -14px !important;
   width: 13px !important;
   height: 20px !important;
 }
 
-/* If older CSS left:auto remains earlier in the cascade, this class avoids centering all pins by using
-   transform only and letting inline left place each marker. */
-.timeline-marker-layer button.timeline-marker {
-  left: revert-layer;
+/* Open the custom color panel to the LEFT of the palette so it does not clip on the right edge. */
+.color-popover__menu--custom {
+  position: absolute !important;
+  right: 0 !important;
+  left: auto !important;
+}
+.custom-color-panel {
+  left: auto !important;
+  right: calc(100% + 12px) !important;
+  top: 0 !important;
+  transform: none !important;
+  z-index: 180 !important;
+}
+
+/* Make the hue selector look like an actual horizontal hue bar. */
+.custom-hue-slider {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 16px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255,255,255,.26) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(to right,
+      #ff0000 0%,
+      #ffff00 16.666%,
+      #00ff00 33.333%,
+      #00ffff 50%,
+      #0000ff 66.666%,
+      #ff00ff 83.333%,
+      #ff0000 100%) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.32),
+    0 0 8px rgba(255,255,255,.08) !important;
+  cursor: pointer !important;
+}
+.custom-hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  border: 2px solid rgba(4,11,22,.85) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.75),
+    0 2px 6px rgba(0,0,0,.35) !important;
+}
+.custom-hue-slider::-moz-range-thumb {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  border: 2px solid rgba(4,11,22,.85) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.75),
+    0 2px 6px rgba(0,0,0,.35) !important;
+}
+.custom-hue-slider::-moz-range-track {
+  height: 16px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(to right,
+      #ff0000 0%,
+      #ffff00 16.666%,
+      #00ff00 33.333%,
+      #00ffff 50%,
+      #0000ff 66.666%,
+      #ff00ff 83.333%,
+      #ff0000 100%) !important;
 }

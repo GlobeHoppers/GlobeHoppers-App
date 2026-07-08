@@ -1,1 +1,1 @@
-GlobeHoppers v3.62 — Custom Spectrum Fix + Timeline Pin Spread
+GlobeHoppers v3.63 — Timeline Pin Position + Hue Bar Fix
