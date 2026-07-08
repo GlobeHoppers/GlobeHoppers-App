@@ -29,6 +29,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
               <button
                 type="button"
                 className="timeline-marker"
+                aria-label={`${marker.title} · ${marker.date}`}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
               />
               <span className="timeline-marker__tooltip">{marker.title}<small>{marker.date}</small></span>

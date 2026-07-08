@@ -1,1 +1,1 @@
-GlobeHoppers v3.57 — Timeline Tooltip + Custom Color Slot Fix
+GlobeHoppers v3.58 — Custom Color OK + Timeline Slim Fix

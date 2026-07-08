@@ -6179,3 +6179,209 @@ textarea,
   opacity: 0 !important;
   visibility: hidden !important;
 }
+
+
+/* GlobeHoppers v3.58 custom color OK flow + slim timeline pin fix */
+
+/* Custom color swatch: clear custom/eyedropper-ish circle, not plain rainbow-only. */
+.custom-rainbow-swatch {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255,255,255,.48) !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(5,11,22,.18) 0 22%, transparent 24%),
+    conic-gradient(from 0deg, #ff3b30, #ff8a00, #ffd60a, #44f48a, #00e5ff, #2f80ff, #9b5cff, #ff4fd8, #ff3b30) !important;
+  box-shadow: 0 0 10px rgba(255,255,255,.12) !important;
+  cursor: pointer !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+.custom-rainbow-swatch span {
+  display: inline-block !important;
+  transform: rotate(-22deg) translateY(-1px) !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.70) !important;
+  pointer-events: none !important;
+}
+.color-popover__menu--custom {
+  display: grid !important;
+  grid-template-columns: repeat(6, 28px) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: auto !important;
+  width: max-content !important;
+}
+.custom-color-hidden-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.custom-color-actions {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  padding-top: 2px !important;
+}
+.custom-color-preview {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  background: var(--swatch, #00e5ff) !important;
+  border: 1px solid rgba(255,255,255,.48) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--swatch, #00e5ff), transparent 55%) !important;
+}
+.custom-color-ok {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 28px !important;
+  min-width: 42px !important;
+  padding: 0 11px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+.custom-color-editor,
+.custom-color-picker,
+.custom-color-hex,
+.custom-color-wheel,
+.custom-color-hex-input {
+  display: none !important;
+}
+
+/* Keep controls height closer to v3.56. Only slide the rail downward inside the same overall shell. */
+.controls {
+  padding-top: 12px !important;
+  padding-bottom: 10px !important;
+}
+.timeline-scrubber-stack {
+  gap: 2px !important;
+}
+.progress--scrubbable {
+  margin-top: 12px !important;
+  height: 9px !important;
+}
+
+/* Make the hover target tiny and centered on the pin so hovering the timeline rail won't activate Kentucky/first marker. */
+.timeline-marker-wrap {
+  position: absolute !important;
+  top: 0 !important;
+  transform: translateX(-50%) !important;
+  width: 12px !important;
+  height: 12px !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+  z-index: 2 !important;
+}
+.timeline-marker {
+  pointer-events: auto !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: -16px !important;
+  width: 8px !important;
+  height: 10px !important;
+  border-radius: 999px 999px 999px 3px !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  background:
+    radial-gradient(circle at 33% 26%, rgba(255,255,255,.48), transparent 30%),
+    color-mix(in srgb, var(--marker-color, #00e5ff), white 2%) !important;
+  box-shadow:
+    0 0 0 1px rgba(4,11,20,.75),
+    0 0 6px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 74%) !important;
+  opacity: .74 !important;
+  transform: translate(-50%, 0) rotate(-45deg) !important;
+  cursor: pointer !important;
+}
+.timeline-marker::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 8px !important;
+  width: 1px !important;
+  height: 15px !important;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--marker-color, #00e5ff), transparent 8%),
+    rgba(225,235,244,.58)) !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  transform-origin: top center !important;
+  opacity: .72 !important;
+}
+.timeline-marker::after {
+  content: none !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, 0) rotate(-45deg) scale(1.26) !important;
+  z-index: 20 !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.82),
+    0 0 12px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 46%) !important;
+}
+.timeline-marker-wrap:has(.timeline-marker:hover),
+.timeline-marker-wrap:has(.timeline-marker:focus-visible) {
+  z-index: 30 !important;
+}
+
+/* Tooltips: one line, tighter side padding, and only active from actual marker hover/focus. */
+.timeline-marker__tooltip {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 30px !important;
+  transform: translate(-50%, 6px) !important;
+  min-width: max-content !important;
+  max-width: 260px !important;
+  padding: 7px 10px !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  font-size: clamp(.58rem, .75vw, .76rem) !important;
+  line-height: 1.12 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+.timeline-marker__tooltip small {
+  display: inline !important;
+  margin-top: 0 !important;
+  margin-left: 5px !important;
+  font-size: .9em !important;
+  color: rgba(225,240,255,.76) !important;
+}
+.timeline-marker-wrap .timeline-marker:hover + .timeline-marker__tooltip,
+.timeline-marker-wrap .timeline-marker:focus-visible + .timeline-marker__tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translate(-50%, 0) !important;
+}
+.timeline-marker-wrap:not(:has(.timeline-marker:hover)):not(:has(.timeline-marker:focus-visible)) .timeline-marker__tooltip {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Backstop: remove broad wrapper hover rules from earlier versions. */
+.timeline-marker-wrap:hover .timeline-marker,
+.timeline-marker-wrap:focus-within .timeline-marker {
+  transform: translate(-50%, 0) rotate(-45deg) !important;
+}
+.timeline-marker-wrap:hover .timeline-marker__tooltip,
+.timeline-marker-wrap:focus-within .timeline-marker__tooltip {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+.timeline-marker-wrap .timeline-marker:hover + .timeline-marker__tooltip,
+.timeline-marker-wrap .timeline-marker:focus-visible + .timeline-marker__tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
