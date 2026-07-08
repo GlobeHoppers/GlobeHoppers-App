@@ -11,6 +11,12 @@
       "name": "Bonnie",
       "colorName": "pink",
       "color": "#ff4fd8"
+    },
+    {
+      "id": "hopper-mrbnwhe0",
+      "name": "Bernard",
+      "colorName": "red",
+      "color": "#ff3b30"
     }
   ],
   "hopSquads": [
