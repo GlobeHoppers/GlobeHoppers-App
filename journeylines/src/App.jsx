@@ -483,12 +483,38 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
   const currentColor = normalizeHexColor(color || '#00e5ff');
   const [customOpen, setCustomOpen] = useState(false);
   const [draftColor, setDraftColor] = useState(currentColor);
+  const [customPlacement, setCustomPlacement] = useState('below');
+  const menuRef = useRef(null);
+  const panelRef = useRef(null);
+
   useEffect(() => {
     if (open) {
       setCustomOpen(false);
       setDraftColor(currentColor);
+      setCustomPlacement('below');
     }
   }, [open, currentColor]);
+
+  useEffect(() => {
+    if (!open || !customOpen) return;
+    function updatePlacement() {
+      const menuRect = menuRef.current?.getBoundingClientRect();
+      const panelRect = panelRef.current?.getBoundingClientRect();
+      if (!menuRect) return;
+      const panelHeight = panelRect?.height || 248;
+      const gap = 10;
+      const spaceBelow = window.innerHeight - menuRect.bottom - gap;
+      const spaceAbove = menuRect.top - gap;
+      setCustomPlacement(spaceBelow >= panelHeight || spaceBelow >= spaceAbove ? 'below' : 'above');
+    }
+    updatePlacement();
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('scroll', updatePlacement, true);
+    return () => {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, true);
+    };
+  }, [open, customOpen]);
 
   const draft = hexToRgbDraft(draftColor);
   const hue = rgbToHslDraft(draft.r, draft.g, draft.b).h;
@@ -496,6 +522,7 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
 
   function openCustomPicker() {
     setDraftColor(currentColor);
+    setCustomPlacement('below');
     setCustomOpen(true);
   }
 
@@ -533,10 +560,10 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
 
   return <span className="color-popover">
     <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
-    {open && <span className="color-popover__menu glass color-popover__menu--custom">
+    {open && <span ref={menuRef} className="color-popover__menu glass color-popover__menu--custom">
       {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
       <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} style={{ '--custom-swatch': value === 'custom' ? currentColor : 'transparent' }} title="Custom color" onClick={openCustomPicker} />
-      {customOpen && <span className="custom-color-panel glass">
+      {customOpen && <span ref={panelRef} className={`custom-color-panel glass ${customPlacement === 'above' ? 'custom-color-panel--above' : 'custom-color-panel--below'}`}>
         <span
           className="custom-color-field"
           style={{ '--hue-color': hueColor }}
