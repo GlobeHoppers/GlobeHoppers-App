@@ -24,7 +24,8 @@
       "id": "neptunes",
       "name": "The Neptunes",
       "hopperIds": [
-        "joey"
+        "joey",
+        "bonnie"
       ],
       "colorName": "yellow",
       "color": "#ffd60a"
