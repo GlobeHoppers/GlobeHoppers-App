@@ -31,7 +31,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false
 };
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -388,9 +388,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {viewType === 'card' ? groupTripsByYear(reorderMode ? orderDraft : sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
           </div>
-        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} />)}
+        </section>) : (reorderMode ? orderDraft : sortedTrips).map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={reorderMode} dragId={dragId} setDragId={setDragId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
       </div>
 
       <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
@@ -433,8 +433,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 
-function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId }) {
-  const openIfCard = () => { if (!reorderMode && viewType === 'card') onEdit(trip); };
+function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
+  const playFromRow = () => { if (!reorderMode) onPlayTrip?.(trip.id); };
   const visual = resolveTripVisual(trip, hopperData || {});
   const colors = (visual.colors || []).filter(Boolean);
   const isMixed = !visual.isSquad && colors.length > 1;
@@ -445,7 +445,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''}`}
     style={{ '--accent': accent, '--accent-2': accent2, '--accent-gradient': colorGradient(colors, accent) }}
     draggable={reorderMode}
-    onClick={openIfCard}
+    onClick={playFromRow}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
     onDragStart={() => setDragId(trip.id)}
     onDragOver={e => e.preventDefault()}
@@ -454,7 +454,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
     <span className="studio-trip-buttons">
-      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
     </span>
   </div>;
 }
