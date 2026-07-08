@@ -1003,6 +1003,11 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
     setCustomOpen(true);
   }
 
+  function cancelCustom() {
+    setDraftColor(currentColor);
+    setCustomOpen(false);
+  }
+
   function applyCustom() {
     const clean = normalizeHexColor(draftColor);
     onChoose?.('custom', clean);
@@ -1053,7 +1058,10 @@ function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
           <label><input value={draft.g} onChange={(e) => setDraftRgb('g', e.target.value)} /><b>G</b></label>
           <label><input value={draft.b} onChange={(e) => setDraftRgb('b', e.target.value)} /><b>B</b></label>
         </span>
-        <button type="button" className="custom-color-ok" onClick={applyCustom}>OK</button>
+        <span className="custom-color-actions">
+          <button type="button" className="custom-color-cancel" onClick={cancelCustom}>Cancel</button>
+          <button type="button" className="custom-color-ok" onClick={applyCustom}>OK</button>
+        </span>
       </span>}
     </span>}
   </span>;

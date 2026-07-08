@@ -1,1 +1,1 @@
-GlobeHoppers v3.67 — Final Timeline Polish + Opaque Custom Picker
+GlobeHoppers v3.68 — Cancel Button + Neutral Timeline + Popup Restore
