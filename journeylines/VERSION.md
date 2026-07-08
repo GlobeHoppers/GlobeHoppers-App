@@ -1,1 +1,1 @@
-GlobeHoppers v3.72 — Hoppers drawer parity + compact rows + custom color panel placement
+GlobeHoppers v3.73 — compact Hoppers rows + green primary actions + timeline stems above bar

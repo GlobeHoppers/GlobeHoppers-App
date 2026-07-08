@@ -8103,3 +8103,128 @@ button.small {
   font-size: 11px !important;
   line-height: 1 !important;
 }
+
+
+/* GlobeHoppers v3.73 */
+:root {
+  --gh-action-green-1: #baf7e7;
+  --gh-action-green-2: #ebe7ac;
+  --gh-action-green-border: rgba(205, 255, 238, 0.28);
+}
+
+/* Use the same mint-green action look across Add Hopper, Add Squad,
+   Save Hoppers, Save order, and Save and commit. */
+button.primary,
+.studio-panel button.primary,
+.studio-modal button.primary,
+.hopper-editor button.primary {
+  background: linear-gradient(135deg, var(--gh-action-green-1), var(--gh-action-green-2)) !important;
+  color: #07111d !important;
+  border: 1px solid var(--gh-action-green-border) !important;
+  box-shadow: 0 10px 20px rgba(133, 236, 202, 0.12) !important;
+}
+button.primary:hover,
+.studio-panel button.primary:hover,
+.studio-modal button.primary:hover,
+.hopper-editor button.primary:hover {
+  filter: brightness(1.02) !important;
+  box-shadow: 0 12px 24px rgba(133, 236, 202, 0.18) !important;
+}
+.topbar-hoppers-icon {
+  color: #7ff0b8 !important;
+  text-shadow: 0 0 10px rgba(127,240,184,.24) !important;
+}
+
+/* Default to the compact Hopper/HopSquad row sizing, even for short lists. */
+.hopper-editor.hopper-editor-drawer .hopper-editor__body {
+  gap: 10px !important;
+  padding: 10px 4px 0 0 !important;
+}
+.hopper-editor.hopper-editor-drawer .hopper-editor__body > section {
+  gap: 6px !important;
+}
+.hopper-section-title {
+  margin: 0 !important;
+  padding: 0 2px !important;
+}
+.hopper-section-title h3 {
+  font-size: 0.9rem !important;
+}
+.hopper-list {
+  gap: 6px !important;
+}
+.hopper-card--row,
+.hopper-card--squad {
+  border-radius: 14px !important;
+}
+.hopper-card--row {
+  min-height: 0 !important;
+  padding: 6px 8px !important;
+  gap: 7px !important;
+}
+.hopper-card--squad {
+  padding: 8px !important;
+}
+.hopper-card--squad .squad-row-top {
+  min-height: 0 !important;
+  margin-bottom: 6px !important;
+  gap: 7px !important;
+}
+.hopper-card input {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 6px 10px !important;
+  font-size: 0.95rem !important;
+}
+.hopper-color-label {
+  font-size: .72rem !important;
+  letter-spacing: .04em !important;
+}
+.color-popover__trigger {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+}
+.compact-delete,
+.hopper-section-title .small,
+.hopper-editor .secondary,
+.hopper-editor .primary {
+  min-height: 30px !important;
+  height: 30px !important;
+  padding: 0 12px !important;
+  font-size: .82rem !important;
+}
+.squad-members {
+  gap: 6px !important;
+}
+.squad-members button {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 11px !important;
+  font-size: .82rem !important;
+}
+.hopper-editor__footer {
+  padding-top: 10px !important;
+}
+
+/* Make timeline pin stems render on top of the playback bar. */
+.timeline-marker-layer {
+  z-index: 72 !important;
+}
+.timeline-marker,
+.timeline-marker-layer > button.timeline-marker {
+  z-index: 73 !important;
+}
+.timeline-marker::before {
+  z-index: 3 !important;
+}
+.timeline-marker::after {
+  z-index: 2 !important;
+}
+.progress,
+.progress--scrubbable,
+.progress span,
+.progress--scrubbable span {
+  position: relative !important;
+  z-index: 1 !important;
+}
