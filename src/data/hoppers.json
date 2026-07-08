@@ -11,12 +11,6 @@
       "name": "Bonnie",
       "colorName": "pink",
       "color": "#ff4fd8"
-    },
-    {
-      "id": "hopper-mrbnugs4",
-      "name": "Bernard",
-      "colorName": "blue",
-      "color": "#2f80ff"
     }
   ],
   "hopSquads": [
@@ -25,8 +19,7 @@
       "name": "The Neptunes",
       "hopperIds": [
         "joey",
-        "bonnie",
-        "hopper-mrbnugs4"
+        "bonnie"
       ],
       "colorName": "cyan",
       "color": "#00e5ff"
