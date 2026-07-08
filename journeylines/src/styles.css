@@ -5302,3 +5302,91 @@ textarea,
   position: relative;
   z-index: 1;
 }
+
+
+/* GlobeHoppers v3.50 exact preview corner accents + no-loop timeline blend */
+
+/* Make the preview card the positioning parent for explicit corner patches. */
+.route-preview-card--mixed {
+  overflow: hidden !important;
+  border-color: color-mix(in srgb, var(--trip-accent), transparent 30%) !important;
+  box-shadow: 0 18px 44px rgba(0,0,0,.34) !important;
+}
+
+/* Disable the prior all-in-one mixed preview overlay. */
+.route-preview-card--mixed::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Draw only the requested preview-card corner zones:
+   Guest 1 / first added person = top-right
+   Guest 2 / second added person = bottom-right
+   Guest 3 / third added person = bottom-left */
+.route-preview-card--mixed::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  background:
+    radial-gradient(ellipse 86px 74px at 100% 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 4%) 0%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 32%) 34%,
+      color-mix(in srgb, var(--trip-accent-2), transparent 76%) 60%,
+      transparent 76%),
+    radial-gradient(ellipse 96px 82px at 100% 100%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 6%) 0%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 36%) 34%,
+      color-mix(in srgb, var(--trip-accent-3), transparent 80%) 60%,
+      transparent 76%),
+    radial-gradient(ellipse 96px 82px at 0% 100%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 8%) 0%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 42%) 34%,
+      color-mix(in srgb, var(--trip-accent-4), transparent 84%) 60%,
+      transparent 76%) !important;
+  opacity: .88 !important;
+}
+
+/* Add a subtle border glow on the same exact corners so it reads as a border accent, not a random blob. */
+.route-preview-card--mixed .route-preview-list::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+}
+
+/* Keep all card content above the corner patches. */
+.route-preview-card--mixed > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Timeline expanded/compact mixed accent:
+   stop at the final added-person color on the far right.
+   No wrap/loop back to the first added color. */
+.studio-trip-row--expanded.is-mixed::after,
+.studio-trip-row--compact.is-mixed::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  opacity: .94 !important;
+  background:
+    linear-gradient(to right,
+      transparent 0%,
+      transparent 60%,
+      color-mix(in srgb, var(--accent-4), transparent 100%) 60%,
+      color-mix(in srgb, var(--accent-4), transparent 78%) 66%,
+      color-mix(in srgb, var(--accent-4), transparent 48%) 72%,
+      color-mix(in srgb, var(--accent-3), transparent 44%) 80%,
+      color-mix(in srgb, var(--accent-2), transparent 34%) 92%,
+      color-mix(in srgb, var(--accent-2), transparent 22%) 100%) !important;
+}
+
+/* If there are only two people total, accent-3 and accent-4 are transparent, so the blend naturally
+   becomes primary row -> first added person -> dark edge, without cycling back. */

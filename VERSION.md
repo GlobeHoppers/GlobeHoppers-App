@@ -1,1 +1,1 @@
-GlobeHoppers v3.49 — Calm Add Hop + Clean Mixed Accents
+GlobeHoppers v3.50 — Exact Preview Corners + Timeline Blend Fix
