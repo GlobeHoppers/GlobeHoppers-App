@@ -881,6 +881,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
       el.__jlMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -2], occludedOpacity: 0 })
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
+      try { el.__jlMarker.setOpacity?.('1', '0'); } catch {}
       labelsRef.current.set(loc.id, el);
     } else if (el.__jlMarker) {
       el.__jlMarker.setLngLat([loc.lon, loc.lat]);
@@ -967,10 +968,7 @@ function updateVisitTicks(container, visitColors = []) {
 function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, visibilityStateRef, runtimeRef) {
   const now = performance.now();
   const runtime = runtimeRef?.current || {};
-  // Playback gets a slower visibility cadence, but not a smaller camera-view
-  // footprint. The flicker issue is globe-rim/backside crossing, not local-region
-  // distance from the camera focus.
-  const minInterval = runtime.playback ? 125 : 80;
+  const minInterval = runtime.playback ? 110 : 80;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -989,22 +987,23 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
+
     const pt = map.project([loc.lon, loc.lat]);
     const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
     const activePlacard = activeIds.has(loc.id);
 
-    // Keep placards visible if they are in the current projected map view, even
-    // if they are not near the current camera focus. This prevents local-region
-    // pop-in such as hiding Oakland/San Francisco while focused around LA.
-    const onScreenShow = pt.x > -220 && pt.x < w + 220 && pt.y > -180 && pt.y < h + 180;
-    const onScreenHide = pt.x > -360 && pt.x < w + 360 && pt.y > -300 && pt.y < h + 300;
+    // Do not cull because a label is away from the camera focus. If it is in
+    // the projected view and still on the front face, keep it. This preserves
+    // local context like Oakland/San Francisco while the camera is around LA.
+    const onScreenShow = pt.x > -260 && pt.x < w + 260 && pt.y > -220 && pt.y < h + 220;
+    const onScreenHide = pt.x > -420 && pt.x < w + 420 && pt.y > -360 && pt.y < h + 360;
 
-    // The only aggressive culling during playback is backside/rim culling. Use
-    // separate enter/exit thresholds so labels do not toggle when crossing the
-    // globe rim. Globe overview can stay close to the previous working behavior.
+    // The problem band is the globe rim/backside transition. Playback uses a
+    // stricter front-face threshold than globe overview, but no local-distance
+    // filter. Separate show/hide thresholds prevent flutter.
     const baseHorizon = hardPlacardHorizonCutoffDeg(zoom);
-    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon, 70) : baseHorizon - 1;
-    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon + 8, 82) : baseHorizon + 2.5;
+    const showCutoff = playback && !activePlacard ? Math.min(baseHorizon - 10, 62) : baseHorizon - 1;
+    const hideCutoff = playback && !activePlacard ? Math.min(baseHorizon - 2, 68) : baseHorizon + 2.5;
 
     const showCandidate = Boolean(onScreenShow && angularDistance <= showCutoff);
     const hideCandidate = Boolean(!onScreenHide || angularDistance > hideCutoff);
@@ -1020,17 +1019,13 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
       visible = false;
       if (prior.visible) prior.flips = (prior.flips || 0) + 1;
       prior.showSince = 0;
-      // Short lock is enough now that we are not hiding based on local camera
-      // focus. Longer locks caused unnecessary pop-in.
-      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 320 : 160));
+      prior.lockedUntil = Math.max(prior.lockedUntil || 0, now + (playback ? 240 : 140));
     } else if (showCandidate) {
       if (!prior.showSince) prior.showSince = now;
-      const dwell = playback ? (prior.flips >= 2 ? 520 : 180) : 80;
+      const dwell = playback ? (prior.flips >= 2 ? 420 : 120) : 70;
       visible = now >= (prior.lockedUntil || 0) && now - prior.showSince >= dwell;
       if (visible) prior.flips = 0;
     } else {
-      // In the buffer band, preserve the last stable visibility. This is the
-      // actual anti-flicker guard.
       visible = prior.visible;
     }
 
@@ -1042,16 +1037,21 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     el.classList.toggle('is-flicker-locked', Boolean(showCandidate && !visible));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
+
+    // Hard binary visibility. Do not allow MapLibre occlusion opacity to leave
+    // dimmed ghost placards around the globe edge.
+    try { el.__jlMarker?.setOpacity?.(visible ? '1' : '0', '0'); } catch {}
     if (visible) {
       el.style.display = '';
       el.style.visibility = 'visible';
       el.style.opacity = '1';
+      el.style.pointerEvents = 'none';
     } else {
       el.style.opacity = '0';
       el.style.visibility = 'hidden';
       el.style.display = 'none';
+      el.style.pointerEvents = 'none';
     }
-    el.style.pointerEvents = 'none';
   }
 }
 
