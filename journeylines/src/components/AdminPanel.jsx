@@ -436,7 +436,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
     onDrop={() => { moveTrip(dragId, trip.id); setDragId(null); }}
   >
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
-    <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById)}</small></span>
+    <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
     <span className="studio-trip-buttons">
       {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={() => onEdit(trip)}>Edit</button><button onClick={() => onDelete(trip.id)}>Delete</button></>}
     </span>
@@ -636,14 +636,14 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           </section>
         </div>
 
-        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} />
+        <TripRoutePreview draft={draft} locById={locById} locs={locs} startLocation={effectiveStart} destination={effectiveDestination} onSetLegMode={onSetPreviewLegMode} hopperData={normalizedHoppers} />
 
       </div>
     </div>
   </div>;
 }
 
-function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode }) {
+function TripRoutePreview({ draft, locById, locs, startLocation, destination, onSetLegMode, hopperData }) {
   const rows = [];
   rows.push({ label: 'Start location', place: displayLocation(startLocation) || startLocation?.name || 'Auto-derived start', mode: null, target: null });
   rows.push({ label: 'Leg 1', place: displayLocation(destination) || destination?.name || draft.toLocationText || 'Destination pending', mode: draft.mode || 'plane', target: 'main' });
@@ -663,19 +663,20 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
     rows.push({ label: 'Return home', place: endPlace, mode: draft.returnMode || draft.mode || 'plane', target: 'return' });
   }
   rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
-  return <aside className="route-preview-card" style={{ '--trip-accent': tripAccent(draft) }}>
+  const visual = resolveTripVisual(draft, hopperData || {});
+  return <aside className="route-preview-card" style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData) }}>
     <p className="eyebrow">Hop preview</p>
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b></b>{travelerSummary(draft.travelers, draft.guestHoppers)} · {groupNameForHoppers(draft.travelers)}</span>
+      <span><b style={{ background: visual.color }}></b>{visual.name} · {visual.isSquad ? 'Hop Squad' : groupNameForHoppers(draft.travelers)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
       {rows.map((r, i) => <div className="route-preview-row" key={`${r.label}-${i}`}>
         <PreviewModeButton mode={r.mode} target={r.target} onSetLegMode={onSetLegMode} />
         <div><strong>{r.label}</strong><small>{r.place}</small></div>
-        <span className="route-preview-people">{travelerSummary(draft.travelers, draft.guestHoppers)}</span>
+        <span className="route-preview-people">{visual.name}</span>
       </div>)}
     </div>
   </aside>;
@@ -822,22 +823,15 @@ function formatEndDisplayDate(t) {
   if (!t.endYear) return '';
   return formatDisplayDate({ year: t.endYear, month: t.endMonth, day: t.endDay });
 }
-function tripAccent(trip) {
-  const hasJ = trip.travelers?.includes('joey');
-  const hasB = trip.travelers?.includes('bonnie');
-  if (hasJ && hasB) return '#00e5ff';
-  if (hasB) return '#ff4fd8';
-  if (hasJ) return '#ff8a00';
-  return '#5d7288';
+function tripAccent(trip, hopperData) {
+  return resolveTripVisual(trip, hopperData || {}).color || '#5d7288';
 }
 
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
-function travelerSummary(travelers = [], guestHoppers = []) {
-  const all = [...(travelers || []), ...(guestHoppers || []).map(g => g.name || 'Guest Hopper')];
-  if (!all.length) return 'No hoppers selected';
-  return all.join(' + ');
+function travelerSummary(travelers = [], guestHoppers = [], hopperData = {}) {
+  return resolveTripVisual({ travelers, guestHoppers }, hopperData || {}).name || 'No hoppers selected';
 }
 function groupNameForHoppers(travelers = []) {
   if (!travelers?.length) return 'Required';
@@ -881,7 +875,7 @@ function formatDisplayDate(t) { if (t.month && t.day) return new Date(t.year, t.
 function formatTripDate(t) { return t.displayDate || formatDisplayDate(t); }
 function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? l.country : ''].filter(Boolean).join(', ') : ''; }
 function displayNameFromLocation(l) { return l?.name || ''; }
-function summarizeTrip(t, locById) { const to = locById[t.toLocationId]; const people = (t.travelers || []).join(' + ') || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
+function summarizeTrip(t, locById, hopperData) { const to = locById[t.toLocationId]; const people = resolveTripVisual(t, hopperData || {}).name || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
 function filterLocations(locs, q) { const needle = String(q || '').toLowerCase().trim(); if (!needle) return locs.slice(0, 6); return locs.filter(l => `${l.name} ${l.region} ${l.country} ${l.id}`.toLowerCase().includes(needle)); }
 function findLocationByText(locs, text) { const q = String(text || '').toLowerCase().trim(); return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => String(v).toLowerCase() === q)) || locs.find(l => displayLocation(l).toLowerCase().includes(q) || q.includes(l.name.toLowerCase())); }
 function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }

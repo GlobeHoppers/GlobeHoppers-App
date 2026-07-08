@@ -1,11 +1,11 @@
-# GlobeHoppers v3.35
+# GlobeHoppers v3.36
 
-Hopper data propagation and culling tuning:
-- Add/Edit Hop now receives the live Hopper data from App state
-- Configured Hoppers such as newly added people now appear as selectable in Add/Edit Hop
-- Add/Edit Hop Hopper colors now reflect the colors set in Edit Hoppers
-- Edit GlobeHopper Timeline row colors now use live Hopper / Hop Squad data
-- Top Timeline button and drawer title use GlobeHopper Timeline casing
-- Placard culling is relaxed from the v3.34 hard 48/54 degree gate to a 64/78 degree front-face buffer
-- Rim/backside placards still hard-hide, but front-facing placards being flown over should remain visible
+Hop preview and Hopper color propagation fixes:
+- Hop Preview now resolves Hopper IDs to display names from live Hopper data
+- Hop Preview now displays exact Hop Squad names, such as Small Council, instead of raw IDs
+- Hop Preview accent color now uses the exact Hopper / Hop Squad color
+- Hop Preview route rows now show the resolved Hopper / Hop Squad name
+- Edit GlobeHopper Timeline rows continue to receive live Hopper data for current colors
+- Culling changed from an aggressive front-face cutoff to a wider 72/88 degree buffer
+- Placards in the buffer preserve their previous state instead of toggling, reducing rim flashing while keeping front-facing labels visible
 - package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json
