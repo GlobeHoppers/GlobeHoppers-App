@@ -554,6 +554,8 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const destinationMatches = filterLocations(locs, draft.toLocationText || '');
   const fromMatches = filterLocations(locs, draft.fromLocationText || '');
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
+  const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
+  const currentHopSquadColor = currentHopSquad?.color || null;
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -667,7 +669,12 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
           <section className="studio-pick-section compact-section travelers-section">
             <h3>Hoppers</h3>
             <div className="pill-selectors">
-              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': t.color }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
+              {currentHopSquad && <span className="active-squad-badge" style={{ '--accent': currentHopSquadColor }}><span></span>{currentHopSquad.name} active</span>}
+              {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => {
+                const selected = draft.travelers?.includes(t.id);
+                const chipColor = selected && currentHopSquadColor ? currentHopSquadColor : t.color;
+                return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''} ${selected && currentHopSquad ? 'is-squad-active' : ''}`} style={{ '--accent': chipColor }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>;
+              })}
                 {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setFormError(''); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
                 <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
@@ -740,6 +747,15 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       </div>
     </div>
   </div>;
+}
+
+function activeDraftSquad(draft = {}, hopperData = {}) {
+  const travelers = Array.isArray(draft.travelers) ? draft.travelers : [];
+  const guests = Array.isArray(draft.guestHoppers) ? draft.guestHoppers : [];
+  if (!travelers.length || guests.length) return null;
+  const squads = Array.isArray(hopperData?.hopSquads) ? hopperData.hopSquads : [];
+  const selectedKey = [...new Set(travelers.filter(Boolean))].sort().join('|');
+  return squads.find(s => [...new Set((s.hopperIds || []).filter(Boolean))].sort().join('|') === selectedKey) || null;
 }
 
 function previewGroupLabel(draft = {}, visual = {}) {

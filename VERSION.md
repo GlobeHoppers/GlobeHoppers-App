@@ -1,1 +1,1 @@
-GlobeHoppers v3.50 — Exact Preview Corners + Timeline Blend Fix
+GlobeHoppers v3.51 — Active Hop Squad Hopper Chips

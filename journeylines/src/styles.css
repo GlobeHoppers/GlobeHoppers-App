@@ -5390,3 +5390,47 @@ textarea,
 
 /* If there are only two people total, accent-3 and accent-4 are transparent, so the blend naturally
    becomes primary row -> first added person -> dark edge, without cycling back. */
+
+
+/* GlobeHoppers v3.51 active Hop Squad state in Add/Edit Hop */
+.active-squad-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #f1fff7;
+  font-weight: 900;
+  letter-spacing: .01em;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--accent, #44f48a), transparent 68%),
+      rgba(255,255,255,.045));
+  border: 1px solid color-mix(in srgb, var(--accent, #44f48a), transparent 24%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent, #44f48a), transparent 58%),
+    0 0 12px color-mix(in srgb, var(--accent, #44f48a), transparent 78%);
+}
+.active-squad-badge span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent, #44f48a);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent, #44f48a), transparent 20%);
+}
+.traveler-pill.is-selected.is-squad-active {
+  border-color: color-mix(in srgb, var(--accent, #44f48a), transparent 12%) !important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--accent, #44f48a), transparent 74%),
+      rgba(255,255,255,.05)) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent, #44f48a), transparent 46%),
+    0 0 12px color-mix(in srgb, var(--accent, #44f48a), transparent 72%) !important;
+}
+.traveler-pill.is-selected.is-squad-active .traveler-dot,
+.traveler-pill.is-selected.is-squad-active span {
+  background: var(--accent, #44f48a) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent, #44f48a), transparent 16%) !important;
+}
