@@ -16,7 +16,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
 
   return <div className="controls glass">
     <button className="controls-play-pill" onClick={isPlaying ? onPause : onPlay}>{isPlaying ? 'Pause' : 'Play'}</button>
-    <label className="timeline-scrubber" title="Scrub through the travel timeline">Timeline
+    <label className="timeline-scrubber">Timeline
       <div className="timeline-scrubber-stack">
         <div className="progress progress--scrubbable">
           <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
