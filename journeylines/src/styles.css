@@ -4699,3 +4699,66 @@ button.danger.compact-delete,
   opacity: .84;
   pointer-events: none;
 }
+
+/* GlobeHoppers v3.43 preview alignment + cleaner accent treatment */
+/* v3.42 accidentally changed mixed preview cards from sticky to relative, which made
+   the preview column jump down for guests/mixed hoppers. Keep sticky behavior. */
+.route-preview-card,
+.route-preview-card--mixed {
+  position: sticky !important;
+  top: 120px !important;
+  overflow: hidden !important;
+}
+
+/* Mixed hopper chips need their secondary color dot anchored to the chip, not the page. */
+.traveler-pill.is-mixed {
+  position: relative !important;
+}
+
+/* Do not use the right-side mixed accent bar in Edit GlobeHopper Timeline rows/cards. */
+.studio-trip-row.is-mixed::after,
+.studio-trip-row--expanded.is-mixed::after,
+.studio-trip-row--compact.is-mixed::after,
+.studio-trip-row--card.is-mixed::after {
+  content: none !important;
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Hop Preview rows stay clean: no mixed corner wash inside each pill row. */
+.route-preview-row.is-mixed::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep mode icons neutral; do not split-fill or tint the plane/car/train/boat icons. */
+.route-preview-row.is-mixed .route-preview-icon,
+.route-preview-row.is-mixed .route-preview-icon-button,
+.route-preview-icon-button,
+.route-preview-icon {
+  background: rgba(255,255,255,.055) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035) !important;
+}
+
+/* Start/end pins should be outlined in the primary Hopper/Guest color, not the default cyan. */
+.route-preview-pin,
+.route-preview-row:first-child .route-preview-pin,
+.route-preview-row:last-child .route-preview-pin,
+.route-preview-row.is-mixed .route-preview-pin {
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid color-mix(in srgb, var(--row-accent, var(--trip-accent, #00e5ff)), transparent 22%) !important;
+  color: #ffb321 !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--row-accent, var(--trip-accent, #00e5ff)), transparent 84%) !important;
+}
+
+/* Preserve neutral unfilled state when no Hopper has been selected. */
+.route-preview-card--empty .route-preview-icon,
+.route-preview-card--empty .route-preview-icon-button {
+  background: transparent !important;
+  border: 2px solid rgba(180,190,200,.55) !important;
+  box-shadow: none !important;
+}
+.route-preview-card--empty .route-preview-pin::before {
+  border-color: rgba(180,190,200,.72) !important;
+}

@@ -1,1 +1,1 @@
-GlobeHoppers v3.42 — Softer Mixed Accents + Playable Edit Rows
+GlobeHoppers v3.43 — Preview Alignment + Clean Accent Fixes
