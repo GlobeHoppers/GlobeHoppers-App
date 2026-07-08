@@ -109,6 +109,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const introLaunchRef = useRef({ active: false, key: null });
   const resetAnimatingRef = useRef(false);
   const forceSceneJumpRef = useRef(false);
+  const manualSpinPauseRef = useRef(false);
+  const manualSpinResumeTimerRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
 
@@ -182,6 +184,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     return () => {
       clearTimeout(arrivalTimerRef.current);
+      clearTimeout(manualSpinResumeTimerRef.current);
       map.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -195,6 +198,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (!map || !mapReady) return;
     try {
       userCameraOverrideRef.current = false;
+      manualSpinPauseRef.current = false;
+      clearTimeout(manualSpinResumeTimerRef.current);
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
       map.stop();
@@ -209,6 +214,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (!map || !mapReady || !globeOverview) return;
     try {
       userCameraOverrideRef.current = false;
+      manualSpinPauseRef.current = false;
+      clearTimeout(manualSpinResumeTimerRef.current);
       resetAnimatingRef.current = true;
       lastCameraRef.current = null;
       map.stop();
@@ -283,7 +290,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const dt = Math.min(48, ts - last);
       last = ts;
       try {
-        if (!resetAnimatingRef.current) {
+        if (!resetAnimatingRef.current && !manualSpinPauseRef.current) {
           const c = map.getCenter();
           map.setCenter([c.lng + dt * 0.0014, c.lat]);
         }
@@ -292,6 +299,62 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     };
     raf = requestAnimationFrame(spin);
     return () => cancelAnimationFrame(raf);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const idleSpinAvailable = !isPlaying && !introLaunching && (!isStarted || globeOverview);
+    if (!idleSpinAvailable) {
+      manualSpinPauseRef.current = false;
+      clearTimeout(manualSpinResumeTimerRef.current);
+      return;
+    }
+
+    const pauseSpin = () => {
+      manualSpinPauseRef.current = true;
+      clearTimeout(manualSpinResumeTimerRef.current);
+    };
+    const resumeAfterIdle = () => {
+      clearTimeout(manualSpinResumeTimerRef.current);
+      manualSpinResumeTimerRef.current = window.setTimeout(() => {
+        try {
+          const center = map.getCenter();
+          resetAnimatingRef.current = true;
+          map.easeTo({
+            center: [center.lng, center.lat],
+            bearing: 0,
+            pitch: 0,
+            duration: 1450,
+            essential: true,
+            easing: t => 1 - Math.pow(1 - t, 3)
+          });
+          window.setTimeout(() => {
+            resetAnimatingRef.current = false;
+            manualSpinPauseRef.current = false;
+          }, 1500);
+        } catch {
+          resetAnimatingRef.current = false;
+          manualSpinPauseRef.current = false;
+        }
+      }, 3000);
+    };
+
+    map.on('dragstart', pauseSpin);
+    map.on('rotatestart', pauseSpin);
+    map.on('pitchstart', pauseSpin);
+    map.on('dragend', resumeAfterIdle);
+    map.on('rotateend', resumeAfterIdle);
+    map.on('pitchend', resumeAfterIdle);
+    return () => {
+      map.off('dragstart', pauseSpin);
+      map.off('rotatestart', pauseSpin);
+      map.off('pitchstart', pauseSpin);
+      map.off('dragend', resumeAfterIdle);
+      map.off('rotateend', resumeAfterIdle);
+      map.off('pitchend', resumeAfterIdle);
+      clearTimeout(manualSpinResumeTimerRef.current);
+    };
   }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview]);
 
   useEffect(() => {
@@ -318,16 +381,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const map = mapRef.current;
     if (!map) return;
 
-    // v2.13: revert drag-while-playing. During playback the cinematic camera owns the globe.
-    // Manual panning/zooming is available only while paused/reset.
+    // During playback the cinematic camera owns the globe. When paused/reset,
+    // users can drag the idle globe; the idle spin pauses and resumes after a
+    // short no-interaction delay.
     const methods = [map.dragPan, map.scrollZoom, map.boxZoom, map.keyboard, map.doubleClickZoom, map.touchZoomRotate];
     for (const method of methods) {
       try { isPlaying ? method.disable() : method.enable(); } catch {}
     }
-    try { map.dragRotate.disable(); } catch {}
-    try { map.touchZoomRotate.disableRotation(); } catch {}
-    try { map.setBearing(0); } catch {}
-    if (isPlaying) userCameraOverrideRef.current = false;
+    try { isPlaying ? map.dragRotate.disable() : map.dragRotate.enable(); } catch {}
+    try { isPlaying ? map.touchZoomRotate.disableRotation() : map.touchZoomRotate.enable(); } catch {}
+    if (isPlaying) {
+      userCameraOverrideRef.current = false;
+      manualSpinPauseRef.current = false;
+      clearTimeout(manualSpinResumeTimerRef.current);
+      try { map.setBearing(0); } catch {}
+    }
   }, [isPlaying]);
 
   useEffect(() => {

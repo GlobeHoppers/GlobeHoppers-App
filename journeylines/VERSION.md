@@ -1,3 +1,3 @@
-GlobeHoppers v3.74
+GlobeHoppers v3.75
 
-Built from v3.72 with compact default Hoppers rows, green action buttons, timeline stem z-index fix, and updated hero CTA labels.
+Fixes home-base move playback ordering and adds manual idle-globe drag pause/resume behavior.

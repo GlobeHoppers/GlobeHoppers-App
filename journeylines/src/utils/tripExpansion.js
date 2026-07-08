@@ -75,8 +75,30 @@ function formatHomeMoveDate(value) {
 }
 
 export function flattenLegs(trips, locationsById, homeBases) {
-  const homeMoves = buildHomeMoveTrips(homeBases, locationsById);
-  const timeline = [...trips, ...homeMoves]
-    .sort((a, b) => String(a.sortKey ?? `${a.year}-999`).localeCompare(String(b.sortKey ?? `${b.year}-999`)));
+  const homeMoves = buildHomeMoveTrips(homeBases, locationsById)
+    .sort((a, b) => timelineDateValue(a, true) - timelineDateValue(b, true));
+
+  // Preserve the explicit/user-edited trip order from trips.json. Only weave
+  // automatic home-base moves into that order at their actual calendar point.
+  // Sorting all items by sortKey caused home moves whose keys start with a year
+  // (for example 2017-01) to play before every manual-* trip.
+  const timeline = [];
+  let moveCursor = 0;
+  for (const trip of trips || []) {
+    const tripValue = timelineDateValue(trip, false);
+    while (moveCursor < homeMoves.length && timelineDateValue(homeMoves[moveCursor], true) <= tripValue) {
+      timeline.push(homeMoves[moveCursor++]);
+    }
+    timeline.push(trip);
+  }
+  while (moveCursor < homeMoves.length) timeline.push(homeMoves[moveCursor++]);
+
   return timeline.flatMap(trip => expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex })));
+}
+
+function timelineDateValue(item, isHomeMove = false) {
+  const year = Number(item?.year) || 9999;
+  const month = Number(item?.month) || (isHomeMove ? 1 : 13);
+  const day = Number(item?.day) || (isHomeMove ? 0 : 99);
+  return year * 10000 + month * 100 + day;
 }
