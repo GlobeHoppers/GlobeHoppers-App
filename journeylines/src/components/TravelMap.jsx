@@ -1000,22 +1000,22 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
 
     let visible;
     if (playback && !activePlacard) {
-      // Hard safe-face gate: no rim band, no dim state, no repeated re-entry.
-      // Labels must be clearly on the front face for a short dwell before they
-      // can appear, and once they leave the safe face they stay hidden briefly.
-      const safeFront = angularDistance <= 72;
-      const unsafeBackOrRim = angularDistance >= 88 || !onScreenLoose;
-      if (unsafeBackOrRim) {
+      // Different culling strategy: use a stable geographic gate from the map
+      // center instead of letting projected rim pixels decide. Front-facing
+      // local/regional placards stay visible; far-side placards are hard hidden.
+      const center = map.getCenter?.();
+      const lonDelta = center ? Math.abs(shortestLongitudeDelta(center.lng, loc.lon)) : 0;
+      const latDelta = center ? Math.abs((center.lat || 0) - (loc.lat || 0)) : 0;
+      const safelyNearHemisphere = angularDistance <= 76 && lonDelta <= 92 && latDelta <= 58;
+      const clearlyFarSide = angularDistance >= 88 || lonDelta >= 112 || latDelta >= 72 || !onScreenLoose;
+      if (clearlyFarSide) {
         visible = false;
-        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 2500);
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 2600);
         prior.seenSafeSince = 0;
-      } else if (safeFront && onScreenLoose) {
+      } else if (safelyNearHemisphere && onScreenLoose) {
         if (!prior.seenSafeSince) prior.seenSafeSince = now;
-        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 300;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 320;
       } else {
-        // Buffer zone between the safe front face and the true rim: preserve the
-        // previous state instead of toggling. This avoids flashing while still
-        // hiding anything that has actually crossed to the backside.
         visible = prior.visible;
       }
     } else {
@@ -1064,6 +1064,11 @@ function isVisibleOnGlobe(map, point, margin = 1.06) {
   const globeRadius = Math.min(w, h) * 0.48;
   const onScreen = point.x > -180 && point.x < w + 180 && point.y > -140 && point.y < h + 140;
   return onScreen && Math.hypot(point.x - center.x, point.y - center.y) < globeRadius * margin;
+}
+
+function shortestLongitudeDelta(a, b) {
+  let d = ((b - a + 540) % 360) - 180;
+  return d;
 }
 
 function angularDistanceFromMapCenter(map, lon, lat) {

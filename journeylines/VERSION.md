@@ -1,11 +1,12 @@
-# GlobeHoppers v3.36
+# GlobeHoppers v3.37
 
-Hop preview and Hopper color propagation fixes:
-- Hop Preview now resolves Hopper IDs to display names from live Hopper data
-- Hop Preview now displays exact Hop Squad names, such as Small Council, instead of raw IDs
-- Hop Preview accent color now uses the exact Hopper / Hop Squad color
-- Hop Preview route rows now show the resolved Hopper / Hop Squad name
-- Edit GlobeHopper Timeline rows continue to receive live Hopper data for current colors
-- Culling changed from an aggressive front-face cutoff to a wider 72/88 degree buffer
-- Placards in the buffer preserve their previous state instead of toggling, reducing rim flashing while keeping front-facing labels visible
+Hopper polish, validation popup, mixed colors, and culling strategy update:
+- No-hopper Hop Preview uses an unfilled neutral icon instead of cyan
+- Restored compact Edit Hoppers layout with one-line Hopper/Squad rows, color-circle pickers, and Delete buttons
+- Hop Squad unselected members are gray, unfilled, and diagonally striped
+- Add/Edit Hop required-field errors now use a themed GlobeHoppers popup instead of browser alerts
+- Guest Hopper add interface uses a popup with Name, color-circle picker, Delete/Cancel, and OK
+- Mixed no-squad groups use the first selected Hopper as the primary route/vessel color while rows/previews can show gradients/accent colors
+- Long dates wrap inside timeline/editor date cells
+- Playback placard culling now uses a geographic far-side gate based on angular distance plus lon/lat delta to avoid hiding nearby front-facing labels while hard-hiding far-side labels
 - package intentionally omits src/data/trips.json, src/data/hoppers.json, and package-lock.json

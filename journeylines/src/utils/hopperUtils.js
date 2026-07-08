@@ -1,4 +1,5 @@
 export const DEFAULT_HOPPER_COLOR = '#00e5ff';
+export const EMPTY_HOPPER_COLOR = 'transparent';
 
 export function normalizeHopperData(data = {}) {
   const hoppers = Array.isArray(data.hoppers) ? data.hoppers : [];
@@ -23,28 +24,36 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
   const guests = Array.isArray(trip.guestHoppers) ? trip.guestHoppers : [];
   const squad = exactSquadForIds(permanentIds, hopSquads);
   if (squad && guests.length === 0) {
+    const c = squad.color || DEFAULT_HOPPER_COLOR;
     return {
       id: squad.id,
       name: squad.name || permanentIds.map(id => hById[id]?.name || id).join(' + '),
-      color: squad.color || DEFAULT_HOPPER_COLOR,
-      colors: [squad.color || DEFAULT_HOPPER_COLOR],
+      color: c,
+      primaryColor: c,
+      colors: [c],
+      accentColors: [],
       isSquad: true,
+      isEmpty: false,
       squad
     };
   }
-  const members = [
-    ...permanentIds.map(id => hById[id]).filter(Boolean),
-    ...guests
-  ];
+  const memberHoppers = permanentIds.map(id => hById[id]).filter(Boolean);
+  const guestMembers = guests.map(g => ({ ...g, isGuest: true }));
+  const members = [...memberHoppers, ...guestMembers];
   const colors = members.map(m => m?.color).filter(Boolean);
   const name = members.length ? members.map(m => m.name || m.label || 'Guest').join(' + ') : 'No hoppers selected';
+  const primary = memberHoppers[0]?.color || colors[0] || EMPTY_HOPPER_COLOR;
   return {
     id: permanentIds.length === 1 && guests.length === 0 ? permanentIds[0] : `combo-${idsKey([...permanentIds, ...guests.map(g => g.id || g.name)])}`,
     name,
-    color: colors[0] || DEFAULT_HOPPER_COLOR,
-    colors: colors.length ? colors : [DEFAULT_HOPPER_COLOR],
+    color: primary,
+    primaryColor: primary,
+    colors,
+    accentColors: colors.slice(1),
     isSquad: false,
-    members
+    isEmpty: members.length === 0,
+    members,
+    guests: guestMembers
   };
 }
 

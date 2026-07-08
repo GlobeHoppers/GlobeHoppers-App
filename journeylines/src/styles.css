@@ -4309,3 +4309,82 @@ option {
   visibility: hidden !important;
   display: none !important;
 }
+
+/* GlobeHoppers v3.37 requested polish */
+.hero .hero-add-hop,
+.hero-actions .hero-add-hop {
+  background: linear-gradient(135deg, #44f48a, #dff29a) !important;
+  color: #03120a !important;
+  border: 0 !important;
+  font-weight: 950 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 0 22px rgba(68,244,138,.24);
+}
+
+/* Compact Edit Hoppers rows restored */
+.hopper-editor--compact { width: min(900px, calc(100vw - 48px)); }
+.hopper-editor--compact .hopper-editor__body { gap: 16px; padding: 16px 24px; }
+.hopper-card--row,
+.hopper-card--squad .squad-row-top {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+}
+.hopper-card--row { padding: 10px 12px !important; }
+.hopper-card--squad { padding: 12px !important; }
+.hopper-card--squad .squad-row-top { margin-bottom: 10px; }
+.hopper-color-label { color: rgba(230,248,255,.72); font-size: .82rem; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
+.color-popover { position: relative; display: inline-grid; place-items: center; }
+.color-popover__trigger { width: 32px; height: 32px; min-width: 32px; padding: 0; border-radius: 999px; background: var(--swatch) !important; border: 2px solid rgba(255,255,255,.65) !important; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 12px color-mix(in srgb, var(--swatch), transparent 45%); }
+.color-popover__menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 220; display: flex; flex-wrap: wrap; gap: 8px; width: 212px; padding: 10px; border-radius: 18px; }
+.color-popover__menu button { width: 28px; height: 28px; min-width: 28px; padding: 0; border-radius: 999px; background: var(--swatch) !important; border: 2px solid rgba(255,255,255,.32) !important; }
+.color-popover__menu button.is-selected { outline: 3px solid rgba(255,255,255,.88); outline-offset: 2px; }
+.compact-delete { min-height: 34px; padding: 0 12px !important; font-size: .84rem; }
+button.danger.compact-delete,
+.compact-delete.danger { background: rgba(255,62,112,.14); border-color: rgba(255,62,112,.46); color: #ffdce7; font-weight: 850; }
+
+/* Hop Squad selected/unselected clarity */
+.squad-members button.is-unselected { opacity: .58; color: rgba(230,248,255,.58); border-color: rgba(160,170,180,.28); background: repeating-linear-gradient(135deg, rgba(160,170,180,.18) 0 4px, transparent 4px 9px), rgba(120,130,145,.08) !important; }
+.squad-members button.is-unselected span { background: transparent !important; border: 2px solid rgba(180,190,200,.46); box-shadow: none !important; }
+
+/* Themed validation popup */
+.studio-error-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 260; width: min(430px, calc(100vw - 48px)); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,179,33,.45); display: grid; gap: 10px; box-shadow: 0 24px 80px rgba(0,0,0,.48), 0 0 26px rgba(255,179,33,.12); }
+.studio-error-toast strong { color: #ffe88a; font-size: 1.2rem; }
+.studio-error-toast span { color: rgba(235,248,255,.86); line-height: 1.35; }
+.studio-error-toast button { justify-self: end; min-width: 82px; }
+
+/* Guest hopper popup */
+.travelers-section { position: relative; }
+.guest-hopper-popover { position: absolute; left: 20px; top: calc(100% - 8px); z-index: 225; width: min(360px, calc(100vw - 80px)); padding: 14px; border-radius: 20px; display: grid; gap: 12px; }
+.guest-hopper-popover label { display: grid; gap: 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: rgba(230,248,255,.72); font-weight: 850; }
+.guest-hopper-popover input { min-height: 42px; border-radius: 12px; border: 1px solid rgba(38,244,255,.28); background: rgba(0,10,22,.82); color: #fff; padding: 0 12px; }
+.guest-color-row { display: flex; align-items: center; gap: 12px; }
+.guest-popover-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.guest-hopper-chip { cursor: default; gap: 8px; }
+.guest-hopper-chip > button { width: 22px; height: 22px; min-width: 22px; padding: 0; border-radius: 999px; line-height: 1; }
+
+/* Empty/no hopper preview icon should be neutral and unfilled. */
+.route-preview-card--empty { --trip-accent: #8e99a8 !important; }
+.route-preview-card--empty .route-preview-meta b { border: 2px solid rgba(180,190,200,.66); background: transparent !important; }
+.route-preview-card--empty .route-preview-icon,
+.route-preview-card--empty .route-preview-icon-button { background: transparent !important; border: 2px solid rgba(180,190,200,.55) !important; color: transparent !important; box-shadow: none !important; }
+.route-preview-card--empty .route-preview-pin { font-size: 0 !important; }
+.route-preview-card--empty .route-preview-pin::before { content: ''; width: 12px; height: 12px; border-radius: 999px; border: 2px solid rgba(180,190,200,.72); display: block; }
+
+/* Mixed non-squad colors: rows/cards can show gradients while route/vessel uses primary. */
+.studio-trip-row { border-left-color: var(--accent) !important; }
+.studio-trip-row::before { background: var(--accent-gradient, var(--accent)) !important; }
+.route-preview-card { border-color: color-mix(in srgb, var(--trip-accent), transparent 35%); }
+
+/* Date wrapping for long dates in timeline/editor rows. */
+.studio-trip-date,
+.trip-row-date,
+.trip-card-date {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.05;
+  min-width: 92px;
+}
+.studio-trip-list--compact .studio-trip-date { white-space: normal !important; }

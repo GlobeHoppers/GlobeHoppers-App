@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { normalizeHopperData, resolveTripVisual } from '../utils/hopperUtils.js';
+import { colorGradient, normalizeHopperData, resolveTripVisual } from '../utils/hopperUtils.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -41,6 +41,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [orderDraft, setOrderDraft] = useState(() => sortTripsForEditor(trips));
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [formError, setFormError] = useState('');
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
   const [dragId, setDragId] = useState(null);
@@ -104,12 +105,14 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function saveRepo(value) { setRepo(value); localStorage.setItem('journeylines.repo', value); }
 
   function openAdd() {
+    setFormError('');
     setModalClosing(false);
     setEditingId(null);
     setDraft({ ...empty, travelers: [], year: new Date().getFullYear(), month: null, toLocationText: '' });
     setModal('add');
   }
   function openEdit(trip) {
+    setFormError('');
     setModalClosing(false);
     const route = Array.isArray(trip.route) ? trip.route : [];
     const hasRoute = route.length > 1;
@@ -135,6 +138,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setModal('edit');
   }
   function closeModal() {
+    setFormError('');
     if (!modal) return;
     setModalClosing(true);
     window.setTimeout(() => {
@@ -194,7 +198,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       await commitData(nextTrips, nextLocations, editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`);
       closeModal();
     } catch (err) {
-      alert(err.message || String(err));
+      setFormError(err.message || String(err));
     } finally {
       setBusy(false);
     }
@@ -427,7 +431,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, moveTri
   const openIfCard = () => { if (!reorderMode && viewType === 'card') onEdit(trip); };
   return <div
     className={`studio-trip-row studio-trip-row--${viewType}`}
-    style={{ '--accent': tripAccent(trip, hopperData) }}
+    style={{ '--accent': tripAccent(trip, hopperData), '--accent-gradient': colorGradient(resolveTripVisual(trip, hopperData || {}).colors || [], tripAccent(trip, hopperData)) }}
     draggable={reorderMode}
     onClick={openIfCard}
     onContextMenu={(e) => { e.preventDefault(); if (!reorderMode) onEdit(trip); }}
@@ -495,6 +499,9 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const [calendarCursor, setCalendarCursor] = useState(() => ({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || new Date().getMonth() + 1 }));
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [guestPopupOpen, setGuestPopupOpen] = useState(false);
+  const [guestColorOpen, setGuestColorOpen] = useState(false);
+  const [guestDraft, setGuestDraft] = useState({ id: '', name: '', colorName: 'gray', color: '#8e99a8' });
   const dateRangeRef = useRef(null);
   const bothHoppersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
 
@@ -516,6 +523,21 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
       month: Number(draft.month) || 1
     });
   }, [draft.year, draft.month]);
+
+  function openGuestPopup() {
+    setGuestDraft({ id: `guest-${Date.now().toString(36)}`, name: '', colorName: 'gray', color: '#8e99a8' });
+    setGuestColorOpen(false);
+    setGuestPopupOpen(true);
+  }
+  function chooseGuestColor(name) {
+    const c = (normalizedHoppers?.palette || []).find(p => p.name === name) || { name: 'gray', color: '#8e99a8' };
+    setGuestDraft(g => ({ ...g, colorName: c.name, color: c.color }));
+  }
+  function addGuestFromPopup() {
+    if (!guestDraft.name.trim()) return;
+    setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { ...guestDraft, name: guestDraft.name.trim() }] }));
+    setGuestPopupOpen(false);
+  }
 
   function selectCalendarDay(day) {
     const selected = { year: calendarCursor.year, month: calendarCursor.month, day };
@@ -574,8 +596,13 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
             <h3>Hoppers</h3>
             <div className="pill-selectors">
               {((normalizedHoppers?.hoppers?.length ? normalizedHoppers.hoppers : [{ id:'joey', name:'Joey', color:'#ff8a00' }, { id:'bonnie', name:'Bonnie', color:'#ff4fd8' }])).map(t => { const selected = draft.travelers?.includes(t.id); const visual = resolveTripVisual({ travelers: draft.travelers || [], guestHoppers: draft.guestHoppers || [] }, normalizedHoppers); const accent = selected && visual.isSquad ? visual.color : t.color; return <button key={t.id} type="button" className={`traveler-pill ${selected ? 'is-selected' : ''}`} style={{ '--accent': accent }} onClick={() => onTravelerToggle(t.id)}><span className="traveler-dot"></span>{t.name}</button>; })}
-                <button type="button" className="traveler-pill add-guest-hopper" onClick={() => setDraft(d => ({ ...d, guestHoppers: [...(d.guestHoppers || []), { id: `guest-${Date.now().toString(36)}`, name: 'Guest Hopper', colorName: 'green', color: '#44f48a' }] }))}>+ Add Guest Hopper</button>
-                {(draft.guestHoppers || []).map(g => <span key={g.id} className="guest-hopper-editor" style={{ '--accent': g.color }}><input value={g.name} onChange={e => setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, name: e.target.value } : x) }))} /><select value={g.colorName || 'green'} onChange={e => { const c = (normalizedHoppers.palette || []).find(p => p.name === e.target.value) || { name: 'green', color: '#44f48a' }; setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).map(x => x.id === g.id ? { ...x, colorName: c.name, color: c.color } : x) })); }} >{(normalizedHoppers.palette || []).map(c => <option key={c.name} value={c.name}>{c.label}</option>)}</select></span>)}
+                {(draft.guestHoppers || []).map(g => <span key={g.id} className="traveler-pill guest-hopper-chip is-selected" style={{ '--accent': g.color }}><span className="traveler-dot"></span>{g.name}<button type="button" onClick={(e) => { e.stopPropagation(); setDraft(d => ({ ...d, guestHoppers: (d.guestHoppers || []).filter(x => x.id !== g.id) })); }}>×</button></span>)}
+                <button type="button" className="traveler-pill add-guest-hopper" onClick={openGuestPopup}>+ Add Guest Hopper</button>
+                {guestPopupOpen && <div className="guest-hopper-popover glass">
+                  <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
+                  <div className="guest-color-row"><span>Color</span><ColorPopover colors={normalizedHoppers?.palette || []} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name) => { chooseGuestColor(name); setGuestColorOpen(false); }} /></div>
+                  <div className="guest-popover-actions"><button type="button" className="danger" onClick={() => setGuestPopupOpen(false)}>Delete</button><button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button><button type="button" className="primary" onClick={addGuestFromPopup}>OK</button></div>
+                </div>}
             </div>
           </section>
 
@@ -664,12 +691,13 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
   }
   rows.push({ label: 'End location', place: endPlace, mode: null, target: null, pin: true });
   const visual = resolveTripVisual(draft, hopperData || {});
-  return <aside className="route-preview-card" style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData) }}>
+  const noHoppers = !!visual.isEmpty;
+  return <aside className={`route-preview-card ${noHoppers ? 'route-preview-card--empty' : ''}`} style={{ '--trip-accent': visual.color || tripAccent(draft, hopperData), '--trip-gradient': colorGradient(visual.colors || [], visual.color || '#5d7288') }}>
     <p className="eyebrow">Hop preview</p>
     <h3>{draft.label || destination?.name || 'Add Hop'}</h3>
     <div className="route-preview-meta">
       <span>{formatDateRangeLabel(draft) || (draft.year ? [monthLabel(draft.month), draft.year].filter(Boolean).join(' ') : 'Dates pending')}</span>
-      <span><b style={{ background: visual.color }}></b>{visual.name} · {visual.isSquad ? 'Hop Squad' : groupNameForHoppers(draft.travelers)}</span>
+      <span><b style={{ background: noHoppers ? 'transparent' : visual.color }}></b>{visual.name} · {noHoppers ? 'Required' : visual.isSquad ? 'Hop Squad' : groupNameForHoppers(draft.travelers)}</span>
       {(draft.notes || draft.occasion) && <span>{draft.notes || draft.occasion}</span>}
     </div>
     <div className="route-preview-list">
@@ -825,6 +853,17 @@ function formatEndDisplayDate(t) {
 }
 function tripAccent(trip, hopperData) {
   return resolveTripVisual(trip, hopperData || {}).color || '#5d7288';
+}
+
+
+function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
+  const palette = colors?.length ? colors : [{ name: 'gray', label: 'Gray', color: '#8e99a8' }, { name: 'orange', label: 'Orange', color: '#ff8a00' }, { name: 'pink', label: 'Pink', color: '#ff4fd8' }, { name: 'green', label: 'Green', color: '#44f48a' }, { name: 'blue', label: 'Blue', color: '#2f80ff' }];
+  return <span className="color-popover">
+    <button type="button" className="color-popover__trigger" style={{ '--swatch': color || '#8e99a8' }} onClick={onToggle} title="Choose color" />
+    {open && <span className="color-popover__menu glass">
+      {palette.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label} onClick={() => onChoose?.(c.name)} />)}
+    </span>}
+  </span>;
 }
 
 
