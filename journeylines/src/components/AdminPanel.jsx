@@ -986,36 +986,18 @@ function tripAccent(trip, hopperData) {
 function ColorPopover({ colors = [], value, color, open, onToggle, onChoose }) {
   const currentColor = normalizeHexColor(color || '#00e5ff');
   const customInputId = useMemo(() => `custom-color-${Math.random().toString(36).slice(2)}`, []);
-  const [draftColor, setDraftColor] = useState(currentColor);
-  const [customOpen, setCustomOpen] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setDraftColor(currentColor);
-      setCustomOpen(false);
-    }
-  }, [open, currentColor]);
 
-  function openNativePicker() {
-    setCustomOpen(true);
-    window.setTimeout(() => document.getElementById(customInputId)?.click(), 0);
-  }
-
-  function applyCustom() {
-    onChoose?.('custom', normalizeHexColor(draftColor));
-    setCustomOpen(false);
+  function chooseCustom(nextColor) {
+    onChoose?.('custom', normalizeHexColor(nextColor));
     onToggle?.();
   }
 
   return <span className="color-popover">
     <button type="button" className="color-popover__trigger" style={{ '--swatch': currentColor }} onClick={onToggle} title="Choose color" />
-    {open && <span className={`color-popover__menu glass color-popover__menu--custom ${customOpen ? 'is-custom-open' : ''}`}>
+    {open && <span className="color-popover__menu glass color-popover__menu--custom">
       {colors.map(c => <button key={c.name} type="button" className={value === c.name ? 'is-selected' : ''} style={{ '--swatch': c.color }} title={c.label || c.name} onClick={() => onChoose?.(c.name, c.color)} />)}
-      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} title="Custom color" onClick={openNativePicker}><span>⌁</span></button>
-      <input id={customInputId} className="custom-color-hidden-input" type="color" value={draftColor} onChange={(e) => { setDraftColor(normalizeHexColor(e.target.value)); setCustomOpen(true); }} />
-      {customOpen && <span className="custom-color-actions">
-        <span className="custom-color-preview" style={{ '--swatch': draftColor }} />
-        <button type="button" className="custom-color-ok" onClick={applyCustom}>OK</button>
-      </span>}
+      <button type="button" className={value === 'custom' ? 'custom-rainbow-swatch is-selected' : 'custom-rainbow-swatch'} title="Custom color" onClick={() => document.getElementById(customInputId)?.click()} />
+      <input id={customInputId} className="custom-color-hidden-input" type="color" value={currentColor} onChange={(e) => chooseCustom(e.target.value)} />
     </span>}
   </span>;
 }

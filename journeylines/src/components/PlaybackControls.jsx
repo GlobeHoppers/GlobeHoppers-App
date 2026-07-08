@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, tripMarkers = [], yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [hoverMarker, setHoverMarker] = useState(null);
   const advancedRef = useRef(null);
 
   useEffect(() => {
@@ -21,19 +22,21 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <div className="progress progress--scrubbable">
           <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
           <div className="timeline-marker-layer" aria-hidden="true">
-            {tripMarkers.map(marker => <span
+            {tripMarkers.map(marker => <button
               key={marker.id}
-              className="timeline-marker-wrap"
+              type="button"
+              className="timeline-marker"
               style={{ left: `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff' }}
-            >
-              <button
-                type="button"
-                className="timeline-marker"
-                aria-label={`${marker.title} · ${marker.date}`}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
-              />
-              <span className="timeline-marker__tooltip">{marker.title}<small>{marker.date}</small></span>
-            </span>)}
+              aria-label={`${marker.title} · ${marker.date}`}
+              onMouseEnter={() => setHoverMarker(marker)}
+              onMouseLeave={() => setHoverMarker(null)}
+              onFocus={() => setHoverMarker(marker)}
+              onBlur={() => setHoverMarker(null)}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
+            />)}
+            {hoverMarker && <span className="timeline-marker__tooltip is-visible" style={{ left: `${hoverMarker.progress * 100}%`, '--marker-color': hoverMarker.color || '#00e5ff' }}>
+              <strong>{hoverMarker.title}</strong><small>{hoverMarker.date}</small>
+            </span>}
           </div>
           <input
             aria-label="Travel timeline"

@@ -1,1 +1,1 @@
-GlobeHoppers v3.58 — Custom Color OK + Timeline Slim Fix
+GlobeHoppers v3.59 — Thin Timeline Restore + Native Custom Color Picker

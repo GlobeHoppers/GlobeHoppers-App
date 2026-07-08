@@ -6385,3 +6385,162 @@ textarea,
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+
+/* GlobeHoppers v3.59: restore thin timeline bar + state-controlled tooltip */
+
+/* Custom color: just a clean rainbow circle slot. Native color picker provides OK/Cancel. */
+.color-popover__menu--custom {
+  display: grid !important;
+  grid-template-columns: repeat(6, 28px) !important;
+  gap: 8px !important;
+  width: max-content !important;
+  min-width: auto !important;
+}
+.custom-rainbow-swatch {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255,255,255,.50) !important;
+  background:
+    radial-gradient(circle at 48% 45%, rgba(255,255,255,.18), transparent 28%),
+    conic-gradient(from 0deg, #ff3b30, #ff8a00, #ffd60a, #44f48a, #00e5ff, #2f80ff, #9b5cff, #ff4fd8, #ff3b30) !important;
+  box-shadow: 0 0 10px rgba(255,255,255,.14) !important;
+  cursor: pointer !important;
+}
+.custom-rainbow-swatch::before,
+.custom-rainbow-swatch span,
+.custom-color-actions,
+.custom-color-editor,
+.custom-color-picker,
+.custom-color-hex,
+.custom-color-wheel,
+.custom-color-hex-input,
+.custom-color-ok {
+  display: none !important;
+}
+.custom-color-hidden-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Return the playback controls to the original thin-bar feel. */
+.controls {
+  padding: 12px !important;
+  min-height: 0 !important;
+}
+.timeline-scrubber {
+  grid-template-columns: auto minmax(180px, 1fr) !important;
+  align-items: center !important;
+}
+.timeline-scrubber-stack {
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  gap: 4px !important;
+  min-height: 0 !important;
+}
+.progress--scrubbable {
+  height: 9px !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+}
+.progress--scrubbable input[type='range'] {
+  z-index: 1 !important;
+}
+.timeline-marker-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 4 !important;
+}
+
+/* Small, calm timeline markers. No stems, no broad wrappers, no hover bleed. */
+.timeline-marker {
+  position: absolute !important;
+  top: 50% !important;
+  width: 7px !important;
+  height: 7px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.54) !important;
+  background: var(--marker-color, #00e5ff) !important;
+  box-shadow:
+    0 0 0 1px rgba(3,10,19,.75),
+    0 0 7px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 70%) !important;
+  opacity: .72 !important;
+  transform: translate(-50%, -50%) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  z-index: 4 !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1.55) !important;
+  border-color: rgba(255,255,255,.90) !important;
+  box-shadow:
+    0 0 0 2px rgba(3,10,19,.86),
+    0 0 14px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 42%) !important;
+  z-index: 8 !important;
+}
+.timeline-marker::before,
+.timeline-marker::after,
+.timeline-marker-wrap,
+.timeline-marker-wrap::before,
+.timeline-marker-wrap::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* State-controlled tooltip. It only appears for the marker React says is hovered/focused. */
+.timeline-marker__tooltip {
+  position: absolute !important;
+  bottom: calc(100% + 10px) !important;
+  transform: translate(-50%, 0) !important;
+  min-width: max-content !important;
+  max-width: 260px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(8, 19, 34, .98), rgba(4, 11, 21, .96)) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), transparent 45%) !important;
+  color: #f3fbff !important;
+  font-size: clamp(.58rem, .72vw, .76rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: 40 !important;
+}
+.timeline-marker__tooltip.is-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.timeline-marker__tooltip strong {
+  display: inline !important;
+  vertical-align: middle !important;
+}
+.timeline-marker__tooltip small {
+  display: inline !important;
+  margin-left: 5px !important;
+  color: rgba(225,240,255,.76) !important;
+  font-size: .9em !important;
+  font-weight: 700 !important;
+  vertical-align: middle !important;
+}
+.timeline-year-scale {
+  height: 16px !important;
+  margin-top: 1px !important;
+}
