@@ -5,7 +5,7 @@
     "borderThickness": 1.35,
     "stripeThickness": 2.5,
     "stripeSegmentMiles": 50,
-    "stripeSeparator": 0.45,
+    "stripeSeparator": 0,
     "stripeGlow": 0.75,
     "stripeBevel": 0.45,
     "stripeLaneEffect": 0.4,
