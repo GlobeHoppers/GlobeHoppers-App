@@ -9,15 +9,16 @@
     "stripeGlow": 0.75,
     "stripeBevel": 0.45,
     "stripeLaneEffect": 0.4,
-    "ribbonThickness": 5.0,
-    "ribbonSpread": 2.5,
+    "ribbonThickness": 5,
     "ribbonGap": 0.75,
-    "ribbonGlow": 0.0,
+    "ribbonSpread": 2.5,
+    "ribbonGlow": 0,
     "spiralThickness": 1.55,
     "spiralSegmentMiles": 50,
     "spiralAmplitude": 0.3,
     "spiralGlow": 1.2,
-    "spiralAnimate": false
+    "spiralAnimate": false,
+    "stripeSpread": 0
   },
   "timelineTuning": {
     "inactiveHeadSize": 14,
