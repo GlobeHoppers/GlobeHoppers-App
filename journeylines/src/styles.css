@@ -10344,3 +10344,83 @@ button.primary:disabled {
   top: 12px !important;
   bottom: 12px !important;
 }
+
+
+/* GlobeHoppers v4.01: one continuous rounded Studio Timeline row accent ring.
+   This replaces the disconnected strip look so the rounded corners are included. */
+.gh-studio-trip-row {
+  --gh-studio-border-size: 1px;
+  --gh-studio-row-gap: 6px;
+  overflow: hidden !important;
+}
+
+/* Draw a single rounded ring using the row's segmented --trip-border gradient. */
+.gh-studio-row-border {
+  position: absolute !important;
+  inset: 1px !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 999 !important;
+  border-radius: calc(var(--gh-studio-row-radius, 18px) - 1px) !important;
+  background: var(--trip-border, var(--accent, #00e5ff)) !important;
+  padding: var(--gh-studio-border-size) !important;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0) border-box !important;
+  -webkit-mask-composite: xor !important;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0) border-box !important;
+  mask-composite: exclude !important;
+  opacity: .9 !important;
+}
+
+/* Hide the old four-strip children/rules if any are still present from earlier builds. */
+.gh-studio-row-border > .gh-studio-border-strip,
+.gh-studio-border-strip,
+.gh-studio-border-strip--top,
+.gh-studio-border-strip--right,
+.gh-studio-border-strip--bottom,
+.gh-studio-border-strip--left {
+  display: none !important;
+}
+
+.gh-studio-trip-row:hover .gh-studio-row-border,
+.gh-studio-trip-row:focus-visible .gh-studio-row-border,
+.gh-studio-trip-row.is-active .gh-studio-row-border {
+  opacity: 1 !important;
+  filter: brightness(1.08) saturate(1.10) !important;
+}
+
+/* Reduce vertical spacing between trip pills in all views. */
+.studio-trip-list,
+.studio-trip-list--expanded,
+.studio-trip-list--compact,
+.studio-trip-list--card {
+  gap: var(--gh-studio-row-gap) !important;
+  row-gap: var(--gh-studio-row-gap) !important;
+}
+
+.gh-studio-trip-row--expanded,
+.studio-trip-list--expanded .gh-studio-trip-row {
+  margin-block: 0 !important;
+}
+
+.gh-studio-trip-row--compact,
+.studio-trip-list--compact .gh-studio-trip-row {
+  margin-block: 0 !important;
+}
+
+.gh-studio-trip-row--card,
+.studio-trip-list--card .gh-studio-trip-row {
+  margin-block: 0 !important;
+}
+
+/* Slightly tighter compact spacing while keeping the rounded ring intact. */
+.studio-trip-list--compact {
+  --gh-studio-row-gap: 4px;
+}
+
+.studio-trip-list--card {
+  --gh-studio-row-gap: 8px;
+}

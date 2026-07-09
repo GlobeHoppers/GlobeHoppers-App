@@ -523,22 +523,9 @@ function studioBorderSegmentForSide(colors = [], side, fallback = '#00e5ff') {
 }
 
 function StudioTimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
-  const list = splitStudioBorderColors(colors, fallback);
-  return <span
-    className="gh-studio-row-border"
-    aria-hidden="true"
-    style={{
-      '--gh-studio-border-top': studioBorderSegmentForSide(list, 'top', fallback),
-      '--gh-studio-border-right': studioBorderSegmentForSide(list, 'right', fallback),
-      '--gh-studio-border-bottom': studioBorderSegmentForSide(list, 'bottom', fallback),
-      '--gh-studio-border-left': studioBorderSegmentForSide(list, 'left', fallback)
-    }}
-  >
-    <span className="gh-studio-border-strip gh-studio-border-strip--top" />
-    <span className="gh-studio-border-strip gh-studio-border-strip--right" />
-    <span className="gh-studio-border-strip gh-studio-border-strip--bottom" />
-    <span className="gh-studio-border-strip gh-studio-border-strip--left" />
-  </span>;
+  // Border color math is passed through --trip-border on the row. The element
+  // stays intentionally simple so CSS can draw one clean rounded ring.
+  return <span className="gh-studio-row-border" aria-hidden="true" />;
 }
 
 function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId, setDropId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
