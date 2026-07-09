@@ -9035,3 +9035,96 @@ button.primary:disabled {
 .trail-tuning-row {
   grid-template-columns: 118px 1fr 64px;
 }
+
+/* v3.82.2 timeline layout and tuning polish */
+.app.is-playing .controls,
+.app.is-playing .controls:hover {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: none !important;
+}
+.timeline-scrubber-stack {
+  transform: translateY(7px) !important;
+  overflow: visible !important;
+}
+.progress--scrubbable {
+  overflow: visible !important;
+}
+.timeline-year-scale {
+  margin-top: 5px !important;
+}
+.timeline-marker-layer {
+  overflow: visible !important;
+  z-index: 18 !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: 20px !important;
+  height: 58px !important;
+  top: 0 !important;
+  transform: translate(-50%, -79%) !important;
+  transition: transform .38s cubic-bezier(.18,.92,.18,1.08), opacity .22s ease !important;
+  will-change: transform !important;
+}
+.timeline-marker::before,
+.timeline-marker::after {
+  transition: transform .38s cubic-bezier(.18,.92,.18,1.08), height .38s cubic-bezier(.18,.92,.18,1.08), top .38s cubic-bezier(.18,.92,.18,1.08), box-shadow .24s ease !important;
+}
+.timeline-marker::before {
+  top: 5px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+.timeline-marker::after {
+  top: 16px !important;
+  width: 2px !important;
+  height: 30px !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible {
+  transform: translate(-50%, -89%) !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-entering,
+.timeline-marker.is-active.is-current,
+.progress--scrubbable:hover .timeline-marker.is-active.is-current:not(:hover):not(:focus-visible) {
+  z-index: 26 !important;
+  transform: translate(-50%, -98%) !important;
+}
+.timeline-marker.is-current::after,
+.timeline-marker.is-entering::after,
+.timeline-marker.is-active.is-current::after {
+  top: 16px !important;
+  height: 42px !important;
+}
+.timeline-marker.is-current::before,
+.timeline-marker.is-entering::before,
+.timeline-marker.is-active.is-current::before {
+  transform: translateX(-50%) scale(1.16) !important;
+}
+.timeline-marker.is-entering {
+  animation: timeline-marker-lift-3822 .38s cubic-bezier(.18,.92,.18,1.08) 1 both !important;
+}
+.timeline-marker.is-leaving {
+  animation: timeline-marker-settle-3822 .30s cubic-bezier(.4,0,.2,1) 1 both !important;
+}
+@keyframes timeline-marker-lift-3822 {
+  0% { transform: translate(-50%, -79%); }
+  72% { transform: translate(-50%, -102%); }
+  100% { transform: translate(-50%, -98%); }
+}
+@keyframes timeline-marker-settle-3822 {
+  0% { transform: translate(-50%, -98%); }
+  100% { transform: translate(-50%, -79%); }
+}
+.timeline-marker__tooltip.is-current {
+  bottom: calc(100% + 70px) !important;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
+.timeline-marker__tooltip.is-hovered {
+  bottom: calc(100% + 52px) !important;
+}
+.trail-tuning-row {
+  grid-template-columns: 126px 1fr 66px !important;
+}

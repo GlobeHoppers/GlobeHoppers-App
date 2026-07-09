@@ -15,13 +15,15 @@ import settings from './data/settings.json';
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 1.0,
+  solidGlow: 0.65,
+  borderThickness: 0.0,
   stripeThickness: 2.0,
   stripeSegmentMiles: 260,
   stripeSeparator: 0.85,
   stripeGlow: 0.55,
-  stripeSpread: 0.0,
   ribbonThickness: 1.45,
   ribbonGap: 0.55,
+  ribbonSpread: 0.0,
   ribbonGlow: 0.9,
   spiralThickness: 1.55,
   spiralSegmentMiles: 120,
@@ -404,18 +406,23 @@ function TrailTuningUtility({ values, onChange, onClose, onReset }) {
     <section>
       <h4>Solid</h4>
       {row('solidThickness', 'Thickness', 0.6, 2.4, 0.05, 'x')}
+      {row('solidGlow', 'Glow', 0, 2, 0.05, 'x')}
+    </section>
+    <section>
+      <h4>All trails</h4>
+      {row('borderThickness', 'Black border', 0, 3, 0.05, 'px')}
     </section>
     <section>
       <h4>Stripe</h4>
       {row('stripeThickness', 'Thickness', 0.8, 3.4, 0.05, 'x')}
       {row('stripeSegmentMiles', 'Segment length', 80, 650, 10, ' mi')}
-      {row('stripeSpread', 'Spread', 0, 1, 0.05, 'x')}
       {row('stripeSeparator', 'Dark transition', 0, 2.4, 0.05, 'x')}
       {row('stripeGlow', 'Glow', 0, 2, 0.05, 'x')}
     </section>
     <section>
       <h4>Ribbon</h4>
       {row('ribbonThickness', 'Thickness', 0.9, 2.8, 0.05, 'x')}
+      {row('ribbonSpread', 'Spread', 0, 1, 0.05, 'x')}
       {row('ribbonGap', 'Dark separation', 0, 1.4, 0.05, 'x')}
       {row('ribbonGlow', 'Glow', 0, 2, 0.05, 'x')}
     </section>

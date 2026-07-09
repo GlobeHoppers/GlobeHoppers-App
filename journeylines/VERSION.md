@@ -1,1 +1,1 @@
-GlobeHoppers v3.82.1 — trail utility hookups + active pin animation
+GlobeHoppers v3.82.2 — timeline layout, trail border, and tuning corrections

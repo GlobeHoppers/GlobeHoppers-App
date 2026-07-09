@@ -16,13 +16,15 @@ const INTRO_GLOBE_ZOOM = 2.55;
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 1.0,
+  solidGlow: 0.65,
+  borderThickness: 0.0,
   stripeThickness: 2.0,
   stripeSegmentMiles: 260,
   stripeSeparator: 0.85,
   stripeGlow: 0.55,
-  stripeSpread: 0.0,
   ribbonThickness: 1.45,
   ribbonGap: 0.55,
+  ribbonSpread: 0.0,
   ribbonGlow: 0.9,
   spiralThickness: 1.55,
   spiralSegmentMiles: 120,
@@ -707,6 +709,14 @@ function trailVisualForLeg(active, travelerData) {
   return { style: 'solid', colors: [color], baseColor: color };
 }
 
+function withTrailGlow(config, glow = 1, baseWidth = 2) {
+  return { ...config, _ghTrailGlow: Number(glow) || 0, _ghGlowBaseWidth: Math.max(1, Number(baseWidth) || 2) };
+}
+
+function trailBorderThickness(config) {
+  return Math.max(0, Number(config?.borderThickness) || 0);
+}
+
 function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
   const config = { ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) };
   const colors = (trail?.colors || []).filter(Boolean);
@@ -715,50 +725,50 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
   if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
   if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
   if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries, config);
-  return [routeFeature(leg, baseColor, tripId, index, opacity, width * config.solidThickness, active, progress, routedGeometries, 0, config)];
+  const solidWidth = width * Math.max(0.2, Number(config.solidThickness) || 1);
+  const border = trailBorderThickness(config);
+  const out = [];
+  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-solid-border`, opacity, solidWidth + border * 2, active, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
+  out.push(routeFeature(leg, baseColor, tripId, index, opacity, solidWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.solidGlow, width)));
+  return out;
 }
 
 function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const coords = routeCoordinates(leg, progress, active ? 220 : 160, routedGeometries);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
-  const segments = splitRouteIntoUniformSegments(coords, Number(config.stripeSegmentMiles) || 260);
-  const spread = Math.max(0, Math.min(1, Number(config.stripeSpread) || 0));
-  const laneCount = Math.max(1, colors.length);
-  const maxSpreadWidth = stripeWidth * spread;
-  const lanePitch = laneCount > 1 ? maxSpreadWidth / (laneCount - 1) : 0;
-  const laneWidth = Math.max(0.9, stripeWidth / Math.max(1, laneCount) - (lanePitch > 0 ? Math.min(0.7, lanePitch * 0.45) : 0));
   const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
-  const features = [
-    routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.16 * (Number(config.stripeGlow) || 1)), stripeWidth + separatorWidth + (spread > 0 ? 0.35 : 0), false, leg.mode, 0, config)
-  ];
-  colors.forEach((color, laneIndex) => {
-    const lineOffset = laneCount > 1 ? (laneIndex - (laneCount - 1) / 2) * lanePitch : 0;
-    for (let segmentIndex = laneIndex; segmentIndex < segments.length; segmentIndex += laneCount) {
-      const segment = segments[segmentIndex];
-      features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${laneIndex}-${segmentIndex}`, opacity, laneWidth, active, leg.mode, lineOffset, config));
-      if (separatorWidth > 0) {
-        features.push(routeFeatureFromCoordinates(segment, 'rgba(4,8,16,0.82)', tripId, `${index}-stripe-separator-${laneIndex}-${segmentIndex}`, Math.max(0.10, opacity * 0.20), laneWidth + separatorWidth, false, leg.mode, lineOffset, config));
-      }
+  const border = trailBorderThickness(config);
+  const segments = splitRouteIntoUniformSegments(coords, Number(config.stripeSegmentMiles) || 260);
+  const features = [];
+  if (border > 0) features.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-stripe-border`, opacity, stripeWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+  features.push(routeFeatureFromCoordinates(coords, 'rgba(5,10,18,0.62)', tripId, `${index}-stripe-underlay`, Math.max(0.10, opacity * 0.16 * (Number(config.stripeGlow) || 1)), stripeWidth + separatorWidth, false, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
+  segments.forEach((segment, segmentIndex) => {
+    if (separatorWidth > 0) {
+      features.push(routeFeatureFromCoordinates(segment, 'rgba(4,8,16,0.86)', tripId, `${index}-stripe-separator-${segmentIndex}`, Math.max(0.12, opacity * 0.22), stripeWidth + separatorWidth, false, leg.mode, 0, withTrailGlow(config, 0, width)));
     }
+    features.push(routeFeatureFromCoordinates(segment, colors[segmentIndex % colors.length], tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
   });
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, config)];
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, stripeWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.stripeGlow, width))];
 }
 
 function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const total = colors.length;
   const totalWidth = Math.max(width * (Number(config.ribbonThickness) || 1.45), width + 1.0);
+  const spread = Math.max(0, Math.min(1, Number(config.ribbonSpread) || 0));
   const slotWidth = totalWidth / total;
-  const gap = Math.max(0, Number(config.ribbonGap) || 0);
-  const lineWidth = Math.max(1.3, slotWidth - gap);
+  const gap = Math.max(0, Number(config.ribbonGap) || 0) + spread * Math.min(1.4, slotWidth * 0.42);
+  const lineWidth = Math.max(0.75, slotWidth - gap);
   const sharedColor = averageColor(colors, colors[0]);
-  return [
-    routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, progress, routedGeometries, 0, config),
-    ...colors.map((color, ribbonIndex) => {
-      const offset = (ribbonIndex - (total - 1) / 2) * slotWidth;
-      return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset, config);
-    })
-  ];
+  const border = trailBorderThickness(config);
+  const out = [];
+  if (border > 0) out.push(routeFeature(leg, '#020407', tripId, `${index}-ribbon-border`, opacity, totalWidth + border * 2, false, progress, routedGeometries, 0, withTrailGlow(config, 0, width)));
+  out.push(routeFeature(leg, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, progress, routedGeometries, 0, withTrailGlow(config, config.ribbonGlow, width)));
+  out.push(...colors.map((color, ribbonIndex) => {
+    const offset = (ribbonIndex - (total - 1) / 2) * slotWidth;
+    return routeFeature(leg, color, tripId, `${index}-ribbon-${ribbonIndex}`, opacity, lineWidth, active, progress, routedGeometries, offset, withTrailGlow(config, config.ribbonGlow, width));
+  }));
+  return out;
 }
 
 function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
@@ -770,17 +780,18 @@ function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   const sharedColor = averageColor(colors, colors[0]);
   const segments = splitRouteIntoUniformSegments(coords, Number(config.spiralSegmentMiles) || 120);
   const phaseOffset = (active && config.spiralAnimate) ? Math.floor((Math.max(0, Math.min(1, progress)) * segments.length) * 1.35) : 0;
-  const features = [
-    routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-spiral-glow`, Math.max(0.08, opacity * 0.18 * (Number(config.spiralGlow) || 1)), totalWidth + Math.max(0.6, Number(config.spiralGlow) || 1), false, leg.mode, 0, config)
-  ];
+  const border = trailBorderThickness(config);
+  const features = [];
+  if (border > 0) features.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-spiral-border`, opacity, totalWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
+  features.push(routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-spiral-glow`, Math.max(0.08, opacity * 0.18 * (Number(config.spiralGlow) || 1)), totalWidth + Math.max(0.6, Number(config.spiralGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.spiralGlow, width)));
   segments.forEach((segment, segmentIndex) => {
     const phase = segmentIndex + phaseOffset;
     const color = colors[phase % colors.length];
     const angle = (phase / Math.max(colors.length, 2)) * Math.PI * 1.8;
     const offset = Math.sin(angle) * amplitude;
-    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, segmentWidth, active, leg.mode, offset, config));
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, segmentWidth, active, leg.mode, offset, withTrailGlow(config, config.spiralGlow, width)));
   });
-  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, totalWidth, active, progress, routedGeometries, 0, config)];
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, totalWidth, active, progress, routedGeometries, 0, withTrailGlow(config, config.spiralGlow, width))];
 }
 
 function syncTrailTuningDemo(map, config = DEFAULT_TRAIL_TUNING, width = 2) {
@@ -871,6 +882,8 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
   const mainOpacity = active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity);
   const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
+  const glowMult = Math.max(0, Number(config?._ghTrailGlow ?? 1));
+  const glowBase = Math.max(1, Number(config?._ghGlowBaseWidth ?? 2));
   return {
     type: 'Feature',
     properties: {
@@ -880,10 +893,10 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
       mode: leg.mode,
       width: mainWidth,
       opacity: mainOpacity,
-      glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.04, opacity * 0.58),
-      outerGlowWidth: active ? Math.max(mainWidth * 8.1, 14) : Math.max(mainWidth * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.025, opacity * 0.18),
+      glowWidth: active ? (isAir ? Math.max(glowBase * 4.2 * glowMult, 6.5 * glowMult) : Math.max(glowBase * 4.4 * glowMult, 7.2 * glowMult)) : Math.max(glowBase * 5.2 * glowMult, 7.4 * glowMult),
+      glowOpacity: active ? (isAir ? 0.56 * glowMult : 0.62 * glowMult) : Math.max(0.0, opacity * 0.58 * glowMult),
+      outerGlowWidth: active ? Math.max(glowBase * 8.1 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
+      outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
       dash: dashForMode(leg.mode),
       lineOffset
     },
@@ -894,6 +907,8 @@ function routeFeature(leg, color, tripId, index, opacity, width, active = false,
 function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, width, active = false, mode = 'plane', lineOffset = 0, config = DEFAULT_TRAIL_TUNING) {
   const isAir = mode === 'plane' || mode === 'move';
   const mainWidth = active ? (isAir ? Math.max(width, 1.25) : Math.max(width, 1.4)) : Math.max(width, 1.15);
+  const glowMult = Math.max(0, Number(config?._ghTrailGlow ?? 1));
+  const glowBase = Math.max(1, Number(config?._ghGlowBaseWidth ?? 2));
   return {
     type: 'Feature',
     properties: {
@@ -903,10 +918,10 @@ function routeFeatureFromCoordinates(coords, color, tripId, index, opacity, widt
       mode,
       width: mainWidth,
       opacity: active && isAir ? Math.max(0.36, opacity * 0.66) : active ? Math.max(0.9, opacity) : Math.max(0, opacity),
-      glowWidth: active ? (isAir ? Math.max(mainWidth * 4.2, 7.5) : Math.max(mainWidth * 4.4, 8.2)) : Math.max(mainWidth * 5.2, 8.8),
-      glowOpacity: active ? (isAir ? 0.56 : 0.62) : Math.max(0.04, opacity * 0.58),
-      outerGlowWidth: active ? Math.max(mainWidth * 7.8, 14) : Math.max(mainWidth * 9.0, 16),
-      outerGlowOpacity: active ? (isAir ? 0.20 : 0.24) : Math.max(0.025, opacity * 0.18),
+      glowWidth: active ? (isAir ? Math.max(glowBase * 4.2 * glowMult, 6.5 * glowMult) : Math.max(glowBase * 4.4 * glowMult, 7.2 * glowMult)) : Math.max(glowBase * 5.2 * glowMult, 7.4 * glowMult),
+      glowOpacity: active ? (isAir ? 0.56 * glowMult : 0.62 * glowMult) : Math.max(0.0, opacity * 0.58 * glowMult),
+      outerGlowWidth: active ? Math.max(glowBase * 7.8 * glowMult, 12 * glowMult) : Math.max(glowBase * 9.0 * glowMult, 14 * glowMult),
+      outerGlowOpacity: active ? ((isAir ? 0.20 : 0.24) * glowMult) : Math.max(0.0, opacity * 0.18 * glowMult),
       dash: dashForMode(mode),
       lineOffset
     },
