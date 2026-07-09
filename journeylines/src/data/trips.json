@@ -98,7 +98,8 @@
     "sortKey": "manual-00002-2012-02-99",
     "label": "Key West",
     "travelers": [
-      "joey"
+      "joey",
+      "hopper-mrcdkasg"
     ],
     "mode": "drive",
     "roundTrip": true,
@@ -111,7 +112,10 @@
     "endMonth": null,
     "endDay": null,
     "displayEndDate": "",
-    "returnMode": "drive"
+    "returnMode": "drive",
+    "guestHoppers": [],
+    "trailStyle": "solid",
+    "trailColorMode": "members"
   },
   {
     "id": "2012-003-atlanta",
