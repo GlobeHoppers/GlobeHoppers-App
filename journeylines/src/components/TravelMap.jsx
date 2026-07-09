@@ -654,15 +654,15 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 function addRouteSourcesAndLayers(map) {
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes-glow', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 8.5, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'completed-routes', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('active-route')) {
     map.addSource('active-route', { type: 'geojson', data: emptyCollection() });
-    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
-    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route-glow-wide', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'outerGlowWidth'], 'line-opacity': ['get', 'outerGlowOpacity'], 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route-glow', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'glowWidth'], 'line-opacity': ['get', 'glowOpacity'], 'line-blur': 10, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
+    map.addLayer({ id: 'active-route', type: 'line', source: 'active-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': ['get', 'opacity'], 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
   }
   if (!map.getSource('visited-points')) {
     map.addSource('visited-points', { type: 'geojson', data: emptyCollection() });
@@ -755,9 +755,9 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
 function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING) {
   const total = colors.length;
   const totalWidth = Math.max(width * (Number(config.ribbonThickness) || 1.45), width + 1.0);
-  const spread = Math.max(0, Math.min(1, Number(config.ribbonSpread) || 0));
+  const spread = Math.max(0, Number(config.ribbonSpread) || 0);
   const slotWidth = totalWidth / total;
-  const gap = Math.max(0, Number(config.ribbonGap) || 0) + spread * Math.min(1.4, slotWidth * 0.42);
+  const gap = Math.max(0, Number(config.ribbonGap) || 0) + spread * Math.min(1.8, slotWidth * 0.55);
   const lineWidth = Math.max(0.75, slotWidth - gap);
   const sharedColor = averageColor(colors, colors[0]);
   const border = trailBorderThickness(config);

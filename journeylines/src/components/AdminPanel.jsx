@@ -860,8 +860,13 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
 }
 
 function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedTravelerCount, effectiveTrailColorMode, effectiveTrailStyle, onSetTrailStyle, onSetTrailColorMode }) {
-  const memberColors = (currentDraftVisual?.circleColors || currentDraftVisual?.memberColors || currentDraftVisual?.colors || []).filter(Boolean);
-  const showMultiOptions = selectedTravelerCount > 1;
+  const squadMemberColors = (currentDraftVisual?.squadMemberColors || currentDraftVisual?.memberColors || []).filter(Boolean);
+  const squadColor = currentHopSquad?.color || currentDraftVisual?.color;
+  const memberColors = (effectiveTrailColorMode === 'squad'
+    ? [squadColor].filter(Boolean)
+    : (squadMemberColors.length ? squadMemberColors : (currentDraftVisual?.circleColors || currentDraftVisual?.colors || []).filter(Boolean)));
+  const availableColorCount = memberColors.length || selectedTravelerCount;
+  const showMultiOptions = availableColorCount > 1;
   const showColorMode = !!currentHopSquad && showMultiOptions;
   const styleOptions = [
     { id: 'solid', label: 'Solid Trail', disabled: false },
@@ -872,7 +877,7 @@ function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedT
   return <section className="trail-style-panel compact-section">
     <div className="section-heading-inline">
       <h3>Trail style</h3>
-      <span className="trail-style-summary">{showMultiOptions ? `${memberColors.length || selectedTravelerCount} colors available` : 'Solo trail'}</span>
+      <span className="trail-style-summary">{showMultiOptions ? `${availableColorCount} colors available` : 'Solo trail'}</span>
     </div>
     {showColorMode && <div className="trail-color-mode-toggle" role="group" aria-label="Trail color mode">
       <button type="button" className={effectiveTrailColorMode === 'squad' ? 'is-selected' : ''} onClick={() => onSetTrailColorMode('squad')}>Squad color</button>
@@ -992,7 +997,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     endDay: draft.endDay ? Number(draft.endDay) : null,
     displayDate: formatDisplayDate(draft),
     displayEndDate: formatEndDisplayDate(draft),
-    sortKey: draft.id && draft.sortKey && String(draft.sortKey).startsWith(bucketKey(draft)) ? draft.sortKey : buildSortKey(draft, count),
+    sortKey: draft.id && draft.sortKey ? draft.sortKey : buildNewTripSortKey(draft, trips, count),
     label,
     travelers: draft.travelers || [],
     guestHoppers: draft.guestHoppers || [],
@@ -1256,6 +1261,17 @@ function calendarDays(year, month) {
   return out;
 }
 
+function buildNewTripSortKey(draft, trips, count) {
+  const manualNums = (trips || [])
+    .map(t => String(t.sortKey || '').match(/^manual-(\d+)/)?.[1])
+    .filter(Boolean)
+    .map(Number);
+  if (manualNums.length) {
+    const next = Math.max(...manualNums) + 1;
+    return `manual-${String(next).padStart(5,'0')}-${bucketKey(draft)}`;
+  }
+  return buildSortKey(draft, count);
+}
 function insertChronologically(trips) { return sortTripsForEditor(trips).map((t, i) => ({ ...t, sortKey: t.sortKey || buildSortKey(t, i + 1) })); }
 function applyBucketOrder(rows) {
   return rows.map((t, i) => ({

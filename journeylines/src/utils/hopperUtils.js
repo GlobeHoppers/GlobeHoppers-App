@@ -105,15 +105,20 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
 
 export function resolveTrailVisual(trip = {}, hopperData = {}) {
   const visual = resolveTripVisual(trip, hopperData);
-  const memberColors = uniqueColors(visual.circleColors || visual.memberColors || visual.colors || [visual.color]);
-  const hasMultiplePeople = memberColors.length > 1;
-  const requestedMode = trip?.trailColorMode || (visual.isSquad && hasMultiplePeople ? 'squad' : 'members');
+  const individualColors = uniqueColors(
+    visual.isSquad
+      ? (visual.squadMemberColors || visual.memberColors || [])
+      : (visual.circleColors || visual.memberColors || visual.colors || [visual.color])
+  );
+  const squadColor = visual.color || DEFAULT_HOPPER_COLOR;
+  const requestedMode = trip?.trailColorMode || (visual.isSquad && individualColors.length > 1 ? 'squad' : 'members');
   let style = (trip?.trailStyle || 'solid').toLowerCase();
   let colorMode = requestedMode;
+  const activeColors = colorMode === 'squad' ? [squadColor] : individualColors;
+  const hasMultiplePeople = activeColors.length > 1;
 
   if (!hasMultiplePeople) {
     style = 'solid';
-    colorMode = 'members';
   }
 
   if (colorMode === 'squad') {
@@ -121,20 +126,20 @@ export function resolveTrailVisual(trip = {}, hopperData = {}) {
     return {
       style,
       colorMode,
-      colors: [visual.color || DEFAULT_HOPPER_COLOR],
-      baseColor: visual.color || DEFAULT_HOPPER_COLOR,
-      circleColors: memberColors.length ? memberColors : [visual.color || DEFAULT_HOPPER_COLOR],
+      colors: [squadColor],
+      baseColor: squadColor,
+      circleColors: [squadColor],
       visual
     };
   }
 
-  const trailColors = memberColors.length ? memberColors : [visual.color || DEFAULT_HOPPER_COLOR];
+  const trailColors = activeColors.length ? activeColors : [squadColor];
   if (!['solid', 'stripe', 'ribbon', 'spiral'].includes(style)) style = 'solid';
   return {
     style,
     colorMode,
     colors: style === 'solid' ? [trailColors[0]] : trailColors,
-    baseColor: trailColors[0] || visual.color || DEFAULT_HOPPER_COLOR,
+    baseColor: trailColors[0] || squadColor,
     circleColors: trailColors,
     visual
   };

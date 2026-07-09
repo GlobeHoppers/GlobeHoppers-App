@@ -421,8 +421,8 @@ function TrailTuningUtility({ values, onChange, onClose, onReset }) {
     </section>
     <section>
       <h4>Ribbon</h4>
-      {row('ribbonThickness', 'Thickness', 0.9, 2.8, 0.05, 'x')}
-      {row('ribbonSpread', 'Spread', 0, 1, 0.05, 'x')}
+      {row('ribbonThickness', 'Thickness', 0.9, 5.0, 0.05, 'x')}
+      {row('ribbonSpread', 'Spread', 0, 3.0, 0.05, 'x')}
       {row('ribbonGap', 'Dark separation', 0, 1.4, 0.05, 'x')}
       {row('ribbonGlow', 'Glow', 0, 2, 0.05, 'x')}
     </section>
