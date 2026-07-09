@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [] }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [] }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -97,7 +97,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
               />;
             })}
-            {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
+            {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
               <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
             </span>}
           </div>
@@ -132,6 +132,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <label>Filter<select value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All</option><option value="joey">Joey only</option><option value="bonnie">Bonnie only</option><option value="together">Together</option></select></label>
         <label>Theme<select value={theme} onChange={e => setTheme(e.target.value)}><option value="bold-dark">Bold Dark</option><option value="minimal-light">Minimal Light</option></select></label>
         <label className="check"><input type="checkbox" checked={showTrails} onChange={e => setShowTrails(e.target.checked)} /> Trails</label>
+        <label className="check"><input type="checkbox" checked={routeStackingEnabled} onChange={e => setRouteStackingEnabled(e.target.checked)} /> Route stacking</label>
       </div>}
     </div>
   </div>;

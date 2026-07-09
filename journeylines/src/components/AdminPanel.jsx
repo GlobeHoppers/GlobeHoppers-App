@@ -567,6 +567,13 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
   const defaultTrailColorMode = 'members';
   const effectiveTrailColorMode = draft.trailColorMode || defaultTrailColorMode;
   const effectiveTrailStyle = draft.trailStyle || 'solid';
+  useEffect(() => {
+    if (mode !== 'add') return;
+    if (draft._trailStyleTouched) return;
+    if (selectedTravelerCount >= 2 && (draft.trailStyle || 'solid') === 'solid') {
+      setDraft(d => ({ ...d, trailStyle: 'stripe', trailColorMode: 'members' }));
+    }
+  }, [mode, selectedTravelerCount, draft._trailStyleTouched, draft.trailStyle, setDraft]);
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
@@ -624,7 +631,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
     setGuestPopupOpen(false);
   }
   function setTrailStyle(style) {
-    setDraft(d => ({ ...d, trailStyle: style, trailColorMode: currentHopSquad && !(d.guestHoppers || []).length && style === 'solid' ? 'squad' : 'members' }));
+    setDraft(d => ({ ...d, trailStyle: style, trailColorMode: currentHopSquad && !(d.guestHoppers || []).length && style === 'solid' ? 'squad' : 'members', _trailStyleTouched: true }));
   }
   function setTrailColorMode(mode) {
     setDraft(d => ({
@@ -978,7 +985,9 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   }
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
-  const derivedTrailColorMode = draft.trailColorMode || (activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) && (draft.trailStyle || 'solid') === 'solid' ? 'squad' : 'members');
+  const travelerCount = ((draft.travelers || []).length + (draft.guestHoppers || []).length);
+  const finalTrailStyle = draft.trailStyle || (travelerCount >= 2 ? 'stripe' : 'solid');
+  const derivedTrailColorMode = finalTrailStyle === 'solid' && activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) ? 'squad' : 'members';
   const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
   const clean = {
     id: draft.id || `${draft.year}-${String(trips.length + 1).padStart(3,'0')}-${slug(label)}`,
@@ -1002,7 +1011,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     route,
     notes: draft.notes || '',
     occasion: draft.occasion || '',
-    trailStyle: draft.trailStyle || 'solid',
+    trailStyle: finalTrailStyle,
     trailColorMode: derivedTrailColorMode
   };
   return { trip: clean, nextLocations };

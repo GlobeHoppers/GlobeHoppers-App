@@ -37,15 +37,15 @@ const DEFAULT_TRAIL_TUNING = {
 
 const DEFAULT_TIMELINE_TUNING = {
   inactiveHeadSize: 14,
-  inactiveStemLength: 8,
-  activeHeadSize: 14,
-  activeStemLength: 42,
-  activeLift: 34,
+  inactiveStemLength: 20,
+  activeHeadSize: 16,
+  activeStemLength: 37,
+  activeLift: 15,
   pinBaseY: 1,
-  playbackBarHeight: 4,
-  yearOffsetY: 5,
-  tooltipOffsetY: 68,
-  animationMs: 360,
+  playbackBarHeight: 10,
+  yearOffsetY: -7,
+  tooltipOffsetY: 70,
+  animationMs: 450,
   animationOvershoot: 1.12
 };
 
@@ -86,6 +86,12 @@ export default function App() {
     try { return { ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}), ...(JSON.parse(localStorage.getItem('globehoppers.timelineTuning') || 'null') || {}) }; }
     catch { return { ...DEFAULT_TIMELINE_TUNING, ...(parameters?.timelineTuning || {}) }; }
   });
+  const [routeStackingEnabled, setRouteStackingEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('globehoppers.routeStackingEnabled');
+      return saved == null ? Boolean(parameters?.routeStackingEnabled) : saved === 'true';
+    } catch { return Boolean(parameters?.routeStackingEnabled); }
+  });
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const resumeAfterStudioRef = useRef(false);
@@ -99,16 +105,8 @@ export default function App() {
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
   useEffect(() => localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning)), [trailTuning]);
   useEffect(() => localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning)), [timelineTuning]);
+  useEffect(() => localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled)), [routeStackingEnabled]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
-  useEffect(() => {
-    const repo = localStorage.getItem('journeylines.githubRepo') || 'jonathanjoelneptune/JourneyLines';
-    const token = localStorage.getItem('journeylines.githubToken') || '';
-    if (!token) return;
-    const timer = window.setTimeout(() => {
-      commitSingleJsonFile(repo, token, 'journeylines/src/data/parameters.json', { trailTuning, timelineTuning }, 'Update GlobeHoppers parameters').catch(err => console.warn('Parameter save failed', err));
-    }, 1200);
-    return () => window.clearTimeout(timer);
-  }, [trailTuning, timelineTuning]);
   useEffect(() => {
     const closeStudio = () => {
       setAdmin(false);
@@ -123,7 +121,7 @@ export default function App() {
   }, []);
 
 
-  const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
+  const sortedTrips = useMemo(() => sortTrips(trips).filter(t => !t?.isHomeMove && t?.mode !== 'move' && !String(t?.id || '').startsWith('home-move-')), [trips]);
   const filteredTrips = useMemo(() => sortedTrips.filter(t => {
     const hasJ = t.travelers?.includes('joey'), hasB = t.travelers?.includes('bonnie');
     if (filter === 'joey') return hasJ;
@@ -361,6 +359,18 @@ export default function App() {
     jumpToLeg(index, 0, true);
   }
 
+  async function saveParametersToRepo() {
+    const repo = localStorage.getItem('journeylines.githubRepo') || localStorage.getItem('journeylines.repo') || 'jonathanjoelneptune/JourneyLines';
+    const token = localStorage.getItem('journeylines.githubToken') || '';
+    const payload = { trailTuning, timelineTuning, routeStackingEnabled };
+    localStorage.setItem('globehoppers.trailTuning', JSON.stringify(trailTuning));
+    localStorage.setItem('globehoppers.timelineTuning', JSON.stringify(timelineTuning));
+    localStorage.setItem('globehoppers.routeStackingEnabled', String(routeStackingEnabled));
+    if (!token) return false;
+    await commitSingleJsonFile(repo, token, 'journeylines/src/data/parameters.json', payload, 'Update GlobeHoppers parameters');
+    return true;
+  }
+
   function titleClick() {
     clickRef.current += 1;
     setTimeout(() => { clickRef.current = 0; }, 900);
@@ -394,7 +404,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={trailTuning} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -407,9 +417,9 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={current?.trip?.id || null} yearSegments={timelineYearSegments} />
-    {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} />}
-    {timelineTuningOpen && <TimelineTuningUtility values={timelineTuning} onChange={setTimelineTuning} onClose={() => setTimelineTuningOpen(false)} onReset={() => setTimelineTuning(DEFAULT_TIMELINE_TUNING)} />}
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={current?.trip?.id || null} yearSegments={timelineYearSegments} />
+    {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} onSave={saveParametersToRepo} />}
+    {timelineTuningOpen && <TimelineTuningUtility values={timelineTuning} onChange={setTimelineTuning} onClose={() => setTimelineTuningOpen(false)} onReset={() => setTimelineTuning(DEFAULT_TIMELINE_TUNING)} onSave={saveParametersToRepo} />}
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
@@ -422,7 +432,7 @@ export default function App() {
 
 
 
-function TrailTuningUtility({ values, onChange, onClose, onReset }) {
+function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
   const update = (key, value) => onChange(v => ({ ...v, [key]: value }));
   const row = (key, label, min, max, step = 0.05, suffix = 'x') => (
     <label className="trail-tuning-row">
@@ -472,14 +482,14 @@ function TrailTuningUtility({ values, onChange, onClose, onReset }) {
     </section>
     <div className="trail-tuning__actions">
       <button type="button" className="secondary" onClick={onReset}>Reset</button>
-      <button type="button" className="primary" onClick={onClose}>Done</button>
+      <button type="button" className="secondary" onClick={onClose}>Done</button><button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
     </div>
   </aside>;
 }
 
 
 
-function TimelineTuningUtility({ values, onChange, onClose, onReset }) {
+function TimelineTuningUtility({ values, onChange, onClose, onReset, onSave }) {
   const update = (key, value) => onChange(v => ({ ...v, [key]: value }));
   const row = (key, label, min, max, step = 1, suffix = 'px') => (
     <label className="trail-tuning-row timeline-tuning-row">
@@ -516,7 +526,7 @@ function TimelineTuningUtility({ values, onChange, onClose, onReset }) {
     </section>
     <div className="trail-tuning__actions">
       <button type="button" className="secondary" onClick={onReset}>Reset</button>
-      <button type="button" className="primary" onClick={onClose}>Done</button>
+      <button type="button" className="secondary" onClick={onClose}>Done</button><button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
     </div>
   </aside>;
 }

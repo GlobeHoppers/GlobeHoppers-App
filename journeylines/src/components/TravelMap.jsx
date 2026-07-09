@@ -20,6 +20,7 @@ const DEFAULT_TRAIL_TUNING = {
   borderThickness: 1.35,
   stripeThickness: 2.5,
   stripeSegmentMiles: 80,
+  routeStackingEnabled: false,
   stripeSeparator: 0.45,
   stripeGlow: 0.75,
   stripeBevel: 0.45,
@@ -721,7 +722,7 @@ function trailBorderThickness(config) {
 
 function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
   const config = { ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) };
-  const stackOffset = Number(leg?.routeStackOffset) || 0;
+  const stackOffset = config.routeStackingEnabled ? (Number(leg?.routeStackOffset) || 0) : 0;
   const withStack = (features) => applyRouteStackOffset(features, stackOffset);
   const colors = (trail?.colors || []).filter(Boolean);
   const baseColor = trail?.baseColor || colors[0] || '#00e5ff';
@@ -767,10 +768,10 @@ function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active 
     const color = colors[segmentIndex % colors.length];
     features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-stripe-${segmentIndex}`, opacity, stripeWidth, active, leg.mode, 0, withTrailGlow(config, config.stripeGlow, width)));
     if (bevel > 0) {
-      features.push(routeFeatureFromCoordinates(segment, 'rgba(255,255,255,0.34)', tripId, `${index}-stripe-bevel-${segmentIndex}`, Math.min(0.38, opacity * 0.18 * bevel), Math.max(0.8, stripeWidth * 0.18 * bevel), false, leg.mode, -Math.max(0.25, stripeWidth * 0.2), withTrailGlow(config, 0, width)));
+      features.push(routeFeatureFromCoordinates(segment, 'rgba(255,255,255,0.34)', tripId, `${index}-stripe-bevel-${segmentIndex}`, Math.min(0.38, opacity * 0.18 * bevel), Math.max(0.8, stripeWidth * 0.18 * bevel), false, leg.mode, -0, withTrailGlow(config, 0, width)));
     }
     if (laneEffect > 0) {
-      features.push(routeFeatureFromCoordinates(segment, 'rgba(0,0,0,0.30)', tripId, `${index}-stripe-edge-${segmentIndex}`, Math.min(0.32, opacity * 0.16 * laneEffect), Math.max(0.6, stripeWidth * 0.12 * laneEffect), false, leg.mode, Math.max(0.25, stripeWidth * 0.22), withTrailGlow(config, 0, width)));
+      features.push(routeFeatureFromCoordinates(segment, 'rgba(0,0,0,0.30)', tripId, `${index}-stripe-edge-${segmentIndex}`, Math.min(0.32, opacity * 0.16 * laneEffect), Math.max(0.6, stripeWidth * 0.12 * laneEffect), false, leg.mode, 0, withTrailGlow(config, 0, width)));
     }
     if (separatorWidth > 0) {
       const boundary = boundarySegmentAroundJoin(segment, segments[segmentIndex + 1]);

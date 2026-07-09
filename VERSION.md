@@ -1,1 +1,1 @@
-GlobeHoppers v3.83 — timeline utility, parameter persistence, home-move removal, squad trail simplification, stripe effects, and route offset stacking
+GlobeHoppers v3.84 — parameter save control, route stacking toggle, stripe alignment, and active tooltip fix

@@ -9330,3 +9330,8 @@ button.primary:disabled {
 .trail-style-panel .trail-color-mode-toggle {
   display: none !important;
 }
+
+/* GlobeHoppers v3.84: active marker hover uses raised tooltip position; route stacking is opt-in. */
+.timeline-marker__tooltip.is-hovered.is-current {
+  bottom: calc(100% + var(--tl-tooltip-offset, 70px)) !important;
+}
