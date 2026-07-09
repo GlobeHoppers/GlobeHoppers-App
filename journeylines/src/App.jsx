@@ -1011,28 +1011,20 @@ function TimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
   const right = borderSegmentForSide(list, 'right', fallback);
   const bottom = borderSegmentForSide(list, 'bottom', fallback);
   const left = borderSegmentForSide(list, 'left', fallback);
-  const shell = {
-    position: 'absolute',
-    inset: 0,
-    pointerEvents: 'none',
-    zIndex: 2147483000,
-    borderRadius: 'inherit',
-    overflow: 'hidden',
-    display: 'block'
-  };
-  const common = {
-    position: 'absolute',
-    display: 'block',
-    pointerEvents: 'none',
-    zIndex: 2147483001,
-    opacity: 1,
-    boxShadow: '0 0 8px rgba(255,255,255,.08)'
-  };
-  return <span aria-hidden="true" style={shell}>
-    <span style={{ ...common, left: 2, right: 2, top: 0, height: 3, background: top, borderRadius: '999px 999px 0 0' }} />
-    <span style={{ ...common, top: 2, bottom: 2, right: 0, width: 3, background: right, borderRadius: '0 999px 999px 0' }} />
-    <span style={{ ...common, left: 2, right: 2, bottom: 0, height: 3, background: bottom, borderRadius: '0 0 999px 999px' }} />
-    <span style={{ ...common, top: 2, bottom: 2, left: 0, width: 3, background: left, borderRadius: '999px 0 0 999px' }} />
+  return <span
+    className="trip-drawer__foreground-border"
+    aria-hidden="true"
+    style={{
+      '--row-border-top': top,
+      '--row-border-right': right,
+      '--row-border-bottom': bottom,
+      '--row-border-left': left
+    }}
+  >
+    <span className="trip-drawer__border-strip trip-drawer__border-strip--top" />
+    <span className="trip-drawer__border-strip trip-drawer__border-strip--right" />
+    <span className="trip-drawer__border-strip trip-drawer__border-strip--bottom" />
+    <span className="trip-drawer__border-strip trip-drawer__border-strip--left" />
   </span>;
 }
 

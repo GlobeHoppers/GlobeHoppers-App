@@ -1,1 +1,1 @@
-GlobeHoppers v3.95 — inline timeline row borders + Hop Preview spacing fix
+GlobeHoppers v3.96 — high-specificity multiperson timeline row borders
