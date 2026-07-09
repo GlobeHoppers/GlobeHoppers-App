@@ -9645,3 +9645,35 @@ button.primary:disabled {
   position: relative;
   z-index: 2;
 }
+
+
+/* GlobeHoppers v3.95: Add/Edit Hop side column layout fix.
+   Keep Hop Preview visible near the top without allowing it to overlap Trail Style. */
+.studio-modal-layout {
+  align-items: flex-start !important;
+}
+.studio-modal-sidecol {
+  align-self: flex-start !important;
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  align-content: start !important;
+  gap: 12px !important;
+  padding-top: 10px !important;
+  margin-top: 0 !important;
+  overflow: visible !important;
+}
+.studio-modal-sidecol .route-preview-card {
+  position: relative !important;
+  top: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  align-self: start !important;
+  z-index: 2 !important;
+}
+.studio-modal-sidecol .trail-style-panel {
+  position: relative !important;
+  margin: 0 !important;
+  align-self: start !important;
+  z-index: 1 !important;
+  clear: both !important;
+}

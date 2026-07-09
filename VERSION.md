@@ -1,1 +1,1 @@
-GlobeHoppers v3.94 — foreground timeline row border overlay
+GlobeHoppers v3.95 — inline timeline row borders + Hop Preview spacing fix

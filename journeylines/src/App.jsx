@@ -1007,14 +1007,34 @@ function linearStops(colors = [], direction = '90deg') {
 
 function TimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
   const list = splitTimelineBorderColors(colors, fallback);
-  return <span className="trip-drawer__foreground-border" aria-hidden="true">
-    <span className="trip-border-trip-top" style={{ background: borderSegmentForSide(list, 'top', fallback) }} />
-    <span className="trip-border-trip-right" style={{ background: borderSegmentForSide(list, 'right', fallback) }} />
-    <span className="trip-border-trip-bottom" style={{ background: borderSegmentForSide(list, 'bottom', fallback) }} />
-    <span className="trip-border-trip-left" style={{ background: borderSegmentForSide(list, 'left', fallback) }} />
+  const top = borderSegmentForSide(list, 'top', fallback);
+  const right = borderSegmentForSide(list, 'right', fallback);
+  const bottom = borderSegmentForSide(list, 'bottom', fallback);
+  const left = borderSegmentForSide(list, 'left', fallback);
+  const shell = {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    zIndex: 2147483000,
+    borderRadius: 'inherit',
+    overflow: 'hidden',
+    display: 'block'
+  };
+  const common = {
+    position: 'absolute',
+    display: 'block',
+    pointerEvents: 'none',
+    zIndex: 2147483001,
+    opacity: 1,
+    boxShadow: '0 0 8px rgba(255,255,255,.08)'
+  };
+  return <span aria-hidden="true" style={shell}>
+    <span style={{ ...common, left: 2, right: 2, top: 0, height: 3, background: top, borderRadius: '999px 999px 0 0' }} />
+    <span style={{ ...common, top: 2, bottom: 2, right: 0, width: 3, background: right, borderRadius: '0 999px 999px 0' }} />
+    <span style={{ ...common, left: 2, right: 2, bottom: 0, height: 3, background: bottom, borderRadius: '0 0 999px 999px' }} />
+    <span style={{ ...common, top: 2, bottom: 2, left: 0, width: 3, background: left, borderRadius: '999px 0 0 999px' }} />
   </span>;
 }
-
 
 function buildTripTimeline(trips, legs, locById, hopperData) {
   const firstLegByTrip = new Map();
@@ -1147,7 +1167,6 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
     onContextMenu={(e) => openMenu(e, row)}
     title="Click to play from here. Right-click or use ⋯ to edit."
   >
-    <TimelineRowBorder colors={row.borderColors} fallback={row.color} />
     <span className="trip-drawer__date">{row.date}</span>
     <span className="trip-drawer__main">
       <strong>{row.title}</strong>
@@ -1155,6 +1174,7 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
     </span>
     <span className="trip-drawer__meta">{row.mode}{row.legCount > 1 ? ` · ${row.legCount} legs` : ''}<br />{row.traveler}</span>
     {viewType !== 'card' && <button className="trip-drawer__more" type="button" aria-label={`Edit ${row.title}`} onClick={(e) => openMenu(e, row)}>⋯</button>}
+    <TimelineRowBorder colors={row.borderColors} fallback={row.color} />
   </div>;
 }
 
