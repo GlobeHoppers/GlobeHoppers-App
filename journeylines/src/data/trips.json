@@ -2448,14 +2448,14 @@
     "mode": "plane",
     "roundTrip": false,
     "fromLocationId": "san-diego-ca",
-    "toLocationId": "tokyo-jp",
+    "toLocationId": "seoul-kr",
     "route": [
       {
         "locationId": "san-diego-ca",
         "modeFromPrevious": null
       },
       {
-        "locationId": "tokyo-jp",
+        "locationId": "seoul-kr",
         "modeFromPrevious": "plane"
       },
       {
