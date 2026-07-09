@@ -11,7 +11,7 @@
     "stripeLaneEffect": 0.4,
     "ribbonThickness": 5,
     "ribbonGap": 0.75,
-    "ribbonSpread": 2.5,
+    "ribbonSpread": 0,
     "ribbonGlow": 0,
     "spiralThickness": 1.55,
     "spiralSegmentMiles": 50,
