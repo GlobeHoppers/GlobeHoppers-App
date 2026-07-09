@@ -1,5 +1,75 @@
 [
   {
+    "id": "2026-136-alaska",
+    "year": 2026,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-09-99-013",
+    "label": "Alaska",
+    "travelers": [
+      "joey",
+      "hopper-mrcdkasg"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-mrcede8c",
+        "name": "Tomiwa",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "anchorage-ak",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
+  },
+  {
+    "id": "2026-138-alaska",
+    "year": 2026,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-10-99-013",
+    "label": "Alaska",
+    "travelers": [
+      "joey",
+      "hopper-mrcdkasg"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-mrds26cg",
+        "name": "Tomiwa",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "anchorage-ak",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
+  },
+  {
     "id": "2012-001-kentucky",
     "year": 2012,
     "month": null,
@@ -2634,41 +2704,6 @@
     "route": [],
     "notes": "",
     "occasion": ""
-  },
-  {
-    "id": "2026-136-alaska",
-    "year": 2026,
-    "month": 9,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "September 2026",
-    "displayEndDate": "",
-    "sortKey": "2026-09-99-013",
-    "label": "Alaska",
-    "travelers": [
-      "joey",
-      "hopper-mrcdkasg"
-    ],
-    "guestHoppers": [
-      {
-        "id": "guest-mrcede8c",
-        "name": "Tomiwa",
-        "colorName": "red",
-        "color": "#ff3b30"
-      }
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "anchorage-ak",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "stripe",
-    "trailColorMode": "members"
   },
   {
     "id": "2026-137-atlanta",
