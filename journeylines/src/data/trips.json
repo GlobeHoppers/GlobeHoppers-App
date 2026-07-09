@@ -2457,9 +2457,9 @@
   {
     "id": "2025-112-seoul-and-tokyo",
     "year": 2025,
-    "month": null,
+    "month": 3,
     "day": null,
-    "displayDate": "2025",
+    "displayDate": "March 2025",
     "sortKey": "manual-00114-2025-13-99",
     "label": "Seoul and Tokyo",
     "travelers": [
@@ -2468,8 +2468,8 @@
     ],
     "mode": "plane",
     "roundTrip": false,
-    "fromLocationId": null,
-    "toLocationId": "tokyo-jp",
+    "fromLocationId": "san-diego-ca",
+    "toLocationId": "seoul-kr",
     "route": [
       {
         "locationId": "san-diego-ca",
@@ -2489,7 +2489,15 @@
       }
     ],
     "notes": "San Diego to Seoul to Tokyo to San Diego.",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2025-113-miami",
