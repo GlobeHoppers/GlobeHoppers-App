@@ -66,28 +66,6 @@ export default function App() {
   }, []);
 
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        if (isPlaying) {
-          resumeAfterTabHiddenRef.current = true;
-          freezePlaybackClock();
-          tRef.current.last = null;
-          setIsPlaying(false);
-        }
-        return;
-      }
-      if (resumeAfterTabHiddenRef.current) {
-        resumeAfterTabHiddenRef.current = false;
-        tRef.current.last = null;
-        setIsPlaying(true);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isPlaying, activeIndex, legProgress, legs, speed]);
-
-
   const sortedTrips = useMemo(() => sortTrips(trips), [trips]);
   const filteredTrips = useMemo(() => sortedTrips.filter(t => {
     const hasJ = t.travelers?.includes('joey'), hasB = t.travelers?.includes('bonnie');
@@ -108,6 +86,27 @@ export default function App() {
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (isPlaying) {
+          resumeAfterTabHiddenRef.current = true;
+          freezePlaybackClock();
+          tRef.current.last = null;
+          setIsPlaying(false);
+        }
+        return;
+      }
+      if (resumeAfterTabHiddenRef.current) {
+        resumeAfterTabHiddenRef.current = false;
+        tRef.current.last = null;
+        setIsPlaying(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, activeIndex, legProgress, legs, speed]);
 
   useEffect(() => {
     const pauseForHopModal = () => {
@@ -778,9 +777,7 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
-      markerBackground: traveler?.isSquad
-        ? (traveler?.color || '#00e5ff')
-        : multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff'),
+      markerBackground: multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff', true),
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
       legCount: tripLegs.length,
       year: trip.year || String(trip.date || '').slice(0, 4) || '',

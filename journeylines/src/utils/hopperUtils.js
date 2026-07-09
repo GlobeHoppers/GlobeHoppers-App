@@ -46,8 +46,8 @@ export function segmentedCircleBackground(colors = [], fallback = '#5d7288', glo
   ].join(', ');
 }
 
-export function multiMemberCircleBackground(colors = [], fallback = '#5d7288') {
-  return segmentedCircleBackground(colors, fallback, false);
+export function multiMemberCircleBackground(colors = [], fallback = '#5d7288', glossy = false) {
+  return segmentedCircleBackground(colors, fallback, glossy);
 }
 
 export function resolveTripVisual(trip = {}, hopperData = {}) {
@@ -73,7 +73,8 @@ export function resolveTripVisual(trip = {}, hopperData = {}) {
       primaryColor: c,
       colors: [c],
       memberColors,
-      circleColors: circleColors.length ? circleColors : [c],
+      circleColors: [c],
+      squadMemberColors: circleColors.length ? circleColors : memberColors,
       accentColors: [],
       isSquad: true,
       isEmpty: false,

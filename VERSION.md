@@ -1,1 +1,1 @@
-GlobeHoppers v3.81 — pause on tab hide, slimmer timeline pins with stronger active lift, HopSquad timeline colors, and refined stripe/ribbon/spiral trails
+GlobeHoppers v3.81.1 — runtime-safe tab pause + trail and timeline polish from v3.80
