@@ -22,7 +22,7 @@
   },
   "timelineTuning": {
     "inactiveHeadSize": 14,
-    "inactiveStemLength": 15,
+    "inactiveStemLength": 14,
     "activeHeadSize": 14,
     "activeStemLength": 42,
     "activeLift": 34,
