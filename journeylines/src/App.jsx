@@ -755,6 +755,7 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
+      markerBackground: multiMemberCircleBackground(traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff'),
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
       legCount: tripLegs.length,
       year: trip.year || String(trip.date || '').slice(0, 4) || '',
@@ -773,6 +774,7 @@ function buildTimelineMarkers(rows = [], totalLegs = 0) {
     title: row.title || 'Trip',
     date: row.date || row.year || '',
     color: row.color || '#00e5ff',
+    markerBackground: row.markerBackground || row.color || '#00e5ff',
     firstIndex: row.firstIndex || 0,
     progress: Math.max(0, Math.min(1, (row.firstIndex || 0) / Math.max(1, totalLegs)))
   }));

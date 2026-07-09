@@ -1,1 +1,1 @@
-GlobeHoppers v3.76 — Faster globe reorientation + top-aligned Hoppers sections
+GlobeHoppers v3.77 — Timeline pins follow Hop Preview multi-hopper circle colors
