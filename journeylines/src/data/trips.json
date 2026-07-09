@@ -9,7 +9,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-013",
+    "sortKey": "manual-00001-2026-09-99",
     "label": "Alaska",
     "travelers": [
       "joey",
@@ -44,7 +44,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-013",
+    "sortKey": "manual-00002-2026-10-99",
     "label": "Alaska",
     "travelers": [
       "joey",
@@ -70,40 +70,12 @@
     "trailColorMode": "members"
   },
   {
-    "id": "2012-001-kentucky",
-    "year": 2012,
-    "month": 4,
-    "day": null,
-    "displayDate": "April 2012",
-    "sortKey": "manual-00001-2012-13-99",
-    "label": "Kentucky",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "louisville-ky",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "guestHoppers": [],
-    "returnMode": "plane",
-    "trailStyle": "stripe",
-    "trailColorMode": "members"
-  },
-  {
     "id": "2012-002-key-west",
     "year": 2012,
     "month": 2,
     "day": null,
     "displayDate": "February 2012",
-    "sortKey": "manual-00002-2012-02-99",
+    "sortKey": "manual-00003-2012-02-99",
     "label": "Key West",
     "travelers": [
       "joey",
@@ -126,12 +98,40 @@
     "trailColorMode": "members"
   },
   {
+    "id": "2012-001-kentucky",
+    "year": 2012,
+    "month": 4,
+    "day": null,
+    "displayDate": "April 2012",
+    "sortKey": "manual-00004-2012-04-99",
+    "label": "Kentucky",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "louisville-ky",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
+  },
+  {
     "id": "2012-003-atlanta",
     "year": 2012,
     "month": 5,
     "day": null,
     "displayDate": "May 2012",
-    "sortKey": "manual-00003-2012-13-99",
+    "sortKey": "manual-00005-2012-05-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -159,7 +159,7 @@
     "month": null,
     "day": null,
     "displayDate": "2013",
-    "sortKey": "manual-00004-2013-13-99",
+    "sortKey": "manual-00006-2013-13-99",
     "label": "Bahamas",
     "travelers": [
       "joey",
@@ -179,7 +179,7 @@
     "month": null,
     "day": null,
     "displayDate": "2013",
-    "sortKey": "manual-00005-2013-13-99",
+    "sortKey": "manual-00007-2013-13-99",
     "label": "Bahamas",
     "travelers": [
       "joey",
@@ -199,7 +199,7 @@
     "month": null,
     "day": null,
     "displayDate": "2013",
-    "sortKey": "manual-00006-2013-13-99",
+    "sortKey": "manual-00008-2013-13-99",
     "label": "Chicago",
     "travelers": [
       "joey",
@@ -219,7 +219,7 @@
     "month": null,
     "day": null,
     "displayDate": "2014",
-    "sortKey": "manual-00007-2014-13-99",
+    "sortKey": "manual-00009-2014-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -239,7 +239,7 @@
     "month": null,
     "day": null,
     "displayDate": "2014",
-    "sortKey": "manual-00008-2014-13-99",
+    "sortKey": "manual-00010-2014-13-99",
     "label": "New York",
     "travelers": [
       "joey",
@@ -259,7 +259,7 @@
     "month": null,
     "day": null,
     "displayDate": "2014",
-    "sortKey": "manual-00009-2014-13-99",
+    "sortKey": "manual-00011-2014-13-99",
     "label": "Destin",
     "travelers": [
       "joey",
@@ -279,7 +279,7 @@
     "month": null,
     "day": null,
     "displayDate": "2014",
-    "sortKey": "manual-00010-2014-13-99",
+    "sortKey": "manual-00012-2014-13-99",
     "label": "Bahamas",
     "travelers": [
       "joey",
@@ -299,7 +299,7 @@
     "month": null,
     "day": null,
     "displayDate": "2014",
-    "sortKey": "manual-00011-2014-13-99",
+    "sortKey": "manual-00013-2014-13-99",
     "label": "St. Lucia",
     "travelers": [
       "joey",
@@ -319,7 +319,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00012-2015-13-99",
+    "sortKey": "manual-00014-2015-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -339,7 +339,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00013-2015-13-99",
+    "sortKey": "manual-00015-2015-13-99",
     "label": "San Diego",
     "travelers": [
       "joey",
@@ -359,7 +359,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00014-2015-13-99",
+    "sortKey": "manual-00016-2015-13-99",
     "label": "Augusta",
     "travelers": [
       "joey",
@@ -379,7 +379,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00015-2015-13-99",
+    "sortKey": "manual-00017-2015-13-99",
     "label": "Aruba",
     "travelers": [
       "joey",
@@ -399,7 +399,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00016-2015-13-99",
+    "sortKey": "manual-00018-2015-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -419,7 +419,7 @@
     "month": null,
     "day": null,
     "displayDate": "2015",
-    "sortKey": "manual-00017-2015-13-99",
+    "sortKey": "manual-00019-2015-13-99",
     "label": "Knoxville",
     "travelers": [
       "joey",
@@ -439,7 +439,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00018-2016-13-99",
+    "sortKey": "manual-00020-2016-13-99",
     "label": "Cayman Islands",
     "travelers": [
       "joey",
@@ -459,7 +459,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00019-2016-13-99",
+    "sortKey": "manual-00021-2016-13-99",
     "label": "Jamaica",
     "travelers": [
       "joey",
@@ -479,7 +479,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00020-2016-13-99",
+    "sortKey": "manual-00022-2016-13-99",
     "label": "Jekyll Island",
     "travelers": [
       "joey",
@@ -499,7 +499,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00021-2016-13-99",
+    "sortKey": "manual-00023-2016-13-99",
     "label": "San Diego",
     "travelers": [
       "joey",
@@ -519,7 +519,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00022-2016-13-99",
+    "sortKey": "manual-00024-2016-13-99",
     "label": "Chicago",
     "travelers": [
       "joey",
@@ -539,7 +539,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00023-2016-13-99",
+    "sortKey": "manual-00025-2016-13-99",
     "label": "Miami",
     "travelers": [
       "joey",
@@ -559,7 +559,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00024-2016-13-99",
+    "sortKey": "manual-00026-2016-13-99",
     "label": "Bahamas",
     "travelers": [
       "joey",
@@ -579,7 +579,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00025-2016-13-99",
+    "sortKey": "manual-00027-2016-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -599,7 +599,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00026-2016-13-99",
+    "sortKey": "manual-00028-2016-13-99",
     "label": "Knoxville",
     "travelers": [
       "joey",
@@ -619,7 +619,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00027-2016-13-99",
+    "sortKey": "manual-00029-2016-13-99",
     "label": "Phoenix",
     "travelers": [
       "bonnie"
@@ -638,7 +638,7 @@
     "month": null,
     "day": null,
     "displayDate": "2016",
-    "sortKey": "manual-00028-2016-13-99",
+    "sortKey": "manual-00030-2016-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -658,7 +658,7 @@
     "month": 7,
     "day": null,
     "displayDate": "July 2017",
-    "sortKey": "manual-00029-2017-07-99",
+    "sortKey": "manual-00031-2017-07-99",
     "label": "Las Vegas Baby! ",
     "travelers": [
       "joey",
@@ -683,7 +683,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00030-2017-13-99",
+    "sortKey": "manual-00032-2017-13-99",
     "label": "San Diego",
     "travelers": [
       "joey",
@@ -703,7 +703,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00031-2017-13-99",
+    "sortKey": "manual-00033-2017-13-99",
     "label": "Miami",
     "travelers": [
       "joey",
@@ -723,7 +723,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00032-2017-13-99",
+    "sortKey": "manual-00034-2017-13-99",
     "label": "Knoxville",
     "travelers": [
       "joey",
@@ -743,7 +743,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00033-2017-13-99",
+    "sortKey": "manual-00035-2017-13-99",
     "label": "Malibu",
     "travelers": [
       "joey",
@@ -763,7 +763,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00034-2017-13-99",
+    "sortKey": "manual-00036-2017-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -783,7 +783,7 @@
     "month": null,
     "day": null,
     "displayDate": "2017",
-    "sortKey": "manual-00035-2017-13-99",
+    "sortKey": "manual-00037-2017-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -803,7 +803,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00036-2018-13-99",
+    "sortKey": "manual-00038-2018-13-99",
     "label": "Denver",
     "travelers": [
       "joey",
@@ -823,7 +823,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00037-2018-13-99",
+    "sortKey": "manual-00039-2018-13-99",
     "label": "San Francisco and Oakland",
     "travelers": [
       "joey",
@@ -860,7 +860,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00038-2018-13-99",
+    "sortKey": "manual-00040-2018-13-99",
     "label": "Rosarito",
     "travelers": [
       "joey"
@@ -879,7 +879,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00039-2018-13-99",
+    "sortKey": "manual-00041-2018-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -899,7 +899,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00040-2018-13-99",
+    "sortKey": "manual-00042-2018-13-99",
     "label": "Cabo",
     "travelers": [
       "joey",
@@ -919,7 +919,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00041-2018-13-99",
+    "sortKey": "manual-00043-2018-13-99",
     "label": "Honolulu",
     "travelers": [
       "joey",
@@ -939,7 +939,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00042-2018-13-99",
+    "sortKey": "manual-00044-2018-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -959,7 +959,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00043-2018-13-99",
+    "sortKey": "manual-00045-2018-13-99",
     "label": "Seattle",
     "travelers": [
       "joey",
@@ -979,7 +979,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00044-2018-13-99",
+    "sortKey": "manual-00046-2018-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -999,7 +999,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00045-2018-13-99",
+    "sortKey": "manual-00047-2018-13-99",
     "label": "Tokyo",
     "travelers": [
       "joey"
@@ -1018,7 +1018,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00046-2018-13-99",
+    "sortKey": "manual-00048-2018-13-99",
     "label": "Philadelphia",
     "travelers": [
       "joey",
@@ -1038,7 +1038,7 @@
     "month": null,
     "day": null,
     "displayDate": "2018",
-    "sortKey": "manual-00047-2018-13-99",
+    "sortKey": "manual-00049-2018-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1058,7 +1058,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00048-2019-13-99",
+    "sortKey": "manual-00050-2019-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1078,7 +1078,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00049-2019-13-99",
+    "sortKey": "manual-00051-2019-13-99",
     "label": "Denver",
     "travelers": [
       "joey",
@@ -1098,7 +1098,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00050-2019-13-99",
+    "sortKey": "manual-00052-2019-13-99",
     "label": "Honolulu",
     "travelers": [
       "joey",
@@ -1118,7 +1118,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00051-2019-13-99",
+    "sortKey": "manual-00053-2019-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1138,7 +1138,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00052-2019-13-99",
+    "sortKey": "manual-00054-2019-13-99",
     "label": "Chicago",
     "travelers": [
       "joey",
@@ -1158,7 +1158,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00053-2019-13-99",
+    "sortKey": "manual-00055-2019-13-99",
     "label": "London, Scotland, Versailles, and Paris",
     "travelers": [
       "joey",
@@ -1203,7 +1203,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00054-2019-13-99",
+    "sortKey": "manual-00056-2019-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey"
@@ -1222,7 +1222,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00055-2019-13-99",
+    "sortKey": "manual-00057-2019-13-99",
     "label": "Seoul",
     "travelers": [
       "joey"
@@ -1241,7 +1241,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00056-2019-13-99",
+    "sortKey": "manual-00058-2019-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1261,7 +1261,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00057-2019-13-99",
+    "sortKey": "manual-00059-2019-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1281,7 +1281,7 @@
     "month": null,
     "day": null,
     "displayDate": "2019",
-    "sortKey": "manual-00058-2019-13-99",
+    "sortKey": "manual-00060-2019-13-99",
     "label": "Puerto Rico",
     "travelers": [
       "joey",
@@ -1301,7 +1301,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00059-2020-13-99",
+    "sortKey": "manual-00061-2020-13-99",
     "label": "Mammoth",
     "travelers": [
       "joey"
@@ -1320,7 +1320,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00060-2020-13-99",
+    "sortKey": "manual-00062-2020-13-99",
     "label": "Melbourne",
     "travelers": [
       "joey",
@@ -1340,7 +1340,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00061-2020-13-99",
+    "sortKey": "manual-00063-2020-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1360,7 +1360,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00062-2020-13-99",
+    "sortKey": "manual-00064-2020-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1380,7 +1380,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00063-2020-13-99",
+    "sortKey": "manual-00065-2020-13-99",
     "label": "Palm Springs",
     "travelers": [
       "joey",
@@ -1400,7 +1400,7 @@
     "month": null,
     "day": null,
     "displayDate": "2020",
-    "sortKey": "manual-00064-2020-13-99",
+    "sortKey": "manual-00066-2020-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1420,7 +1420,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00065-2021-13-99",
+    "sortKey": "manual-00067-2021-13-99",
     "label": "Honolulu",
     "travelers": [
       "joey",
@@ -1440,7 +1440,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00066-2021-13-99",
+    "sortKey": "manual-00068-2021-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1460,7 +1460,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00067-2021-13-99",
+    "sortKey": "manual-00069-2021-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1480,7 +1480,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00068-2021-13-99",
+    "sortKey": "manual-00070-2021-13-99",
     "label": "Cape Canaveral",
     "travelers": [
       "joey"
@@ -1499,7 +1499,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00069-2021-13-99",
+    "sortKey": "manual-00071-2021-13-99",
     "label": "San Francisco",
     "travelers": [
       "joey",
@@ -1519,7 +1519,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00070-2021-13-99",
+    "sortKey": "manual-00072-2021-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1539,7 +1539,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00071-2021-13-99",
+    "sortKey": "manual-00073-2021-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1559,7 +1559,7 @@
     "month": null,
     "day": null,
     "displayDate": "2021",
-    "sortKey": "manual-00072-2021-13-99",
+    "sortKey": "manual-00074-2021-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1579,7 +1579,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00073-2022-13-99",
+    "sortKey": "manual-00075-2022-13-99",
     "label": "Cape Canaveral",
     "travelers": [
       "joey"
@@ -1598,7 +1598,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00074-2022-13-99",
+    "sortKey": "manual-00076-2022-13-99",
     "label": "Honolulu",
     "travelers": [
       "joey",
@@ -1618,7 +1618,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00075-2022-13-99",
+    "sortKey": "manual-00077-2022-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1638,7 +1638,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00076-2022-13-99",
+    "sortKey": "manual-00078-2022-13-99",
     "label": "Catalina",
     "travelers": [
       "joey",
@@ -1658,7 +1658,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00077-2022-13-99",
+    "sortKey": "manual-00079-2022-13-99",
     "label": "Alaska",
     "travelers": [
       "joey",
@@ -1678,7 +1678,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00078-2022-13-99",
+    "sortKey": "manual-00080-2022-13-99",
     "label": "Buffalo",
     "travelers": [
       "joey"
@@ -1697,7 +1697,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00079-2022-13-99",
+    "sortKey": "manual-00081-2022-13-99",
     "label": "Cape Canaveral",
     "travelers": [
       "joey",
@@ -1717,7 +1717,7 @@
     "month": null,
     "day": null,
     "displayDate": "2022",
-    "sortKey": "manual-00080-2022-13-99",
+    "sortKey": "manual-00082-2022-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1737,7 +1737,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00081-2023-13-99",
+    "sortKey": "manual-00083-2023-13-99",
     "label": "Cape Canaveral",
     "travelers": [
       "joey"
@@ -1756,7 +1756,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00082-2023-13-99",
+    "sortKey": "manual-00084-2023-13-99",
     "label": "Italy, Switzerland, and Evian",
     "travelers": [
       "joey",
@@ -1813,7 +1813,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00083-2023-13-99",
+    "sortKey": "manual-00085-2023-13-99",
     "label": "Miami",
     "travelers": [
       "joey"
@@ -1828,46 +1828,6 @@
   },
   {
     "id": "2023-084-las-vegas",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "manual-00084-2023-13-99",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [],
-    "notes": "",
-    "occasion": ""
-  },
-  {
-    "id": "2023-085-tampa",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "manual-00085-2023-13-99",
-    "label": "Tampa",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "tampa-fl",
-    "route": [],
-    "notes": "",
-    "occasion": ""
-  },
-  {
-    "id": "2023-086-las-vegas",
     "year": 2023,
     "month": null,
     "day": null,
@@ -1887,12 +1847,52 @@
     "occasion": ""
   },
   {
-    "id": "2023-087-starbase",
+    "id": "2023-085-tampa",
     "year": 2023,
     "month": null,
     "day": null,
     "displayDate": "2023",
     "sortKey": "manual-00087-2023-13-99",
+    "label": "Tampa",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "tampa-fl",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-086-las-vegas",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "manual-00088-2023-13-99",
+    "label": "Las Vegas",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [],
+    "notes": "",
+    "occasion": ""
+  },
+  {
+    "id": "2023-087-starbase",
+    "year": 2023,
+    "month": null,
+    "day": null,
+    "displayDate": "2023",
+    "sortKey": "manual-00089-2023-13-99",
     "label": "Starbase",
     "travelers": [
       "bonnie"
@@ -1911,7 +1911,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00088-2023-13-99",
+    "sortKey": "manual-00090-2023-13-99",
     "label": "Austin",
     "travelers": [
       "bonnie"
@@ -1930,7 +1930,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00089-2023-13-99",
+    "sortKey": "manual-00091-2023-13-99",
     "label": "Barcelona",
     "travelers": [
       "joey",
@@ -1950,7 +1950,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00090-2023-13-99",
+    "sortKey": "manual-00092-2023-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1970,7 +1970,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00091-2023-13-99",
+    "sortKey": "manual-00093-2023-13-99",
     "label": "Orlando",
     "travelers": [
       "joey",
@@ -1990,7 +1990,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00092-2023-13-99",
+    "sortKey": "manual-00094-2023-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -2010,7 +2010,7 @@
     "month": null,
     "day": null,
     "displayDate": "2023",
-    "sortKey": "manual-00093-2023-13-99",
+    "sortKey": "manual-00095-2023-13-99",
     "label": "Cancun",
     "travelers": [
       "joey",
@@ -2030,7 +2030,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00094-2024-13-99",
+    "sortKey": "manual-00096-2024-13-99",
     "label": "Indianapolis",
     "travelers": [
       "joey",
@@ -2050,7 +2050,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00095-2024-13-99",
+    "sortKey": "manual-00097-2024-13-99",
     "label": "Greenville",
     "travelers": [
       "bonnie"
@@ -2069,7 +2069,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00096-2024-13-99",
+    "sortKey": "manual-00098-2024-13-99",
     "label": "West Palm Beach",
     "travelers": [
       "joey",
@@ -2089,7 +2089,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00097-2024-13-99",
+    "sortKey": "manual-00099-2024-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -2109,7 +2109,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00098-2024-13-99",
+    "sortKey": "manual-00100-2024-13-99",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2128,7 +2128,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00099-2024-13-99",
+    "sortKey": "manual-00101-2024-13-99",
     "label": "Baltimore",
     "travelers": [
       "joey"
@@ -2147,7 +2147,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00100-2024-13-99",
+    "sortKey": "manual-00102-2024-13-99",
     "label": "West Palm Beach",
     "travelers": [
       "joey",
@@ -2167,7 +2167,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00101-2024-13-99",
+    "sortKey": "manual-00103-2024-13-99",
     "label": "Toronto",
     "travelers": [
       "joey",
@@ -2187,7 +2187,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00102-2024-13-99",
+    "sortKey": "manual-00104-2024-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -2207,7 +2207,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00103-2024-13-99",
+    "sortKey": "manual-00105-2024-13-99",
     "label": "Montreal",
     "travelers": [
       "joey",
@@ -2227,7 +2227,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00104-2024-13-99",
+    "sortKey": "manual-00106-2024-13-99",
     "label": "Seattle, Vancouver, and Philadelphia",
     "travelers": [
       "joey",
@@ -2272,7 +2272,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00105-2024-13-99",
+    "sortKey": "manual-00107-2024-13-99",
     "label": "San Jose",
     "travelers": [
       "joey"
@@ -2291,7 +2291,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00106-2024-13-99",
+    "sortKey": "manual-00108-2024-13-99",
     "label": "Maui",
     "travelers": [
       "joey",
@@ -2311,7 +2311,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00107-2024-13-99",
+    "sortKey": "manual-00109-2024-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -2331,7 +2331,7 @@
     "month": null,
     "day": null,
     "displayDate": "2024",
-    "sortKey": "manual-00108-2024-13-99",
+    "sortKey": "manual-00110-2024-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -2351,7 +2351,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00109-2025-13-99",
+    "sortKey": "manual-00111-2025-13-99",
     "label": "Atlanta and Washington DC split return",
     "travelers": [
       "joey",
@@ -2388,7 +2388,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00110-2025-13-99",
+    "sortKey": "manual-00112-2025-13-99",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2407,7 +2407,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00111-2025-13-99",
+    "sortKey": "manual-00113-2025-13-99",
     "label": "Chicago and St. Louis",
     "travelers": [
       "joey",
@@ -2444,7 +2444,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00112-2025-13-99",
+    "sortKey": "manual-00114-2025-13-99",
     "label": "Seoul and Tokyo",
     "travelers": [
       "joey",
@@ -2481,7 +2481,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00113-2025-13-99",
+    "sortKey": "manual-00115-2025-13-99",
     "label": "Miami",
     "travelers": [
       "joey"
@@ -2500,7 +2500,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00114-2025-13-99",
+    "sortKey": "manual-00116-2025-13-99",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2519,7 +2519,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00115-2025-13-99",
+    "sortKey": "manual-00117-2025-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey"
@@ -2538,7 +2538,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00116-2025-13-99",
+    "sortKey": "manual-00118-2025-13-99",
     "label": "Houston",
     "travelers": [
       "joey"
@@ -2557,7 +2557,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00117-2025-13-99",
+    "sortKey": "manual-00119-2025-13-99",
     "label": "Scottsdale",
     "travelers": [
       "joey"
@@ -2576,7 +2576,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00118-2025-13-99",
+    "sortKey": "manual-00120-2025-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -2596,7 +2596,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00119-2025-13-99",
+    "sortKey": "manual-00121-2025-13-99",
     "label": "Seattle",
     "travelers": [
       "joey"
@@ -2615,7 +2615,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00120-2025-13-99",
+    "sortKey": "manual-00122-2025-13-99",
     "label": "Las Vegas",
     "travelers": [
       "joey"
@@ -2634,7 +2634,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00121-2025-13-99",
+    "sortKey": "manual-00123-2025-13-99",
     "label": "Montreal",
     "travelers": [
       "joey"
@@ -2653,7 +2653,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00122-2025-13-99",
+    "sortKey": "manual-00124-2025-13-99",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2672,7 +2672,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00123-2025-13-99",
+    "sortKey": "manual-00125-2025-13-99",
     "label": "Grand Forks",
     "travelers": [
       "joey"
@@ -2691,7 +2691,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00124-2025-13-99",
+    "sortKey": "manual-00126-2025-13-99",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -2711,7 +2711,7 @@
     "month": null,
     "day": null,
     "displayDate": "2025",
-    "sortKey": "manual-00125-2025-13-99",
+    "sortKey": "manual-00127-2025-13-99",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -2735,7 +2735,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "manual-00127-2026-12-99",
+    "sortKey": "manual-00128-2026-12-99",
     "label": "Atlanta",
     "travelers": [
       "bonnie"
@@ -2756,7 +2756,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00128-2026-13-99",
+    "sortKey": "manual-00129-2026-13-99",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2775,7 +2775,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00129-2026-13-99",
+    "sortKey": "manual-00130-2026-13-99",
     "label": "Chicago",
     "travelers": [
       "joey",
@@ -2795,7 +2795,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00130-2026-13-99",
+    "sortKey": "manual-00131-2026-13-99",
     "label": "Charlotte",
     "travelers": [
       "joey",
@@ -2815,7 +2815,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00131-2026-13-99",
+    "sortKey": "manual-00132-2026-13-99",
     "label": "San Francisco",
     "travelers": [
       "joey"
@@ -2834,7 +2834,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00132-2026-13-99",
+    "sortKey": "manual-00133-2026-13-99",
     "label": "London and Amsterdam",
     "travelers": [
       "bonnie"
@@ -2870,7 +2870,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00133-2026-13-99",
+    "sortKey": "manual-00134-2026-13-99",
     "label": "Syracuse and Lakeland",
     "travelers": [
       "joey"
@@ -2906,7 +2906,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00134-2026-13-99",
+    "sortKey": "manual-00135-2026-13-99",
     "label": "Detroit",
     "travelers": [
       "joey"
@@ -2925,7 +2925,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00135-2026-13-99",
+    "sortKey": "manual-00136-2026-13-99",
     "label": "Boston",
     "travelers": [
       "joey",
@@ -2945,7 +2945,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00136-2026-13-99",
+    "sortKey": "manual-00137-2026-13-99",
     "label": "Dominican Republic",
     "travelers": [
       "joey"
@@ -2964,7 +2964,7 @@
     "month": null,
     "day": null,
     "displayDate": "2026",
-    "sortKey": "manual-00137-2026-13-99",
+    "sortKey": "manual-00138-2026-13-99",
     "label": "Cabo",
     "travelers": [
       "joey",
