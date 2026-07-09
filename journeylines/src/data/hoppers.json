@@ -3,18 +3,12 @@
     {
       "id": "joey",
       "name": "Joey",
-      "colorName": "orange",
-      "color": "#ff8a00"
+      "colorName": "cyan",
+      "color": "#00e5ff"
     },
     {
       "id": "bonnie",
       "name": "Bonnie",
-      "colorName": "pink",
-      "color": "#ff4fd8"
-    },
-    {
-      "id": "hopper-mrcdkasg",
-      "name": "Bernard",
       "colorName": "green",
       "color": "#44f48a"
     }
@@ -27,19 +21,18 @@
         "joey",
         "bonnie"
       ],
-      "colorName": "gray",
-      "color": "#8e99a8"
+      "colorName": "yellow",
+      "color": "#ffd60a"
     },
     {
-      "id": "squad-mrceew0f",
+      "id": "squad-mrbpqgve",
       "name": "Small Council",
       "hopperIds": [
         "bonnie",
-        "joey",
-        "hopper-mrcdkasg"
+        "joey"
       ],
-      "colorName": "yellow",
-      "color": "#ffd60a"
+      "colorName": "green",
+      "color": "#44f48a"
     }
   ],
   "palette": [
