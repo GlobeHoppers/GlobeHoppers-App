@@ -1,1 +1,1 @@
-GlobeHoppers v3.85 — zoom-aware trails, segmented traveler card borders, and Ribbon default
+GlobeHoppers v3.86 — restore trails and segmented timeline drawer borders

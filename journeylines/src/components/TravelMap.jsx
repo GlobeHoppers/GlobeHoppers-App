@@ -656,12 +656,20 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 }
 
 function addRouteSourcesAndLayers(map) {
-  const zoomWidth = ['interpolate', ['linear'], ['zoom'], 2, 0.46, 4, 0.64, 5.5, 0.82, 7, 1.0];
-  const zoomDetail = ['interpolate', ['linear'], ['zoom'], 2, 0.26, 4, 0.44, 5.5, 0.72, 7, 1.0];
-  const borderZoom = ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], zoomDetail]];
-  const roleOpacity = ['case', ['==', ['get', 'trailRole'], 'border'], borderZoom, ['==', ['get', 'trailRole'], 'separator'], zoomDetail, 1];
-  const opacityExpr = (prop) => ['*', ['coalesce', ['get', prop], 1], roleOpacity];
-  const widthExpr = (prop) => ['*', ['coalesce', ['get', prop], 1], zoomWidth];
+  const zoomScale = (low, mid, high) => ['interpolate', ['linear'], ['zoom'], 2, low, 4, mid, 7, high];
+  const widthExpr = (prop) => ['interpolate', ['linear'], ['zoom'],
+    2, ['*', ['coalesce', ['get', prop], 1], 0.46],
+    4, ['*', ['coalesce', ['get', prop], 1], 0.64],
+    5.5, ['*', ['coalesce', ['get', prop], 1], 0.82],
+    7, ['coalesce', ['get', prop], 1]
+  ];
+  const opacityAtZoom = (prop, detailScale) => ['*', ['coalesce', ['get', prop], 1], detailScale];
+  const opacityExpr = (prop) => ['interpolate', ['linear'], ['zoom'],
+    2, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.26]], ['==', ['get', 'trailRole'], 'separator'], 0.26, ['==', ['get', 'trailRole'], 'detail'], 0.18, 0.42]),
+    4, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.44]], ['==', ['get', 'trailRole'], 'separator'], 0.44, ['==', ['get', 'trailRole'], 'detail'], 0.34, 0.66]),
+    5.5, opacityAtZoom(prop, ['case', ['==', ['get', 'trailRole'], 'border'], ['+', ['-', 1, ['coalesce', ['get', 'borderZoomFade'], 1]], ['*', ['coalesce', ['get', 'borderZoomFade'], 1], 0.72]], ['==', ['get', 'trailRole'], 'separator'], 0.72, ['==', ['get', 'trailRole'], 'detail'], 0.66, 0.86]),
+    7, ['*', ['coalesce', ['get', prop], 1], ['case', ['==', ['get', 'trailRole'], 'border'], 1, ['==', ['get', 'trailRole'], 'separator'], 1, ['==', ['get', 'trailRole'], 'detail'], 0.9, 1]]
+  ];
   if (!map.getSource('completed-routes')) {
     map.addSource('completed-routes', { type: 'geojson', data: emptyCollection() });
     map.addLayer({ id: 'completed-routes-glow-wide', type: 'line', source: 'completed-routes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': widthExpr('outerGlowWidth'), 'line-opacity': opacityExpr('outerGlowOpacity'), 'line-blur': 18, 'line-offset': ['coalesce', ['get', 'lineOffset'], 0] } });
