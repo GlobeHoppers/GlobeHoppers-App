@@ -28,7 +28,7 @@
     "activeLift": 34,
     "pinBaseY": 1,
     "playbackBarHeight": 13,
-    "yearOffsetY": 5,
+    "yearOffsetY": -7,
     "tooltipOffsetY": 68,
     "animationMs": 360,
     "animationOvershoot": 1.12
