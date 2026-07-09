@@ -1,1 +1,1 @@
-GlobeHoppers v4.04 — visual softening pass
+GlobeHoppers v4.05 — Plus Jakarta Sans and map placard softening

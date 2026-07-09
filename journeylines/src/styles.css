@@ -10928,3 +10928,299 @@ button.delete,
     0 6px 14px rgba(0,0,0,.14) !important;
   font-weight: 650 !important;
 }
+
+
+/* GlobeHoppers v4.05 — Plus Jakarta Sans + map placard softening.
+   Styling-only pass. Hopper/user-selected colors are preserved, but inactive
+   placards use less weight, less glow, and less space. */
+
+/* Load a lighter, more travel/product-friendly font than the previous retro-heavy face. */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;450;500;600;650;700;750;800&display=swap');
+
+:root {
+  --gh-font-ui: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Apply Plus Jakarta Sans broadly while preserving icons/emoji. */
+html,
+body,
+#root,
+.app,
+button,
+input,
+textarea,
+select,
+.studio-panel,
+.studio-modal,
+.hero-card,
+.trip-drawer,
+.hoppers-panel,
+.trail-style-panel,
+.route-preview-card,
+.gh-studio-trip-row,
+.jl-map-pin,
+.jl-place-label,
+.jl-place-label-overlay,
+.jl-map-pin-inner,
+.jl-map-pin-name,
+.jl-map-pin-ticks,
+.timeline-panel,
+.playback-timeline {
+  font-family: var(--gh-font-ui) !important;
+}
+
+/* Font weight reset for the new typeface: still clear, much less chunky. */
+body,
+.app {
+  font-weight: 500 !important;
+}
+
+button,
+.hopper-chip,
+.hopper-pill,
+.transport-pill,
+.hop-type-pill,
+.bubble-trigger,
+.bubble-option,
+.studio-trip-buttons button {
+  font-weight: 700 !important;
+}
+
+h1, h2, h3,
+.hero-card h1,
+.studio-panel h1,
+.studio-panel h2,
+.studio-modal h1,
+.studio-modal h2 {
+  font-weight: 800 !important;
+  letter-spacing: -0.045em !important;
+}
+
+small,
+.studio-trip-main small,
+.route-preview-card small,
+.jl-map-pin-ticks,
+.timeline-year,
+.preview-muted {
+  font-weight: 500 !important;
+}
+
+/* Inactive map placards become quieter background annotations. */
+.maplibregl-marker.jl-map-pin,
+.jl-map-pin {
+  padding: 4px 8px 10px !important;
+  opacity: .78 !important;
+  transition: opacity .18s ease, filter .18s ease !important;
+}
+
+.jl-map-pin-inner {
+  gap: 5px !important;
+  padding: 4px 8px !important;
+  min-height: 24px !important;
+  border-radius: 14px !important;
+  border: 1px solid transparent !important;
+  background:
+    linear-gradient(rgba(3, 10, 21, 0.72), rgba(3, 10, 21, 0.72)) padding-box,
+    color-mix(in srgb, var(--pin-segments, var(--place-color, #00e5ff)), transparent 28%) border-box !important;
+  box-shadow:
+    0 5px 12px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+  backdrop-filter: blur(5px) saturate(1.02) !important;
+}
+
+.jl-map-pin-name {
+  font-family: var(--gh-font-ui) !important;
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  color: rgba(239, 248, 255, .90) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.62) !important;
+}
+
+.jl-map-pin-text {
+  gap: 2px !important;
+  max-width: 152px !important;
+}
+
+.jl-map-pin-dot {
+  width: 6px !important;
+  height: 6px !important;
+  min-width: 6px !important;
+  border: 1px solid rgba(255,255,255,.70) !important;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--place-color, #00e5ff), transparent 55%) !important;
+}
+
+.jl-map-pin-ticks {
+  min-height: 3px !important;
+  gap: 2px !important;
+  row-gap: 2px !important;
+  max-width: min(126px, 100%) !important;
+  opacity: .78 !important;
+}
+
+.jl-visit-tick {
+  width: 6px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  opacity: .78 !important;
+  box-shadow: none !important;
+}
+
+.jl-map-pin-tail {
+  bottom: -6px !important;
+  width: 10px !important;
+  height: 7px !important;
+  background: color-mix(in srgb, var(--pin-tail-color, var(--place-color, #00e5ff)), rgba(3,10,21,.86) 58%) !important;
+  opacity: .78 !important;
+  filter: none !important;
+}
+
+.jl-map-pin-inner::after {
+  bottom: -4px !important;
+  width: 8px !important;
+  height: 5px !important;
+  background: rgba(3, 10, 21, .78) !important;
+  opacity: .88 !important;
+}
+
+/* Home bases and active/current destinations keep emphasis. */
+.jl-map-pin[data-home-base='true'],
+.jl-map-pin[data-active-home-base='true'] {
+  opacity: .98 !important;
+}
+
+.jl-map-pin[data-home-base='true'] .jl-map-pin-inner,
+.jl-map-pin[data-active-home-base='true'] .jl-map-pin-inner {
+  background:
+    linear-gradient(rgba(5, 10, 19, 0.88), rgba(5, 10, 19, 0.88)) padding-box,
+    color-mix(in srgb, var(--pin-segments, var(--place-color, #aeb8c3)), white 12%) border-box !important;
+  border-width: 1px !important;
+  box-shadow:
+    0 7px 16px rgba(0,0,0,0.36),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+.jl-map-pin[data-home-base='true'] .jl-map-pin-name,
+.jl-map-pin[data-active-home-base='true'] .jl-map-pin-name {
+  font-weight: 760 !important;
+  color: rgba(245, 250, 255, .96) !important;
+}
+
+/* Destination/new arrival/highlighted placards get a controlled lift instead of all labels being loud. */
+.jl-map-pin.is-arriving,
+.jl-map-pin.is-current,
+.jl-map-pin.is-selected,
+.jl-map-pin:hover {
+  opacity: 1 !important;
+  filter: saturate(1.06) brightness(1.06) !important;
+}
+
+.jl-map-pin.is-arriving .jl-map-pin-inner,
+.jl-map-pin.is-current .jl-map-pin-inner,
+.jl-map-pin.is-selected .jl-map-pin-inner,
+.jl-map-pin:hover .jl-map-pin-inner {
+  padding: 5px 10px !important;
+  border-width: 1.25px !important;
+  background:
+    linear-gradient(rgba(4, 11, 22, 0.88), rgba(4, 11, 22, 0.88)) padding-box,
+    var(--pin-segments, var(--place-color, #00e5ff)) border-box !important;
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.38),
+    0 0 14px color-mix(in srgb, var(--place-color, #00e5ff), transparent 72%),
+    inset 0 1px 0 rgba(255,255,255,.09) !important;
+}
+
+.jl-map-pin.is-arriving .jl-map-pin-name,
+.jl-map-pin.is-current .jl-map-pin-name,
+.jl-map-pin.is-selected .jl-map-pin-name,
+.jl-map-pin:hover .jl-map-pin-name {
+  font-size: 11.5px !important;
+  font-weight: 780 !important;
+  color: rgba(255,255,255,.98) !important;
+}
+
+/* Older overlay label class, used during transitions/playback, gets the same softer style. */
+.jl-place-label,
+.jl-place-label-overlay {
+  font-family: var(--gh-font-ui) !important;
+  padding: 4px 8px !important;
+  gap: 5px !important;
+  border-radius: 999px !important;
+  background: rgba(3, 10, 21, 0.74) !important;
+  border: 1px solid color-mix(in srgb, var(--place-color, #00e5ff), transparent 38%) !important;
+  box-shadow:
+    0 6px 14px rgba(0,0,0,0.30),
+    inset 0 1px 0 rgba(255,255,255,.065) !important;
+  color: rgba(239, 248, 255, .91) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: -0.01em !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.64) !important;
+  backdrop-filter: blur(5px) saturate(1.02) !important;
+}
+
+.jl-place-label-overlay.is-destination {
+  background: rgba(5, 13, 26, 0.86) !important;
+  border-color: color-mix(in srgb, var(--place-color, #00e5ff), white 14%) !important;
+  box-shadow:
+    0 9px 20px rgba(0,0,0,0.38),
+    0 0 14px color-mix(in srgb, var(--place-color, #00e5ff), transparent 74%),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+  font-weight: 760 !important;
+}
+
+.jl-place-dot {
+  width: 6px !important;
+  height: 6px !important;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--place-color, #00e5ff), transparent 50%) !important;
+}
+
+/* Fainter route/location connector marks so they do not clutter the globe. */
+.jl-arrival-ripple {
+  opacity: .55 !important;
+  border-width: 1px !important;
+  box-shadow: 0 0 10px var(--pulse-color, #00e5ff) !important;
+}
+
+/* Vehicles stay visible, but less sticker-like on the softened map UI. */
+.jl-vehicle,
+.jl-vehicle-overlay {
+  filter:
+    drop-shadow(0 5px 8px rgba(0,0,0,.34))
+    drop-shadow(0 0 7px color-mix(in srgb, var(--vehicle-color, #00e5ff), transparent 62%)) !important;
+}
+
+.jl-vehicle-img {
+  filter:
+    drop-shadow(0 5px 6px rgba(0,0,0,.32))
+    saturate(.96) !important;
+}
+
+/* Far/overview zooms get quieter labels. The runtime already culls heavily;
+   this reduces the visual footprint of the labels that remain. */
+.maplibre-shell:not(.is-playing) .jl-map-pin:not([data-active-home-base='true']):not([data-home-base='true']) {
+  opacity: .68 !important;
+}
+
+.maplibre-shell:not(.is-playing) .jl-map-pin:not([data-active-home-base='true']):not([data-home-base='true']) .jl-map-pin-inner {
+  transform: scale(.94) !important;
+  transform-origin: 50% 100% !important;
+}
+
+/* Keep menus readable with the new font. */
+.gh-studio-trip-row .studio-trip-main strong,
+.studio-trip-main strong,
+.trip-card h3,
+.trip-card strong {
+  font-family: var(--gh-font-ui) !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.gh-studio-trip-row .studio-trip-date,
+.studio-trip-date {
+  font-family: var(--gh-font-ui) !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.02em !important;
+}
