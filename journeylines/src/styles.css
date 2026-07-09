@@ -10249,3 +10249,98 @@ button.primary:disabled {
   top: 8px !important;
   bottom: 8px !important;
 }
+
+
+/* GlobeHoppers v4.00: subtle outside accent borders for Studio Timeline rows.
+   The previous strips were still too close to the rounded corners. These are
+   intentionally short, thin accent strokes that sit just inside the row edge. */
+.gh-studio-trip-row {
+  overflow: hidden !important;
+}
+
+.gh-studio-row-border {
+  inset: 0 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+}
+
+.gh-studio-border-strip {
+  filter: saturate(1.02) brightness(1.02) !important;
+  box-shadow: none !important;
+  opacity: .92 !important;
+}
+
+/* Thin, shortened top/bottom strokes avoid the rounded corner clipping entirely. */
+.gh-studio-border-strip--top {
+  left: 16px !important;
+  right: 16px !important;
+  top: 1px !important;
+  height: 1px !important;
+  border-radius: 999px !important;
+}
+
+.gh-studio-border-strip--bottom {
+  left: 16px !important;
+  right: 16px !important;
+  bottom: 1px !important;
+  height: 1px !important;
+  border-radius: 999px !important;
+}
+
+/* Thin, shortened side strokes become small outside accents instead of full heavy rails. */
+.gh-studio-border-strip--left {
+  top: 16px !important;
+  bottom: 16px !important;
+  left: 1px !important;
+  width: 1px !important;
+  border-radius: 999px !important;
+}
+
+.gh-studio-border-strip--right {
+  top: 16px !important;
+  bottom: 16px !important;
+  right: 1px !important;
+  width: 1px !important;
+  border-radius: 999px !important;
+}
+
+.gh-studio-trip-row:hover .gh-studio-border-strip,
+.gh-studio-trip-row:focus-visible .gh-studio-border-strip,
+.gh-studio-trip-row.is-active .gh-studio-border-strip {
+  filter: saturate(1.10) brightness(1.10) !important;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--accent, #00e5ff), transparent 76%) !important;
+  opacity: 1 !important;
+}
+
+/* Compact and card views need slightly shorter corner gaps because the rows are smaller. */
+.gh-studio-trip-row--compact .gh-studio-border-strip--top,
+.studio-trip-list--compact .gh-studio-trip-row .gh-studio-border-strip--top,
+.gh-studio-trip-row--compact .gh-studio-border-strip--bottom,
+.studio-trip-list--compact .gh-studio-trip-row .gh-studio-border-strip--bottom {
+  left: 14px !important;
+  right: 14px !important;
+}
+
+.gh-studio-trip-row--compact .gh-studio-border-strip--left,
+.studio-trip-list--compact .gh-studio-trip-row .gh-studio-border-strip--left,
+.gh-studio-trip-row--compact .gh-studio-border-strip--right,
+.studio-trip-list--compact .gh-studio-trip-row .gh-studio-border-strip--right {
+  top: 14px !important;
+  bottom: 14px !important;
+}
+
+.gh-studio-trip-row--card .gh-studio-border-strip--top,
+.studio-trip-list--card .gh-studio-trip-row .gh-studio-border-strip--top,
+.gh-studio-trip-row--card .gh-studio-border-strip--bottom,
+.studio-trip-list--card .gh-studio-trip-row .gh-studio-border-strip--bottom {
+  left: 12px !important;
+  right: 12px !important;
+}
+
+.gh-studio-trip-row--card .gh-studio-border-strip--left,
+.studio-trip-list--card .gh-studio-trip-row .gh-studio-border-strip--left,
+.gh-studio-trip-row--card .gh-studio-border-strip--right,
+.studio-trip-list--card .gh-studio-trip-row .gh-studio-border-strip--right {
+  top: 12px !important;
+  bottom: 12px !important;
+}

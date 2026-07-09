@@ -1,1 +1,1 @@
-GlobeHoppers v3.99 — slimmer Studio Timeline row borders
+GlobeHoppers v4.00 — subtle Studio Timeline row border accents
