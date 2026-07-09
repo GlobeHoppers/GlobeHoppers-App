@@ -3192,7 +3192,9 @@
     "toLocationId": "tokyo-jp",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2026-143-las-vegas",
