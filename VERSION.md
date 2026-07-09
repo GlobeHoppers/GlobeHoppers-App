@@ -1,1 +1,1 @@
-GlobeHoppers v3.92 — explicit timeline row border ring + clean car route support layers
+GlobeHoppers v3.93 — cleaned timeline row border CSS conflicts

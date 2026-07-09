@@ -9418,103 +9418,6 @@ button.primary:disabled {
 }
 
 
-/* GlobeHoppers v3.87: timeline row segmented borders, preview lift, and route tube polish. */
-
-/* Move Hop Preview back up and keep Trail Style clear below it. */
-.studio-modal-layout {
-  align-items: start !important;
-}
-.studio-modal-sidecol {
-  align-self: start !important;
-  align-content: start !important;
-  gap: 10px !important;
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-.studio-modal-sidecol .route-preview-card {
-  position: relative !important;
-  top: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  z-index: 2 !important;
-}
-.studio-modal-sidecol .trail-style-panel {
-  position: relative !important;
-  z-index: 1 !important;
-  margin-top: 0 !important;
-}
-
-/* Segmented border ring for GlobeHopper Timeline rows: expanded, compact, and card. */
-.studio-trip-row,
-.trip-drawer__row {
-  position: relative !important;
-  isolation: isolate !important;
-  border: 0 !important;
-  background:
-    linear-gradient(180deg, rgba(10, 23, 40, 0.93), rgba(6, 15, 28, 0.93)) padding-box !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
-}
-.studio-trip-row::before,
-.trip-drawer__row::before {
-  content: '' !important;
-  position: absolute !important;
-  inset: 0 !important;
-  padding: 2px !important;
-  border-radius: inherit !important;
-  background: var(--trip-border, var(--accent, #00e5ff)) !important;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
-  -webkit-mask-composite: xor !important;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
-  mask-composite: exclude !important;
-  pointer-events: none !important;
-  z-index: -1 !important;
-  opacity: .98 !important;
-}
-.studio-trip-row::after,
-.trip-drawer__row::after {
-  content: '' !important;
-  position: absolute !important;
-  inset: 2px !important;
-  border-radius: 14px !important;
-  background:
-    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), transparent 32%),
-    linear-gradient(180deg, rgba(9, 20, 36, 0.95), rgba(5, 14, 26, 0.94)) !important;
-  z-index: -2 !important;
-  pointer-events: none !important;
-}
-.studio-trip-row:hover::before,
-.studio-trip-row.is-active::before,
-.trip-drawer__row:hover::before,
-.trip-drawer__row.is-active::before {
-  filter: brightness(1.15) saturate(1.08) !important;
-  opacity: 1 !important;
-}
-.studio-trip-row.is-active,
-.trip-drawer__row.is-active {
-  box-shadow:
-    0 0 20px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
-    inset 0 1px 0 rgba(255,255,255,.05) !important;
-}
-
-/* Override old side/corner accent rules so the segmented ring is the only row color system. */
-.studio-trip-row.is-mixed,
-.studio-trip-row--expanded,
-.studio-trip-row--compact,
-.studio-trip-row--card,
-.trip-row-view--expanded,
-.trip-row-view--compact,
-.trip-row-view--card {
-  border-left: 0 !important;
-  border-right: 0 !important;
-}
-
-/* The old timeline row gradients were only filling an edge; suppress them. */
-.studio-trip-row > .trip-accent-bar,
-.studio-trip-row .accent-bar,
-.trip-drawer__row > .trip-accent-bar,
-.trip-drawer__row .accent-bar {
-  display: none !important;
-}
 
 /* GlobeHoppers v3.88: visible segmented timeline row borders and side-panel spacing. */
 .studio-trip-row,
@@ -9545,11 +9448,7 @@ button.primary:disabled {
     0 0 24px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
     inset 0 1px 0 rgba(255,255,255,.06) !important;
 }
-.studio-trip-row > *,
-.trip-drawer__row > * {
-  position: relative !important;
-  z-index: 2 !important;
-}
+
 .studio-modal-sidecol {
   padding-top: 16px !important;
   gap: 12px !important;
@@ -9622,147 +9521,63 @@ button.primary:disabled {
   filter: saturate(1.18) brightness(1.18) !important;
   box-shadow: 0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 66%) !important;
 }
-.studio-trip-row > *,
-.trip-drawer__row > * {
-  position: relative !important;
-  z-index: 2 !important;
-}
 
 
-/* GlobeHoppers v3.90: persistent segmented traveler borders for GlobeHopper Timeline rows. */
+
+
+
+
+
+/* GlobeHoppers v3.93: single-source GlobeHopper Timeline row borders.
+   The segmented border is painted by the row itself using background layers.
+   No pseudo-elements, masks, or child overlay elements are needed. */
 .trip-drawer__row {
-  position: relative !important;
-  isolation: isolate !important;
-  border: 2px solid transparent !important;
-  background:
-    linear-gradient(180deg, rgba(10, 23, 40, 0.96), rgba(6, 15, 28, 0.96)) padding-box,
-    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.035),
-    0 0 0 1px rgba(0,0,0,.25) !important;
-}
-.trip-drawer__row::before {
-  display: none !important;
-}
-.trip-drawer__row::after {
-  content: '' !important;
-  position: absolute !important;
-  inset: 2px !important;
-  border-radius: calc(var(--row-radius, 18px) - 2px) !important;
-  background:
-    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), transparent 32%),
-    linear-gradient(180deg, rgba(9, 20, 36, 0.52), rgba(5, 14, 26, 0.42)) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  z-index: -1 !important;
-  transition: opacity .18s ease, background .18s ease, box-shadow .18s ease !important;
-}
-.trip-drawer__row:hover::after,
-.trip-drawer__row:focus-visible::after {
-  opacity: 1 !important;
-}
-.trip-drawer__row.is-active {
-  box-shadow:
-    0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 80%),
-    inset 0 1px 0 rgba(255,255,255,.06),
-    0 0 0 1px rgba(0,0,0,.25) !important;
-}
-.trip-drawer__row.is-active::after {
-  opacity: .72 !important;
-}
-.trip-drawer__row.trip-row-view--expanded {
   --row-radius: 18px;
-  border-radius: 18px !important;
-}
-.trip-drawer__row.trip-row-view--compact {
-  --row-radius: 16px;
-  border-radius: 16px !important;
-}
-.trip-drawer__row.trip-row-view--card {
-  --row-radius: 14px;
-  border-radius: 14px !important;
-}
-.trip-drawer__row > * {
-  position: relative !important;
-  z-index: 1 !important;
-}
-.trip-drawer__row,
-.trip-drawer__row:hover,
-.trip-drawer__row:focus-visible,
-.trip-drawer__row.is-active {
-  border-left-width: 2px !important;
-  border-right-width: 2px !important;
-  border-top-width: 2px !important;
-  border-bottom-width: 2px !important;
-}
-
-
-/* GlobeHoppers v3.92: explicit persistent segmented border element.
-   This avoids the previous cascade conflict where the Timeline row border only
-   appeared during hover/background states. */
-.trip-drawer__row {
   position: relative !important;
   isolation: isolate !important;
   overflow: hidden !important;
-  border: 0 !important;
-  background: linear-gradient(180deg, rgba(9, 21, 38, .97), rgba(5, 14, 27, .96)) !important;
-}
-.trip-drawer__border-ring {
-  display: block !important;
-  position: absolute !important;
-  inset: 0 !important;
-  padding: 2px !important;
-  border-radius: inherit !important;
-  background: var(--trip-border, var(--accent, #00e5ff)) !important;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
-  -webkit-mask-composite: xor !important;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
-  mask-composite: exclude !important;
-  pointer-events: none !important;
-  z-index: 3 !important;
-  opacity: 1 !important;
-  filter: saturate(1.12) brightness(1.08) !important;
-}
-.trip-drawer__hover-fill {
-  display: block !important;
-  position: absolute !important;
-  inset: 2px !important;
-  border-radius: calc(var(--row-radius, 18px) - 2px) !important;
+  border: 2px solid transparent !important;
+  border-radius: var(--row-radius) !important;
   background:
-    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 84%), transparent 40%),
-    linear-gradient(180deg, rgba(13, 31, 54, .68), rgba(7, 19, 35, .48)) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-  transition: opacity .18s ease, filter .18s ease !important;
-}
-.trip-drawer__row:hover .trip-drawer__hover-fill,
-.trip-drawer__row:focus-visible .trip-drawer__hover-fill,
-.trip-drawer__row.is-active .trip-drawer__hover-fill {
-  opacity: 1 !important;
-}
-.trip-drawer__row:hover .trip-drawer__border-ring,
-.trip-drawer__row:focus-visible .trip-drawer__border-ring,
-.trip-drawer__row.is-active .trip-drawer__border-ring {
-  filter: saturate(1.28) brightness(1.18) !important;
-}
-.trip-drawer__row > :not(.trip-drawer__border-ring):not(.trip-drawer__hover-fill) {
-  position: relative !important;
-  z-index: 4 !important;
+    linear-gradient(180deg, rgba(9, 21, 38, 0.97), rgba(5, 14, 27, 0.96)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    0 0 0 1px rgba(0,0,0,.24) !important;
 }
 .trip-drawer__row::before,
 .trip-drawer__row::after {
   display: none !important;
+  content: none !important;
 }
 .trip-drawer__row.trip-row-view--expanded {
   --row-radius: 18px;
-  border-radius: 18px !important;
 }
 .trip-drawer__row.trip-row-view--compact {
   --row-radius: 16px;
-  border-radius: 16px !important;
 }
 .trip-drawer__row.trip-row-view--card {
   --row-radius: 14px;
-  border-radius: 14px !important;
+}
+.trip-drawer__row > * {
+  position: relative;
+  z-index: 1;
+}
+.trip-drawer__row:hover,
+.trip-drawer__row:focus-visible {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 84%), transparent 42%) padding-box,
+    linear-gradient(180deg, rgba(13, 31, 54, 0.98), rgba(7, 19, 35, 0.97)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  filter: brightness(1.06) saturate(1.05);
+}
+.trip-drawer__row.is-active {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 80%), transparent 42%) padding-box,
+    linear-gradient(180deg, rgba(14, 34, 58, 0.99), rgba(7, 19, 35, 0.98)) padding-box,
+    var(--trip-border, var(--accent, #00e5ff)) border-box !important;
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
+    inset 0 1px 0 rgba(255,255,255,.055),
+    0 0 0 1px rgba(0,0,0,.24) !important;
 }
