@@ -3163,7 +3163,9 @@
     "toLocationId": "louisville-ky",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
   },
   {
     "id": "2026-139-tokyo",
