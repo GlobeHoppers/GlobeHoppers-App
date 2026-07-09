@@ -1,1 +1,1 @@
-GlobeHoppers v3.79 — animated active timeline pins, trail styles, and segmented multi-hopper circles
+GlobeHoppers v3.80 — compact trail styles, spiral trail, vertical 2-person circles, and restored 3.77-style animated timeline pins

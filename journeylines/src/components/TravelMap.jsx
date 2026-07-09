@@ -657,6 +657,7 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
   const style = trail?.style || 'solid';
   if (style === 'ribbon' && colors.length > 1) return ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
   if (style === 'stripe' && colors.length > 1) return stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
+  if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active, progress, routedGeometries);
   return [routeFeature(leg, baseColor, tripId, index, opacity, width, active, progress, routedGeometries, 0)];
 }
 
@@ -685,6 +686,26 @@ function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   });
 }
 
+
+function spiralRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}) {
+  const coords = routeCoordinates(leg, progress, active ? 96 : 24, routedGeometries);
+  if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+  const amplitude = Math.max(0.8, width * 0.42);
+  const stride = active ? 2 : 2;
+  const features = [];
+  let phase = 0;
+  for (let start = 0; start < coords.length - 1; start += stride) {
+    const end = Math.min(coords.length, start + stride + 1);
+    const segment = coords.slice(start, end);
+    if (segment.length < 2) continue;
+    const color = colors[phase % colors.length];
+    const angle = (phase / Math.max(colors.length, 2)) * Math.PI * 2;
+    const offset = Math.sin(angle) * amplitude;
+    features.push(routeFeatureFromCoordinates(segment, color, tripId, `${index}-spiral-${phase}`, opacity, Math.max(1.4, width / Math.max(colors.length * 0.95, 2)), active, leg.mode, offset));
+    phase += 1;
+  }
+  return features.length ? features : [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0)];
+}
 function routeFeature(leg, color, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, lineOffset = 0) {
   const isAir = leg.mode === 'plane' || leg.mode === 'move';
   const mainOpacity = active && isAir ? 0.52 : active ? 1 : Math.max(0.86, opacity);

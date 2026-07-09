@@ -865,11 +865,12 @@ function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedT
   const showColorMode = !!currentHopSquad && showMultiOptions;
   const styleOptions = showMultiOptions && effectiveTrailColorMode !== 'squad'
     ? [
-        { id: 'solid', label: 'Solid Trail', hint: 'Single-color trail.' },
-        { id: 'stripe', label: 'Stripe', hint: 'Repeating member-color segments along the path.' },
-        { id: 'ribbon', label: 'Ribbon', hint: 'Parallel member-color ribbons that share the trail width.' }
+        { id: 'solid', label: 'Solid Trail' },
+        { id: 'stripe', label: 'Stripe Trail' },
+        { id: 'ribbon', label: 'Ribbon Trail' },
+        { id: 'spiral', label: 'Spiral Trail' }
       ]
-    : [{ id: 'solid', label: 'Solid Trail', hint: showColorMode ? 'Uses the HopSquad color.' : 'Single-color trail.' }];
+    : [{ id: 'solid', label: 'Solid Trail' }];
   return <section className="trail-style-panel compact-section">
     <div className="section-heading-inline">
       <h3>Trail style</h3>
@@ -883,7 +884,6 @@ function TrailStylePanel({ draft, currentHopSquad, currentDraftVisual, selectedT
       {styleOptions.map(option => <button key={option.id} type="button" className={`trail-style-option ${effectiveTrailStyle === option.id ? 'is-selected' : ''}`} onClick={() => onSetTrailStyle(option.id)}>
         <span className={`trail-style-swatch trail-style-swatch--${option.id}`} style={{ '--trail-preview': colorGradient(memberColors, currentDraftVisual?.color || '#5d7288'), '--trail-color': currentHopSquad?.color || currentDraftVisual?.color || '#5d7288', '--trail-member-count': Math.max(1, memberColors.length || selectedTravelerCount || 1) }}></span>
         <strong>{option.label}</strong>
-        <small>{option.hint}</small>
       </button>)}
     </div>
   </section>;

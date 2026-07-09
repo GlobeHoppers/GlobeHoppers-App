@@ -28,13 +28,16 @@ function squadMemberColors(squad, hById) {
 export function segmentedCircleBackground(colors = [], fallback = '#5d7288', glossy = false) {
   const list = uniqueColors(colors);
   const base = list[0] || fallback;
-  const fill = list.length <= 1
-    ? base
-    : `conic-gradient(from -90deg, ${list.map((color, index) => {
-        const start = (index / list.length) * 360;
-        const end = ((index + 1) / list.length) * 360;
-        return `${color} ${start}deg ${end}deg`;
-      }).join(', ')})`;
+  let fill = base;
+  if (list.length === 2) {
+    fill = `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+  } else if (list.length > 2) {
+    fill = `conic-gradient(from -90deg, ${list.map((color, index) => {
+      const start = (index / list.length) * 360;
+      const end = ((index + 1) / list.length) * 360;
+      return `${color} ${start}deg ${end}deg`;
+    }).join(', ')})`;
+  }
   if (!glossy) return fill;
   return [
     'radial-gradient(circle at 34% 26%, rgba(255,255,255,.62), rgba(255,255,255,.26) 17%, transparent 40%)',
@@ -125,7 +128,7 @@ export function resolveTrailVisual(trip = {}, hopperData = {}) {
   }
 
   const trailColors = memberColors.length ? memberColors : [visual.color || DEFAULT_HOPPER_COLOR];
-  if (!['solid', 'stripe', 'ribbon'].includes(style)) style = 'solid';
+  if (!['solid', 'stripe', 'ribbon', 'spiral'].includes(style)) style = 'solid';
   return {
     style,
     colorMode,

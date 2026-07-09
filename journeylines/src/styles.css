@@ -8516,3 +8516,159 @@ button.primary:disabled {
     grid-template-columns: 76px 1fr !important;
   }
 }
+
+/* GlobeHoppers v3.80: compact trail panel and restored 3.77-style timeline pins with animation. */
+.studio-modal-sidecol {
+  gap: 12px !important;
+}
+.trail-style-panel {
+  padding: 12px 14px !important;
+  border-radius: 20px !important;
+}
+.trail-style-panel .section-heading-inline {
+  align-items: baseline !important;
+  margin-bottom: 8px !important;
+}
+.trail-style-summary {
+  font-size: 0.76rem !important;
+}
+.trail-color-mode-toggle {
+  margin: 4px 0 10px !important;
+  gap: 6px !important;
+}
+.trail-color-mode-toggle button {
+  min-height: 31px !important;
+  padding: 0 12px !important;
+  font-size: 0.9rem !important;
+}
+.trail-style-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+.trail-style-option {
+  grid-template-columns: 74px 1fr !important;
+  grid-template-areas: 'swatch title' !important;
+  align-items: center !important;
+  padding: 9px 10px !important;
+  min-height: 58px !important;
+  border-radius: 16px !important;
+}
+.trail-style-option strong {
+  line-height: 1.05 !important;
+  font-size: 0.95rem !important;
+}
+.trail-style-option small { display: none !important; }
+.trail-style-swatch {
+  width: 66px !important;
+  height: 14px !important;
+}
+.trail-style-swatch--stripe {
+  background: var(--trail-preview, linear-gradient(90deg, #00e5ff, #ff4fd8)) !important;
+  background-size: 28px 100% !important;
+}
+.trail-style-swatch--ribbon::after {
+  background: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--trail-member-count, 2) - 0.75px), rgba(255,255,255,.5) calc(100% / var(--trail-member-count, 2) - 0.75px) calc(100% / var(--trail-member-count, 2) + 0.75px)) !important;
+}
+.trail-style-swatch--spiral {
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,.0) 0 5px,
+      rgba(255,255,255,.36) 5px 7px,
+      rgba(255,255,255,0) 7px 12px),
+    var(--trail-preview, linear-gradient(90deg, #00e5ff, #ff4fd8)) !important;
+  background-size: 16px 100%, 32px 100% !important;
+}
+@media (max-width: 1080px) {
+  .trail-style-options {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.timeline-marker-layer {
+  z-index: 10 !important;
+}
+.timeline-marker-layer > button.timeline-marker,
+.timeline-marker-layer .timeline-marker {
+  width: 22px !important;
+  height: 32px !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  transition: transform .22s ease, opacity .22s ease !important;
+}
+.timeline-marker::before {
+  top: 4px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border: 1.75px solid rgba(246, 254, 255, 0.9) !important;
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255,255,255,.58), rgba(255,255,255,.22) 22%, transparent 44%),
+    linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0) 48%, rgba(0,0,0,.14) 100%),
+    var(--marker-background, var(--marker-color, #00e5ff)) !important;
+  box-shadow: 0 0 0 1px rgba(5, 10, 18, 0.78), 0 4px 10px rgba(0, 0, 0, 0.24) !important;
+}
+.timeline-marker::after {
+  top: 17px !important;
+  width: 2px !important;
+  height: 12px !important;
+  background: linear-gradient(180deg, rgba(240, 248, 255, 0.92), rgba(240, 248, 255, 0.18)) !important;
+}
+.timeline-marker:hover,
+.timeline-marker:focus-visible,
+.timeline-marker.is-current,
+.timeline-marker.is-entering {
+  transform: translate(-50%, -57%) !important;
+}
+.timeline-marker.is-active::before,
+.timeline-marker:hover::before,
+.timeline-marker:focus-visible::before,
+.timeline-marker.is-current::before {
+  transform: translateX(-50%) scale(1.12) !important;
+  box-shadow: 0 0 0 1px rgba(6, 18, 36, 0.84), 0 0 0 4px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 77%), 0 8px 16px rgba(0,0,0,.28) !important;
+}
+.timeline-marker__tooltip {
+  min-width: 120px !important;
+  bottom: calc(100% + 42px) !important;
+  padding: 6px 11px !important;
+  border-radius: 14px !important;
+  background: #040a12 !important;
+  background-color: #040a12 !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color, #00e5ff), white 14%) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.42) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  line-height: 1 !important;
+}
+.timeline-marker__tooltip::before {
+  display: none !important;
+  content: none !important;
+}
+.timeline-marker__tooltip-title,
+.timeline-marker__tooltip-date {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+.timeline-marker__tooltip-title {
+  font-weight: 900 !important;
+}
+.timeline-marker__tooltip-date {
+  font-size: .9em !important;
+  font-weight: 750 !important;
+  color: rgba(224,238,255,.80) !important;
+  transform: translateY(0.5px) !important;
+}
+@keyframes ghTimelinePinSelect {
+  0% { transform: translateX(-50%) scale(.82); box-shadow: 0 0 0 1px rgba(6,18,36,.65), 0 0 0 0 rgba(0,229,255,.34); }
+  55% { transform: translateX(-50%) scale(1.2); box-shadow: 0 0 0 1px rgba(6,18,36,.88), 0 0 0 6px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 78%); }
+  100% { transform: translateX(-50%) scale(1.12); box-shadow: 0 0 0 1px rgba(6,18,36,.82), 0 0 0 4px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 77%), 0 8px 16px rgba(0,0,0,.28); }
+}
+@keyframes ghTimelinePinDeselect {
+  0% { transform: translateX(-50%) scale(1.12); box-shadow: 0 0 0 1px rgba(6,18,36,.82), 0 0 0 4px color-mix(in srgb, var(--marker-color, #00e5ff), transparent 77%), 0 8px 16px rgba(0,0,0,.28); }
+  100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 1px rgba(5,10,18,.78), 0 4px 10px rgba(0,0,0,.24); }
+}
