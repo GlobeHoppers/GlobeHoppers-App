@@ -1,1 +1,1 @@
-GlobeHoppers v4.01 — rounded Studio Timeline row border rings
+GlobeHoppers v4.02 — thicker rounded Studio row borders and raised-pill bevel

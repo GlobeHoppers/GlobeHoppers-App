@@ -10424,3 +10424,80 @@ button.primary:disabled {
 .studio-trip-list--card {
   --gh-studio-row-gap: 8px;
 }
+
+
+/* GlobeHoppers v4.02: thicker rounded Studio Timeline borders + raised-pill bevel. */
+.gh-studio-trip-row {
+  --gh-studio-border-size: 2px !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.055), transparent 42%),
+    linear-gradient(180deg, rgba(16, 32, 52, 0.98) 0%, rgba(8, 20, 36, 0.98) 48%, rgba(4, 12, 24, 0.98) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.115),
+    inset 0 -1px 0 rgba(0,0,0,.46),
+    0 1px 0 rgba(255,255,255,.035),
+    0 8px 14px rgba(0,0,0,.20) !important;
+}
+
+.gh-studio-row-border {
+  padding: var(--gh-studio-border-size) !important;
+  opacity: .96 !important;
+  filter: saturate(1.05) brightness(1.04) !important;
+}
+
+/* Soft bevel sheen that stays inside the row, under the text/buttons and under the border ring. */
+.gh-studio-trip-row::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-radius: calc(var(--gh-studio-row-radius, 18px) - 2px) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.018) 38%, rgba(0,0,0,.11) 100%),
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--accent, #00e5ff), transparent 88%), transparent 42%) !important;
+  opacity: .72 !important;
+}
+
+.gh-studio-trip-row:hover,
+.gh-studio-trip-row:focus-visible {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 86%), transparent 43%),
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.07), transparent 42%),
+    linear-gradient(180deg, rgba(19, 38, 60, 0.99) 0%, rgba(10, 24, 42, 0.99) 48%, rgba(5, 14, 27, 0.99) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -1px 0 rgba(0,0,0,.48),
+    0 0 14px color-mix(in srgb, var(--accent, #00e5ff), transparent 86%),
+    0 10px 18px rgba(0,0,0,.24) !important;
+}
+
+.gh-studio-trip-row:hover::after,
+.gh-studio-trip-row:focus-visible::after,
+.gh-studio-trip-row.is-active::after {
+  opacity: .88 !important;
+}
+
+.gh-studio-trip-row.is-active {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 82%), transparent 43%),
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.08), transparent 42%),
+    linear-gradient(180deg, rgba(20, 42, 66, 0.99) 0%, rgba(10, 26, 46, 0.99) 50%, rgba(5, 14, 28, 0.99) 100%) !important;
+}
+
+.gh-studio-trip-row:hover .gh-studio-row-border,
+.gh-studio-trip-row:focus-visible .gh-studio-row-border,
+.gh-studio-trip-row.is-active .gh-studio-row-border {
+  opacity: 1 !important;
+  filter: brightness(1.10) saturate(1.14) !important;
+}
+
+/* Keep content and buttons above the bevel and border mask. */
+.gh-studio-trip-row > :not(.gh-studio-row-border) {
+  position: relative !important;
+  z-index: 3 !important;
+}
+.gh-studio-row-border {
+  z-index: 4 !important;
+}
