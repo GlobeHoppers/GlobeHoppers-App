@@ -942,6 +942,80 @@ async function commitSingleJsonFile(repo, token, path, data, message) {
 }
 
 
+
+function timelineBorderColorsForTrip(trip, hopperData) {
+  const traveler = resolveTripVisual(trip, hopperData);
+  const colors = (traveler?.squadMemberColors || traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'])
+    .filter(Boolean);
+  const unique = [...new Set(colors)];
+  return unique.length ? unique : [traveler?.color || '#00e5ff'];
+}
+
+function splitTimelineBorderColors(colors = [], fallback = '#00e5ff') {
+  const list = [...new Set((colors || []).filter(Boolean))];
+  if (!list.length) return [fallback];
+  return list;
+}
+
+function borderSegmentForSide(colors, side, fallback = '#00e5ff') {
+  const list = splitTimelineBorderColors(colors, fallback);
+  if (list.length === 1) return list[0];
+
+  if (list.length === 2) {
+    if (side === 'left') return list[0];
+    if (side === 'right') return list[1];
+    return `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+  }
+
+  // Perimeter order starts at top-left, moves clockwise around the card.
+  // This is intentionally simple and foreground-rendered so it cannot be
+  // hidden by older row background/hover styles.
+  if (list.length === 3) {
+    if (side === 'top') return `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+    if (side === 'right') return list[1];
+    if (side === 'bottom') return `linear-gradient(90deg, ${list[2]} 0 50%, ${list[1]} 50% 100%)`;
+    return `linear-gradient(180deg, ${list[0]} 0 50%, ${list[2]} 50% 100%)`;
+  }
+
+  const topLeft = list[0];
+  const topRight = list[1] || topLeft;
+  const bottomRight = list[2] || topRight;
+  const bottomLeft = list[3] || bottomRight;
+  const extra = list.slice(4);
+
+  if (side === 'top') {
+    const stops = [topLeft, ...extra.filter((_, i) => i % 2 === 0), topRight];
+    return linearStops(stops, '90deg');
+  }
+  if (side === 'right') {
+    const stops = [topRight, ...extra.filter((_, i) => i % 2 === 1), bottomRight];
+    return linearStops(stops, '180deg');
+  }
+  if (side === 'bottom') {
+    const stops = [bottomLeft, ...extra.filter((_, i) => i % 2 === 0).reverse(), bottomRight];
+    return linearStops(stops, '90deg');
+  }
+  return linearStops([topLeft, bottomLeft], '180deg');
+}
+
+function linearStops(colors = [], direction = '90deg') {
+  const list = splitTimelineBorderColors(colors);
+  if (list.length === 1) return list[0];
+  const step = 100 / list.length;
+  return `linear-gradient(${direction}, ${list.map((color, index) => `${color} ${Math.max(0, index * step)}% ${Math.min(100, (index + 1) * step)}%`).join(', ')})`;
+}
+
+function TimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
+  const list = splitTimelineBorderColors(colors, fallback);
+  return <span className="trip-drawer__foreground-border" aria-hidden="true">
+    <span className="trip-border-trip-top" style={{ background: borderSegmentForSide(list, 'top', fallback) }} />
+    <span className="trip-border-trip-right" style={{ background: borderSegmentForSide(list, 'right', fallback) }} />
+    <span className="trip-border-trip-bottom" style={{ background: borderSegmentForSide(list, 'bottom', fallback) }} />
+    <span className="trip-border-trip-left" style={{ background: borderSegmentForSide(list, 'left', fallback) }} />
+  </span>;
+}
+
+
 function buildTripTimeline(trips, legs, locById, hopperData) {
   const firstLegByTrip = new Map();
   for (let i = 0; i < legs.length; i++) {
@@ -962,6 +1036,7 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
+      borderColors: timelineBorderColorsForTrip(trip, hopperData),
       borderGradient: segmentedBorderGradient((traveler?.squadMemberColors || traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff']).filter(Boolean), traveler?.color || '#00e5ff'),
       markerBackground: multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff', true),
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
@@ -1072,6 +1147,7 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
     onContextMenu={(e) => openMenu(e, row)}
     title="Click to play from here. Right-click or use ⋯ to edit."
   >
+    <TimelineRowBorder colors={row.borderColors} fallback={row.color} />
     <span className="trip-drawer__date">{row.date}</span>
     <span className="trip-drawer__main">
       <strong>{row.title}</strong>

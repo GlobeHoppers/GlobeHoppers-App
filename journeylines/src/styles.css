@@ -9581,3 +9581,67 @@ button.primary:disabled {
     inset 0 1px 0 rgba(255,255,255,.055),
     0 0 0 1px rgba(0,0,0,.24) !important;
 }
+
+
+/* GlobeHoppers v3.94: true foreground timeline row border overlay.
+   This sits above every row background/hover layer and does not rely on
+   pseudo-elements or border-box backgrounds. */
+.trip-drawer__row {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+.trip-drawer__foreground-border {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 999 !important;
+  border-radius: inherit !important;
+}
+.trip-drawer__foreground-border > span {
+  position: absolute !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 1000 !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%);
+}
+.trip-border-trip-top {
+  left: 2px !important;
+  right: 2px !important;
+  top: 0 !important;
+  height: 2px !important;
+  border-radius: 999px 999px 0 0 !important;
+}
+.trip-border-trip-right {
+  top: 2px !important;
+  bottom: 2px !important;
+  right: 0 !important;
+  width: 2px !important;
+  border-radius: 0 999px 999px 0 !important;
+}
+.trip-border-trip-bottom {
+  left: 2px !important;
+  right: 2px !important;
+  bottom: 0 !important;
+  height: 2px !important;
+  border-radius: 0 0 999px 999px !important;
+}
+.trip-border-trip-left {
+  top: 2px !important;
+  bottom: 2px !important;
+  left: 0 !important;
+  width: 2px !important;
+  border-radius: 999px 0 0 999px !important;
+}
+.trip-drawer__row:hover .trip-drawer__foreground-border > span,
+.trip-drawer__row:focus-visible .trip-drawer__foreground-border > span,
+.trip-drawer__row.is-active .trip-drawer__foreground-border > span {
+  filter: brightness(1.18) saturate(1.18) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent, #00e5ff), transparent 62%) !important;
+}
+.trip-drawer__row > :not(.trip-drawer__foreground-border) {
+  position: relative;
+  z-index: 2;
+}
