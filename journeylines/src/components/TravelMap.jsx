@@ -642,7 +642,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
   }
 
-  return <div className="maplibre-shell terrain-mode space-mode" onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode ${props.placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />

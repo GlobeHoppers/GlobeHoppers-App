@@ -1,1 +1,1 @@
-GlobeHoppers v4.05 — Plus Jakarta Sans and map placard softening
+GlobeHoppers v4.06 — place placard background toggle
