@@ -484,6 +484,63 @@ function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
 }
 
 
+
+function splitStudioBorderColors(colors = [], fallback = '#00e5ff') {
+  const list = [...new Set((colors || []).filter(Boolean))];
+  return list.length ? list : [fallback];
+}
+
+function linearStudioStops(colors = [], direction = '90deg') {
+  const list = splitStudioBorderColors(colors);
+  if (list.length === 1) return list[0];
+  const step = 100 / list.length;
+  return `linear-gradient(${direction}, ${list.map((color, index) => `${color} ${Math.max(0, index * step)}% ${Math.min(100, (index + 1) * step)}%`).join(', ')})`;
+}
+
+function studioBorderSegmentForSide(colors = [], side, fallback = '#00e5ff') {
+  const list = splitStudioBorderColors(colors, fallback);
+  if (list.length === 1) return list[0];
+  if (list.length === 2) {
+    if (side === 'left') return list[0];
+    if (side === 'right') return list[1];
+    return `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+  }
+  if (list.length === 3) {
+    if (side === 'top') return `linear-gradient(90deg, ${list[0]} 0 50%, ${list[1]} 50% 100%)`;
+    if (side === 'right') return list[1];
+    if (side === 'bottom') return `linear-gradient(90deg, ${list[2]} 0 50%, ${list[1]} 50% 100%)`;
+    return `linear-gradient(180deg, ${list[0]} 0 50%, ${list[2]} 50% 100%)`;
+  }
+  const topLeft = list[0];
+  const topRight = list[1] || topLeft;
+  const bottomRight = list[2] || topRight;
+  const bottomLeft = list[3] || bottomRight;
+  const extra = list.slice(4);
+  if (side === 'top') return linearStudioStops([topLeft, ...extra.filter((_, i) => i % 2 === 0), topRight], '90deg');
+  if (side === 'right') return linearStudioStops([topRight, ...extra.filter((_, i) => i % 2 === 1), bottomRight], '180deg');
+  if (side === 'bottom') return linearStudioStops([bottomLeft, ...extra.filter((_, i) => i % 2 === 0).reverse(), bottomRight], '90deg');
+  return linearStudioStops([topLeft, bottomLeft], '180deg');
+}
+
+function StudioTimelineRowBorder({ colors = [], fallback = '#00e5ff' }) {
+  const list = splitStudioBorderColors(colors, fallback);
+  return <span
+    className="gh-studio-row-border"
+    aria-hidden="true"
+    style={{
+      '--gh-studio-border-top': studioBorderSegmentForSide(list, 'top', fallback),
+      '--gh-studio-border-right': studioBorderSegmentForSide(list, 'right', fallback),
+      '--gh-studio-border-bottom': studioBorderSegmentForSide(list, 'bottom', fallback),
+      '--gh-studio-border-left': studioBorderSegmentForSide(list, 'left', fallback)
+    }}
+  >
+    <span className="gh-studio-border-strip gh-studio-border-strip--top" />
+    <span className="gh-studio-border-strip gh-studio-border-strip--right" />
+    <span className="gh-studio-border-strip gh-studio-border-strip--bottom" />
+    <span className="gh-studio-border-strip gh-studio-border-strip--left" />
+  </span>;
+}
+
 function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId, setDropId, moveTrip, locById, onEdit, onDelete, hopperData, activeTripId, onPlayTrip }) {
   const playFromRow = () => { if (!reorderMode) onPlayTrip?.(trip.id); };
   const visual = resolveTripVisual(trip, hopperData || {});
@@ -498,7 +555,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
   const isDragging = reorderMode && dragId === trip.id;
   const isDropTarget = reorderMode && dropId === trip.id && dragId && dragId !== trip.id;
   return <div
-    className={`studio-trip-row studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
+    className={`gh-studio-trip-row gh-studio-trip-row--${viewType} ${isMixed ? 'is-mixed' : ''} ${isCurrent ? 'is-active' : ''} ${isDragging ? 'is-dragging' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}
     style={{ '--accent': accent, '--accent-2': accent2, '--accent-3': accent3, '--accent-4': accent4, '--accent-gradient': colorGradient(colors, accent), '--trip-border': segmentedBorderGradient(borderColors, accent) }}
     draggable={reorderMode}
     onClick={playFromRow}
@@ -515,6 +572,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
     <span className="studio-trip-buttons">
       {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
     </span>
+    <StudioTimelineRowBorder colors={borderColors} fallback={accent} />
   </div>;
 }
 
