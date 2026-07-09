@@ -6,7 +6,7 @@ import AdminPanel from './components/AdminPanel.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
-import { normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground } from './utils/hopperUtils.js';
+import { normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground, segmentedBorderGradient } from './utils/hopperUtils.js';
 import baseTrips from './data/trips.json';
 import baseLocations from './data/locations.json';
 import homeBases from './data/homeBases.json';
@@ -960,6 +960,7 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
+      borderGradient: segmentedBorderGradient((traveler?.squadMemberColors || traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff']).filter(Boolean), traveler?.color || '#00e5ff'),
       markerBackground: multiMemberCircleBackground(traveler?.circleColors || traveler?.memberColors || traveler?.colors || [traveler?.color || '#00e5ff'], traveler?.color || '#00e5ff', true),
       route: from && to ? `${formatLocation(from)} → ${formatLocation(to)}` : formatLocation(to),
       legCount: tripLegs.length,
@@ -1063,7 +1064,7 @@ function TripDrawerRow({ row, activeIndex, onJump, openMenu, viewType }) {
     role="button"
     tabIndex={0}
     className={`trip-drawer__row ${active ? 'is-active' : ''} trip-row-view--${viewType}`}
-    style={{ '--accent': row.color }}
+    style={{ '--accent': row.color, '--trip-border': row.borderGradient || row.color }}
     onClick={() => onJump(row.firstIndex)}
     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onJump(row.firstIndex); } }}
     onContextMenu={(e) => openMenu(e, row)}

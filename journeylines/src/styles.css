@@ -9416,3 +9416,102 @@ button.primary:disabled {
   width: auto !important;
   background: var(--trip-border, var(--accent, #00e5ff)) !important;
 }
+
+
+/* GlobeHoppers v3.87: timeline row segmented borders, preview lift, and route tube polish. */
+
+/* Move Hop Preview back up and keep Trail Style clear below it. */
+.studio-modal-layout {
+  align-items: start !important;
+}
+.studio-modal-sidecol {
+  align-self: start !important;
+  align-content: start !important;
+  gap: 10px !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+.studio-modal-sidecol .route-preview-card {
+  position: relative !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  z-index: 2 !important;
+}
+.studio-modal-sidecol .trail-style-panel {
+  position: relative !important;
+  z-index: 1 !important;
+  margin-top: 0 !important;
+}
+
+/* Segmented border ring for GlobeHopper Timeline rows: expanded, compact, and card. */
+.studio-trip-row,
+.trip-drawer__row {
+  position: relative !important;
+  isolation: isolate !important;
+  border: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(10, 23, 40, 0.93), rgba(6, 15, 28, 0.93)) padding-box !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+.studio-trip-row::before,
+.trip-drawer__row::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  padding: 2px !important;
+  border-radius: inherit !important;
+  background: var(--trip-border, var(--accent, #00e5ff)) !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  -webkit-mask-composite: xor !important;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  mask-composite: exclude !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+  opacity: .98 !important;
+}
+.studio-trip-row::after,
+.trip-drawer__row::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 90%), transparent 32%),
+    linear-gradient(180deg, rgba(9, 20, 36, 0.95), rgba(5, 14, 26, 0.94)) !important;
+  z-index: -2 !important;
+  pointer-events: none !important;
+}
+.studio-trip-row:hover::before,
+.studio-trip-row.is-active::before,
+.trip-drawer__row:hover::before,
+.trip-drawer__row.is-active::before {
+  filter: brightness(1.15) saturate(1.08) !important;
+  opacity: 1 !important;
+}
+.studio-trip-row.is-active,
+.trip-drawer__row.is-active {
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--accent, #00e5ff), transparent 78%),
+    inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+/* Override old side/corner accent rules so the segmented ring is the only row color system. */
+.studio-trip-row.is-mixed,
+.studio-trip-row--expanded,
+.studio-trip-row--compact,
+.studio-trip-row--card,
+.trip-row-view--expanded,
+.trip-row-view--compact,
+.trip-row-view--card {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
+/* The old timeline row gradients were only filling an edge; suppress them. */
+.studio-trip-row > .trip-accent-bar,
+.studio-trip-row .accent-bar,
+.trip-drawer__row > .trip-accent-bar,
+.trip-drawer__row .accent-bar {
+  display: none !important;
+}
