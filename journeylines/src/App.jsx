@@ -484,7 +484,8 @@ function TrailTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     </section>
     <div className="trail-tuning__actions">
       <button type="button" className="secondary" onClick={onReset}>Reset</button>
-      <button type="button" className="secondary" onClick={onClose}>Done</button><button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
+      <button type="button" className="secondary" onClick={onClose}>Cancel</button>
+      <button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
     </div>
   </aside>;
 }
@@ -528,7 +529,8 @@ function TimelineTuningUtility({ values, onChange, onClose, onReset, onSave }) {
     </section>
     <div className="trail-tuning__actions">
       <button type="button" className="secondary" onClick={onReset}>Reset</button>
-      <button type="button" className="secondary" onClick={onClose}>Done</button><button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
+      <button type="button" className="secondary" onClick={onClose}>Cancel</button>
+      <button type="button" className="primary" onClick={async () => { await onSave?.(); onClose?.(); }}>Save</button>
     </div>
   </aside>;
 }

@@ -1,1 +1,1 @@
-GlobeHoppers v3.88 — visible timeline borders, preview spacing, stronger route tube effect
+GlobeHoppers v3.89 — persistent timeline borders, trail utility cancel, stronger route tube effect

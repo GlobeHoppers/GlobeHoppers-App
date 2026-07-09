@@ -9561,3 +9561,69 @@ button.primary:disabled {
 .studio-modal-sidecol .trail-style-panel {
   margin-top: 0 !important;
 }
+
+
+/* GlobeHoppers v3.89: always-visible timeline row rings and stronger hover fill. */
+.studio-trip-row,
+.trip-drawer__row {
+  position: relative !important;
+  isolation: isolate !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, rgba(9, 21, 38, 0.96), rgba(5, 14, 27, 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 18px rgba(0,0,0,.10) !important;
+}
+.studio-trip-row::before,
+.trip-drawer__row::before {
+  display: block !important;
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 2px !important;
+  border-radius: inherit !important;
+  background: var(--trip-border, var(--accent, #00e5ff)) !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  -webkit-mask-composite: xor !important;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) border-box !important;
+  mask-composite: exclude !important;
+  opacity: 1 !important;
+  filter: saturate(1.08) brightness(1.05) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+.studio-trip-row::after,
+.trip-drawer__row::after {
+  display: block !important;
+  content: '' !important;
+  position: absolute !important;
+  inset: 2px !important;
+  border-radius: 13px !important;
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 92%), transparent 38%),
+    linear-gradient(180deg, rgba(9, 20, 36, .96), rgba(5, 14, 26, .95)) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+.studio-trip-row:hover::after,
+.studio-trip-row.is-active::after,
+.trip-drawer__row:hover::after,
+.trip-drawer__row.is-active::after {
+  background:
+    radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--accent, #00e5ff), transparent 82%), transparent 42%),
+    linear-gradient(180deg, rgba(13, 31, 54, .98), rgba(7, 19, 35, .98)) !important;
+}
+.studio-trip-row:hover::before,
+.studio-trip-row.is-active::before,
+.trip-drawer__row:hover::before,
+.trip-drawer__row.is-active::before {
+  filter: saturate(1.18) brightness(1.18) !important;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent, #00e5ff), transparent 66%) !important;
+}
+.studio-trip-row > *,
+.trip-drawer__row > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
