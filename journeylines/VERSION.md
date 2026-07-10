@@ -1,1 +1,1 @@
-GlobeHoppers v4.11 — fade prior trip route when starting next trip
+GlobeHoppers v4.12 — fade entire previous trip route set

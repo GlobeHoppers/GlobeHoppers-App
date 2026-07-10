@@ -554,15 +554,17 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const sameTrip = prevRoute.active?.trip?.id && prevRoute.active.trip.id === active?.trip?.id;
       window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
       if (sameTrip) {
-        // Within one trip, keep the outbound/previous leg visible while the
-        // return/next leg plays. This preserves the round-trip visual.
-        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: prevRoute.features, key: prevRoute.key };
-        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, prevRoute.features);
+        // Within one trip, keep all completed legs from that same trip visible
+        // while the return/next leg plays. This preserves the round-trip visual.
+        const heldSameTripFeatures = mergeHeldRouteFeatures(fadeTrailRef.current.features || [], prevRoute.features || []);
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: heldSameTripFeatures, key: prevRoute.key };
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldSameTripFeatures);
       } else {
-        // When playback moves to a different trip, the old trip route should
-        // leave the scene. Fade it out rather than hard-cutting.
-        fadeTrailRef.current = { ...fadeTrailRef.current, active: true, features: prevRoute.features, key: prevRoute.key };
-        startCompletedRouteFade(map, fadeTrailRef, prevRoute.features, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+        // When playback moves to a different trip, fade every held route from
+        // the previous trip, including both outbound and return legs.
+        const priorTripFeatures = mergeHeldRouteFeatures(fadeTrailRef.current.features || [], prevRoute.features || []);
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: true, features: priorTripFeatures, key: prevRoute.key };
+        startCompletedRouteFade(map, fadeTrailRef, priorTripFeatures, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
       }
     }
     if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
@@ -793,6 +795,32 @@ function scaledRouteFeatures(features = [], scale = 1) {
       outerGlowOpacity: (Number(f.properties?.outerGlowOpacity) || 0) * s
     }
   }));
+}
+
+function mergeHeldRouteFeatures(...featureGroups) {
+  const out = [];
+  const seen = new Set();
+  for (const group of featureGroups || []) {
+    for (const feature of group || []) {
+      const props = feature?.properties || {};
+      const coords = feature?.geometry?.coordinates || [];
+      const first = coords[0] || [];
+      const last = coords[coords.length - 1] || [];
+      const key = [
+        props.tripId ?? '',
+        props.index ?? '',
+        props.color ?? '',
+        props.mode ?? '',
+        Number(props.lineOffset || 0).toFixed(3),
+        `${Number(first[0] || 0).toFixed(4)},${Number(first[1] || 0).toFixed(4)}`,
+        `${Number(last[0] || 0).toFixed(4)},${Number(last[1] || 0).toFixed(4)}`
+      ].join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(feature);
+    }
+  }
+  return out;
 }
 
 function startCompletedRouteFade(map, fadeRef, features = [], completedLegs = [], travelersById = {}, opacity = 0.28, width = 1.55, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING) {
