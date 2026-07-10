@@ -2979,51 +2979,6 @@
     "occasion": ""
   },
   {
-    "id": "2026-137-girls-trip-to-europe",
-    "year": 2026,
-    "month": 4,
-    "day": 8,
-    "endYear": 2026,
-    "endMonth": 4,
-    "endDay": 17,
-    "displayDate": "April 8, 2026",
-    "displayEndDate": "April 17, 2026",
-    "sortKey": "2026-04-08-011",
-    "label": "Girls Trip to Europe",
-    "travelers": [
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": false,
-    "returnMode": "",
-    "fromLocationId": null,
-    "toLocationId": "los-angeles-ca",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "locationId": "london-uk",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "locationId": "amsterdam-nl",
-        "modeFromPrevious": "train"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane"
-      }
-    ],
-    "notes": "With Kaitlyn",
-    "occasion": ""
-  },
-  {
     "id": "2026-131-syracuse-and-lakeland",
     "year": 2026,
     "month": 4,
