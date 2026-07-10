@@ -3224,6 +3224,33 @@
     "trailColorMode": "members"
   },
   {
+    "id": "2026-146-los-angeles",
+    "year": 2026,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-08-99-020",
+    "label": "Los Angeles",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "los-angeles-ca",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
     "id": "2026-139-tokyo",
     "year": 2026,
     "month": 9,
