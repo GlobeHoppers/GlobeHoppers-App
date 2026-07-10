@@ -107,7 +107,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -642,7 +642,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     updatePulseOverlay(pulseRef.current, destPt, color, sceneState.pulseActive);
   }
 
-  return <div className={`maplibre-shell terrain-mode space-mode ${props.placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />
