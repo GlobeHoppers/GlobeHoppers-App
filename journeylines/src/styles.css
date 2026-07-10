@@ -11968,3 +11968,9 @@ svg text {
   color: rgba(232, 243, 255, .42);
   letter-spacing: .03em;
 }
+
+
+/* GlobeHoppers v4.36.2: expanded timeline rows no longer show trip IDs. */
+.gh-studio-trip-row--expanded .studio-trip-id-badge {
+  display: none !important;
+}

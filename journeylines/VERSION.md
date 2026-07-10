@@ -1,1 +1,1 @@
-GlobeHoppers v4.36.1 — persistent queued save batch status and trip IDs
+GlobeHoppers v4.36.2 — save lock conflict hardening and row ID rollback

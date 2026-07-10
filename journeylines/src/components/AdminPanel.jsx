@@ -55,6 +55,67 @@ const repoSaveQueue = {
   saving: false
 };
 
+const REPO_SAVE_LOCK_KEY = 'journeylines.repoSaveLock.v1';
+const REPO_SAVE_LOCK_TTL = 45000;
+const REPO_SAVE_COOLDOWN_MS = 5000;
+
+function tabSaveId() {
+  try {
+    let id = sessionStorage.getItem('journeylines.repoSaveTabId');
+    if (!id) {
+      id = `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem('journeylines.repoSaveTabId', id);
+    }
+    return id;
+  } catch {
+    return 'tab-unknown';
+  }
+}
+
+function readRepoSaveLock() {
+  try {
+    return JSON.parse(localStorage.getItem(REPO_SAVE_LOCK_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function writeRepoSaveLock(lock) {
+  try { localStorage.setItem(REPO_SAVE_LOCK_KEY, JSON.stringify(lock)); } catch {}
+}
+
+function clearRepoSaveLock(owner) {
+  try {
+    const lock = readRepoSaveLock();
+    if (!lock || lock.owner === owner) localStorage.removeItem(REPO_SAVE_LOCK_KEY);
+  } catch {}
+}
+
+async function acquireRepoSaveLock(onStatus = () => {}) {
+  const owner = tabSaveId();
+  const start = Date.now();
+  while (Date.now() - start < REPO_SAVE_LOCK_TTL) {
+    const now = Date.now();
+    const lock = readRepoSaveLock();
+    if (!lock || !lock.owner || now - Number(lock.at || 0) > REPO_SAVE_LOCK_TTL) {
+      writeRepoSaveLock({ owner, at: now });
+      await wait(80);
+      const confirm = readRepoSaveLock();
+      if (confirm?.owner === owner) return owner;
+    }
+    onStatus({
+      state: 'queued',
+      label: 'Repository save waiting',
+      detail: 'Waiting for another repository save to finish…',
+      startedAt: start,
+      completedAt: null,
+      error: null
+    });
+    await wait(700);
+  }
+  throw new Error('Timed out waiting for the repository save lock. Try again in a moment.');
+}
+
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
@@ -389,7 +450,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       error: null
     });
 
+    let lockOwner = null;
     try {
+      lockOwner = await acquireRepoSaveLock((status) => onRepoSaveStatus({ ...status, items: job.items || [] }));
       const { trips: repairedTrips, locations: repairedLocations, repairedIds } = await repairMissingLocationsForTrips(job.trips, job.locations);
       if (repairedIds.length) {
         locationsRef.current = repairedLocations;
@@ -415,6 +478,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         completedAt: Date.now(),
         error: null
       });
+      await wait(REPO_SAVE_COOLDOWN_MS);
     } catch (err) {
       const errorMessage = err?.message || String(err);
       onRepoSaveStatus({
@@ -428,6 +492,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       });
       window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
     } finally {
+      if (lockOwner) clearRepoSaveLock(lockOwner);
       queue.saving = false;
       if (queue.pending) {
         onRepoSaveStatus({
@@ -585,7 +650,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function commitFilesAtomically(files, message) {
     const headers = githubHeaders(token);
     let lastError = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 5; attempt++) {
       try {
         const refRes = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, { headers });
         if (!refRes.ok) throw new Error(await refRes.text());
@@ -634,13 +699,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         const retryableConflict = updateRefRes.status === 409 || updateRefRes.status === 422 || /fast.?forward|conflict|reference/i.test(text || '');
         if (!retryableConflict) throw new Error(text);
         lastError = new Error(text || 'GitHub reported a conflict while updating main. Retrying with the latest branch state.');
-        await wait(900 * attempt);
+        await wait(1500 * attempt);
       } catch (err) {
         lastError = err;
-        if (attempt < 3) await wait(900 * attempt);
+        if (attempt < 5) await wait(1500 * attempt);
       }
     }
-    throw new Error(`GitHub commit conflict after retrying. Refresh GlobeHoppers Studio and try again. Details: ${lastError?.message || lastError}`);
+    throw new Error(`GitHub commit conflict after retrying with a client-side save lock. Refresh GlobeHoppers Studio and try again. Details: ${lastError?.message || lastError}`);
   }
 
   async function commitFilesWithContentsApi(files, message) {
@@ -871,7 +936,6 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
   >
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
-    {viewType === 'expanded' && <span className="studio-trip-id-badge">{trip.id}</span>}
     <span className="studio-trip-buttons">
       {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
     </span>
