@@ -2896,34 +2896,6 @@
     "occasion": ""
   },
   {
-    "id": "2026-145-los-angeles",
-    "year": 2026,
-    "month": 2,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "February 2026",
-    "displayEndDate": "",
-    "sortKey": "2026-02-99-019",
-    "label": "Los Angeles",
-    "travelers": [
-      "hopper-mrcyz5l4",
-      "bonnie"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "los-angeles-ca",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "ribbon",
-    "trailColorMode": "members"
-  },
-  {
     "id": "2026-129-san-francisco",
     "year": 2026,
     "month": 3,
