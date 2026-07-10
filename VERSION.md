@@ -1,1 +1,1 @@
-GlobeHoppers v4.33 — timeline insertion playback reconciliation
+GlobeHoppers v4.34 — play saved hop and route-save hardening

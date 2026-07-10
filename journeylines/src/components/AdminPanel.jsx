@@ -50,7 +50,7 @@ function loadCityDatabase() {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -200,38 +200,42 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const set = new Set(draft.travelers || []);
     if (set.has(id)) set.delete(id); else set.add(id);
     const next = Array.from(set);
-    setDraft({ ...draft, travelers: next });
+    setDraft(d => ({ ...d, travelers: next }));
   }
 
   function chooseDestination(location) {
     setFormError('');
     const isCity = location?._source === 'city';
-    setDraft({ ...draft, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: selectedLocationText(location), label: draft.label || location.name });
+    setDraft(d => ({ ...d, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: selectedLocationText(location), label: d.label || location.name }));
     previewMapLocation(location);
   }
   function chooseFrom(location) {
     const isCity = location?._source === 'city';
-    setDraft({ ...draft, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: selectedLocationText(location), overrideFrom: true });
+    setDraft(d => ({ ...d, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: selectedLocationText(location), overrideFrom: true }));
     previewMapLocation(location);
   }
   function chooseExtraLeg(index, location) {
     const isCity = location?._source === 'city';
-    const extraLegs = [...(draft.extraLegs || [])];
-    extraLegs[index] = { ...extraLegs[index], locationId: isCity ? '' : location.id, city: isCity ? location.city : null, locationText: selectedLocationText(location) };
-    setDraft({ ...draft, extraLegs });
+    setDraft(d => {
+      const extraLegs = [...(d.extraLegs || [])];
+      extraLegs[index] = { ...extraLegs[index], locationId: isCity ? '' : location.id, city: isCity ? location.city : null, locationText: selectedLocationText(location) };
+      return { ...d, extraLegs };
+    });
     previewMapLocation(location);
   }
   function setExtraLeg(index, patch) {
-    const extraLegs = [...(draft.extraLegs || [])];
-    extraLegs[index] = { ...extraLegs[index], ...patch };
-    setDraft({ ...draft, extraLegs });
+    setDraft(d => {
+      const extraLegs = [...(d.extraLegs || [])];
+      extraLegs[index] = { ...extraLegs[index], ...patch };
+      return { ...d, extraLegs };
+    });
   }
-  function addLeg() { setDraft({ ...draft, extraLegs: [...(draft.extraLegs || []), { locationId: '', locationText: '', modeFromPrevious: draft.mode || 'plane' }] }); }
-  function removeLeg(index) { setDraft({ ...draft, extraLegs: (draft.extraLegs || []).filter((_, i) => i !== index) }); }
-  function setReturnMode(mode) { setDraft({ ...draft, returnMode: mode }); }
+  function addLeg() { setDraft(d => ({ ...d, extraLegs: [...(d.extraLegs || []), { locationId: '', locationText: '', city: null, modeFromPrevious: d.mode || 'plane' }] })); }
+  function removeLeg(index) { setDraft(d => ({ ...d, extraLegs: (d.extraLegs || []).filter((_, i) => i !== index) })); }
+  function setReturnMode(mode) { setDraft(d => ({ ...d, returnMode: mode })); }
   function setPreviewLegMode(target, mode) {
-    if (target === 'main') setDraft({ ...draft, mode, returnMode: draft.returnMode || mode });
-    else if (target === 'return') setDraft({ ...draft, returnMode: mode });
+    if (target === 'main') setDraft(d => ({ ...d, mode, returnMode: d.returnMode || mode }));
+    else if (target === 'return') setDraft(d => ({ ...d, returnMode: mode }));
     else if (typeof target === 'number') setExtraLeg(target, { modeFromPrevious: mode });
   }
 
@@ -243,9 +247,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
       const message = editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`;
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
+      validateTripLocationReferences(trip, nextLocations);
       setTrips(nextTrips);
       if (nextLocations !== locations) setLocations(nextLocations);
       closeModal();
+      onTripSaved({ tripId: trip.id, action: editingId ? 'edit' : 'add', label: trip.label });
       saveDataInBackground(nextTrips, nextLocations, message);
     } catch (err) {
       setFormError(err.message || String(err));
@@ -310,8 +316,20 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       });
   }
 
+  function validateTripLocationReferences(trip, nextLocations) {
+    const ids = new Set((nextLocations || []).map(l => l.id));
+    const routeIds = Array.isArray(trip?.route) && trip.route.length
+      ? trip.route.map(r => r.locationId).filter(Boolean)
+      : [trip?.fromLocationId, trip?.toLocationId].filter(Boolean);
+    const missing = routeIds.filter(id => !ids.has(id));
+    if (missing.length) {
+      throw new Error(`Saved Hop has route locations that are not present in locations.json: ${Array.from(new Set(missing)).join(', ')}. Repository save was stopped so trips.json cannot reference missing locations.`);
+    }
+  }
+
   async function commitData(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
+    for (const trip of nextTrips || []) validateTripLocationReferences(trip, nextLocations);
     const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);
     const files = [
       { path: 'journeylines/src/data/trips.json', data: nextTrips },
@@ -376,10 +394,6 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         await wait(450 * attempt);
       } catch (err) {
         lastError = err;
-        if (!String(err.message || err).includes('409') && attempt === 1) {
-          // Fall back to the Contents API if this token cannot use the Git Data API.
-          return commitFilesWithContentsApi(files, message);
-        }
         if (attempt < 3) await wait(450 * attempt);
       }
     }
@@ -845,11 +859,11 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft({...draft, fromLocationText:v, fromLocationId:'', fromCity:null}); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} />
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} />
                 </div>}
-                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start location</label>
+                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft(d => ({...d, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? d.fromLocationId : null}))}/> Override start location</label>
               </div>
-              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => { setDraft({...draft, toLocationText:v, toLocationId:'', toCity:null}); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={destinationMatches} onChoose={onChooseDestination} />
+              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => { setDraft(d => ({...d, toLocationText:v, toLocationId:'', toCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={destinationMatches} onChoose={onChooseDestination} />
               <div className="legs-block">
                 <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
@@ -1041,6 +1055,14 @@ function AutocompleteField({ label, value, onChange, matches, onChoose, compact,
   </label>;
 }
 
+function compactRoutePoints(route = []) {
+  return (route || []).filter(point => point?.locationId);
+}
+function hasAdjacentDuplicateRoutePoint(route = []) {
+  const points = compactRoutePoints(route);
+  return points.some((point, index) => index > 0 && point.locationId === points[index - 1]?.locationId);
+}
+
 function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
   if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Select at least one Hopper or Guest Hopper before saving.');
@@ -1108,6 +1130,14 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     }
   }
 
+  const compactRoute = compactRoutePoints(route);
+  if (hasAdjacentDuplicateRoutePoint(route)) {
+    throw new Error('This route includes the same location twice in a row. Please remove the duplicate leg before saving.');
+  }
+  const routeIdsToCheck = compactRoute.length ? compactRoute.map(r => r.locationId) : [fromLocationId, toLocationId].filter(Boolean);
+  const missingRouteIds = routeIdsToCheck.filter(id => !nextLocations.some(l => l.id === id));
+  if (missingRouteIds.length) throw new Error(`Route contains location IDs that are missing from locations.json: ${Array.from(new Set(missingRouteIds)).join(', ')}`);
+
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
   const travelerCount = ((draft.travelers || []).length + (draft.guestHoppers || []).length);
   const finalTrailStyle = draft.trailStyle || (travelerCount >= 2 ? 'ribbon' : 'solid');
@@ -1132,7 +1162,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
     fromLocationId,
     toLocationId,
-    route,
+    route: compactRoute,
     notes: draft.notes || '',
     occasion: draft.occasion || '',
     trailStyle: finalTrailStyle,

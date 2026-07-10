@@ -1,8 +1,8 @@
-Base: GlobeHoppers v4.32
-Update: v4.33 timeline insertion playback reconciliation
+Base: GlobeHoppers v4.33
+Update: v4.34 play saved hop and route-save hardening
 Changes:
-- Playback now tracks active trip identity plus leg index, not only numeric activeIndex.
-- When trips/locations change and the legs array rebuilds, playback reconciles to the same trip/leg in the new timeline.
-- Next-leg advancement resolves from the current rebuilt legs array before advancing.
-- Jump/play actions update playback identity explicitly.
-- Trip expansion now skips invalid/missing locations or legs instead of crashing runtime.
+- After Add/Edit Hop local validation succeeds, the saved hop becomes the active hop and starts playing as soon as the rebuilt timeline contains it.
+- Pending saved-hop playback is identity-based so out-of-order inserts resolve against the rebuilt legs array instead of stale indices.
+- Route form handlers now use functional draft updates to avoid stale-state overwrites between destination and additional-leg fields.
+- Save validation now blocks adjacent duplicate route points and route references to missing locations before writing trips/locations/routeDetails.
+- Multi-file GitHub trip saves no longer silently fall back to sequential Contents API writes, which reduces the chance of partial repo updates.
