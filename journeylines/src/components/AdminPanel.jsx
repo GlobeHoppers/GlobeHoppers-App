@@ -632,14 +632,15 @@ function formatHumanList(items = []) {
 }
 
 function ThemedConfirmPopup({ request, busy, onCancel, onConfirm }) {
-  return <div className="studio-confirm-backdrop" role="presentation" onClick={onCancel}>
-    <div className="studio-confirm-popup glass" role="dialog" aria-modal="true" aria-labelledby="studio-confirm-title" onClick={(e) => e.stopPropagation()}>
+  const stopConfirmEvent = (event) => event.stopPropagation();
+  return <div className="studio-confirm-backdrop" role="presentation" onPointerDown={stopConfirmEvent} onClick={onCancel}>
+    <div className="studio-confirm-popup glass" role="dialog" aria-modal="true" aria-labelledby="studio-confirm-title" onPointerDown={stopConfirmEvent} onClick={stopConfirmEvent}>
       <p className="eyebrow">Please confirm</p>
       <h3 id="studio-confirm-title">{request.title || 'Confirm action'}</h3>
       <p>{request.message}</p>
       <div className="studio-confirm-actions">
-        <button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button>
-        <button type="button" className="danger" disabled={busy} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
+        <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>Cancel</button>
+        <button type="button" className="danger" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
       </div>
     </div>
   </div>;

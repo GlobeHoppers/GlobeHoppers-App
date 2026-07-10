@@ -11891,3 +11891,21 @@ svg text {
   border-color: rgba(255, 104, 104, .22);
   background: rgba(255, 80, 80, .08);
 }
+
+
+/* GlobeHoppers v4.35.1: delete confirmation popup must receive clicks inside pointer-disabled studio shell. */
+.studio-confirm-backdrop {
+  pointer-events: auto !important;
+  z-index: 20550 !important;
+}
+.studio-confirm-popup {
+  position: relative !important;
+  z-index: 20560 !important;
+  pointer-events: auto !important;
+}
+.studio-confirm-actions,
+.studio-confirm-actions button {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 20570 !important;
+}
