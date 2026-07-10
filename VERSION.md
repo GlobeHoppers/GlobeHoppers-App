@@ -1,1 +1,1 @@
-GlobeHoppers v4.12 — fade entire previous trip route set
+GlobeHoppers v4.13 — clear cross-trip routes when Trails are off

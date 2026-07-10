@@ -451,7 +451,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         fadeTrailRef.current.active = false;
         window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
       }
-      const heldFeatures = (!showTrails && isPlaying && !fadeTrailRef.current.active) ? (fadeTrailRef.current.features || []) : [];
+      const heldTripId = fadeTrailRef.current?.key ? String(fadeTrailRef.current.key).split(':')[0] : '';
+      const activeTripId = active?.trip?.id || '';
+      const heldFeatures = (!showTrails && isPlaying && !fadeTrailRef.current.active && heldTripId && heldTripId === activeTripId)
+        ? (fadeTrailRef.current.features || [])
+        : [];
+      if (!showTrails && heldFeatures.length === 0 && heldTripId && heldTripId !== activeTripId) {
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: [], key: '' };
+      }
       if (!fadeTrailRef.current.active) {
         syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures);
       }
@@ -550,6 +557,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const now = performance.now();
     const activeRouteKey = `${active?.trip?.id || ''}:${active?.legIndex ?? ''}`;
     const prevRoute = previousActiveRouteRef.current || {};
+    if (!showTrails && fadeTrailRef.current?.key) {
+      const heldTripId = String(fadeTrailRef.current.key).split(':')[0];
+      const currentTripId = active?.trip?.id || '';
+      if (heldTripId && currentTripId && heldTripId !== currentTripId) {
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: [], key: '' };
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, []);
+      }
+    }
     if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
       const sameTrip = prevRoute.active?.trip?.id && prevRoute.active.trip.id === active?.trip?.id;
       window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
@@ -560,11 +575,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: heldSameTripFeatures, key: prevRoute.key };
         syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldSameTripFeatures);
       } else {
-        // When playback moves to a different trip, fade every held route from
-        // the previous trip, including both outbound and return legs.
-        const priorTripFeatures = mergeHeldRouteFeatures(fadeTrailRef.current.features || [], prevRoute.features || []);
-        fadeTrailRef.current = { ...fadeTrailRef.current, active: true, features: priorTripFeatures, key: prevRoute.key };
-        startCompletedRouteFade(map, fadeTrailRef, priorTripFeatures, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+        // Hard rule for Trails-off mode: routes from a different trip must not
+        // remain on screen. This prevents manually jumping to a pin mid-trip
+        // from leaving the old, incomplete trip route behind forever.
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: [], key: '' };
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, []);
       }
     }
     if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
