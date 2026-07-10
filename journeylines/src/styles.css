@@ -12300,3 +12300,12 @@ svg text {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* GlobeHoppers v4.41: subtle aircraft takeoff/landing attitude. */
+.jl-vehicle-overlay[data-mode='plane'] .jl-vehicle-img,
+.jl-vehicle-overlay[data-mode='move'] .jl-vehicle-img {
+  transform-origin: 50% 55% !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: visible !important;
+}

@@ -1,1 +1,1 @@
-GlobeHoppers v4.40 — inactive hero state and dense card override fix
+GlobeHoppers v4.41 — overview archive visibility and subtle aircraft attitude

@@ -209,14 +209,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const nextActive = hasActivePlayback && !completedMode ? legs[Math.min(activeIndex + 1, Math.max(0, legs.length - 1))] : null;
   const scene = active && !completedMode && !overviewMode ? getScene(active, legProgress, cameraMode, nextActive, routedGeometries, Boolean(trailTuning?.routeStackingEnabled)) : null;
   const completedLegs = useMemo(() => {
-    if (!hasActivePlayback) return [];
+    if (!hasActivePlayback) return legs;
     return overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex));
   }, [hasActivePlayback, overviewMode, completedMode, legs, activeIndex]);
   const visibleLegs = useMemo(() => {
-    if (!hasActivePlayback) return [];
+    if (!hasActivePlayback) return legs;
     return overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1));
   }, [hasActivePlayback, overviewMode, completedMode, legs, activeIndex]);
-  const labelCompletedMode = hasActivePlayback && (overviewMode || completedMode);
+  const labelCompletedMode = !hasActivePlayback || overviewMode || completedMode;
   useEffect(() => {
     const ids = new Set();
     if (active?.leg?.from?.id) ids.add(active.leg.from.id);
@@ -789,7 +789,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     vehicleRef.current.dataset.mode = iconMode;
     vehicleRef.current.dataset.iconColor = String(color || '#00e5ff');
     vehicleRef.current.style.setProperty('--vehicle-color', color);
-    vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(260px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
+    vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(900px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
 
     const destPt = map.project([leg.to.lon, leg.to.lat]);
@@ -2555,10 +2555,12 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 }
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
-  const landing = smoothstep(Math.max(0, Math.min(1, (progress - 0.70) / 0.30)));
-  const takeoff = 1 - smoothstep(Math.max(0, Math.min(1, progress / 0.34)));
-  // Strong takeoff attitude to match the visible landing pitch.
-  return Math.round((landing * 72 - takeoff * 96) * 10) / 10;
+  const p = Math.max(0, Math.min(1, progress));
+  const takeoffWindow = 1 - smoothstep(Math.max(0, Math.min(1, p / 0.24)));
+  const landingWindow = smoothstep(Math.max(0, Math.min(1, (p - 0.78) / 0.22)));
+  // v4.41: keep aircraft attitude subtle. Large rotateX values made takeoff
+  // look like a squashed line and landing look like a crash into the city.
+  return Math.round((landingWindow * 18 - takeoffWindow * 20) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
