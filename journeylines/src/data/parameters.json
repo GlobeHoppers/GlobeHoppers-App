@@ -1,12 +1,12 @@
 {
   "version": "4.08",
-  "updatedAt": "2026-07-10T05:53:35.397Z",
+  "updatedAt": "2026-07-10T05:53:51.930Z",
   "trailTuning": {
     "solidThickness": 0.8,
     "solidGlow": 0.5,
     "borderThickness": 0.95,
     "borderZoomFade": 1,
-    "stripeThickness": 1.15,
+    "stripeThickness": 2.65,
     "stripeSegmentMiles": 25,
     "stripeSeparator": 0,
     "stripeGlow": 0.75,
