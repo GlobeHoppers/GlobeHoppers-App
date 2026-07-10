@@ -451,8 +451,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         fadeTrailRef.current.active = false;
         window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
       }
-      const heldFeatures = (!showTrails && isPlaying) ? (fadeTrailRef.current.features || []) : [];
-      syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures);
+      const heldFeatures = (!showTrails && isPlaying && !fadeTrailRef.current.active) ? (fadeTrailRef.current.features || []) : [];
+      if (!fadeTrailRef.current.active) {
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, heldFeatures);
+      }
     }
   }, [mapReady, completedLegs, travById, showTrails, trailOpacity, trailWidth, routedGeometries, trailTuningOpen, trailTuningConfig, isPlaying]);
 
@@ -549,12 +551,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const activeRouteKey = `${active?.trip?.id || ''}:${active?.legIndex ?? ''}`;
     const prevRoute = previousActiveRouteRef.current || {};
     if (prevRoute.key && prevRoute.key !== activeRouteKey && !showTrails && isPlaying && prevRoute.features?.length) {
-      // Trails-off playback should still keep the route we just completed visible
-      // while the next/return leg plays. Do not fade it out; hold the previous
-      // leg as a lightweight completed-route overlay until the next leg replaces it.
+      const sameTrip = prevRoute.active?.trip?.id && prevRoute.active.trip.id === active?.trip?.id;
       window.cancelAnimationFrame(fadeTrailRef.current.raf || 0);
-      fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: prevRoute.features, key: prevRoute.key };
-      syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, prevRoute.features);
+      if (sameTrip) {
+        // Within one trip, keep the outbound/previous leg visible while the
+        // return/next leg plays. This preserves the round-trip visual.
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: false, features: prevRoute.features, key: prevRoute.key };
+        syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, prevRoute.features);
+      } else {
+        // When playback moves to a different trip, the old trip route should
+        // leave the scene. Fade it out rather than hard-cutting.
+        fadeTrailRef.current = { ...fadeTrailRef.current, active: true, features: prevRoute.features, key: prevRoute.key };
+        startCompletedRouteFade(map, fadeTrailRef, prevRoute.features, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
+      }
     }
     if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);

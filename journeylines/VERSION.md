@@ -1,1 +1,1 @@
-GlobeHoppers v4.10 — label-only active placards and held return-route overlay
+GlobeHoppers v4.11 — fade prior trip route when starting next trip
