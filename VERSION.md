@@ -1,1 +1,1 @@
-GlobeHoppers v4.24 — stable 4.22 camera with attached active trail
+GlobeHoppers v4.25 — active trail overlap under vessel

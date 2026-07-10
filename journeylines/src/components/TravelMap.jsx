@@ -2452,10 +2452,20 @@ function vehiclePitchDeg(mode, phase, progress) {
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
-  // v4.24: keep the drawn active trail attached to the vehicle.
-  // The old aircraft offset intentionally drew the trail behind the plane,
-  // but at playback speed it looked like the trail was lagging/disconnected.
-  return Math.max(0, Math.min(1, routeProgress));
+  // v4.25: draw the active trail slightly past the vehicle center so it overlaps
+  // under the body/nose of the aircraft/vehicle. This prevents visible gaps from
+  // frame timing, camera motion, and icon size.
+  const isAir = mode === 'plane' || mode === 'move';
+  const isSurface = mode === 'drive' || mode === 'boat' || mode === 'train';
+  const overlap =
+    isAir ? (distance > 3000 ? 0.010 : distance > 900 ? 0.014 : 0.020) :
+    isSurface ? (distance > 900 ? 0.006 : distance > 250 ? 0.009 : 0.012) :
+    0.010;
+
+  // Do not grow the line ahead of the vehicle during the first couple of frames,
+  // but once visible, keep a guaranteed overlap until arrival.
+  const ramp = smoothstep(Math.max(0, Math.min(1, rawP / 0.045)));
+  return Math.max(0, Math.min(1, routeProgress + overlap * ramp));
 }
 function bearingBetween(a, b) {
   const toRad = d => d * Math.PI / 180;
