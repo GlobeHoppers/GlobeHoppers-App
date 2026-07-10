@@ -1,6 +1,6 @@
 {
   "version": "4.08",
-  "updatedAt": "2026-07-10T05:22:32.814Z",
+  "updatedAt": "2026-07-10T05:23:09.755Z",
   "trailTuning": {
     "solidThickness": 3.5,
     "solidGlow": 0.5,
@@ -12,7 +12,7 @@
     "stripeGlow": 0.75,
     "stripeBevel": 1.25,
     "stripeLaneEffect": 0.4,
-    "ribbonThickness": 3.45,
+    "ribbonThickness": 4.35,
     "ribbonGap": 0.75,
     "ribbonSpread": 0,
     "ribbonGlow": 0,
