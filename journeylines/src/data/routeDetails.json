@@ -1,0 +1,8 @@
+{
+  "version": "4.19",
+  "updatedAt": null,
+  "source": "initial-foundation",
+  "cacheVersion": "v2.16",
+  "notes": "Initial route details foundation. After v4.19 this file should be maintained by the website and excluded from generated update packages.",
+  "routes": {}
+}

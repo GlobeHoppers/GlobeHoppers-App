@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
+import routeDetails from '../data/routeDetails.json';
+import { buildRouteDetailsPayload } from '../utils/routeDetails.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -262,10 +264,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
   async function commitData(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
+    const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);
     const files = [
       { path: 'journeylines/src/data/trips.json', data: nextTrips },
-      { path: 'journeylines/src/data/locations.json', data: nextLocations }
+      { path: 'journeylines/src/data/locations.json', data: nextLocations },
+      { path: 'journeylines/src/data/routeDetails.json', data: nextRouteDetails }
     ];
+    try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(nextRouteDetails)); } catch {}
     await commitFilesAtomically(files, message);
   }
 

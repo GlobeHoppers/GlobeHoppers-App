@@ -9,6 +9,8 @@ import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
+import routeDetails from '../data/routeDetails.json';
+import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
@@ -194,7 +196,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
-  const legs = useMemo(() => flattenLegs(trips, locById, homeBases), [trips, locById, homeBases]);
+  const legs = useMemo(() => applyRouteDetailsToEntries(flattenLegs(trips, locById, homeBases), routeDetails), [trips, locById, homeBases]);
 
   const completedMode = activeIndex >= legs.length;
   const overviewMode = Boolean(globeOverview);
@@ -2055,7 +2057,8 @@ function reverseRouteCacheKey(leg) {
 }
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
-  const key = routeCacheKey(leg);
+  if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1) return leg.routeGeometry;
+  const key = leg?.routeCacheKey || routeCacheKey(leg);
   if (routedGeometries[key]?.length > 1) return routedGeometries[key];
   const reverse = routedGeometries[reverseRouteCacheKey(leg)];
   if (reverse?.length > 1) return [...reverse].reverse();
@@ -2103,10 +2106,11 @@ async function fetchMapboxRoute(leg, token) {
 
 function loadInitialRouteCache() {
   const generated = generatedRoutes?.routes || {};
+  const detailed = routeDetailsGeometryCache(routeDetails);
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {}; } catch {}
-  // Build-time generated routes win over older browser cache entries.
-  return { ...stored, ...generated };
+  // Build-time route details/generated routes win over older browser cache entries.
+  return { ...stored, ...generated, ...detailed };
 }
 
 function loadStoredRouteCache() {

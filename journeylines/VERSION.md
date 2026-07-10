@@ -1,1 +1,1 @@
-GlobeHoppers v4.18 — centered-first route stacking and smoother globe control
+GlobeHoppers v4.19 — routeDetails.json foundation
