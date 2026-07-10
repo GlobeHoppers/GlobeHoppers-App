@@ -1,8 +1,8 @@
 {
   "version": "4.08",
-  "updatedAt": "2026-07-10T05:27:39.960Z",
+  "updatedAt": "2026-07-10T05:49:12.354Z",
   "trailTuning": {
-    "solidThickness": 3.5,
+    "solidThickness": 0.8,
     "solidGlow": 0.5,
     "borderThickness": 0.95,
     "borderZoomFade": 1,
@@ -38,5 +38,5 @@
   },
   "routeStackingEnabled": false,
   "placeBackgroundsEnabled": false,
-  "showTrails": false
+  "showTrails": true
 }
