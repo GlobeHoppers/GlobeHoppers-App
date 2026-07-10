@@ -682,5 +682,18 @@
     "continent": "North America",
     "lat": 38.2527,
     "lon": -85.7585
+  },
+  {
+    "id": "san-antonio-tx",
+    "name": "San Antonio",
+    "region": "TX",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 29.42412,
+    "lon": -98.49363,
+    "geonameId": 4726206,
+    "population": 1327407,
+    "timezone": "America/Chicago"
   }
 ]
