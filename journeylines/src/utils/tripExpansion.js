@@ -20,18 +20,64 @@ export function getTravelerKey(trip, hopSquads = []) {
 export function expandTrip(trip, locationsById, homeBases) {
   let route = [];
   if (trip.route?.length) {
-    route = trip.route.map((r, idx) => ({ ...locationsById[r.locationId], modeFromPrevious: idx === 0 ? null : r.modeFromPrevious || trip.mode }));
+    route = trip.route
+      .map((r, idx) => normalizeRoutePoint(locationsById[r.locationId], idx === 0 ? null : r.modeFromPrevious || trip.mode, trip, r.locationId))
+      .filter(Boolean);
   } else {
-    const home = locationsById[trip.fromLocationId || activeHomeBase(homeBases, trip)?.locationId];
-    const to = locationsById[trip.toLocationId];
-    route = [home, { ...to, modeFromPrevious: trip.mode }];
-    if (trip.roundTrip) route.push({ ...home, modeFromPrevious: trip.returnMode || trip.mode });
+    const homeId = trip.fromLocationId || activeHomeBase(homeBases, trip)?.locationId;
+    const home = normalizeRoutePoint(locationsById[homeId], null, trip, homeId);
+    const to = normalizeRoutePoint(locationsById[trip.toLocationId], trip.mode, trip, trip.toLocationId);
+    route = [home, to].filter(Boolean);
+    if (trip.roundTrip && home) route.push({ ...home, modeFromPrevious: trip.returnMode || trip.mode });
   }
-  const legs = route.slice(1).map((to, idx) => {
-    const from = route[idx];
-    return { from, to, mode: to.modeFromPrevious || trip.mode || 'plane', miles: milesBetween(from, to) };
-  });
+  const legs = [];
+  for (let idx = 1; idx < route.length; idx++) {
+    const from = route[idx - 1];
+    const to = route[idx];
+    if (!isValidLocationForLeg(from) || !isValidLocationForLeg(to)) {
+      warnInvalidLeg(trip, from, to);
+      continue;
+    }
+    legs.push({ from, to, mode: to.modeFromPrevious || trip.mode || 'plane', miles: milesBetween(from, to) });
+  }
   return { ...trip, route, legs };
+}
+
+function normalizeRoutePoint(location, modeFromPrevious, trip, locationId) {
+  if (!location) {
+    warnInvalidLocation(trip, locationId);
+    return null;
+  }
+  const lat = Number(location.lat);
+  const lon = Number(location.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    warnInvalidLocation(trip, locationId || location.id);
+    return null;
+  }
+  return { ...location, lat, lon, modeFromPrevious };
+}
+
+function isValidLocationForLeg(location) {
+  return Boolean(location && Number.isFinite(Number(location.lat)) && Number.isFinite(Number(location.lon)));
+}
+
+function warnInvalidLocation(trip, locationId) {
+  if (typeof console === 'undefined') return;
+  console.warn('[GlobeHoppers] Skipping invalid/missing location while expanding trip.', {
+    tripId: trip?.id,
+    label: trip?.label,
+    locationId
+  });
+}
+
+function warnInvalidLeg(trip, from, to) {
+  if (typeof console === 'undefined') return;
+  console.warn('[GlobeHoppers] Skipping invalid leg while expanding trip.', {
+    tripId: trip?.id,
+    label: trip?.label,
+    from: from?.id || from?.name,
+    to: to?.id || to?.name
+  });
 }
 
 
@@ -78,9 +124,17 @@ export function flattenLegs(trips, locationsById, homeBases) {
   // Home bases are context only. They define the auto-derived start/return
   // location for Hops, but they should not create playable timeline cards or
   // playback entries.
-  const entries = (trips || []).flatMap(trip =>
-    expandTrip(trip, locationsById, homeBases).legs.map((leg, legIndex) => ({ trip, leg, legIndex }))
-  );
+  const entries = [];
+  for (const trip of trips || []) {
+    try {
+      const expanded = expandTrip(trip, locationsById, homeBases);
+      expanded.legs.forEach((leg, legIndex) => {
+        if (isValidLocationForLeg(leg?.from) && isValidLocationForLeg(leg?.to)) entries.push({ trip, leg, legIndex });
+      });
+    } catch (err) {
+      if (typeof console !== 'undefined') console.warn('[GlobeHoppers] Skipping trip that could not be expanded.', { tripId: trip?.id, error: err });
+    }
+  }
   return applyRouteStackOffsets(entries);
 }
 

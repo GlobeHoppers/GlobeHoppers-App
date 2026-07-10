@@ -121,6 +121,20 @@ function parameterSignatureFor(source = {}) {
 
 const REPO_PARAMETER_SIGNATURE = parameterSignatureFor(parameters);
 
+function legIdentityForEntry(entry, index = 0, progress = 0) {
+  return {
+    tripId: entry?.trip?.id || null,
+    legIndex: Number.isFinite(Number(entry?.legIndex)) ? Number(entry.legIndex) : 0,
+    progress: Math.max(0, Math.min(1, Number(progress) || 0)),
+    index
+  };
+}
+
+function findLegIndexByIdentity(legs = [], identity = {}) {
+  if (!identity?.tripId) return -1;
+  return (legs || []).findIndex(item => item?.trip?.id === identity.tripId && Number(item?.legIndex || 0) === Number(identity.legIndex || 0));
+}
+
 function dataSignatureForTrips(source = []) {
   try {
     const rows = (source || []).map(t => [
@@ -258,6 +272,7 @@ export default function App() {
   const [repoSaveStatus, setRepoSaveStatus] = useState({ state: 'idle', label: 'No recent repository save', detail: '', startedAt: null, completedAt: null, error: null });
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
+  const activePlaybackRef = useRef({ tripId: null, legIndex: 0, progress: 1, index: null });
   const resumeAfterStudioRef = useRef(false);
   const resumeAfterTabHiddenRef = useRef(false);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
@@ -334,6 +349,59 @@ export default function App() {
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
 
   useEffect(() => {
+    if (!legs.length) {
+      activePlaybackRef.current = { tripId: null, legIndex: 0, progress: 1, index: null };
+      setActiveIndex(0);
+      setLegProgress(1);
+      tRef.current = { last: null, elapsed: 0 };
+      return;
+    }
+
+    const identity = activePlaybackRef.current;
+    if (!identity?.tripId) {
+      const clamped = Math.max(0, Math.min(activeIndex, legs.length - 1));
+      if (clamped !== activeIndex) setActiveIndex(clamped);
+      return;
+    }
+
+    const resolvedIndex = findLegIndexByIdentity(legs, identity);
+    if (resolvedIndex >= 0) {
+      if (resolvedIndex !== activeIndex) {
+        const progress = Math.max(0, Math.min(1, Number(identity.progress) || 0));
+        const resolvedLeg = legs[resolvedIndex]?.leg;
+        const dur = legDurationMs(resolvedLeg?.miles || 500, speed);
+        setActiveIndex(resolvedIndex);
+        setLegProgress(progress);
+        tRef.current = { last: null, elapsed: progress * dur };
+      }
+      return;
+    }
+
+    const fallbackTripIndex = legs.findIndex(item => item?.trip?.id === identity.tripId);
+    if (fallbackTripIndex >= 0) {
+      setActiveIndex(fallbackTripIndex);
+      setLegProgress(0);
+      tRef.current = { last: null, elapsed: 0 };
+      activePlaybackRef.current = legIdentityForEntry(legs[fallbackTripIndex], fallbackTripIndex, 0);
+      return;
+    }
+
+    const clamped = Math.max(0, Math.min(activeIndex, legs.length - 1));
+    if (clamped !== activeIndex) {
+      setActiveIndex(clamped);
+      setLegProgress(0);
+      tRef.current = { last: null, elapsed: 0 };
+      activePlaybackRef.current = legIdentityForEntry(legs[clamped], clamped, 0);
+    }
+  }, [legs]);
+
+  useEffect(() => {
+    const safeIndex = Math.max(0, Math.min(activeIndex, Math.max(0, legs.length - 1)));
+    const entry = legs[safeIndex];
+    if (entry) activePlaybackRef.current = legIdentityForEntry(entry, safeIndex, legProgress);
+  }, [activeIndex, legProgress]);
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         if (isPlaying) {
@@ -397,8 +465,18 @@ export default function App() {
         tRef.current.last = null;
         setLegProgress(0);
         setActiveIndex(i => {
-          if (i + 1 >= legs.length) { setIsPlaying(false); return i; }
-          return i + 1;
+          const currentIdentity = activePlaybackRef.current;
+          const currentIndex = findLegIndexByIdentity(legs, currentIdentity);
+          const baseIndex = currentIndex >= 0 ? currentIndex : i;
+          const nextIndex = baseIndex + 1;
+          if (nextIndex >= legs.length) {
+            const finalIndex = Math.max(0, Math.min(baseIndex, legs.length - 1));
+            activePlaybackRef.current = legIdentityForEntry(legs[finalIndex], finalIndex, 1);
+            setIsPlaying(false);
+            return finalIndex;
+          }
+          activePlaybackRef.current = legIdentityForEntry(legs[nextIndex], nextIndex, 0);
+          return nextIndex;
         });
       }
       raf = requestAnimationFrame(step);
@@ -424,6 +502,7 @@ export default function App() {
     if (!started || activeIndex >= legs.length - 1) {
       setActiveIndex(0);
       setLegProgress(0);
+      activePlaybackRef.current = legIdentityForEntry(legs[0], 0, 0);
       tRef.current = { last: null, elapsed: 0 };
       setStarted(true);
       setIsPlaying(false);
@@ -532,6 +611,7 @@ export default function App() {
       setStarted(true);
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
+      activePlaybackRef.current = legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress);
       tRef.current = { last: null, elapsed: safeProgress * dur };
       setIsPlaying(Boolean(autoPlay));
 

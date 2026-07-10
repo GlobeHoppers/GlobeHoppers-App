@@ -1,1 +1,1 @@
-GlobeHoppers v4.32 — instant add/edit close with background repository save
+GlobeHoppers v4.33 — timeline insertion playback reconciliation
