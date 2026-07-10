@@ -171,8 +171,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const droppedPinIdsRef = useRef(new Set());
   const lastVisitedSigRef = useRef('');
   const lastCameraRef = useRef(null);
-  const lastCameraTimingRef = useRef({ t: 0 });
-  const lastAppliedCameraRef = useRef({ t: 0, camera: null });
   const arrivalTimerRef = useRef(null);
   const routeRequestsRef = useRef(new Set());
   const currentOverlayStateRef = useRef(null);
@@ -352,8 +350,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         userCameraOverrideRef.current = false;
         forceSceneJumpRef.current = Boolean(forceScene);
         lastCameraRef.current = null;
-        lastCameraTimingRef.current = { t: 0 };
-        lastAppliedCameraRef.current = { t: 0, camera: null };
         const zoom = mode === 'drive' ? 6.4 : mode === 'boat' || mode === 'train' ? 5.2 : 4.6;
         map.stop();
         map.jumpTo({ center: [lon, lat], zoom, pitch: 52, bearing: 0, essential: true });
@@ -651,7 +647,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         startCompletedRouteFade(map, fadeTrailRef, previousTripFeatures, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
       }
     }
-    if (now - lastActiveRouteUpdateRef.current > 33 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
+    if (now - lastActiveRouteUpdateRef.current > 16 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
       previousActiveRouteRef.current = {
         key: activeRouteKey,
@@ -671,13 +667,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (forceSceneJumpRef.current) {
       camera = scene.camera;
       forceSceneJumpRef.current = false;
-      lastCameraTimingRef.current = { t: performance.now() };
-      lastAppliedCameraRef.current = { t: 0, camera: null };
     } else {
-      camera = smoothCameraForPlayback(lastCameraRef.current, scene.camera, smoothing, scene.phase, active?.leg, lastCameraTimingRef);
+      camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
     }
     lastCameraRef.current = camera;
-    if (!userCameraOverrideRef.current && shouldApplyPlaybackCamera(lastAppliedCameraRef, camera)) {
+    if (!userCameraOverrideRef.current) {
       map.jumpTo({ ...camera, essential: true });
     }
 
@@ -2247,26 +2241,16 @@ const ROUTE_WAYPOINTS = {
 
 function preloadTilesForLeg(leg, map, cacheSet, label = 'leg', routedGeometries = {}) {
   if (!leg || !map || !cacheSet) return;
-  const distance = milesBetween(leg.from, leg.to);
   const routePts = [
     { lon: leg.from.lon, lat: leg.from.lat },
-    pointAtRouteProgress(leg, 0.12, routedGeometries),
-    pointAtRouteProgress(leg, 0.28, routedGeometries),
-    pointAtRouteProgress(leg, 0.50, routedGeometries),
-    pointAtRouteProgress(leg, 0.72, routedGeometries),
-    pointAtRouteProgress(leg, 0.88, routedGeometries),
+    pointAtRouteProgress(leg, 0.25, routedGeometries),
+    pointAtRouteProgress(leg, 0.5, routedGeometries),
+    pointAtRouteProgress(leg, 0.75, routedGeometries),
     { lon: leg.to.lon, lat: leg.to.lat }
   ];
-
+  const distance = milesBetween(leg.from, leg.to);
   const zBase = Math.max(2, Math.min(7, Math.round(distance > 4000 ? 3 : distance > 1500 ? 4 : distance > 450 ? 5 : 6)));
-  const cruiseZoom = cameraZoom('follow', distance, 0, 0.5, 'cruise', 0, leg.mode);
-  const departureZoom = cameraZoom('follow', distance, 1, 0.03, 'takeoff', 0, leg.mode);
-  const arrivalZoom = cameraZoom('follow', distance, 1, 0.94, 'arrival', 0, leg.mode);
-  const expected = [zBase, Math.round(cruiseZoom), Math.round(departureZoom), Math.round(arrivalZoom)]
-    .flatMap(z => [z - 1, z, z + 1])
-    .map(z => Math.max(2, Math.min(9, z)));
-  const zooms = [...new Set(expected)].slice(0, 7);
-
+  const zooms = [zBase, Math.max(2, zBase - 1), Math.min(8, zBase + 1)];
   for (const pt of routePts) {
     for (const z of zooms) {
       preloadTileNeighborhood(pt.lon, pt.lat, z, cacheSet, label);
@@ -2372,68 +2356,6 @@ function smoothCamera(prev, next, amount) {
     bearing: lerpAngle(prev.bearing, next.bearing, amount)
   };
 }
-
-function smoothCameraForPlayback(prev, next, amount, phase = 'cruise', leg = null, timingRef = null) {
-  if (!prev) {
-    if (timingRef?.current) timingRef.current.t = performance.now();
-    return next;
-  }
-  const now = performance.now();
-  const last = timingRef?.current?.t || now;
-  const dt = Math.max(0.016, Math.min(0.10, (now - last) / 1000));
-  if (timingRef?.current) timingRef.current.t = now;
-
-  const base = smoothCamera(prev, next, amount);
-  const mode = leg?.mode || 'plane';
-  const isSurface = mode === 'drive' || mode === 'boat' || mode === 'train';
-
-  // Limit zoom velocity so long route transitions do not pop between tile levels.
-  // Surface modes can tolerate a little faster zoom because they generally stay local.
-  const maxZoomPerSecond =
-    phase === 'predeparture' ? (isSurface ? 0.34 : 0.26) :
-    phase === 'takeoff' ? (isSurface ? 0.48 : 0.36) :
-    phase === 'arrival' ? (isSurface ? 0.52 : 0.40) :
-    phase === 'settle' ? (isSurface ? 0.38 : 0.30) :
-    (isSurface ? 0.34 : 0.22);
-
-  const dz = base.zoom - prev.zoom;
-  const zoomLimit = maxZoomPerSecond * dt;
-  let zoom = Math.abs(dz) > zoomLimit ? prev.zoom + Math.sign(dz) * zoomLimit : base.zoom;
-
-  // Dampen tiny target zoom changes. This reduces shimmer where the camera formula
-  // is mathematically changing but visually should feel like a steady hold.
-  if (Math.abs(next.zoom - prev.zoom) < 0.018 && phase === 'cruise') zoom = prev.zoom;
-
-  return {
-    ...base,
-    zoom,
-    pitch: lerp(prev.pitch, base.pitch, phase === 'cruise' ? 0.72 : 0.88)
-  };
-}
-
-function shouldApplyPlaybackCamera(applyRef, camera) {
-  const now = performance.now();
-  const prev = applyRef?.current?.camera;
-  const last = applyRef?.current?.t || 0;
-  if (!prev) {
-    if (applyRef?.current) applyRef.current = { t: now, camera };
-    return true;
-  }
-  const dt = now - last;
-  const centerDelta = Math.abs(shortestLongitudeDelta(camera.center[0] - prev.center[0])) + Math.abs(camera.center[1] - prev.center[1]);
-  const zoomDelta = Math.abs(camera.zoom - prev.zoom);
-  const pitchDelta = Math.abs(camera.pitch - prev.pitch);
-  const bearingDelta = Math.abs(shortestLongitudeDelta(camera.bearing - prev.bearing));
-
-  // Avoid sending imperceptible camera updates to MapLibre. Keep enough cadence
-  // for smooth motion, but do not force a re-render for noise.
-  const meaningful = centerDelta > 0.00055 || zoomDelta > 0.0025 || pitchDelta > 0.035 || bearingDelta > 0.05;
-  if (!meaningful && dt < 90) return false;
-  if (dt < 20 && centerDelta < 0.0035 && zoomDelta < 0.012 && pitchDelta < 0.12) return false;
-
-  if (applyRef?.current) applyRef.current = { t: now, camera };
-  return true;
-}
 function takeoffCruiseLandingEase(t) {
   const u = Math.max(0, Math.min(1, t));
   if (u < 0.18) return 0.5 * Math.pow(u / 0.18, 2.2) * 0.18;
@@ -2494,18 +2416,16 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
     close = distance > 4500 ? 4.95 : distance > 1500 ? 5.82 : distance > 500 ? 6.70 : 7.50;
   }
 
-  // v4.23: make the zoom target itself calmer before the smoothing filter.
-  // Hold cruise zoom steadier, then blend closer only near departure/arrival.
-  const endpointBlend = phase === 'settle'
-    ? 1
-    : smoothstep(Math.max(0, (endpointBias - 0.10) / 0.90));
-  const takeoffPop = p < 0.12 ? smoothstep(1 - p / 0.12) * 0.045 : 0;
-  const landingPop = p > 0.86 ? smoothstep((p - 0.86) / 0.14) * 0.26 : 0;
-  const settleLocalPush = phase === 'settle' ? 0.30 * (1 - 0.25 * Math.sin(settleT * Math.PI)) : 0;
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
+  const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.48 : 0;
+  const settleLocalPush = phase === 'settle' ? 0.42 * (1 - 0.35 * Math.sin(settleT * Math.PI)) : 0;
+  // v2.30: arrival should feel like a local-region/county view rather than a
+  // broad regional view. +0.58 zoom is roughly 50% closer; ease it in near the
+  // destination and keep it during the settle drift.
   const countyArrivalPush = phase === 'settle'
-    ? 0.44
-    : p > 0.82 ? 0.44 * smoothstep((p - 0.82) / 0.18) : 0;
-  return cruise + modeBoost + (close - cruise) * endpointBlend + takeoffPop + landingPop + settleLocalPush + countyArrivalPush;
+    ? 0.58
+    : p > 0.78 ? 0.58 * smoothstep((p - 0.78) / 0.22) : 0;
+  return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop + settleLocalPush + countyArrivalPush;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {
   if (mode === 'global') return 0;
@@ -2532,10 +2452,10 @@ function vehiclePitchDeg(mode, phase, progress) {
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
-  if (!(mode === 'plane' || mode === 'move')) return routeProgress;
-  if (rawP > 0.965) return 1;
-  const offset = distance > 3000 ? 0.006 : distance > 900 ? 0.010 : 0.018;
-  return Math.max(0, Math.min(1, routeProgress - offset));
+  // v4.24: keep the drawn active trail attached to the vehicle.
+  // The old aircraft offset intentionally drew the trail behind the plane,
+  // but at playback speed it looked like the trail was lagging/disconnected.
+  return Math.max(0, Math.min(1, routeProgress));
 }
 function bearingBetween(a, b) {
   const toRad = d => d * Math.PI / 180;

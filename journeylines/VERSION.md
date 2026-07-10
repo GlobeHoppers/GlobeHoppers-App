@@ -1,1 +1,1 @@
-GlobeHoppers v4.23 — smoother route camera zoom and tile prewarm
+GlobeHoppers v4.24 — stable 4.22 camera with attached active trail
