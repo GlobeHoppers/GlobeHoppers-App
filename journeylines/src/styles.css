@@ -11909,3 +11909,62 @@ svg text {
   position: relative !important;
   z-index: 20570 !important;
 }
+
+
+/* GlobeHoppers v4.36.1: persistent save queue status and trip IDs. */
+.timeline-save-batch-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+.timeline-save-batch-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px;
+  color: rgba(232, 243, 255, .78);
+}
+.timeline-save-batch-item span {
+  color: rgba(115, 238, 255, .82);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 9px;
+}
+.timeline-save-batch-item strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.timeline-save-batch-item code {
+  font-family: inherit;
+  font-size: 9px;
+  color: rgba(232, 243, 255, .42);
+}
+
+.gh-studio-trip-row--expanded {
+  position: relative;
+}
+.studio-trip-id-badge {
+  position: absolute;
+  right: 10px;
+  bottom: 3px;
+  font-size: 8px;
+  line-height: 1;
+  color: rgba(232, 243, 255, .34);
+  letter-spacing: .02em;
+  pointer-events: none;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-modal-trip-id {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(232, 243, 255, .42);
+  letter-spacing: .03em;
+}

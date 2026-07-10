@@ -1,10 +1,8 @@
-Base: GlobeHoppers v4.35.1
-Update: v4.36 queued repository save debounce
+Base: GlobeHoppers v4.36
+Update: v4.36.1 persistent queued save batch status and trip IDs
 Changes:
-- Add/edit/delete still updates the local UI instantly.
-- Repository saves are now queued with a short 3-second debounce.
-- Multiple rapid changes are merged into one pending repository save.
-- Only one GitHub commit runs at a time.
-- If a save is already running, later changes wait until it finishes, then save after a short delay.
-- GitHub 409 and 422 non-fast-forward reference updates are treated as retryable conflicts.
-- Repository save status reports queued, saving, saved, and error states in the timeline ... menu.
+- Repository save queue moved to module scope so the 3-second timer survives Studio/menu/modal lifecycle changes.
+- Pending repository save status now shows the full batch/list of pending add/edit/delete operations.
+- Queue status and commit messages include trip IDs.
+- Expanded GlobeHopper Timeline cards show the trip ID in small gray text at bottom right.
+- Add/Edit Hop modal shows the trip ID in small gray text under the title.

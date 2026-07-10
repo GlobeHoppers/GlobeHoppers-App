@@ -49,6 +49,12 @@ function loadCityDatabase() {
   return cityDbPromise;
 }
 
+const repoSaveQueue = {
+  pending: null,
+  timer: null,
+  saving: false
+};
+
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
@@ -69,7 +75,6 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [cityDbLoading, setCityDbLoading] = useState(false);
   const tripsRef = useRef(trips);
   const locationsRef = useRef(locations);
-  const repoSaveQueueRef = useRef({ pending: null, timer: null, saving: false });
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
@@ -78,11 +83,6 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   useEffect(() => { tripsRef.current = trips; }, [trips]);
   useEffect(() => { locationsRef.current = locations; }, [locations]);
-  useEffect(() => {
-    return () => {
-      if (repoSaveQueueRef.current?.timer) clearTimeout(repoSaveQueueRef.current.timer);
-    };
-  }, []);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
 
@@ -257,7 +257,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const currentScroll = studioListRef.current?.scrollTop ?? null;
       const { trip, nextLocations } = normalizeTrip(draft, currentTrips, currentLocations, homeBases, normalizedHoppers);
       const nextTrips = editingId ? currentTrips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...currentTrips, trip]);
-      const message = editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`;
+      const actionLabel = editingId ? 'Edit Hop' : 'Add Hop';
+      const message = `${actionLabel}: ${trip.label || trip.toLocationName || trip.id} (${trip.id})`;
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       validateTripLocationReferences(trip, nextLocations);
       tripsRef.current = nextTrips;
@@ -266,7 +267,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       if (nextLocations !== currentLocations) setLocations(nextLocations);
       closeModal();
       onTripSaved({ tripId: trip.id, action: editingId ? 'edit' : 'add', label: trip.label });
-      saveDataInBackground(nextTrips, nextLocations, message);
+      saveDataInBackground(nextTrips, nextLocations, message, { action: editingId ? 'edit' : 'add', tripId: trip.id, label: trip.label || trip.toLocationName || trip.id });
     } catch (err) {
       setFormError(err.message || String(err));
     }
@@ -288,7 +289,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           tripsRef.current = nextTrips;
           setTrips(nextTrips);
           closeModal();
-          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label}`);
+          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${editingId})`, { action: 'delete', tripId: editingId, label });
         } catch (err) {
           setFormError(err.message || String(err));
         }
@@ -310,7 +311,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           const nextTrips = currentTrips.filter(t => t.id !== id);
           tripsRef.current = nextTrips;
           setTrips(nextTrips);
-          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label}`);
+          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${id})`, { action: 'delete', tripId: id, label });
         } catch (err) {
           setFormError(err.message || String(err));
         }
@@ -322,38 +323,34 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'trips.json'; a.click(); URL.revokeObjectURL(url);
   }
-  function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
+  function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers', item = {}) {
     const queuedAt = Date.now();
-    const queue = repoSaveQueueRef.current;
+    const queue = repoSaveQueue;
+    const nextItem = normalizeRepoSaveItem(item, message);
+    const previousItems = Array.isArray(queue.pending?.items) ? queue.pending.items : [];
     queue.pending = {
       trips: nextTrips,
       locations: nextLocations,
       message,
-      queuedAt
+      queuedAt,
+      items: [...previousItems, nextItem].filter(Boolean)
     };
 
     if (queue.timer) clearTimeout(queue.timer);
 
-    if (queue.saving) {
-      onRepoSaveStatus({
-        state: 'queued',
-        label: 'Repository save queued',
-        detail: `${message} • waiting for current GitHub save to finish`,
-        startedAt: queuedAt,
-        completedAt: null,
-        error: null
-      });
-      return;
-    }
-
-    onRepoSaveStatus({
+    const statusPayload = {
       state: 'queued',
       label: 'Repository save queued',
-      detail: `${message} • saving in about 3 seconds`,
+      detail: repoSaveBatchDetail(queue.pending, queue.saving),
+      items: queue.pending.items,
       startedAt: queuedAt,
       completedAt: null,
       error: null
-    });
+    };
+
+    onRepoSaveStatus(statusPayload);
+
+    if (queue.saving) return;
 
     queue.timer = setTimeout(() => {
       queue.timer = null;
@@ -362,7 +359,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   function schedulePendingRepoSave(delayMs = 3000) {
-    const queue = repoSaveQueueRef.current;
+    const queue = repoSaveQueue;
     if (!queue.pending || queue.saving) return;
     if (queue.timer) clearTimeout(queue.timer);
     queue.timer = setTimeout(() => {
@@ -372,7 +369,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   async function processRepoSaveQueue() {
-    const queue = repoSaveQueueRef.current;
+    const queue = repoSaveQueue;
     if (queue.saving) return;
     const job = queue.pending;
     if (!job) return;
@@ -380,11 +377,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     queue.pending = null;
     queue.saving = true;
     const startedAt = Date.now();
+    const commitMessage = repoSaveCommitMessage(job);
 
     onRepoSaveStatus({
       state: 'saving',
       label: 'Saving to GitHub…',
-      detail: job.message,
+      detail: repoSaveBatchDetail(job, false),
+      items: job.items || [],
       startedAt,
       completedAt: null,
       error: null
@@ -398,18 +397,20 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         onRepoSaveStatus({
           state: 'saving',
           label: 'Repairing missing locations…',
-          detail: `${job.message} • repaired ${repairedIds.join(', ')}`,
+          detail: `${repoSaveBatchDetail(job, false)} • repaired ${repairedIds.join(', ')}`,
+          items: job.items || [],
           startedAt,
           completedAt: null,
           error: null
         });
       }
 
-      await commitData(repairedTrips, repairedLocations, job.message);
+      await commitData(repairedTrips, repairedLocations, commitMessage);
       onRepoSaveStatus({
         state: 'saved',
         label: 'Saved to GitHub',
-        detail: job.message,
+        detail: repoSaveBatchDetail(job, false),
+        items: job.items || [],
         startedAt,
         completedAt: Date.now(),
         error: null
@@ -419,7 +420,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onRepoSaveStatus({
         state: 'error',
         label: 'Repository save failed',
-        detail: job.message,
+        detail: repoSaveBatchDetail(job, false),
+        items: job.items || [],
         startedAt,
         completedAt: Date.now(),
         error: errorMessage
@@ -428,11 +430,11 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     } finally {
       queue.saving = false;
       if (queue.pending) {
-        const nextMessage = queue.pending.message || 'Update travel history from GlobeHoppers';
         onRepoSaveStatus({
           state: 'queued',
           label: 'Repository save queued',
-          detail: `${nextMessage} • saving in about 3 seconds`,
+          detail: repoSaveBatchDetail(queue.pending, false),
+          items: queue.pending.items || [],
           startedAt: queue.pending.queuedAt || Date.now(),
           completedAt: null,
           error: null
@@ -441,6 +443,53 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       }
     }
   }
+  function normalizeRepoSaveItem(item = {}, fallbackMessage = '') {
+    if (!item && !fallbackMessage) return null;
+    const action = item.action || actionFromRepoSaveMessage(fallbackMessage);
+    const label = item.label || labelFromRepoSaveMessage(fallbackMessage);
+    const tripId = item.tripId || '';
+    return {
+      action,
+      label,
+      tripId,
+      message: fallbackMessage,
+      queuedAt: Date.now()
+    };
+  }
+
+  function actionFromRepoSaveMessage(message = '') {
+    if (/^delete/i.test(message)) return 'delete';
+    if (/^edit/i.test(message)) return 'edit';
+    if (/^add/i.test(message)) return 'add';
+    return 'update';
+  }
+
+  function labelFromRepoSaveMessage(message = '') {
+    return String(message || '').replace(/^(Add Hop|Add trip|Edit Hop|Delete trip):\s*/i, '').replace(/\s*\([^)]*\)\s*$/, '') || 'Travel history';
+  }
+
+  function repoSaveBatchDetail(job = {}, waitingForCurrent = false) {
+    const items = Array.isArray(job.items) ? job.items : [];
+    if (!items.length) return waitingForCurrent ? 'Waiting for current GitHub save to finish' : 'Saving in about 3 seconds';
+    const countText = items.length === 1 ? '1 pending change' : `${items.length} pending changes`;
+    const actionText = items.map(formatRepoSaveItem).join(' • ');
+    return `${countText}: ${actionText}${waitingForCurrent ? ' • waiting for current GitHub save to finish' : ' • saving in about 3 seconds'}`;
+  }
+
+  function repoSaveCommitMessage(job = {}) {
+    const items = Array.isArray(job.items) ? job.items : [];
+    if (!items.length) return job.message || 'Update travel history from GlobeHoppers';
+    if (items.length === 1) return items[0].message || job.message || 'Update travel history from GlobeHoppers';
+    return `Update travel history from GlobeHoppers (${items.length} changes)`;
+  }
+
+  function formatRepoSaveItem(item = {}) {
+    const verb = item.action === 'delete' ? 'Delete' : item.action === 'edit' ? 'Edit' : item.action === 'add' ? 'Add' : 'Update';
+    const id = item.tripId ? ` [${item.tripId}]` : '';
+    return `${verb} ${item.label || 'Hop'}${id}`;
+  }
+
+
 
   async function repairMissingLocationsForTrips(nextTrips = trips, nextLocations = locations) {
     let repairedLocations = Array.isArray(nextLocations) ? [...nextLocations] : [];
@@ -822,6 +871,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
   >
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
+    {viewType === 'expanded' && <span className="studio-trip-id-badge">{trip.id}</span>}
     <span className="studio-trip-buttons">
       {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
     </span>
@@ -983,6 +1033,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <div className="studio-title-block">
             <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Hop'}</p>
             <h2>{title}</h2>
+            <small className="studio-modal-trip-id">Trip ID: {draft.id || (mode === 'add' ? 'new-unsaved-hop' : 'unknown')}</small>
           </div>
           <div className="studio-modal-top-actions">
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}

@@ -146,6 +146,14 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           <div className="timeline-advanced-title">Repository save</div>
           <div className={`timeline-route-status timeline-save-status timeline-save-status--${repoSaveStatus?.state || 'idle'}`}>{repoSaveStatus?.label || 'No recent repository save'}</div>
           {repoSaveStatus?.detail && <div className="timeline-route-detail">{repoSaveStatus.detail}</div>}
+          {Array.isArray(repoSaveStatus?.items) && repoSaveStatus.items.length > 0 && <div className="timeline-save-batch-list">
+            {repoSaveStatus.items.slice(0, 6).map((item, index) => <div className="timeline-save-batch-item" key={`${item.tripId || item.label || 'item'}-${index}`}>
+              <span>{formatRepoSaveAction(item)}</span>
+              <strong>{item.label || 'Hop'}</strong>
+              {item.tripId && <code>{item.tripId}</code>}
+            </div>)}
+            {repoSaveStatus.items.length > 6 && <div className="timeline-route-detail">+ {repoSaveStatus.items.length - 6} more changes</div>}
+          </div>}
           {repoSaveStatus?.completedAt && <div className="timeline-route-detail">{repoSaveStatus.state === 'error' ? 'Failed' : 'Completed'} {formatRelativeSaveTime(repoSaveStatus.completedAt)}</div>}
           {repoSaveStatus?.startedAt && repoSaveStatus?.state === 'saving' && <div className="timeline-route-detail">Started {formatRelativeSaveTime(repoSaveStatus.startedAt)}</div>}
           {repoSaveStatus?.error && <div className="timeline-route-message timeline-route-message--error">{repoSaveStatus.error}</div>}
@@ -180,4 +188,11 @@ function formatRelativeSaveTime(timestamp) {
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.round(minutes / 60);
   return `${hours}h ago`;
+}
+
+function formatRepoSaveAction(item = {}) {
+  if (item.action === 'delete') return 'Delete';
+  if (item.action === 'edit') return 'Edit';
+  if (item.action === 'add') return 'Add';
+  return 'Update';
 }
