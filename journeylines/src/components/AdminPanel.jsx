@@ -67,12 +67,16 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [cityDb, setCityDb] = useState(() => cityDbCache);
   const [cityDbLoaded, setCityDbLoaded] = useState(() => cityDbCache.length > 0);
   const [cityDbLoading, setCityDbLoading] = useState(false);
+  const tripsRef = useRef(trips);
+  const locationsRef = useRef(locations);
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
   const restoreScrollRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
+  useEffect(() => { tripsRef.current = trips; }, [trips]);
+  useEffect(() => { locationsRef.current = locations; }, [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
 
@@ -242,14 +246,18 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   async function saveTripFromModal() {
     try {
       validateHopDraftForSave(draft);
+      const currentTrips = tripsRef.current || trips;
+      const currentLocations = locationsRef.current || locations;
       const currentScroll = studioListRef.current?.scrollTop ?? null;
-      const { trip, nextLocations } = normalizeTrip(draft, trips, locations, homeBases, normalizedHoppers);
-      const nextTrips = editingId ? trips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...trips, trip]);
+      const { trip, nextLocations } = normalizeTrip(draft, currentTrips, currentLocations, homeBases, normalizedHoppers);
+      const nextTrips = editingId ? currentTrips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : insertChronologically([...currentTrips, trip]);
       const message = editingId ? `Edit Hop: ${trip.label || trip.toLocationName || trip.id}` : `Add trip: ${trip.label || trip.toLocationName || trip.id}`;
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
       validateTripLocationReferences(trip, nextLocations);
+      tripsRef.current = nextTrips;
+      locationsRef.current = nextLocations;
       setTrips(nextTrips);
-      if (nextLocations !== locations) setLocations(nextLocations);
+      if (nextLocations !== currentLocations) setLocations(nextLocations);
       closeModal();
       onTripSaved({ tripId: trip.id, action: editingId ? 'edit' : 'add', label: trip.label });
       saveDataInBackground(nextTrips, nextLocations, message);
@@ -266,12 +274,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       confirmLabel: 'Delete hop',
       onConfirm: async () => {
         try {
+          const currentTrips = tripsRef.current || trips;
+          const currentLocations = locationsRef.current || locations;
           const currentScroll = studioListRef.current?.scrollTop ?? null;
-          const nextTrips = trips.filter(t => t.id !== editingId);
+          const nextTrips = currentTrips.filter(t => t.id !== editingId);
           if (currentScroll != null) restoreScrollRef.current = currentScroll;
+          tripsRef.current = nextTrips;
           setTrips(nextTrips);
           closeModal();
-          saveDataInBackground(nextTrips, locations, `Delete trip: ${label}`);
+          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label}`);
         } catch (err) {
           setFormError(err.message || String(err));
         }
@@ -288,9 +299,12 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       confirmLabel: 'Delete hop',
       onConfirm: async () => {
         try {
-          const nextTrips = trips.filter(t => t.id !== id);
+          const currentTrips = tripsRef.current || trips;
+          const currentLocations = locationsRef.current || locations;
+          const nextTrips = currentTrips.filter(t => t.id !== id);
+          tripsRef.current = nextTrips;
           setTrips(nextTrips);
-          saveDataInBackground(nextTrips, locations, `Delete trip: ${label}`);
+          saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label}`);
         } catch (err) {
           setFormError(err.message || String(err));
         }
@@ -305,15 +319,92 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function saveDataInBackground(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     const startedAt = Date.now();
     onRepoSaveStatus({ state: 'saving', label: 'Saving to GitHub…', detail: message, startedAt, completedAt: null, error: null });
-    commitData(nextTrips, nextLocations, message)
+    repairMissingLocationsForTrips(nextTrips, nextLocations)
+      .then(({ trips: repairedTrips, locations: repairedLocations, repairedIds }) => {
+        if (repairedIds.length) {
+          locationsRef.current = repairedLocations;
+          setLocations(repairedLocations);
+          onRepoSaveStatus({ state: 'saving', label: 'Repairing missing locations…', detail: `${message} • repaired ${repairedIds.join(', ')}`, startedAt, completedAt: null, error: null });
+        }
+        return commitData(repairedTrips, repairedLocations, message);
+      })
       .then(() => {
         onRepoSaveStatus({ state: 'saved', label: 'Saved to GitHub', detail: message, startedAt, completedAt: Date.now(), error: null });
       })
       .catch(err => {
         const errorMessage = err?.message || String(err);
         onRepoSaveStatus({ state: 'error', label: 'Repository save failed', detail: message, startedAt, completedAt: Date.now(), error: errorMessage });
-        window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
+        window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.
+
+${errorMessage}`);
       });
+  }
+
+  async function repairMissingLocationsForTrips(nextTrips = trips, nextLocations = locations) {
+    let repairedLocations = Array.isArray(nextLocations) ? [...nextLocations] : [];
+    const existingIds = new Set(repairedLocations.map(l => l.id));
+    const referencedIds = collectReferencedLocationIds(nextTrips);
+    const missingIds = referencedIds.filter(id => id && !existingIds.has(id));
+    const repairedIds = [];
+    if (!missingIds.length) return { trips: nextTrips, locations: repairedLocations, repairedIds };
+
+    let db = cityDbCache;
+    if ((!Array.isArray(db) || !db.length) && (cityDbLoaded || cityDb.length)) db = cityDb;
+    if (!Array.isArray(db) || !db.length) db = await loadCityDatabase();
+
+    for (const id of missingIds) {
+      const city = findCityByGeneratedLocationId(db, id);
+      if (!city) continue;
+      const loc = locationFromCity(city, id);
+      if (loc && !existingIds.has(loc.id)) {
+        repairedLocations.push(loc);
+        existingIds.add(loc.id);
+        repairedIds.push(loc.id);
+      }
+    }
+
+    const unresolved = missingIds.filter(id => !existingIds.has(id));
+    if (unresolved.length) {
+      throw new Error(`Some trips reference locations that are not present in locations.json and could not be auto-repaired: ${unresolved.join(', ')}. Delete or edit those trips, or add the missing locations before saving.`);
+    }
+    return { trips: nextTrips, locations: repairedLocations, repairedIds };
+  }
+
+  function collectReferencedLocationIds(nextTrips = trips) {
+    const ids = new Set();
+    for (const trip of nextTrips || []) {
+      if (Array.isArray(trip?.route) && trip.route.length) {
+        trip.route.forEach(r => { if (r?.locationId) ids.add(r.locationId); });
+      } else {
+        if (trip?.fromLocationId) ids.add(trip.fromLocationId);
+        if (trip?.toLocationId) ids.add(trip.toLocationId);
+      }
+    }
+    return Array.from(ids);
+  }
+
+  function findCityByGeneratedLocationId(db = [], id) {
+    if (!id || !Array.isArray(db)) return null;
+    return db.find(city => cityLocationId(city) === id) || null;
+  }
+
+  function locationFromCity(city, forcedId = '') {
+    if (!city) return null;
+    const cc = cityField(city, 'countryCode');
+    const country = countryNameFromCode(cc);
+    return {
+      id: forcedId || cityLocationId(city),
+      name: cityField(city, 'name'),
+      region: cityField(city, 'region') || '',
+      country,
+      countryCode: cc || '',
+      continent: '',
+      lat: Number(cityField(city, 'lat', 0)) || 0,
+      lon: Number(cityField(city, 'lon', 0)) || 0,
+      geonameId: Number(cityField(city, 'id')) || null,
+      population: Number(cityField(city, 'population', 0)) || 0,
+      timezone: cityField(city, 'timezone') || ''
+    };
   }
 
   function validateTripLocationReferences(trip, nextLocations) {

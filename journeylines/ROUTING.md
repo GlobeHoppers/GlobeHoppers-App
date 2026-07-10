@@ -1,8 +1,7 @@
-Base: GlobeHoppers v4.33
-Update: v4.34 play saved hop and route-save hardening
+Base: GlobeHoppers v4.34
+Update: v4.35 delete/save sync hardening
 Changes:
-- After Add/Edit Hop local validation succeeds, the saved hop becomes the active hop and starts playing as soon as the rebuilt timeline contains it.
-- Pending saved-hop playback is identity-based so out-of-order inserts resolve against the rebuilt legs array instead of stale indices.
-- Route form handlers now use functional draft updates to avoid stale-state overwrites between destination and additional-leg fields.
-- Save validation now blocks adjacent duplicate route points and route references to missing locations before writing trips/locations/routeDetails.
-- Multi-file GitHub trip saves no longer silently fall back to sequential Contents API writes, which reduces the chance of partial repo updates.
+- Delete/save paths now use latest trips and locations refs, preventing stale-state re-adds when deleting multiple hops quickly.
+- Repository background save can auto-repair missing city-generated locations such as perth-08, quebec-10, or calgary-01 from the city database before committing.
+- If a missing location cannot be repaired, save still fails loudly with a popup.
+- Local locations are updated when auto-repair succeeds so the app and repo stay in sync.

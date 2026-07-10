@@ -1,1 +1,1 @@
-GlobeHoppers v4.34 — play saved hop and route-save hardening
+GlobeHoppers v4.35 — delete/save sync hardening and missing-location repair

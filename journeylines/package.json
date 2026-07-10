@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "4.34.0",
+  "version": "4.35.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,15 +11,14 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
     "d3-geo": "latest",
     "d3-geo-projection": "latest",
-    "topojson-client": "latest",
-    "world-atlas": "latest",
     "lucide-react": "latest",
-    "maplibre-gl": "latest"
-  },
-  "devDependencies": {}
+    "maplibre-gl": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "topojson-client": "latest",
+    "vite": "latest",
+    "world-atlas": "latest"
+  }
 }
