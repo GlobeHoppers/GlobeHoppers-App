@@ -1,1 +1,1 @@
-GlobeHoppers v4.30 — thinner active pin hitbox and modal-only add/edit entry
+GlobeHoppers v4.31 — cities15000 suggestion database

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
 import routeDetails from '../data/routeDetails.json';
+import cityDatabase from '../data/cities15000.json';
 import { buildRouteDetailsPayload } from '../utils/routeDetails.js';
 
 const MODE_OPTIONS = [
@@ -30,7 +31,7 @@ const MONTH_OPTIONS = [
 ];
 const empty = {
   year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: [], mode: 'plane',
-  roundTrip: true, returnMode: '', fromLocationId: null, toLocationId: '', toLocationText: '', notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
+  roundTrip: true, returnMode: '', fromLocationId: null, fromLocationText: '', fromCity: null, toLocationId: '', toLocationText: '', toCity: null, notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
 
 export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, modalOnly = false }) {
@@ -113,7 +114,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setFormError('');
     setModalClosing(false);
     setEditingId(null);
-    setDraft({ ...empty, travelers: [], year: new Date().getFullYear(), month: null, toLocationText: '' });
+    setDraft({ ...empty, travelers: [], year: new Date().getFullYear(), month: null, fromCity: null, toCity: null, toLocationText: '' });
     setModal('add');
   }
   function openEdit(trip) {
@@ -139,6 +140,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       fromLocationText: routeStart?.locationId ? displayLocation(locById[routeStart.locationId]) : '',
       toLocationId: routeDestination?.locationId || trip.toLocationId || '',
       toLocationText: to ? displayLocation(to) : (trip.toLocationName || trip.label || ''),
+      fromCity: null,
+      toCity: null,
       extraLegs: extraRouteStops.map(r => ({ locationId: r.locationId || '', locationText: displayLocation(locById[r.locationId]) || '', modeFromPrevious: r.modeFromPrevious || trip.mode || 'plane' }))
     });
     setModal('edit');
@@ -167,16 +170,19 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   function chooseDestination(location) {
     setFormError('');
-    setDraft({ ...draft, toLocationId: location.id, toLocationText: displayLocation(location), label: draft.label || location.name });
+    const isCity = location?._source === 'city';
+    setDraft({ ...draft, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: displayLocation(location), label: draft.label || location.name });
     previewMapLocation(location);
   }
   function chooseFrom(location) {
-    setDraft({ ...draft, fromLocationId: location.id, fromLocationText: displayLocation(location), overrideFrom: true });
+    const isCity = location?._source === 'city';
+    setDraft({ ...draft, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: displayLocation(location), overrideFrom: true });
     previewMapLocation(location);
   }
   function chooseExtraLeg(index, location) {
+    const isCity = location?._source === 'city';
     const extraLegs = [...(draft.extraLegs || [])];
-    extraLegs[index] = { ...extraLegs[index], locationId: location.id, locationText: displayLocation(location) };
+    extraLegs[index] = { ...extraLegs[index], locationId: isCity ? '' : location.id, city: isCity ? location.city : null, locationText: displayLocation(location) };
     setDraft({ ...draft, extraLegs });
     previewMapLocation(location);
   }
@@ -607,8 +613,8 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
 }
 
 function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError }) {
-  const destinationMatches = filterLocations(locs, draft.toLocationText || '');
-  const fromMatches = filterLocations(locs, draft.fromLocationText || '');
+  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '');
+  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '');
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
@@ -794,16 +800,16 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:''})} matches={fromMatches} onChoose={onChooseFrom} />
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => setDraft({...draft, fromLocationText:v, fromLocationId:'', fromCity:null})} matches={fromMatches} onChoose={onChooseFrom} />
                 </div>}
                 <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft({...draft, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? draft.fromLocationId : null})}/> Override start location</label>
               </div>
-              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:''})} matches={destinationMatches} onChoose={onChooseDestination} />
+              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => setDraft({...draft, toLocationText:v, toLocationId:'', toCity:null})} matches={destinationMatches} onChoose={onChooseDestination} />
               <div className="legs-block">
                 <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '' })} matches={filterLocations(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '')} onChoose={loc => onChooseExtraLeg(index, loc)} />
                   <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
                 </div>)}
               </div>
@@ -979,8 +985,12 @@ function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose
 function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent }) {
   return <label className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
     <input value={value} onChange={e => onChange(e.target.value)} placeholder="Start typing a destination" />
-    {!!value && matches.length > 0 && <div className="autocomplete-menu">
-      {matches.slice(0, 8).map(l => <button type="button" key={l.id} onClick={() => onChoose(l)}><strong>{l.name}</strong><small>{[l.region, l.country].filter(Boolean).join(', ')}</small></button>)}
+    {!!value && matches.length > 0 && <div className="autocomplete-menu autocomplete-menu--cities">
+      {matches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => onChoose(l)}>
+        <strong>{l.name}</strong>
+        <small>{autocompleteMeta(l)}</small>
+        <em>{l._label || 'Saved'}</em>
+      </button>)}
     </div>}
   </label>;
 }
@@ -990,6 +1000,11 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Select at least one Hopper or Guest Hopper before saving.');
   let nextLocations = locations;
   let toLocationId = draft.toLocationId;
+  if (!toLocationId && draft.toCity) {
+    const result = ensureLocationForCity(nextLocations, draft.toCity, draft.toLocationText);
+    nextLocations = result.locations;
+    toLocationId = result.id;
+  }
   if (!toLocationId && draft.toLocationText) {
     const found = findLocationByText(locations, draft.toLocationText);
     if (found) toLocationId = found.id;
@@ -1002,6 +1017,11 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
   if (!toLocationId) throw new Error('Choose or enter a destination.');
 
   let fromLocationId = draft.overrideFrom ? draft.fromLocationId : null;
+  if (draft.overrideFrom && !fromLocationId && draft.fromCity) {
+    const result = ensureLocationForCity(nextLocations, draft.fromCity, draft.fromLocationText);
+    nextLocations = result.locations;
+    fromLocationId = result.id;
+  }
   if (draft.overrideFrom && !fromLocationId && draft.fromLocationText) {
     const found = findLocationByText(nextLocations, draft.fromLocationText);
     if (found) fromLocationId = found.id;
@@ -1020,6 +1040,11 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     route.push({ locationId: toLocationId, modeFromPrevious: draft.mode || 'plane' });
     for (const leg of extraLegs) {
       let id = leg.locationId;
+      if (!id && leg.city) {
+        const result = ensureLocationForCity(nextLocations, leg.city, leg.locationText);
+        nextLocations = result.locations;
+        id = result.id;
+      }
       if (!id && leg.locationText) {
         const found = findLocationByText(nextLocations, leg.locationText);
         if (found) id = found.id;
@@ -1340,13 +1365,113 @@ function sortTripsForEditor(rows) { return [...rows].sort((a,b) => String(a.sort
 function activeHomeBaseId(homeBases, trip) { const key = `${trip.year}-${String(trip.month || 1).padStart(2,'0')}`; return (homeBases || []).find(h => h.start <= key && (!h.end || h.end >= key))?.locationId || 'melbourne-fl'; }
 function formatDisplayDate(t) { if (t.month && t.day) return new Date(t.year, t.month - 1, t.day).toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' }); if (t.month) return new Date(t.year, t.month - 1, 1).toLocaleDateString(undefined, { month:'long', year:'numeric' }); return String(t.year); }
 function formatTripDate(t) { return t.displayDate || formatDisplayDate(t); }
-function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? l.country : ''].filter(Boolean).join(', ') : ''; }
+function countryNameFromCode(code) {
+  const clean = String(code || '').toUpperCase();
+  if (!clean) return '';
+  if (clean === 'US') return 'United States';
+  try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(clean) || clean; } catch { return clean; }
+}
+function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? (l.country || l.countryCode) : ''].filter(Boolean).join(', ') : ''; }
 function displayNameFromLocation(l) { return l?.name || ''; }
 function summarizeTrip(t, locById, hopperData) { const to = locById[t.toLocationId]; const people = resolveTripVisual(t, hopperData || {}).name || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
-function filterLocations(locs, q) { const needle = String(q || '').toLowerCase().trim(); if (!needle) return locs.slice(0, 6); return locs.filter(l => `${l.name} ${l.region} ${l.country} ${l.id}`.toLowerCase().includes(needle)); }
-function findLocationByText(locs, text) { const q = String(text || '').toLowerCase().trim(); return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => String(v).toLowerCase() === q)) || locs.find(l => displayLocation(l).toLowerCase().includes(q) || q.includes(l.name.toLowerCase())); }
+function normalizeSearchText(value) { return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+function filterLocations(locs, q) {
+  const needle = normalizeSearchText(q);
+  if (!needle) return locs.slice(0, 6);
+  return locs.filter(l => normalizeSearchText(`${l.name} ${l.region} ${l.country} ${l.id}`).includes(needle));
+}
+function locationSuggestions(locs, q) {
+  const needle = normalizeSearchText(q);
+  if (!needle || needle.length < 2) return filterLocations(locs, q).map(l => ({ ...l, _source: 'saved', _label: 'Saved' }));
+  const saved = filterLocations(locs, q).slice(0, 6).map((l, i) => ({ ...l, _source: 'saved', _label: 'Saved', _score: 500 - i }));
+  const cityMatches = [];
+  for (const city of cityDatabase) {
+    const score = citySuggestionScore(city, needle);
+    if (score > 0) cityMatches.push({ ...citySuggestionToOption(city), _score: score });
+    if (cityMatches.length > 240) break;
+  }
+  const existingKeys = new Set(saved.map(l => normalizeSearchText(`${l.name}|${regionShort(l.region)}|${l.country || l.countryCode || ''}`)));
+  const cities = cityMatches
+    .filter(l => !existingKeys.has(normalizeSearchText(`${l.name}|${regionShort(l.region)}|${l.country || l.countryCode || ''}`)))
+    .sort((a,b) => b._score - a._score)
+    .slice(0, 8);
+  if (!saved.length && !cities.length && needle.length >= 3) return [{ id: `custom-${slug(q)}`, name: String(q).trim(), region: '', country: '', _source: 'custom', _label: 'Custom' }];
+  return [...saved, ...cities].slice(0, 10);
+}
+function citySuggestionScore(city, needle) {
+  const name = normalizeSearchText(city.name);
+  const ascii = normalizeSearchText(city.asciiName);
+  const region = normalizeSearchText(city.region);
+  const country = normalizeSearchText(city.countryCode);
+  const aliases = Array.isArray(city.aliases) ? city.aliases.map(normalizeSearchText) : [];
+  let score = 0;
+  if (name === needle || ascii === needle) score = 240;
+  else if (name.startsWith(needle) || ascii.startsWith(needle)) score = 190;
+  else if (aliases.some(a => a === needle)) score = 175;
+  else if (aliases.some(a => a.startsWith(needle))) score = 130;
+  else if (name.includes(needle) || ascii.includes(needle)) score = 95;
+  else if (`${name} ${region} ${country}`.includes(needle)) score = 55;
+  if (!score) return 0;
+  const pop = Math.max(0, Number(city.population) || 0);
+  const popBoost = Math.min(45, Math.log10(pop + 10) * 7);
+  const capitalBoost = city.featureCode === 'PPLC' ? 24 : city.featureCode === 'PPLA' ? 12 : 0;
+  return score + popBoost + capitalBoost;
+}
+function citySuggestionToOption(city) {
+  const country = countryNameFromCode(city.countryCode);
+  return {
+    id: `city-${city.id}`,
+    name: city.name,
+    region: city.region || '',
+    country,
+    countryCode: city.countryCode,
+    lat: city.lat,
+    lon: city.lon,
+    _source: 'city',
+    _label: 'City',
+    city
+  };
+}
+function autocompleteMeta(l) {
+  const bits = [l.region && regionShort(l.region), l.country || countryNameFromCode(l.countryCode), l._source === 'city' && l.city?.population ? `${Number(l.city.population).toLocaleString()} people` : ''].filter(Boolean);
+  return bits.join(' · ');
+}
+function findLocationByText(locs, text) {
+  const q = normalizeSearchText(text);
+  return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => normalizeSearchText(v) === q)) || locs.find(l => normalizeSearchText(displayLocation(l)).includes(q) || q.includes(normalizeSearchText(l.name)));
+}
+function ensureLocationForCity(locations, city, fallbackText = '') {
+  const option = citySuggestionToOption(city);
+  const existing = findLocationByText(locations, displayLocation(option)) || locations.find(l => l.geonameId && Number(l.geonameId) === Number(city.id));
+  if (existing) return { id: existing.id, locations };
+  const country = countryNameFromCode(city.countryCode);
+  const base = {
+    id: cityLocationId(city, fallbackText),
+    name: city.name || String(fallbackText || 'New destination').split(',')[0].trim(),
+    region: city.region || '',
+    country,
+    countryCode: city.countryCode || '',
+    continent: '',
+    lat: Number(city.lat) || 0,
+    lon: Number(city.lon) || 0,
+    geonameId: city.id,
+    population: Number(city.population) || 0,
+    timezone: city.timezone || ''
+  };
+  const used = new Set(locations.map(l => l.id));
+  let id = base.id;
+  let n = 2;
+  while (used.has(id)) id = `${base.id}-${n++}`;
+  const loc = { ...base, id };
+  return { id: loc.id, locations: [...locations, loc] };
+}
+function cityLocationId(city, fallbackText = '') {
+  const cc = String(city?.countryCode || '').toLowerCase();
+  const region = String(city?.region || '').toLowerCase();
+  return slug([city?.asciiName || city?.name || fallbackText, region || cc].filter(Boolean).join('-'));
+}
 function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }
-function regionShort(region) { const map = { California:'CA', Florida:'FL', Georgia:'GA', Illinois:'IL', 'New York':'NY', Texas:'TX', Nevada:'NV', Arizona:'AZ', Colorado:'CO', Tennessee:'TN', Kentucky:'KY', Washington:'WA', Massachusetts:'MA', Michigan:'MI', 'North Carolina':'NC', 'South Carolina':'SC', Pennsylvania:'PA', Maryland:'MD', Hawaii:'HI' }; return map[region] || region; }
+
 function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || `location-${Date.now()}`; }
 function githubHeaders(token) { return { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

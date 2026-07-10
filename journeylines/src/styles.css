@@ -11809,3 +11809,47 @@ svg text {
   pointer-events: none !important;
   transform: translateY(10px) scale(.985) !important;
 }
+
+
+/* GlobeHoppers v4.31: city suggestion source labels. */
+.autocomplete-menu--cities {
+  max-height: min(360px, 46vh);
+  overflow: auto;
+}
+.autocomplete-option {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 10px;
+  align-items: center;
+}
+.autocomplete-option small {
+  grid-column: 1 / 2;
+  opacity: .72;
+}
+.autocomplete-option em {
+  grid-column: 2 / 3;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  align-self: center;
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .78;
+  border: 1px solid rgba(160, 224, 255, .22);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(255,255,255,.045);
+}
+.autocomplete-option--saved em {
+  color: #b8ffd8;
+  border-color: rgba(131,255,177,.25);
+}
+.autocomplete-option--city em {
+  color: #aee9ff;
+  border-color: rgba(92,221,255,.25);
+}
+.autocomplete-option--custom em {
+  color: #ffe89a;
+  border-color: rgba(255,216,102,.25);
+}
