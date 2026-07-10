@@ -3,8 +3,8 @@
     {
       "id": "joey",
       "name": "Joey",
-      "colorName": "orange",
-      "color": "#ff8a00"
+      "colorName": "cyan",
+      "color": "#00e5ff"
     },
     {
       "id": "bonnie",
@@ -13,10 +13,10 @@
       "color": "#ff4fd8"
     },
     {
-      "id": "hopper-mrcdkasg",
+      "id": "hopper-mrcyz5l4",
       "name": "Bernard",
-      "colorName": "green",
-      "color": "#44f48a"
+      "colorName": "red",
+      "color": "#ff3b30"
     }
   ],
   "hopSquads": [],
