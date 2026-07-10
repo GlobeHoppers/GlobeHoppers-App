@@ -1,10 +1,9 @@
-Base: GlobeHoppers v4.30
-Update: v4.31.3 safe lazy city suggestions
+Base: GlobeHoppers v4.31.3
+Update: v4.31.4 city suggestion polish
 Changes:
-- Rebuilt from stable v4.30.
-- City database is stored in public/data/cities15000.json.
-- Add/Edit Hop does not fetch or depend on city data during modal open.
-- City database is lazy-loaded only after the user types 2+ characters in a location field.
-- Saved locations remain available immediately.
-- Destination, override start location, and additional leg destination support saved + city suggestions.
-- Selected city suggestions are converted to locations only when the hop is saved.
+- Suggestion rows now display as City, State, United States for US cities and City, Country for international cities.
+- Removed population from the suggestion rows so results fit on one line.
+- Selected US cities populate the field as City, State.
+- Selected international cities populate the field as City, Country.
+- Clicking a suggestion hides the suggestion popup immediately.
+- City suggestions preserve their City source during selection instead of falling through to Custom.

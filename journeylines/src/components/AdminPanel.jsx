@@ -206,18 +206,18 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function chooseDestination(location) {
     setFormError('');
     const isCity = location?._source === 'city';
-    setDraft({ ...draft, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: displayLocation(location), label: draft.label || location.name });
+    setDraft({ ...draft, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: selectedLocationText(location), label: draft.label || location.name });
     previewMapLocation(location);
   }
   function chooseFrom(location) {
     const isCity = location?._source === 'city';
-    setDraft({ ...draft, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: displayLocation(location), overrideFrom: true });
+    setDraft({ ...draft, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: selectedLocationText(location), overrideFrom: true });
     previewMapLocation(location);
   }
   function chooseExtraLeg(index, location) {
     const isCity = location?._source === 'city';
     const extraLegs = [...(draft.extraLegs || [])];
-    extraLegs[index] = { ...extraLegs[index], locationId: isCity ? '' : location.id, city: isCity ? location.city : null, locationText: displayLocation(location) };
+    extraLegs[index] = { ...extraLegs[index], locationId: isCity ? '' : location.id, city: isCity ? location.city : null, locationText: selectedLocationText(location) };
     setDraft({ ...draft, extraLegs });
     previewMapLocation(location);
   }
@@ -1022,12 +1022,13 @@ function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose
 }
 
 function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent }) {
+  const [hideSuggestions, setHideSuggestions] = useState(false);
+  const visibleMatches = hideSuggestions ? [] : matches;
   return <label className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
-    <input value={value} onChange={e => onChange(e.target.value)} placeholder="Start typing a destination" />
-    {!!value && matches.length > 0 && <div className="autocomplete-menu autocomplete-menu--cities">
-      {matches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => onChoose(l)}>
-        <strong>{l.name}</strong>
-        <small>{autocompleteMeta(l)}</small>
+    <input value={value} onChange={e => { setHideSuggestions(false); onChange(e.target.value); }} placeholder="Start typing a destination" />
+    {!!value && visibleMatches.length > 0 && <div className="autocomplete-menu autocomplete-menu--cities">
+      {visibleMatches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => { if (l._source === 'loading') return; setHideSuggestions(true); onChoose(l); }}>
+        <strong>{suggestionDisplayText(l)}</strong>
         <em>{l._label || 'Saved'}</em>
       </button>)}
     </div>}
@@ -1410,7 +1411,24 @@ function countryNameFromCode(code) {
   if (clean === 'US') return 'United States';
   try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(clean) || clean; } catch { return clean; }
 }
-function displayLocation(l) { return l ? [l.name, l.region && regionShort(l.region), l.country !== 'United States' ? (l.country || l.countryCode) : ''].filter(Boolean).join(', ') : ''; }
+function locationCountry(l) { return l?.country || countryNameFromCode(l?.countryCode); }
+function isUnitedStatesLocation(l) { return String(l?.countryCode || '').toUpperCase() === 'US' || locationCountry(l) === 'United States'; }
+function displayLocation(l) { return selectedLocationText(l); }
+function selectedLocationText(l) {
+  if (!l) return '';
+  const country = locationCountry(l);
+  const region = l.region && regionShort(l.region);
+  if (isUnitedStatesLocation(l)) return [l.name, region].filter(Boolean).join(', ');
+  return [l.name, country].filter(Boolean).join(', ');
+}
+function suggestionDisplayText(l) {
+  if (!l) return '';
+  if (l._source === 'loading') return l.name || 'Loading city suggestions…';
+  const country = locationCountry(l);
+  const region = l.region && regionShort(l.region);
+  if (isUnitedStatesLocation(l)) return [l.name, region, 'United States'].filter(Boolean).join(', ');
+  return [l.name, country].filter(Boolean).join(', ');
+}
 function displayNameFromLocation(l) { return l?.name || ''; }
 function summarizeTrip(t, locById, hopperData) { const to = locById[t.toLocationId]; const people = resolveTripVisual(t, hopperData || {}).name || 'No hoppers'; return `${MODE_OPTIONS.find(m => m.id === t.mode)?.label || t.mode} · ${people} · ${displayLocation(to) || t.toLocationName || t.toLocationId || 'Unmapped destination'}`; }
 function normalizeSearchText(value) { return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
@@ -1486,10 +1504,7 @@ function citySuggestionToOption(city) {
   };
 }
 function autocompleteMeta(l) {
-  if (l._source === 'loading') return 'City database';
-  const cityPop = l._source === 'city' ? Number(cityField(l.city, 'population', 0)) : 0;
-  const bits = [l.region && regionShort(l.region), l.country || countryNameFromCode(l.countryCode), cityPop ? `${cityPop.toLocaleString()} people` : ''].filter(Boolean);
-  return bits.join(' · ');
+  return suggestionDisplayText(l);
 }
 function findLocationByText(locs, text) {
   const q = normalizeSearchText(text);

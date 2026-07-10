@@ -11854,3 +11854,23 @@ svg text {
   color: #ffe89a;
   border-color: rgba(255,216,102,.25);
 }
+
+
+/* GlobeHoppers v4.31.4: one-line city suggestions. */
+.autocomplete-menu--cities .autocomplete-option {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 34px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.autocomplete-menu--cities .autocomplete-option strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.autocomplete-menu--cities .autocomplete-option small {
+  display: none !important;
+}
+.autocomplete-menu--cities .autocomplete-option em {
+  grid-row: 1 / 2 !important;
+}

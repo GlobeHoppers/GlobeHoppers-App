@@ -1,1 +1,1 @@
-GlobeHoppers v4.31.3 — city suggestions rebuilt safely from v4.30
+GlobeHoppers v4.31.4 — one-line city suggestions and close-on-select
