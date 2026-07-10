@@ -2295,7 +2295,8 @@
     "label": "Maui",
     "travelers": [
       "joey",
-      "bonnie"
+      "bonnie",
+      "hopper-mrcyz5l4"
     ],
     "mode": "plane",
     "roundTrip": true,
@@ -2307,7 +2308,11 @@
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2024-107-atlanta",
