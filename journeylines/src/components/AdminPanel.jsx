@@ -47,6 +47,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('journeylines.githubToken') || '');
   const [repo, setRepo] = useState(() => localStorage.getItem('journeylines.repo') || '');
+  const [cityDb, setCityDb] = useState([]);
+  const [cityDbLoaded, setCityDbLoaded] = useState(false);
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
@@ -55,17 +57,6 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
-  const [cityDb, setCityDb] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-    fetch(`${base}/data/cities15000.json`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => { if (!cancelled && Array.isArray(data)) setCityDb(data); })
-      .catch(() => { if (!cancelled) setCityDb([]); });
-    return () => { cancelled = true; };
-  }, []);
 
   function previewMapLocation(location) {
     if (!location || location.lon == null || location.lat == null) return;
@@ -105,6 +96,25 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closing]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${import.meta.env.BASE_URL || '/'}data/cities15000.json`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (!cancelled && Array.isArray(data)) {
+          setCityDb(data);
+          setCityDbLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCityDb([]);
+          setCityDbLoaded(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     function handleOpenNewTrip() {
@@ -470,6 +480,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers} formError={formError} setFormError={setFormError}
       onDelete={modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
+      cityDb={cityDb}
+      cityDbLoaded={cityDbLoaded}
     />}
   </section>;
 }
@@ -623,8 +635,8 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
 }
 
 function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError }) {
-  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb);
-  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb);
+  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb, cityDbLoaded);
+  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb, cityDbLoaded);
   const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
@@ -819,7 +831,7 @@ function TripModal({ mode, closing, draft, setDraft, busy, locs, locById, homeBa
                 <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
                 {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '', cityDb)} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => onSetExtraLeg(index, { locationText: v, locationId: '', city: null })} matches={locationSuggestions(locs, leg.locationText || '', cityDb, cityDbLoaded)} onChoose={loc => onChooseExtraLeg(index, loc)} />
                   <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
                 </div>)}
               </div>
@@ -1390,30 +1402,37 @@ function filterLocations(locs, q) {
   if (!needle) return locs.slice(0, 6);
   return locs.filter(l => normalizeSearchText(`${l.name} ${l.region} ${l.country} ${l.id}`).includes(needle));
 }
-function locationSuggestions(locs, q, cityDatabase = []) {
+function locationSuggestions(locs, q, cityDb = [], cityDbLoaded = false) {
   const needle = normalizeSearchText(q);
-  if (!needle || needle.length < 2) return filterLocations(locs, q).map(l => ({ ...l, _source: 'saved', _label: 'Saved' }));
-  const saved = filterLocations(locs, q).slice(0, 6).map((l, i) => ({ ...l, _source: 'saved', _label: 'Saved', _score: 500 - i }));
+  const saved = (!needle || needle.length < 2)
+    ? filterLocations(locs, q).slice(0, 8).map(l => ({ ...l, _source: 'saved', _label: 'Saved' }))
+    : filterLocations(locs, q).slice(0, 5).map((l, i) => ({ ...l, _source: 'saved', _label: 'Saved', _score: 500 - i }));
+  if (!needle || needle.length < 2 || !cityDbLoaded || !Array.isArray(cityDb) || cityDb.length === 0) return saved;
   const cityMatches = [];
-  for (const city of (Array.isArray(cityDatabase) ? cityDatabase : [])) {
+  for (const city of cityDb) {
     const score = citySuggestionScore(city, needle);
     if (score > 0) cityMatches.push({ ...citySuggestionToOption(city), _score: score });
-    if (cityMatches.length > 240) break;
+    if (cityMatches.length > 160) break;
   }
   const existingKeys = new Set(saved.map(l => normalizeSearchText(`${l.name}|${regionShort(l.region)}|${l.country || l.countryCode || ''}`)));
   const cities = cityMatches
     .filter(l => !existingKeys.has(normalizeSearchText(`${l.name}|${regionShort(l.region)}|${l.country || l.countryCode || ''}`)))
     .sort((a,b) => b._score - a._score)
-    .slice(0, 8);
+    .slice(0, 7);
   if (!saved.length && !cities.length && needle.length >= 3) return [{ id: `custom-${slug(q)}`, name: String(q).trim(), region: '', country: '', _source: 'custom', _label: 'Custom' }];
   return [...saved, ...cities].slice(0, 10);
 }
+function cityField(city, key, fallback = '') {
+  if (!city) return fallback;
+  const compact = { id:'i', name:'n', asciiName:'a', aliases:'x', lat:'la', lon:'lo', countryCode:'cc', region:'r', featureCode:'f', population:'p', timezone:'tz' };
+  return city[key] ?? city[compact[key]] ?? fallback;
+}
 function citySuggestionScore(city, needle) {
-  const name = normalizeSearchText(city.name);
-  const ascii = normalizeSearchText(city.asciiName);
-  const region = normalizeSearchText(city.region);
-  const country = normalizeSearchText(city.countryCode);
-  const aliases = Array.isArray(city.aliases) ? city.aliases.map(normalizeSearchText) : [];
+  const name = normalizeSearchText(cityField(city, 'name'));
+  const ascii = normalizeSearchText(cityField(city, 'asciiName'));
+  const region = normalizeSearchText(cityField(city, 'region'));
+  const country = normalizeSearchText(cityField(city, 'countryCode'));
+  const aliases = Array.isArray(cityField(city, 'aliases', [])) ? cityField(city, 'aliases', []).map(normalizeSearchText) : [];
   let score = 0;
   if (name === needle || ascii === needle) score = 240;
   else if (name.startsWith(needle) || ascii.startsWith(needle)) score = 190;
@@ -1422,28 +1441,31 @@ function citySuggestionScore(city, needle) {
   else if (name.includes(needle) || ascii.includes(needle)) score = 95;
   else if (`${name} ${region} ${country}`.includes(needle)) score = 55;
   if (!score) return 0;
-  const pop = Math.max(0, Number(city.population) || 0);
+  const pop = Math.max(0, Number(cityField(city, 'population', 0)) || 0);
   const popBoost = Math.min(45, Math.log10(pop + 10) * 7);
-  const capitalBoost = city.featureCode === 'PPLC' ? 24 : city.featureCode === 'PPLA' ? 12 : 0;
+  const feature = cityField(city, 'featureCode');
+  const capitalBoost = feature === 'PPLC' ? 24 : feature === 'PPLA' ? 12 : 0;
   return score + popBoost + capitalBoost;
 }
 function citySuggestionToOption(city) {
-  const country = countryNameFromCode(city.countryCode);
+  const cc = cityField(city, 'countryCode');
+  const country = countryNameFromCode(cc);
   return {
-    id: `city-${city.id}`,
-    name: city.name,
-    region: city.region || '',
+    id: `city-${cityField(city, 'id')}`,
+    name: cityField(city, 'name'),
+    region: cityField(city, 'region') || '',
     country,
-    countryCode: city.countryCode,
-    lat: city.lat,
-    lon: city.lon,
+    countryCode: cc,
+    lat: cityField(city, 'lat'),
+    lon: cityField(city, 'lon'),
     _source: 'city',
     _label: 'City',
     city
   };
 }
 function autocompleteMeta(l) {
-  const bits = [l.region && regionShort(l.region), l.country || countryNameFromCode(l.countryCode), l._source === 'city' && l.city?.population ? `${Number(l.city.population).toLocaleString()} people` : ''].filter(Boolean);
+  const cityPop = l._source === 'city' ? Number(cityField(l.city, 'population', 0)) : 0;
+  const bits = [l.region && regionShort(l.region), l.country || countryNameFromCode(l.countryCode), cityPop ? `${cityPop.toLocaleString()} people` : ''].filter(Boolean);
   return bits.join(' · ');
 }
 function findLocationByText(locs, text) {
@@ -1452,21 +1474,23 @@ function findLocationByText(locs, text) {
 }
 function ensureLocationForCity(locations, city, fallbackText = '') {
   const option = citySuggestionToOption(city);
-  const existing = findLocationByText(locations, displayLocation(option)) || locations.find(l => l.geonameId && Number(l.geonameId) === Number(city.id));
+  const geonameId = Number(cityField(city, 'id'));
+  const existing = findLocationByText(locations, displayLocation(option)) || locations.find(l => l.geonameId && Number(l.geonameId) === geonameId);
   if (existing) return { id: existing.id, locations };
-  const country = countryNameFromCode(city.countryCode);
+  const cc = cityField(city, 'countryCode');
+  const country = countryNameFromCode(cc);
   const base = {
     id: cityLocationId(city, fallbackText),
-    name: city.name || String(fallbackText || 'New destination').split(',')[0].trim(),
-    region: city.region || '',
+    name: cityField(city, 'name') || String(fallbackText || 'New destination').split(',')[0].trim(),
+    region: cityField(city, 'region') || '',
     country,
-    countryCode: city.countryCode || '',
+    countryCode: cc || '',
     continent: '',
-    lat: Number(city.lat) || 0,
-    lon: Number(city.lon) || 0,
-    geonameId: city.id,
-    population: Number(city.population) || 0,
-    timezone: city.timezone || ''
+    lat: Number(cityField(city, 'lat', 0)) || 0,
+    lon: Number(cityField(city, 'lon', 0)) || 0,
+    geonameId,
+    population: Number(cityField(city, 'population', 0)) || 0,
+    timezone: cityField(city, 'timezone') || ''
   };
   const used = new Set(locations.map(l => l.id));
   let id = base.id;
@@ -1476,12 +1500,11 @@ function ensureLocationForCity(locations, city, fallbackText = '') {
   return { id: loc.id, locations: [...locations, loc] };
 }
 function cityLocationId(city, fallbackText = '') {
-  const cc = String(city?.countryCode || '').toLowerCase();
-  const region = String(city?.region || '').toLowerCase();
-  return slug([city?.asciiName || city?.name || fallbackText, region || cc].filter(Boolean).join('-'));
+  const cc = String(cityField(city, 'countryCode') || '').toLowerCase();
+  const region = String(cityField(city, 'region') || '').toLowerCase();
+  return slug([cityField(city, 'asciiName') || cityField(city, 'name') || fallbackText, region || cc].filter(Boolean).join('-'));
 }
-function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }
-
+function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }function regionShort(region) { const map = { California:'CA', Florida:'FL', Georgia:'GA', Illinois:'IL', 'New York':'NY', Texas:'TX', Nevada:'NV', Arizona:'AZ', Colorado:'CO', Tennessee:'TN', Kentucky:'KY', Washington:'WA', Massachusetts:'MA', Michigan:'MI', 'North Carolina':'NC', 'South Carolina':'SC', Pennsylvania:'PA', Maryland:'MD', Hawaii:'HI' }; return map[region] || region; }
 function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || `location-${Date.now()}`; }
 function githubHeaders(token) { return { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

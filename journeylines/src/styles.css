@@ -11811,7 +11811,7 @@ svg text {
 }
 
 
-/* GlobeHoppers v4.31: city suggestion source labels. */
+/* GlobeHoppers v4.31.2: safe lazy city suggestion labels. */
 .autocomplete-menu--cities {
   max-height: min(360px, 46vh);
   overflow: auto;
