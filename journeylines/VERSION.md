@@ -1,1 +1,1 @@
-GlobeHoppers v4.38 — dense card mode
+GlobeHoppers v4.39 — card polish, Add Hop green, hero and globe zoom fix

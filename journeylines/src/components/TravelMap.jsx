@@ -302,6 +302,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !mapReady || isStarted || introLaunching) return;
+    try {
+      userCameraOverrideRef.current = false;
+      manualSpinPauseRef.current = false;
+      clearTimeout(manualSpinResumeTimerRef.current);
+      resetAnimatingRef.current = true;
+      lastCameraRef.current = null;
+      map.stop();
+      map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: INTRO_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 650, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 725);
+    } catch { resetAnimatingRef.current = false; }
+  }, [isStarted, introLaunching, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !mapReady || !globeOverview) return;
     try {
       userCameraOverrideRef.current = false;

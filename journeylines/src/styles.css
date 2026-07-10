@@ -12096,3 +12096,101 @@ svg text {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* GlobeHoppers v4.39: card density polish, Add Hop green consistency, hero reset. */
+.studio-trip-list--card .studio-card-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+}
+.studio-trip-list--card .studio-trip-row--card {
+  min-height: 54px !important;
+  height: 54px !important;
+  padding: 5px 6px !important;
+  border-radius: 10px !important;
+}
+.studio-trip-list--card .studio-trip-row--card .studio-trip-date,
+.studio-trip-list--card .studio-trip-row--card .studio-trip-main strong {
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.025em !important;
+}
+.studio-trip-list--card .studio-trip-row--card .studio-trip-date {
+  -webkit-line-clamp: 2 !important;
+  min-height: 11px !important;
+}
+.studio-trip-list--card .studio-trip-row--card .studio-trip-main strong {
+  -webkit-line-clamp: 2 !important;
+}
+.studio-trip-list--card .timeline-year-section h3 {
+  min-height: 21px !important;
+  padding: 4px 10px !important;
+  margin-bottom: 3px !important;
+}
+.studio-trip-list--card .timeline-year-section {
+  gap: 4px !important;
+  margin-bottom: 7px !important;
+}
+
+/* Keep every Add Hop button using the same green as the top-bar Add Hop. */
+.hero-add-hop,
+.studio-actions-main > button.primary,
+.studio-panel .studio-actions-main > button.primary,
+.hero .hero-actions .hero-add-hop {
+  background: linear-gradient(135deg, #44f48a, #dff29a) !important;
+  border-color: rgba(101, 255, 161, .64) !important;
+  color: #03120a !important;
+  font-weight: 950 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    0 0 22px rgba(68,244,138,.26),
+    0 10px 26px rgba(0,0,0,.28) !important;
+}
+.hero-add-hop:hover,
+.studio-actions-main > button.primary:hover,
+.studio-panel .studio-actions-main > button.primary:hover {
+  background: linear-gradient(135deg, #65ff9d, #ffe783) !important;
+  transform: translateY(-1px);
+}
+
+/* Hero card got too wide/heavy after density passes; restore a centered product-card feel. */
+.hero.glass {
+  width: min(760px, calc(100vw - 120px)) !important;
+  max-width: 760px !important;
+  padding: clamp(34px, 4.4vw, 46px) clamp(36px, 5vw, 56px) !important;
+  border-radius: 28px !important;
+  text-align: center !important;
+  overflow: visible !important;
+}
+.hero h1 {
+  font-size: clamp(3.8rem, 7.4vw, 6.1rem) !important;
+  line-height: .9 !important;
+  letter-spacing: -.075em !important;
+  white-space: nowrap !important;
+  margin: .08em 0 .10em !important;
+}
+.hero p:not(.eyebrow) {
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+  max-width: 560px !important;
+}
+.hero-actions {
+  margin-top: 18px !important;
+  gap: 12px !important;
+}
+.hero-actions .big {
+  min-height: 46px !important;
+  padding: 11px 19px !important;
+}
+@media (max-width: 760px) {
+  .hero.glass {
+    width: min(560px, calc(100vw - 36px)) !important;
+    padding: 28px 24px !important;
+  }
+  .hero h1 {
+    font-size: clamp(2.9rem, 13vw, 4.6rem) !important;
+  }
+  .studio-trip-list--card .studio-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
