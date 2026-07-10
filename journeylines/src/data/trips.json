@@ -77,9 +77,9 @@
   {
     "id": "2013-006-chicago",
     "year": 2013,
-    "month": null,
+    "month": 1,
     "day": null,
-    "displayDate": "2013",
+    "displayDate": "January 2013",
     "sortKey": "2013-13-99-001",
     "label": "Chicago",
     "travelers": [
@@ -92,7 +92,15 @@
     "toLocationId": "chicago-il",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "stripe",
+    "trailColorMode": "members"
   },
   {
     "id": "2013-004-bahamas",
