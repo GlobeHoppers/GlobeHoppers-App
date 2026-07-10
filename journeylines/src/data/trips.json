@@ -49,9 +49,9 @@
   {
     "id": "2012-003-atlanta",
     "year": 2012,
-    "month": null,
+    "month": 2,
     "day": null,
-    "displayDate": "2012",
+    "displayDate": "February 2012",
     "sortKey": "2012-13-99-003",
     "label": "Atlanta",
     "travelers": [
@@ -64,7 +64,15 @@
     "toLocationId": "atlanta-ga",
     "route": [],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayEndDate": "",
+    "guestHoppers": [],
+    "returnMode": "plane",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members"
   },
   {
     "id": "2013-006-chicago",
