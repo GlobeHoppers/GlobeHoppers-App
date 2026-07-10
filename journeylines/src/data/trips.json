@@ -82,33 +82,6 @@
     "trailColorMode": "members"
   },
   {
-    "id": "2013-143-san-antonio",
-    "year": 2013,
-    "month": 3,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "March 2013",
-    "displayEndDate": "",
-    "sortKey": "2013-03-99-004",
-    "label": "San Antonio",
-    "travelers": [
-      "hopper-mrcyz5l4"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "san-antonio-tx",
-    "route": [],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "solid",
-    "trailColorMode": "members"
-  },
-  {
     "id": "2013-006-chicago",
     "year": 2013,
     "month": 1,
