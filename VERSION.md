@@ -1,1 +1,1 @@
-GlobeHoppers v4.37 — chronological timeline only
+GlobeHoppers v4.38 — dense card mode
