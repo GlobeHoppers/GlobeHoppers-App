@@ -115,7 +115,11 @@ function applyRouteStackOffsets(entries = []) {
 
     const spacing = 3.1;
     laneEntries.forEach((lane, laneIndex) => {
-      const baseOffset = (laneIndex - (laneEntries.length - 1) / 2) * spacing;
+      // First trip goes directly to the destination point. Later repeat trips
+      // alternate to either side of that center lane: 2nd left, 3rd right,
+      // 4th farther left, 5th farther right, etc. This keeps the first visit
+      // visually honest instead of offsetting it just because future visits exist.
+      const baseOffset = routeStackCenteredFirstOffset(laneIndex, spacing);
       lane.entries.forEach(entry => {
         // MapLibre line-offset is relative to the line's drawing direction.
         // A return leg has reversed coordinates, so the same numeric offset
@@ -152,6 +156,12 @@ function routeStackDirectionSign(leg) {
   if (!from || !to) return 1;
   const pair = [String(from), String(to)].sort();
   return String(from) === pair[0] ? 1 : -1;
+}
+
+function routeStackCenteredFirstOffset(laneIndex, spacing = 3.1) {
+  if (!laneIndex) return 0;
+  const magnitude = Math.ceil(laneIndex / 2) * spacing;
+  return laneIndex % 2 === 1 ? -magnitude : magnitude;
 }
 
 function timelineDateValue(item, isHomeMove = false) {

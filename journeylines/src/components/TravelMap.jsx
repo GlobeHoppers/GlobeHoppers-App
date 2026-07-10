@@ -322,9 +322,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           pulseRef.current.classList.remove('is-active');
           pulseRef.current.style.opacity = '0';
         }
+        manualSpinPauseRef.current = false;
+        clearTimeout(manualSpinResumeTimerRef.current);
         map.stop();
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-        window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 900, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        // Allow the idle spin to start almost immediately instead of waiting
+        // for the whole zoom-out animation to complete.
+        window.setTimeout(() => { resetAnimatingRef.current = false; }, 120);
       } catch { resetAnimatingRef.current = false; }
     }
     window.addEventListener('globehoppers-force-globe-overview', handleForceGlobeOverview);
@@ -399,7 +403,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const pauseSpin = () => {
       manualSpinPauseRef.current = true;
+      resetAnimatingRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
+      try { map.stop(); } catch {}
     };
     const resumeAfterIdle = () => {
       clearTimeout(manualSpinResumeTimerRef.current);
@@ -426,16 +432,24 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       }, 3000);
     };
 
+    map.on('mousedown', pauseSpin);
+    map.on('touchstart', pauseSpin);
     map.on('dragstart', pauseSpin);
     map.on('rotatestart', pauseSpin);
     map.on('pitchstart', pauseSpin);
+    map.on('mouseup', resumeAfterIdle);
+    map.on('touchend', resumeAfterIdle);
     map.on('dragend', resumeAfterIdle);
     map.on('rotateend', resumeAfterIdle);
     map.on('pitchend', resumeAfterIdle);
     return () => {
+      map.off('mousedown', pauseSpin);
+      map.off('touchstart', pauseSpin);
       map.off('dragstart', pauseSpin);
       map.off('rotatestart', pauseSpin);
       map.off('pitchstart', pauseSpin);
+      map.off('mouseup', resumeAfterIdle);
+      map.off('touchend', resumeAfterIdle);
       map.off('dragend', resumeAfterIdle);
       map.off('rotateend', resumeAfterIdle);
       map.off('pitchend', resumeAfterIdle);
@@ -569,7 +583,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, []);
       }
       if (completedMode && !globeOverview) {
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 900, essential: true });
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 650, essential: true });
       }
       return;
     }

@@ -1,1 +1,1 @@
-GlobeHoppers v4.17 — zoom 4.20 and faster idle globe spin
+GlobeHoppers v4.18 — centered-first route stacking and smoother globe control
