@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [] }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -134,6 +134,19 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
         <label className="check"><input type="checkbox" checked={showTrails} onChange={e => setShowTrails(e.target.checked)} /> Trails</label>
         <label className="check"><input type="checkbox" checked={routeStackingEnabled} onChange={e => setRouteStackingEnabled(e.target.checked)} /> Route stacking</label>
         <label className="check"><input type="checkbox" checked={placeBackgroundsEnabled} onChange={e => setPlaceBackgroundsEnabled(e.target.checked)} /> Place backgrounds</label>
+        <div className="timeline-advanced-section">
+          <div className="timeline-advanced-title">Route details</div>
+          <div className="timeline-route-status">{routeDetailsStatus?.label || 'Not loaded'}</div>
+          {routeDetailsMessage && <div className="timeline-route-message">{routeDetailsMessage}</div>}
+          <button
+            type="button"
+            className="timeline-route-rebuild"
+            disabled={routeDetailsBusy || !onRebuildRouteDetails}
+            onClick={(event) => { event.preventDefault(); event.stopPropagation(); onRebuildRouteDetails?.(); }}
+          >
+            {routeDetailsBusy ? 'Rebuilding…' : 'Rebuild Route Details'}
+          </button>
+        </div>
       </div>}
     </div>
   </div>;

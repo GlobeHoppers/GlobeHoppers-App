@@ -11713,3 +11713,50 @@ svg text {
 .trail-tuning section h4 {
   text-transform: capitalize;
 }
+
+
+/* GlobeHoppers v4.21 — route details tools in timeline advanced menu. */
+.timeline-advanced-section {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+
+.timeline-advanced-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: rgba(232,244,255,.78);
+}
+
+.timeline-route-status,
+.timeline-route-message {
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(232,244,255,.78);
+}
+
+.timeline-route-message {
+  color: rgba(232,244,255,.92);
+}
+
+.timeline-route-rebuild {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(126, 245, 163, .38);
+  background: rgba(50, 190, 100, .18);
+  color: rgba(238,255,244,.96);
+  font-family: var(--gh-font-ui, 'Plus Jakarta Sans', Inter, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.timeline-route-rebuild:disabled {
+  opacity: .55;
+  cursor: default;
+}

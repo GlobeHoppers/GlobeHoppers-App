@@ -1,1 +1,1 @@
-GlobeHoppers v4.20 — all-trails passive feature cache and routeDetails geometry sync
+GlobeHoppers v4.21 — route details rebuild/status tools and trails/stacking defaults
