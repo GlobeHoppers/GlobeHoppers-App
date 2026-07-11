@@ -3189,7 +3189,7 @@
     "trailColorMode": "members"
   },
   {
-    "id": "2026-143-las-vegas",
+    "id": "2026-144-albuquerque",
     "year": 2026,
     "month": 9,
     "day": null,
@@ -3199,6 +3199,33 @@
     "displayDate": "September 2026",
     "displayEndDate": "",
     "sortKey": "2026-09-99-2026-09-99-141",
+    "label": "Albuquerque",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "train",
+    "roundTrip": true,
+    "returnMode": "train",
+    "fromLocationId": null,
+    "toLocationId": "albuquerque-nm",
+    "route": [],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members"
+  },
+  {
+    "id": "2026-143-las-vegas",
+    "year": 2026,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-09-99-2026-09-99-142",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -3233,7 +3260,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-142",
+    "sortKey": "2026-09-99-2026-09-99-143",
     "label": "Tokyo",
     "travelers": [
       "joey",
@@ -3262,7 +3289,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-143",
+    "sortKey": "2026-12-99-2026-12-99-144",
     "label": "Phoenix",
     "travelers": [
       "joey"

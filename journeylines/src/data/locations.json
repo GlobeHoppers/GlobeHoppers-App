@@ -682,5 +682,18 @@
     "continent": "North America",
     "lat": 38.2527,
     "lon": -85.7585
+  },
+  {
+    "id": "albuquerque-nm",
+    "name": "Albuquerque",
+    "region": "NM",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 35.08449,
+    "lon": -106.65114,
+    "geonameId": 5454711,
+    "population": 545852,
+    "timezone": "America/Denver"
   }
 ]
