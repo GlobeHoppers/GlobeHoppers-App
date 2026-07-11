@@ -3299,7 +3299,7 @@
     "roundTrip": true,
     "returnMode": "boat",
     "fromLocationId": null,
-    "toLocationId": "glasgow-sct",
+    "toLocationId": "vancouver-ca",
     "route": [],
     "notes": "",
     "occasion": "",
