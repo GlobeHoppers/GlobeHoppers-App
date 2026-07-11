@@ -1,1 +1,1 @@
-GlobeHoppers v5.1.5 — water-only boat trail enforcement
+GlobeHoppers v5.1.6 — stable water-side boat routing rollback

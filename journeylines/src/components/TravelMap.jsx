@@ -2509,63 +2509,64 @@ function finalizeBoatRouteWithWaterApproaches(startCity, endCity, waterRoute = [
   const startWater = boatWaterApproachPoint(startCity, endCity, land, 'start');
   const endWater = boatWaterApproachPoint(endCity, startCity, land, 'end');
 
-  // v5.1.5: enforce a water-only visible boat trail. City points are still used
-  // for labels/cards/timeline, but if the city pin is inland the boat trail docks
-  // at the nearest water-side approach point instead of drawing an inland connector.
+  // v5.1.6: no post-route dogleg repairs. Boat trails are built from valid
+  // water-side approach/dock points and stop at the dock point if the city pin
+  // is on land. The city remains the trip destination for labels/timeline.
   const visibleStart = pointInAnyLandRing(startCity, land) ? startWater : startCity;
   const visibleEnd = pointInAnyLandRing(endCity, land) ? endWater : endCity;
-
   let route = cleanupRouteCoordinates([visibleStart, ...(waterRoute || []), visibleEnd]);
   route = removeNearDuplicateBoatApproachPoints(route);
-  route = enforceBoatRouteWaterOnly(route, land);
+  route = sanitizeBoatRouteGeometry(route);
   return cleanupRouteCoordinates(route);
 }
 
-function enforceBoatRouteWaterOnly(route = [], land = []) {
-  if (!Array.isArray(route) || route.length < 2) return route || [];
-  const out = [route[0]];
-  for (let i = 1; i < route.length; i++) {
-    const prev = out[out.length - 1];
-    const next = route[i];
-    if (!waterEdgeHitsLand(prev, next, land, false) && caribbeanIslandCutPenalty(prev, next) < 9999 && panamaCanalBadAnglePenalty(prev, next) < 9999) {
-      out.push(next);
-      continue;
-    }
-    const repair = repairWaterSegment(prev, next, land);
-    if (repair?.length > 1) out.push(...repair.slice(1));
-    else out.push(next);
-  }
-  return removeNearDuplicateBoatApproachPoints(out);
+function sanitizeBoatRouteGeometry(route = []) {
+  // Prevent visual scribbles by removing tiny segments and severe backtracking.
+  // This does not invent new doglegs; it only simplifies the chosen water route.
+  if (!Array.isArray(route) || route.length < 3) return route || [];
+  let pts = removeShortBoatSegments(route, 0.018);
+  pts = removeSharpBoatBacktracks(pts, 28);
+  return pts;
 }
 
-function repairWaterSegment(a, b, land = []) {
-  // Generic local repair: try a fan of water-side doglegs around the blocked
-  // segment. This is deliberately conservative and applies globally.
-  const mid = midpointCoord(a, b);
-  const perp = routePerpendicular(a, b);
-  const dist = Math.sqrt(coordDistance2(a, b));
-  const offsets = [0.55, 0.9, 1.35, 2.1, 3.2, 4.6].map(v => Math.max(v, dist * 0.42));
-  let best = null;
-  let bestScore = Infinity;
-  for (const off of offsets) {
-    for (const sign of [1, -1]) {
-      const c = [mid[0] + perp[0] * off * sign, mid[1] + perp[1] * off * sign];
-      if (pointInAnyLandRing(c, land)) continue;
-      const candidate = safeGatewayRoute([a, c, b], 48);
-      const hits = routeSegmentsHitLand(candidate, land) + islandRouteCutPenalty(candidate) / 9999 + (panamaRouteCutPenalty(candidate) / 9999);
-      const score = hits * 100000 + routePathLength2(candidate);
-      if (score < bestScore) { best = candidate; bestScore = score; }
-      if (hits === 0) return candidate;
-    }
+function removeShortBoatSegments(route = [], minDistanceDeg = 0.018) {
+  const out = [];
+  for (const p of route || []) {
+    if (!out.length || Math.sqrt(coordDistance2(out[out.length - 1], p)) >= minDistanceDeg) out.push(p);
   }
-  return best;
+  if (out.length && route?.length && coordDistance2(out[out.length - 1], route[route.length - 1]) > 0.000001) out.push(route[route.length - 1]);
+  return out.length >= 2 ? out : route;
 }
 
-function panamaRouteCutPenalty(route = []) {
-  for (let i = 1; i < route.length; i++) {
-    if (panamaCanalBadAnglePenalty(route[i - 1], route[i]) >= 9999) return 9999;
+function removeSharpBoatBacktracks(route = [], minTurnDeg = 28) {
+  if (!Array.isArray(route) || route.length < 4) return route || [];
+  const pts = [...route];
+  let changed = true;
+  let guard = 0;
+  while (changed && guard++ < 4) {
+    changed = false;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const angle = boatTurnAngleDeg(pts[i - 1], pts[i], pts[i + 1]);
+      const beforeAfter = Math.sqrt(coordDistance2(pts[i - 1], pts[i + 1]));
+      const via = Math.sqrt(coordDistance2(pts[i - 1], pts[i])) + Math.sqrt(coordDistance2(pts[i], pts[i + 1]));
+      // Remove points that create a near reversal or a pointless tiny kink.
+      if (angle < minTurnDeg || (via > 0 && beforeAfter / via < 0.42)) {
+        pts.splice(i, 1);
+        changed = true;
+        break;
+      }
+    }
   }
-  return 0;
+  return pts;
+}
+
+function boatTurnAngleDeg(a, b, c) {
+  const v1 = [shortestLonDelta(b[0] - a[0]), b[1] - a[1]];
+  const v2 = [shortestLonDelta(c[0] - b[0]), c[1] - b[1]];
+  const l1 = Math.hypot(v1[0], v1[1]) || 1;
+  const l2 = Math.hypot(v2[0], v2[1]) || 1;
+  const dot = Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2)));
+  return Math.acos(dot) * 180 / Math.PI;
 }
 
 function removeNearDuplicateBoatApproachPoints(route = []) {
