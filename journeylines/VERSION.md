@@ -1,1 +1,1 @@
-GlobeHoppers v5.0.2 — vessel route shaping refinement
+GlobeHoppers v5.0.3 — boat land avoidance fix

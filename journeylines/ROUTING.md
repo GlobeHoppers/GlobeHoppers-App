@@ -1,9 +1,9 @@
-Base: GlobeHoppers v5.0.1
-Update: v5.0.2 vessel route shaping refinement
+Base: GlobeHoppers v5.0.2
+Update: v5.0.3 boat land avoidance fix
 Changes:
-- Car routes now add a subtle road-like squiggle after Natural Earth road guidance so they feel more like roads and less like smooth arcs.
-- Car/train Natural Earth routing now rejects excessive detours and falls back to shorter vessel-specific generated routes when the network guidance wanders too far.
-- Train routes now prioritize shorter rail-like routes, avoiding large inland detours when a simpler route is more believable.
-- Boat routes now evaluate more route candidates, apply stronger land-intersection penalties, and try farther offshore bends when needed.
-- Boat curves now use smoother Catmull-Rom sampling instead of angular line segments.
-- General surface/boat fallback curves are smoother and more flow-like.
+- Replaced coarse Natural Earth land bounding boxes with simplified Natural Earth land polygons for boat land checks.
+- Boat routes now evaluate actual land polygon intersection instead of broad continent rectangles.
+- Boat routes no longer use nearest-coast midpoint guidance, which could pull a route toward mainland land.
+- Boat routing now prefers simple offshore curves and only bends farther when needed.
+- Car/train/boat no longer reuse routeDetails/generated cached geometry unless there is a manual route override.
+- This prevents bad cached vessel paths from being replayed after a routing bug is fixed.

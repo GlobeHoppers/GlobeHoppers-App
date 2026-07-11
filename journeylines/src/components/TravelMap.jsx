@@ -2243,10 +2243,14 @@ function reverseRouteCacheKey(leg) {
 }
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
-  // v5.0.1: routeDetails often stores two-point "simpleFallback" geometries.
-  // For car/train/boat that blocks the new Natural Earth generator and leaves
-  // everything looking like a straight line. Only honor cached geometry when it
-  // is more than a straight endpoint placeholder, or when it is an airplane.
+  const manual = getManualRoute(leg);
+  if (manual?.length > 1) return manual;
+
+  // v5.0.3: car/train/boat routes are locally generated from Natural Earth at
+  // render time unless manually overridden. This prevents bad generated/cached
+  // vessel geometries from being replayed forever after routeDetails stores them.
+  if (isNaturalEarthVesselMode(leg?.mode)) return null;
+
   if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1 && !isStraightEndpointPlaceholder(leg, leg.routeGeometry)) return leg.routeGeometry;
   const key = leg?.routeCacheKey || routeCacheKey(leg);
   if (routedGeometries[key]?.length > 1 && !isStraightEndpointPlaceholder(leg, routedGeometries[key])) return routedGeometries[key];
@@ -2255,8 +2259,11 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
     const reversed = [...reverse].reverse();
     if (!isStraightEndpointPlaceholder(leg, reversed)) return reversed;
   }
-  const manual = getManualRoute(leg);
-  return manual?.length > 1 ? manual : null;
+  return null;
+}
+
+function isNaturalEarthVesselMode(mode) {
+  return mode === 'drive' || mode === 'car' || mode === 'train' || mode === 'boat';
 }
 
 function isStraightEndpointPlaceholder(leg, coords = []) {
@@ -2418,59 +2425,67 @@ function nearestPointOnNetwork(target, lines = []) {
 function waterAvoidingBoatRoute(leg) {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const boxes = naturalEarthRouting?.landBoxes || [];
+  const land = naturalEarthRouting?.landRings || [];
   const distance = milesBetween(leg.from, leg.to);
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
   let bestScore = Infinity;
 
   for (const route of candidates) {
-    const smooth = bezierRouteThrough(route, 72);
-    const hits = routeSegmentsHitLand(smooth, boxes);
+    const smooth = bezierRouteThrough(route, 96);
+    const hits = routeSegmentsHitLand(smooth, land);
     const length = routePathLength2(smooth);
     const detour = length / Math.max(0.0001, coordDistance2(a, b));
-    const score = hits * 1000000 + Math.max(0, detour - 1.75) * 9000 + length;
+    const score = hits * 10000000 + Math.max(0, detour - 1.65) * 12000 + length;
     if (score < bestScore) { best = smooth; bestScore = score; }
-    if (hits === 0 && detour < 2.15) break;
   }
 
-  // If every candidate still intersects the coarse land boxes, push the bend
-  // farther offshore and choose the cleanest/shortest resulting curve.
-  if (routeSegmentsHitLand(best || [a,b], boxes) > 0) {
-    const perp = routePerpendicular(a, b);
-    const mid = midpointCoord(a, b);
-    const big = distance > 1500 ? 10.5 : distance > 600 ? 5.4 : 2.3;
-    const farOptions = [
-      [a, [mid[0] + perp[0] * big, mid[1] + perp[1] * big], b],
-      [a, [mid[0] - perp[0] * big, mid[1] - perp[1] * big], b]
-    ].map(r => bezierRouteThrough(r, 84));
+  // If the cleanest route still touches land, push farther offshore on both
+  // sides and pick the shortest side that clears land. This specifically fixes
+  // coast-hugging routes such as San Diego ↔ Cabo that should stay on the ocean
+  // side of Baja rather than cutting into mainland Mexico.
+  if (routeSegmentsHitLand(best || [a,b], land) > 0) {
+    const farOptions = offshoreBoatCandidates(a, b, distance).map(r => bezierRouteThrough(r, 112));
     for (const route of farOptions) {
-      const hits = routeSegmentsHitLand(route, boxes);
-      const score = hits * 1000000 + routePathLength2(route);
+      const hits = routeSegmentsHitLand(route, land);
+      const score = hits * 10000000 + routePathLength2(route);
       if (score < bestScore) { best = route; bestScore = score; }
     }
   }
 
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
-
 function boatRouteCandidates(a, b, distance = 0) {
   const mid = midpointCoord(a, b);
   const perp = routePerpendicular(a, b);
-  const base = distance > 1800 ? 7.2 : distance > 650 ? 3.5 : 1.25;
-  const coast = naturalEarthRouting?.coast || [];
-  const coastCandidates = networkCandidates(coast, a, b, distance > 1800 ? 10 : distance > 650 ? 5.8 : 3.0, 10);
-  const coastMid = nearestPointOnNetwork(mid, coastCandidates)?.point;
-  const options = [
+  const base = distance > 1800 ? 7.0 : distance > 650 ? 3.4 : 1.18;
+  return [
     [a, b],
     [a, [mid[0] + perp[0] * base, mid[1] + perp[1] * base], b],
     [a, [mid[0] - perp[0] * base, mid[1] - perp[1] * base], b],
-    [a, [lerp(a[0], b[0], 0.34) + perp[0] * base * 0.85, lerp(a[1], b[1], 0.34) + perp[1] * base * 0.85], [lerp(a[0], b[0], 0.68) + perp[0] * base * 0.65, lerp(a[1], b[1], 0.68) + perp[1] * base * 0.65], b],
-    [a, [lerp(a[0], b[0], 0.34) - perp[0] * base * 0.85, lerp(a[1], b[1], 0.34) - perp[1] * base * 0.85], [lerp(a[0], b[0], 0.68) - perp[0] * base * 0.65, lerp(a[1], b[1], 0.68) - perp[1] * base * 0.65], b]
+    [a, [lerp(a[0], b[0], 0.30) + perp[0] * base * 0.75, lerp(a[1], b[1], 0.30) + perp[1] * base * 0.75], [lerp(a[0], b[0], 0.68) + perp[0] * base * 0.75, lerp(a[1], b[1], 0.68) + perp[1] * base * 0.75], b],
+    [a, [lerp(a[0], b[0], 0.30) - perp[0] * base * 0.75, lerp(a[1], b[1], 0.30) - perp[1] * base * 0.75], [lerp(a[0], b[0], 0.68) - perp[0] * base * 0.75, lerp(a[1], b[1], 0.68) - perp[1] * base * 0.75], b]
   ];
-  if (coastMid) options.unshift([a, coastMid, b]);
-  return options;
 }
+
+function offshoreBoatCandidates(a, b, distance = 0) {
+  const perp = routePerpendicular(a, b);
+  const base = distance > 1800 ? 10.8 : distance > 650 ? 5.6 : 2.4;
+  const one = [
+    a,
+    [lerp(a[0], b[0], 0.24) + perp[0] * base * 0.85, lerp(a[1], b[1], 0.24) + perp[1] * base * 0.85],
+    [lerp(a[0], b[0], 0.58) + perp[0] * base, lerp(a[1], b[1], 0.58) + perp[1] * base],
+    b
+  ];
+  const two = [
+    a,
+    [lerp(a[0], b[0], 0.24) - perp[0] * base * 0.85, lerp(a[1], b[1], 0.24) - perp[1] * base * 0.85],
+    [lerp(a[0], b[0], 0.58) - perp[0] * base, lerp(a[1], b[1], 0.58) - perp[1] * base],
+    b
+  ];
+  return [one, two];
+}
+
 function stylizedFallbackRoute(leg) {
   if (leg.mode === 'boat') return boatCurveRoute(leg, 0.48);
   if (leg.mode === 'train') return stylizedSurfaceRoute(leg, 'train');
@@ -2582,21 +2597,45 @@ function tooFarFromCorridor(p, a, b, maxDegrees = 3) {
 }
 
 function routePathLength2(route = []) { let t = 0; for (let i=1;i<route.length;i++) t += coordDistance2(route[i-1], route[i]); return t; }
-function lineHitsLandBoxes(a, b, boxes = []) {
-  const box = routeBbox(a, b, 0);
-  return (boxes || []).some(ob => bboxIntersects(box, ob) && lineIntersectsBBox(a, b, ob));
+function lineHitsLandBoxes(a, b, rings = []) {
+  const box = routeBbox(a, b, 0.04);
+  return (rings || []).some(ring => bboxIntersects(box, ring.b) && lineIntersectsLandRing(a, b, ring));
 }
-function routeSegmentsHitLand(route = [], boxes = []) {
+function routeSegmentsHitLand(route = [], rings = []) {
+  if (!Array.isArray(route) || route.length < 2) return 0;
   let hits = 0;
-  for (let i=1;i<route.length;i++) if (lineHitsLandBoxes(route[i-1], route[i], boxes)) hits++;
+  for (let i = 1; i < route.length; i++) {
+    const t0 = (i - 1) / Math.max(1, route.length - 1);
+    const t1 = i / Math.max(1, route.length - 1);
+    // Cities are on land. Allow very short start/end connectors to reach water.
+    if (t1 < 0.055 || t0 > 0.945) continue;
+    if (lineHitsLandBoxes(route[i - 1], route[i], rings)) hits++;
+  }
   return hits;
 }
-function lineIntersectsBBox(a, b, box) {
-  if (!box) return false;
-  if (pointInBBox(a, box) || pointInBBox(b, box)) return true;
-  const corners = [[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]];
-  for (let i=0;i<4;i++) if (segmentsIntersect(a,b,corners[i],corners[(i+1)%4])) return true;
+function lineIntersectsLandRing(a, b, ring) {
+  const pts = ring?.p || [];
+  if (pts.length < 4) return false;
+  const samples = 5;
+  for (let i = 1; i < samples; i++) {
+    const p = [lerpAngle(a[0], b[0], i / samples), lerp(a[1], b[1], i / samples)];
+    if (pointInRing(p, pts)) return true;
+  }
+  for (let i = 1; i < pts.length; i++) {
+    if (segmentsIntersect(a, b, pts[i - 1], pts[i])) return true;
+  }
   return false;
+}
+function pointInRing(point, ring = []) {
+  let inside = false;
+  const x = point[0], y = point[1];
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / ((yj - yi) || 0.0000001) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }
 function pointInBBox(p, b) { return p[0]>=b[0] && p[0]<=b[2] && p[1]>=b[1] && p[1]<=b[3]; }
 function segmentsIntersect(a,b,c,d) {
