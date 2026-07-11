@@ -1,1 +1,1 @@
-GlobeHoppers v5.0.3 — boat land avoidance fix
+GlobeHoppers v5.0.4 — suggestion close and vessel routing corrections

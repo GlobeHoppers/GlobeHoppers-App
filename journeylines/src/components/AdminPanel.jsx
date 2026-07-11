@@ -1185,7 +1185,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} />
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} resetToken={`${draft.fromLocationId || ''}:${draft.fromLocationText || ''}`} />
                 </div>}
                 <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft(d => ({...d, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? d.fromLocationId : null}))}/> Override start location</label>
               </div>

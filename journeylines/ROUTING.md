@@ -1,9 +1,9 @@
-Base: GlobeHoppers v5.0.2
-Update: v5.0.3 boat land avoidance fix
+Base: GlobeHoppers v5.0.3
+Update: v5.0.4 suggestion close and vessel routing corrections
 Changes:
-- Replaced coarse Natural Earth land bounding boxes with simplified Natural Earth land polygons for boat land checks.
-- Boat routes now evaluate actual land polygon intersection instead of broad continent rectangles.
-- Boat routes no longer use nearest-coast midpoint guidance, which could pull a route toward mainland land.
-- Boat routing now prefers simple offshore curves and only bends farther when needed.
-- Car/train/boat no longer reuse routeDetails/generated cached geometry unless there is a manual route override.
-- This prevents bad cached vessel paths from being replayed after a routing bug is fixed.
+- Override start location autocomplete now hides the suggestion popup after a selected start location is applied.
+- Train routes are now more aggressively shortest-route biased.
+- Train Natural Earth guidance is rejected if it strays too far from the direct route corridor.
+- Train fallback route is closer to a direct rail-like route, preventing San Diego ↔ Cabo from detouring to mainland Mexico.
+- Added long-distance ocean gateway routing for west North America ↔ Mediterranean boat trips such as San Diego ↔ Athens.
+- Complex ocean boat routes now use Panama and Gibraltar-style gateways instead of drawing across continents.

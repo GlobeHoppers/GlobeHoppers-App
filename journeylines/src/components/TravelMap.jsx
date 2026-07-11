@@ -2376,24 +2376,34 @@ function guidedSurfaceRoute(leg, network = [], type = 'drive') {
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const distance = milesBetween(leg.from, leg.to);
   const direct = stylizedSurfaceRoute(leg, type);
+
+  // Trains should be believable before they are "network exact". Natural Earth
+  // rail data is too sparse in places like Baja; if rail guidance wanders away
+  // from the direct corridor, a short rail-like route is better than a detour to
+  // mainland Mexico and back across water.
   const broad = distance > 1200;
-  const maxDetour = type === 'train' ? (broad ? 1.34 : 1.24) : (broad ? 1.48 : 1.34);
-  const corridorPad = type === 'train' ? (broad ? 3.8 : 1.45) : (broad ? 5.2 : 2.35);
-  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 30 : 24);
+  const maxDetour = type === 'train' ? (broad ? 1.16 : 1.12) : (broad ? 1.44 : 1.30);
+  const corridorPad = type === 'train' ? (broad ? 1.65 : 0.85) : (broad ? 5.2 : 2.35);
+  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 30 : 14);
   if (candidates.length >= 2) {
-    const t1 = nearestPointOnNetwork(lerpCoord(a, b, 0.25), candidates);
-    const t2 = nearestPointOnNetwork(lerpCoord(a, b, 0.50), candidates);
-    const t3 = nearestPointOnNetwork(lerpCoord(a, b, 0.75), candidates);
+    const probes = type === 'train' ? [0.34, 0.66] : [0.25, 0.50, 0.75];
     const shaped = [a];
-    for (const hit of [t1, t2, t3]) {
-      if (hit && !tooNearPoint(hit.point, shaped[shaped.length - 1]) && !tooFarFromCorridor(hit.point, a, b, corridorPad * 1.25)) shaped.push(hit.point);
+    let maxCorridorError = 0;
+    for (const probe of probes) {
+      const target = lerpCoord(a, b, probe);
+      const hit = nearestPointOnNetwork(target, candidates);
+      if (!hit) continue;
+      const corridorError = distanceFromPointToSegment(hit.point, a, b);
+      maxCorridorError = Math.max(maxCorridorError, corridorError);
+      if (!tooNearPoint(hit.point, shaped[shaped.length - 1]) && corridorError <= corridorPad * 1.15) shaped.push(hit.point);
     }
     shaped.push(b);
     const detourRatio = routePathLength2(shaped) / Math.max(0.0001, coordDistance2(a, b));
-    if (detourRatio <= maxDetour) {
+    const corridorLimit = type === 'train' ? corridorPad * 1.2 : corridorPad * 1.6;
+    if (shaped.length > 2 && detourRatio <= maxDetour && maxCorridorError <= corridorLimit) {
       const smoothed = type === 'train'
-        ? softenPolyline(shaped, 0.10, 42)
-        : roadSquiggleRoute(softenPolyline(shaped, 0.18, 46), leg, 0.42);
+        ? bezierRouteThrough(shaped, 42)
+        : roadSquiggleRoute(bezierRouteThrough(shaped, 46), leg, 0.46);
       return cleanupRouteCoordinates(smoothed);
     }
   }
@@ -2427,6 +2437,10 @@ function waterAvoidingBoatRoute(leg) {
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const land = naturalEarthRouting?.landRings || [];
   const distance = milesBetween(leg.from, leg.to);
+
+  const gateway = oceanGatewayBoatRoute(a, b);
+  if (gateway?.length > 2) return cleanupRouteCoordinates(bezierRouteThrough(gateway, 140));
+
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
   let bestScore = Infinity;
@@ -2440,10 +2454,6 @@ function waterAvoidingBoatRoute(leg) {
     if (score < bestScore) { best = smooth; bestScore = score; }
   }
 
-  // If the cleanest route still touches land, push farther offshore on both
-  // sides and pick the shortest side that clears land. This specifically fixes
-  // coast-hugging routes such as San Diego ↔ Cabo that should stay on the ocean
-  // side of Baja rather than cutting into mainland Mexico.
   if (routeSegmentsHitLand(best || [a,b], land) > 0) {
     const farOptions = offshoreBoatCandidates(a, b, distance).map(r => bezierRouteThrough(r, 112));
     for (const route of farOptions) {
@@ -2455,6 +2465,41 @@ function waterAvoidingBoatRoute(leg) {
 
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
+function oceanGatewayBoatRoute(a, b) {
+  const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
+  const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
+  const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
+  const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
+
+  if (westNorthAmerica && destMediterranean) {
+    return [
+      a,
+      [-112.7, 24.0],  // Pacific side of Baja
+      [-101.0, 15.0],
+      [-79.9, 8.9],    // Panama gateway
+      [-73.0, 18.0],
+      [-45.0, 29.5],
+      [-6.0, 35.9],    // Gibraltar gateway
+      [14.0, 37.0],
+      b
+    ];
+  }
+  if (sourceMediterranean && reverseWestNorthAmerica) {
+    return [
+      a,
+      [14.0, 37.0],
+      [-6.0, 35.9],
+      [-45.0, 29.5],
+      [-73.0, 18.0],
+      [-79.9, 8.9],
+      [-101.0, 15.0],
+      [-112.7, 24.0],
+      b
+    ];
+  }
+  return null;
+}
+
 function boatRouteCandidates(a, b, distance = 0) {
   const mid = midpointCoord(a, b);
   const perp = routePerpendicular(a, b);
@@ -2499,13 +2544,12 @@ function stylizedSurfaceRoute(leg, type = 'drive') {
   const mid = midpointCoord(a, b);
   const perp = routePerpendicular(a, b);
   const distance = milesBetween(leg.from, leg.to);
-  const bend = (type === 'train' ? 0.28 : 0.72) * (distance > 1200 ? 1.55 : distance > 350 ? 0.95 : 0.38);
+  const bend = (type === 'train' ? 0.12 : 0.72) * (distance > 1200 ? 1.55 : distance > 350 ? 0.95 : 0.38);
   const c1 = [lerp(a[0], b[0], 0.32) + perp[0] * bend, lerp(a[1], b[1], 0.32) + perp[1] * bend];
-  const c2 = [lerp(a[0], b[0], 0.67) - perp[0] * bend * (type === 'train' ? 0.22 : 0.48), lerp(a[1], b[1], 0.67) - perp[1] * bend * (type === 'train' ? 0.22 : 0.48)];
-  const base = bezierRouteThrough([a, c1, mid, c2, b], type === 'train' ? 42 : 48);
+  const c2 = [lerp(a[0], b[0], 0.67) - perp[0] * bend * (type === 'train' ? 0.10 : 0.48), lerp(a[1], b[1], 0.67) - perp[1] * bend * (type === 'train' ? 0.10 : 0.48)];
+  const base = bezierRouteThrough([a, c1, mid, c2, b], type === 'train' ? 44 : 48);
   return type === 'drive' ? roadSquiggleRoute(base, leg, 0.55) : cleanupRouteCoordinates(base);
 }
-
 function roadSquiggleRoute(coords = [], leg, strength = 0.45) {
   if (!Array.isArray(coords) || coords.length < 4) return coords;
   const distance = milesBetween(leg.from, leg.to);
@@ -2591,6 +2635,18 @@ function distancePointToBBox(p, b) { const x = Math.max(b[0], Math.min(p[0], b[2
 function routePerpendicular(a, b) { const dx = shortestLonDelta(b[0] - a[0]); const dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
 function tooNearPoint(a, b) { return !a || !b ? false : coordDistance2(a, b) < 0.05; }
 function lerpCoord(a, b, t) { return [lerpAngle(a[0], b[0], t), lerp(a[1], b[1], t)]; }
+function distanceFromPointToSegment(p, a, b) {
+  const ax = a[0], ay = a[1], bx = b[0], by = b[1], px = p[0], py = p[1];
+  const dx = shortestLonDelta(bx - ax);
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy || 1;
+  const relx = shortestLonDelta(px - ax);
+  const rely = py - ay;
+  const t = Math.max(0, Math.min(1, (relx * dx + rely * dy) / len2));
+  const proj = [ax + dx * t, ay + dy * t];
+  return Math.sqrt(coordDistance2(p, proj));
+}
+
 function tooFarFromCorridor(p, a, b, maxDegrees = 3) {
   const mid = midpointCoord(a, b);
   return Math.sqrt(coordDistance2(p, mid)) > Math.max(maxDegrees * 1.45, Math.sqrt(coordDistance2(a, b)) * 0.72);
