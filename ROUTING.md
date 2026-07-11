@@ -1,9 +1,9 @@
-Base: GlobeHoppers v5.0
-Update: v5.0.1 unique trip IDs and Natural Earth cache bypass
+Base: GlobeHoppers v5.0.1
+Update: v5.0.2 vessel route shaping refinement
 Changes:
-- New trips now receive unique 6-character random alphanumeric IDs.
-- Existing trip IDs are preserved when editing.
-- New trip ID generation checks the current trip list to avoid collisions.
-- Car/train/boat routes now ignore two-point straight-line routeDetails placeholders.
-- This allows Natural Earth-guided generated routing to run for car/train/boat when the cache only has a simple straight line.
-- Plane routes and detailed/manual route geometries continue to work as before.
+- Car routes now add a subtle road-like squiggle after Natural Earth road guidance so they feel more like roads and less like smooth arcs.
+- Car/train Natural Earth routing now rejects excessive detours and falls back to shorter vessel-specific generated routes when the network guidance wanders too far.
+- Train routes now prioritize shorter rail-like routes, avoiding large inland detours when a simpler route is more believable.
+- Boat routes now evaluate more route candidates, apply stronger land-intersection penalties, and try farther offshore bends when needed.
+- Boat curves now use smoother Catmull-Rom sampling instead of angular line segments.
+- General surface/boat fallback curves are smoother and more flow-like.

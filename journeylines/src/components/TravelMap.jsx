@@ -2368,25 +2368,31 @@ function guidedSurfaceRoute(leg, network = [], type = 'drive') {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const distance = milesBetween(leg.from, leg.to);
+  const direct = stylizedSurfaceRoute(leg, type);
   const broad = distance > 1200;
-  const mid = midpointCoord(a, b);
-  const corridorPad = type === 'train' ? (broad ? 5.5 : 2.3) : (broad ? 6.8 : 2.8);
-  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 22 : 18);
+  const maxDetour = type === 'train' ? (broad ? 1.34 : 1.24) : (broad ? 1.48 : 1.34);
+  const corridorPad = type === 'train' ? (broad ? 3.8 : 1.45) : (broad ? 5.2 : 2.35);
+  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 30 : 24);
   if (candidates.length >= 2) {
-    const start = nearestPointOnNetwork(a, candidates);
-    const end = nearestPointOnNetwork(b, candidates);
-    const midNear = nearestPointOnNetwork(mid, candidates);
+    const t1 = nearestPointOnNetwork(lerpCoord(a, b, 0.25), candidates);
+    const t2 = nearestPointOnNetwork(lerpCoord(a, b, 0.50), candidates);
+    const t3 = nearestPointOnNetwork(lerpCoord(a, b, 0.75), candidates);
     const shaped = [a];
-    if (start) shaped.push(start.point);
-    if (midNear && !tooNearPoint(midNear.point, start?.point) && !tooNearPoint(midNear.point, end?.point)) shaped.push(midNear.point);
-    if (end) shaped.push(end.point);
+    for (const hit of [t1, t2, t3]) {
+      if (hit && !tooNearPoint(hit.point, shaped[shaped.length - 1]) && !tooFarFromCorridor(hit.point, a, b, corridorPad * 1.25)) shaped.push(hit.point);
+    }
     shaped.push(b);
-    return softenPolyline(shaped, type === 'train' ? 0.18 : 0.28, type === 'train' ? 36 : 42);
+    const detourRatio = routePathLength2(shaped) / Math.max(0.0001, coordDistance2(a, b));
+    if (detourRatio <= maxDetour) {
+      const smoothed = type === 'train'
+        ? softenPolyline(shaped, 0.10, 42)
+        : roadSquiggleRoute(softenPolyline(shaped, 0.18, 46), leg, 0.42);
+      return cleanupRouteCoordinates(smoothed);
+    }
   }
 
-  return stylizedSurfaceRoute(leg, type);
+  return direct;
 }
-
 function networkCandidates(network = [], a, b, pad = 3, limit = 20) {
   const box = routeBbox(a, b, pad);
   const mid = midpointCoord(a, b);
@@ -2412,44 +2418,59 @@ function nearestPointOnNetwork(target, lines = []) {
 function waterAvoidingBoatRoute(leg) {
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
+  const boxes = naturalEarthRouting?.landBoxes || [];
   const distance = milesBetween(leg.from, leg.to);
-  const direct = [a, b];
-  const hitsLand = lineHitsLandBoxes(a, b, naturalEarthRouting?.landBoxes || []);
-  if (!hitsLand && distance < 900) return boatCurveRoute(leg, 0.35);
-
-  const water = naturalEarthRouting?.coast || [];
-  const pad = distance > 1800 ? 10 : distance > 650 ? 5.5 : 2.8;
-  const candidates = networkCandidates(water, a, b, pad, 16);
-  const mid = midpointCoord(a, b);
-  const coastMid = nearestPointOnNetwork(mid, candidates);
-  const perp = routePerpendicular(a, b);
-  const bendAmount = distance > 1800 ? 7.5 : distance > 650 ? 3.6 : 1.35;
-
-  const sideA = [mid[0] + perp[0] * bendAmount, mid[1] + perp[1] * bendAmount];
-  const sideB = [mid[0] - perp[0] * bendAmount, mid[1] - perp[1] * bendAmount];
-  const coastBias = coastMid?.point && !lineHitsLandBoxes(a, coastMid.point, naturalEarthRouting?.landBoxes || []) && !lineHitsLandBoxes(coastMid.point, b, naturalEarthRouting?.landBoxes || [])
-    ? coastMid.point
-    : null;
-
-  const options = [
-    coastBias ? [a, coastBias, b] : null,
-    [a, sideA, b],
-    [a, sideB, b],
-    [a, [sideA[0], sideA[1]], [sideA[0] * 0.45 + b[0] * 0.55, sideA[1] * 0.45 + b[1] * 0.55], b],
-    [a, [sideB[0], sideB[1]], [sideB[0] * 0.45 + b[0] * 0.55, sideB[1] * 0.45 + b[1] * 0.55], b]
-  ].filter(Boolean);
-
-  let best = options[0];
+  const candidates = boatRouteCandidates(a, b, distance);
+  let best = null;
   let bestScore = Infinity;
-  for (const route of options) {
-    const hits = routeSegmentsHitLand(route, naturalEarthRouting?.landBoxes || []);
-    const length = routePathLength2(route);
-    const score = hits * 100000 + length;
-    if (score < bestScore) { best = route; bestScore = score; }
+
+  for (const route of candidates) {
+    const smooth = bezierRouteThrough(route, 72);
+    const hits = routeSegmentsHitLand(smooth, boxes);
+    const length = routePathLength2(smooth);
+    const detour = length / Math.max(0.0001, coordDistance2(a, b));
+    const score = hits * 1000000 + Math.max(0, detour - 1.75) * 9000 + length;
+    if (score < bestScore) { best = smooth; bestScore = score; }
+    if (hits === 0 && detour < 2.15) break;
   }
-  return softenPolyline(best, 0.34, 50);
+
+  // If every candidate still intersects the coarse land boxes, push the bend
+  // farther offshore and choose the cleanest/shortest resulting curve.
+  if (routeSegmentsHitLand(best || [a,b], boxes) > 0) {
+    const perp = routePerpendicular(a, b);
+    const mid = midpointCoord(a, b);
+    const big = distance > 1500 ? 10.5 : distance > 600 ? 5.4 : 2.3;
+    const farOptions = [
+      [a, [mid[0] + perp[0] * big, mid[1] + perp[1] * big], b],
+      [a, [mid[0] - perp[0] * big, mid[1] - perp[1] * big], b]
+    ].map(r => bezierRouteThrough(r, 84));
+    for (const route of farOptions) {
+      const hits = routeSegmentsHitLand(route, boxes);
+      const score = hits * 1000000 + routePathLength2(route);
+      if (score < bestScore) { best = route; bestScore = score; }
+    }
+  }
+
+  return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
 
+function boatRouteCandidates(a, b, distance = 0) {
+  const mid = midpointCoord(a, b);
+  const perp = routePerpendicular(a, b);
+  const base = distance > 1800 ? 7.2 : distance > 650 ? 3.5 : 1.25;
+  const coast = naturalEarthRouting?.coast || [];
+  const coastCandidates = networkCandidates(coast, a, b, distance > 1800 ? 10 : distance > 650 ? 5.8 : 3.0, 10);
+  const coastMid = nearestPointOnNetwork(mid, coastCandidates)?.point;
+  const options = [
+    [a, b],
+    [a, [mid[0] + perp[0] * base, mid[1] + perp[1] * base], b],
+    [a, [mid[0] - perp[0] * base, mid[1] - perp[1] * base], b],
+    [a, [lerp(a[0], b[0], 0.34) + perp[0] * base * 0.85, lerp(a[1], b[1], 0.34) + perp[1] * base * 0.85], [lerp(a[0], b[0], 0.68) + perp[0] * base * 0.65, lerp(a[1], b[1], 0.68) + perp[1] * base * 0.65], b],
+    [a, [lerp(a[0], b[0], 0.34) - perp[0] * base * 0.85, lerp(a[1], b[1], 0.34) - perp[1] * base * 0.85], [lerp(a[0], b[0], 0.68) - perp[0] * base * 0.65, lerp(a[1], b[1], 0.68) - perp[1] * base * 0.65], b]
+  ];
+  if (coastMid) options.unshift([a, coastMid, b]);
+  return options;
+}
 function stylizedFallbackRoute(leg) {
   if (leg.mode === 'boat') return boatCurveRoute(leg, 0.48);
   if (leg.mode === 'train') return stylizedSurfaceRoute(leg, 'train');
@@ -2463,11 +2484,31 @@ function stylizedSurfaceRoute(leg, type = 'drive') {
   const mid = midpointCoord(a, b);
   const perp = routePerpendicular(a, b);
   const distance = milesBetween(leg.from, leg.to);
-  const bend = (type === 'train' ? 0.45 : 0.78) * (distance > 1200 ? 2.4 : distance > 350 ? 1.2 : 0.45);
-  const wiggle = type === 'train' ? 0.28 : 0.58;
+  const bend = (type === 'train' ? 0.28 : 0.72) * (distance > 1200 ? 1.55 : distance > 350 ? 0.95 : 0.38);
   const c1 = [lerp(a[0], b[0], 0.32) + perp[0] * bend, lerp(a[1], b[1], 0.32) + perp[1] * bend];
-  const c2 = [lerp(a[0], b[0], 0.66) - perp[0] * bend * wiggle, lerp(a[1], b[1], 0.66) - perp[1] * bend * wiggle];
-  return softenPolyline([a, c1, mid, c2, b], type === 'train' ? 0.16 : 0.26, type === 'train' ? 34 : 44);
+  const c2 = [lerp(a[0], b[0], 0.67) - perp[0] * bend * (type === 'train' ? 0.22 : 0.48), lerp(a[1], b[1], 0.67) - perp[1] * bend * (type === 'train' ? 0.22 : 0.48)];
+  const base = bezierRouteThrough([a, c1, mid, c2, b], type === 'train' ? 42 : 48);
+  return type === 'drive' ? roadSquiggleRoute(base, leg, 0.55) : cleanupRouteCoordinates(base);
+}
+
+function roadSquiggleRoute(coords = [], leg, strength = 0.45) {
+  if (!Array.isArray(coords) || coords.length < 4) return coords;
+  const distance = milesBetween(leg.from, leg.to);
+  const amp = (distance > 900 ? 0.22 : distance > 250 ? 0.115 : 0.045) * strength;
+  const out = coords.map((p, i) => {
+    if (i === 0 || i === coords.length - 1) return p;
+    const prev = coords[Math.max(0, i - 1)];
+    const next = coords[Math.min(coords.length - 1, i + 1)];
+    const dx = shortestLonDelta(next[0] - prev[0]);
+    const dy = next[1] - prev[1];
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const wave = Math.sin((i / Math.max(1, coords.length - 1)) * Math.PI * 6.0);
+    const envelope = Math.sin((i / Math.max(1, coords.length - 1)) * Math.PI);
+    return [p[0] + nx * amp * wave * envelope, p[1] + ny * amp * wave * envelope];
+  });
+  return cleanupRouteCoordinates(out);
 }
 
 function boatCurveRoute(leg, strength = 0.45) {
@@ -2477,27 +2518,43 @@ function boatCurveRoute(leg, strength = 0.45) {
   const perp = routePerpendicular(a, b);
   const distance = milesBetween(leg.from, leg.to);
   const bend = strength * (distance > 1800 ? 7 : distance > 650 ? 3.4 : 1.15);
-  return softenPolyline([a, [mid[0] + perp[0] * bend, mid[1] + perp[1] * bend], b], 0.28, 48);
+  return bezierRouteThrough([a, [mid[0] + perp[0] * bend, mid[1] + perp[1] * bend], b], 72);
 }
 
 function softenPolyline(points = [], tension = 0.25, samples = 40) {
-  if (!Array.isArray(points) || points.length < 3) return points;
+  return bezierRouteThrough(points, samples);
+}
+
+function bezierRouteThrough(points = [], samples = 48) {
+  if (!Array.isArray(points) || points.length < 3) return cleanupRouteCoordinates(points || []);
   const out = [];
-  const n = Math.max(12, samples);
+  const n = Math.max(16, samples);
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    out.push(pointOnControlPolyline(points, t, tension));
+    out.push(catmullRomPoint(points, t));
   }
   return cleanupRouteCoordinates(out);
 }
 
+function catmullRomPoint(points, t) {
+  const n = points.length;
+  if (n < 2) return points[0] || [0,0];
+  const scaled = t * (n - 1);
+  const i = Math.min(n - 2, Math.max(0, Math.floor(scaled)));
+  const localT = scaled - i;
+  const p0 = points[Math.max(0, i - 1)];
+  const p1 = points[i];
+  const p2 = points[i + 1];
+  const p3 = points[Math.min(n - 1, i + 2)];
+  const tt = localT * localT;
+  const ttt = tt * localT;
+  const x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * localT + (2*p0[0] - 5*p1[0] + 4*p2[0] - p3[0]) * tt + (-p0[0] + 3*p1[0] - 3*p2[0] + p3[0]) * ttt);
+  const y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * localT + (2*p0[1] - 5*p1[1] + 4*p2[1] - p3[1]) * tt + (-p0[1] + 3*p1[1] - 3*p2[1] + p3[1]) * ttt);
+  return [x,y];
+}
+
 function pointOnControlPolyline(points, t, tension = 0.25) {
-  const p = pointOnPolyline(points, t);
-  if (points.length < 3) return p;
-  const nearest = Math.min(points.length - 1, Math.max(0, Math.round(t * (points.length - 1))));
-  const control = points[nearest];
-  const blend = 1 - Math.min(0.55, Math.abs(t * (points.length - 1) - nearest)) * tension;
-  return [lerp(p[0], control[0], Math.max(0, Math.min(1, blend * 0.20))), lerp(p[1], control[1], Math.max(0, Math.min(1, blend * 0.20)))];
+  return catmullRomPoint(points, t);
 }
 
 function cleanupRouteCoordinates(coords = []) {
@@ -2518,6 +2575,12 @@ function coordDistance2(a, b) { const dx = shortestLonDelta(a[0] - b[0]); const 
 function distancePointToBBox(p, b) { const x = Math.max(b[0], Math.min(p[0], b[2])); const y = Math.max(b[1], Math.min(p[1], b[3])); return coordDistance2(p, [x,y]); }
 function routePerpendicular(a, b) { const dx = shortestLonDelta(b[0] - a[0]); const dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
 function tooNearPoint(a, b) { return !a || !b ? false : coordDistance2(a, b) < 0.05; }
+function lerpCoord(a, b, t) { return [lerpAngle(a[0], b[0], t), lerp(a[1], b[1], t)]; }
+function tooFarFromCorridor(p, a, b, maxDegrees = 3) {
+  const mid = midpointCoord(a, b);
+  return Math.sqrt(coordDistance2(p, mid)) > Math.max(maxDegrees * 1.45, Math.sqrt(coordDistance2(a, b)) * 0.72);
+}
+
 function routePathLength2(route = []) { let t = 0; for (let i=1;i<route.length;i++) t += coordDistance2(route[i-1], route[i]); return t; }
 function lineHitsLandBoxes(a, b, boxes = []) {
   const box = routeBbox(a, b, 0);
