@@ -1,8 +1,8 @@
-Base: GlobeHoppers v5.1.3
-Update: v5.1.4 systematic boat final water-side approaches
+Base: GlobeHoppers v5.1.4
+Update: v5.1.5 water-only boat trail enforcement
 Changes:
-- Added a systematic boat final-approach post-processor.
-- Boat routes now build around water-side start/end approach points rather than letting the long ocean segment connect directly to a city.
-- If the final connector clips land, the route inserts an additional local water-side connector chosen from nearby water candidates.
-- Athens/Piraeus water-side candidates were moved farther onto the water side.
-- This is intended to fix coastal destination approaches globally, not only Athens.
+- Boat visible route geometry now docks at water-side approach points when a city pin is on land.
+- City points are still used for trip labels/cards, but the rendered boat trail no longer draws an inland connector through land.
+- Added global water-only enforcement pass across boat route segments.
+- If a boat segment crosses land/island/canal no-cross geometry, the route tries a local water dogleg repair.
+- Known canal crossings remain allowed only through deliberate approach/departure nodes.

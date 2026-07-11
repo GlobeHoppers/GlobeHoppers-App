@@ -2508,18 +2508,64 @@ function waterAvoidingBoatRoute(leg) {
 function finalizeBoatRouteWithWaterApproaches(startCity, endCity, waterRoute = [], land = []) {
   const startWater = boatWaterApproachPoint(startCity, endCity, land, 'start');
   const endWater = boatWaterApproachPoint(endCity, startCity, land, 'end');
-  let route = cleanupRouteCoordinates([startCity, startWater, ...(waterRoute || []), endWater, endCity]);
+
+  // v5.1.5: enforce a water-only visible boat trail. City points are still used
+  // for labels/cards/timeline, but if the city pin is inland the boat trail docks
+  // at the nearest water-side approach point instead of drawing an inland connector.
+  const visibleStart = pointInAnyLandRing(startCity, land) ? startWater : startCity;
+  const visibleEnd = pointInAnyLandRing(endCity, land) ? endWater : endCity;
+
+  let route = cleanupRouteCoordinates([visibleStart, ...(waterRoute || []), visibleEnd]);
   route = removeNearDuplicateBoatApproachPoints(route);
-  // If the final connector still clips land, insert additional local water
-  // candidates around the destination and choose the cleanest two-leg approach.
-  const finalIdx = route.length - 1;
-  if (finalIdx >= 2 && waterEdgeHitsLand(route[finalIdx - 2], route[finalIdx - 1], land, true)) {
-    const correction = bestWaterSideConnector(route[finalIdx - 2], endCity, land);
-    if (correction) {
-      route.splice(finalIdx - 1, 0, correction);
+  route = enforceBoatRouteWaterOnly(route, land);
+  return cleanupRouteCoordinates(route);
+}
+
+function enforceBoatRouteWaterOnly(route = [], land = []) {
+  if (!Array.isArray(route) || route.length < 2) return route || [];
+  const out = [route[0]];
+  for (let i = 1; i < route.length; i++) {
+    const prev = out[out.length - 1];
+    const next = route[i];
+    if (!waterEdgeHitsLand(prev, next, land, false) && caribbeanIslandCutPenalty(prev, next) < 9999 && panamaCanalBadAnglePenalty(prev, next) < 9999) {
+      out.push(next);
+      continue;
+    }
+    const repair = repairWaterSegment(prev, next, land);
+    if (repair?.length > 1) out.push(...repair.slice(1));
+    else out.push(next);
+  }
+  return removeNearDuplicateBoatApproachPoints(out);
+}
+
+function repairWaterSegment(a, b, land = []) {
+  // Generic local repair: try a fan of water-side doglegs around the blocked
+  // segment. This is deliberately conservative and applies globally.
+  const mid = midpointCoord(a, b);
+  const perp = routePerpendicular(a, b);
+  const dist = Math.sqrt(coordDistance2(a, b));
+  const offsets = [0.55, 0.9, 1.35, 2.1, 3.2, 4.6].map(v => Math.max(v, dist * 0.42));
+  let best = null;
+  let bestScore = Infinity;
+  for (const off of offsets) {
+    for (const sign of [1, -1]) {
+      const c = [mid[0] + perp[0] * off * sign, mid[1] + perp[1] * off * sign];
+      if (pointInAnyLandRing(c, land)) continue;
+      const candidate = safeGatewayRoute([a, c, b], 48);
+      const hits = routeSegmentsHitLand(candidate, land) + islandRouteCutPenalty(candidate) / 9999 + (panamaRouteCutPenalty(candidate) / 9999);
+      const score = hits * 100000 + routePathLength2(candidate);
+      if (score < bestScore) { best = candidate; bestScore = score; }
+      if (hits === 0) return candidate;
     }
   }
-  return cleanupRouteCoordinates(route);
+  return best;
+}
+
+function panamaRouteCutPenalty(route = []) {
+  for (let i = 1; i < route.length; i++) {
+    if (panamaCanalBadAnglePenalty(route[i - 1], route[i]) >= 9999) return 9999;
+  }
+  return 0;
 }
 
 function removeNearDuplicateBoatApproachPoints(route = []) {
