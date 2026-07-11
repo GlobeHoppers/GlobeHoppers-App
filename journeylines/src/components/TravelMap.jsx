@@ -10,9 +10,11 @@ import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
 import routeDetails from '../data/routeDetails.json';
-import naturalEarthRouting from '../data/naturalEarthRouting.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
+import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
+import { putCachedRoute, routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
+import { playbackEngine } from '../utils/playbackEngine.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
@@ -88,6 +90,7 @@ const DEFAULT_TRAIL_TUNING = {
 
 const COMPLETED_ROUTE_FEATURE_CACHE = new Map();
 const COMPLETED_ROUTE_FEATURE_CACHE_LIMIT = 1200;
+let STATIC_ROUTE_LOD = 'regional';
 
 const MAP_STYLE = {
   version: 8,
@@ -193,10 +196,15 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const fadeTrailRef = useRef({ active: false, features: [], started: 0, duration: 650, raf: 0, key: '' });
   const trailProfileMorphRef = useRef({ active: false, tripId: '', started: 0, duration: 3000, raf: 0 });
   const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
+  const playbackPlansRef = useRef(new Map());
+  const routedGeometriesRef = useRef({});
+  const latestFrameContextRef = useRef(null);
+  const frameRenderStatsRef = useRef({ lastTrail: 0, lastPulse: false, lastRouteKey: '', lastFrame: 0 });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
   useEffect(() => { preloadBaseVesselIcons(); }, []);
+
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
@@ -218,6 +226,52 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     return overviewMode || completedMode ? legs : legs.slice(0, Math.max(0, activeIndex + 1));
   }, [hasActivePlayback, overviewMode, completedMode, legs, activeIndex]);
   const labelCompletedMode = !hasActivePlayback || overviewMode || completedMode;
+  latestFrameContextRef.current = {
+    active,
+    nextActive,
+    completedMode,
+    overviewMode,
+    routedGeometries,
+    routeStackingEnabled: Boolean(trailTuning?.routeStackingEnabled),
+    cameraMode,
+    hopperVisuals: hopperData || travById,
+    trailTuningConfig,
+    trailWidth,
+    trailOpacity,
+    showTrails,
+    isPlaying,
+    introLaunching
+  };
+  useEffect(() => { routedGeometriesRef.current = routedGeometries; }, [routedGeometries]);
+
+
+  useEffect(() => {
+    if (safeActiveIndex < 0 || !legs.length) return;
+    let cancelled = false;
+    const queue = legs.slice(safeActiveIndex, safeActiveIndex + 4);
+    (async () => {
+      for (const entry of queue) {
+        if (cancelled) break;
+        const leg = entry?.leg;
+        if (!leg?.from || !leg?.to) continue;
+        let geometry = getRoutedGeometry(leg, routedGeometriesRef.current);
+        if (!geometry?.length && isNaturalEarthVesselMode(leg.mode)) {
+          try {
+            geometry = await routeLegInWorker(leg, { reason: 'current/next trip prefetch' });
+            if (cancelled || !geometry?.length) continue;
+            const key = leg.routeCacheKey || routeCacheKey(leg);
+            setRoutedGeometries(previous => previous[key] === geometry ? previous : { ...previous, [key]: geometry });
+          } catch {}
+        }
+        try {
+          const plan = await buildPlaybackPlanInWorker(leg, geometry, { reason: 'current/next playback plan' });
+          if (!cancelled && plan) playbackPlansRef.current.set(playbackPlanKey(leg), plan);
+        } catch {}
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [safeActiveIndex, legs, active?.trip?.id, active?.legIndex]);
+
   useEffect(() => {
     const ids = new Set();
     if (active?.leg?.from?.id) ids.add(active.leg.from.id);
@@ -670,6 +724,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         startCompletedRouteFade(map, fadeTrailRef, previousTripFeatures, completedLegs, hopperData || travById, trailOpacity, trailWidth, routedGeometries, trailTuningConfig);
       }
     }
+    // During active playback the singleton playback engine drives camera,
+    // vessel, and active-trail rendering directly at display refresh rate.
+    // This React effect still handles route transitions/fades, but does not
+    // compete with the frame loop.
+    if (isPlaying) return;
+
     if (now - lastActiveRouteUpdateRef.current > 16 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
       previousActiveRouteRef.current = {
@@ -704,6 +764,70 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth, trailOpacity, showTrails, isPlaying]);
 
   useEffect(() => {
+    if (!mapReady) return;
+    return playbackEngine.subscribe(frame => {
+      if (!frame?.playing) return;
+      const map = mapRef.current;
+      const context = latestFrameContextRef.current;
+      const activeEntry = context?.active;
+      if (!map || !activeEntry || context.completedMode || context.overviewMode || context.introLaunching || trailTuningOpen) return;
+
+      const routeKey = `${activeEntry?.trip?.id || ''}:${activeEntry?.legIndex ?? ''}`;
+      if (frame?.metadata?.tripId && frame.metadata.tripId !== activeEntry?.trip?.id) return;
+      const plan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg)) || null;
+      const sceneState = getScene(
+        activeEntry,
+        Number(frame.rawProgress || 0),
+        context.cameraMode,
+        context.nextActive,
+        routedGeometriesRef.current,
+        context.routeStackingEnabled,
+        plan
+      );
+      const color = colorForLeg(activeEntry, context.hopperVisuals);
+      const now = Number(frame.timestamp || performance.now());
+      const quality = frame.quality || 'high';
+      const trailInterval = quality === 'high' ? 42 : quality === 'medium' ? 66 : 96;
+      const stats = frameRenderStatsRef.current;
+
+      if (stats.lastRouteKey !== routeKey) {
+        stats.lastRouteKey = routeKey;
+        stats.lastTrail = 0;
+        lastCameraRef.current = null;
+      }
+
+      if (now - stats.lastTrail >= trailInterval || sceneState.lineProgress >= 0.995) {
+        syncActiveRoute(map, activeEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
+        previousActiveRouteRef.current = {
+          key: routeKey,
+          active: activeEntry,
+          progress: sceneState.lineProgress,
+          features: activeRouteFeaturesForFade(activeEntry, sceneState.lineProgress, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig)
+        };
+        stats.lastTrail = now;
+      }
+
+      if (sceneState.pulseActive !== stats.lastPulse) {
+        syncPulse(map, activeEntry.leg.to, sceneState.pulseActive ? color : 'transparent');
+        stats.lastPulse = sceneState.pulseActive;
+      }
+
+      const smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+      let camera = smoothCamera(lastCameraRef.current, sceneState.camera, smoothing);
+      camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
+      lastCameraRef.current = camera;
+      if (!userCameraOverrideRef.current) map.jumpTo({ ...camera, essential: true });
+
+      currentOverlayStateRef.current = { active: activeEntry, scene: sceneState, color };
+      updateOverlay(map, activeEntry, sceneState, color);
+      if (quality !== 'low' || Math.floor(now / 33) % 2 === 0) {
+        updateAirArcOverlay(map, airArcRef.current, activeEntry, sceneState, color);
+      }
+      stats.lastFrame = now;
+    });
+  }, [mapReady, trailTuningOpen]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !active || completedMode || !scene?.pulseActive) return;
     const color = colorForLeg(active, hopperData || travById);
@@ -725,7 +849,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     if (!routingSettings?.mapbox?.enabled) return;
     const token = getMapboxToken();
     if (!token) { console.info('JourneyLines: browser-side Mapbox fetch disabled. Driving routes should come from generatedRoutes.json created privately during GitHub Actions. Missing routes will use manual/simple fallback geometry.'); return; }
-    const candidates = legs.filter(l => l?.leg?.mode === 'drive' && !routedGeometries[routeCacheKey(l.leg)]);
+    const candidates = safeActiveIndex >= 0 ? legs.slice(safeActiveIndex, safeActiveIndex + 4).filter(l => l?.leg?.mode === 'drive' && !getRoutedGeometry(l.leg, routedGeometries)) : [];
     if (!candidates.length) return;
     console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
     let cancelled = false;
@@ -736,11 +860,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       try {
         const coords = await fetchMapboxRoute(item.leg, token);
         if (!cancelled && coords?.length > 1) {
-          setRoutedGeometries(prev => {
-            const next = { ...prev, [key]: coords };
-            persistRouteCache(next);
-            return next;
-          });
+          setRoutedGeometries(prev => ({ ...prev, [key]: coords }));
+          putCachedRoute(routeCacheKeyV6(item.leg, ROUTING_VERSION), coords, ROUTING_VERSION, { source: 'mapbox' }).catch(() => {});
           console.info('JourneyLines: Mapbox route cached', key, coords.length, 'points');
         }
       } catch (err) {
@@ -761,7 +882,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
     runQueue();
     return () => { cancelled = true; };
-  }, [legs, routedGeometries]);
+  }, [legs, routedGeometries, safeActiveIndex]);
 
   function setOverlayVisibility(visible) {
     for (const ref of [vehicleRef, pulseRef, airArcRef]) {
@@ -855,6 +976,12 @@ function addPulseLayer(map) {
 }
 
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, fadeFeatures = [], activeTripId = null, morphTripId = null, morphProgress = null) {
+  const zoom = Number(map?.getZoom?.() || 4);
+  const nextLod = zoom < 4.35 ? 'overview' : zoom < 6.2 ? 'regional' : 'detail';
+  if (STATIC_ROUTE_LOD !== nextLod) {
+    STATIC_ROUTE_LOD = nextLod;
+    COMPLETED_ROUTE_FEATURE_CACHE.clear();
+  }
   const features = showTrails ? completedLegs.flatMap((l, i) => {
     const trail = trailVisualForLeg(l, travelersById);
     const isCurrentTrip = Boolean(activeTripId && l?.trip?.id === activeTripId);
@@ -893,6 +1020,7 @@ function completedRouteFeatureCacheKey(entry, index, trail, opacity, width, trai
   const colors = (trail?.colors || []).join(',');
   return [
     'passive',
+    STATIC_ROUTE_LOD,
     detailKey,
     geomKey,
     leg.mode || '',
@@ -1150,6 +1278,12 @@ function passiveTrailVisualForTrail(trail = {}, config = DEFAULT_TRAIL_TUNING) {
   return trail;
 }
 
+function staticRouteSamples(detail, regional, overview) {
+  if (STATIC_ROUTE_LOD === 'overview') return overview;
+  if (STATIC_ROUTE_LOD === 'regional') return regional;
+  return detail;
+}
+
 function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, morphProgress = null) {
   const requestedStyle = trail?.style || 'solid';
   const passiveVisualTrail = passiveTrailVisualForTrail(trail, trailTuning);
@@ -1179,7 +1313,7 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
   if (style === 'spiral' && colors.length > 1) return spiralRouteFeatures(leg, colors, tripId, index, renderOpacity, width, renderAsActive, progress, routedGeometries, config, stackOffset);
   const solidWidth = width * Math.max(0.2, Number(config.solidThickness) || 1);
   const border = trailBorderThickness(config);
-  const solidCoords = stackedRouteCoordinates(leg, progress, renderAsActive ? 96 : 22, routedGeometries, stackOffset);
+  const solidCoords = stackedRouteCoordinates(leg, progress, renderAsActive ? 96 : staticRouteSamples(30, 20, 12), routedGeometries, stackOffset);
   const out = [];
   if (border > 0) out.push(routeFeatureFromCoordinates(solidCoords, '#020407', tripId, `${index}-solid-border`, renderOpacity, solidWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
   out.push(routeFeatureFromCoordinates(solidCoords, baseColor, tripId, index, renderOpacity, solidWidth, renderAsActive, leg.mode, 0, withTrailGlow(config, config.solidGlow, width)));
@@ -1187,7 +1321,7 @@ function routeFeaturesForTrail(leg, trail, tripId, index, opacity, width, active
 }
 
 function stripeRouteFeatures(leg, colors, tripId, index, opacity, width, active = false, progress = 1, routedGeometries = {}, config = DEFAULT_TRAIL_TUNING, stackOffset = 0) {
-  const coords = stackedRouteCoordinates(leg, progress, active ? 260 : 190, routedGeometries, stackOffset);
+  const coords = stackedRouteCoordinates(leg, progress, active ? 260 : staticRouteSamples(190, 104, 52), routedGeometries, stackOffset);
   if (coords.length < 2) return [routeFeature(leg, colors[0], tripId, index, opacity, width, active, progress, routedGeometries, 0, config)];
   const stripeWidth = width * Math.max(0.6, Number(config.stripeThickness) || 1);
   const separatorWidth = Math.max(0, Number(config.stripeSeparator) || 0);
@@ -1228,7 +1362,7 @@ function ribbonRouteFeatures(leg, colors, tripId, index, opacity, width, active 
   const sharedColor = averageColor(colors, colors[0]);
   const border = trailBorderThickness(config);
   const out = [];
-  const coords = stackedRouteCoordinates(leg, progress, active ? 96 : 28, routedGeometries, stackOffset);
+  const coords = stackedRouteCoordinates(leg, progress, active ? 96 : staticRouteSamples(38, 24, 14), routedGeometries, stackOffset);
   if (border > 0) out.push(routeFeatureFromCoordinates(coords, '#020407', tripId, `${index}-ribbon-border`, opacity, totalWidth + border * 2, false, leg.mode, 0, withTrailGlow(config, 0, width)));
   out.push(routeFeatureFromCoordinates(coords, sharedColor, tripId, `${index}-ribbon-glow`, Math.max(0.08, opacity * 0.16 * (Number(config.ribbonGlow) || 1)), totalWidth + Math.max(0.5, Number(config.ribbonGlow) || 1), false, leg.mode, 0, withTrailGlow(config, config.ribbonGlow, width)));
   out.push(...colors.map((color, ribbonIndex) => {
@@ -1506,7 +1640,41 @@ function trailRoleForFeature(index, color) {
   return 'main';
 }
 
-function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}, routeStackingEnabled = false) {
+function pointAtPlaybackPlan(plan, t) {
+  const positions = plan?.positions;
+  const count = Number(plan?.sampleCount || (positions?.length || 0) / 2);
+  if (!positions || count < 2) return { lon: 0, lat: 0 };
+  const scaled = Math.max(0, Math.min(1, t)) * (count - 1);
+  const i = Math.min(count - 2, Math.floor(scaled));
+  const u = scaled - i;
+  return {
+    lon: lerpAngle(positions[i * 2], positions[(i + 1) * 2], u),
+    lat: lerp(positions[i * 2 + 1], positions[(i + 1) * 2 + 1], u)
+  };
+}
+
+function cameraPointAtPlaybackPlan(plan, t) {
+  const camera = plan?.camera;
+  const count = Number(plan?.sampleCount || (camera?.length || 0) / 2);
+  if (!camera || count < 2) return pointAtPlaybackPlan(plan, t);
+  const scaled = Math.max(0, Math.min(1, t)) * (count - 1);
+  const i = Math.min(count - 2, Math.floor(scaled));
+  const u = scaled - i;
+  return {
+    lon: lerpAngle(camera[i * 2], camera[(i + 1) * 2], u),
+    lat: lerp(camera[i * 2 + 1], camera[(i + 1) * 2 + 1], u)
+  };
+}
+
+function headingAtPlaybackPlan(plan, t) {
+  const headings = plan?.headings;
+  const count = Number(plan?.sampleCount || headings?.length || 0);
+  if (!headings || count < 1) return 0;
+  const index = Math.max(0, Math.min(count - 1, Math.round(Math.max(0, Math.min(1, t)) * (count - 1))));
+  return Number(headings[index] || 0);
+}
+
+function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries = {}, routeStackingEnabled = false, playbackPlan = null) {
   const raw = Math.max(0, rawProgress);
   const visibleP = Math.max(0, Math.min(1, raw));
   const departureWarmup = 0.085;
@@ -1517,13 +1685,14 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const distance = milesBetween(leg.from, leg.to);
   const routeProgress = takeoffCruiseLandingEase(p);
   const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
-  const vehicle = pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
-  const future = pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries, routeStackingEnabled);
-  const routeMid = pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
+  const usePlan = playbackPlan?.positions?.length >= 4 && !routeStackingEnabled;
+  const vehicle = usePlan ? pointAtPlaybackPlan(playbackPlan, routeProgress) : pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
+  const future = usePlan ? pointAtPlaybackPlan(playbackPlan, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode))) : pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries, routeStackingEnabled);
+  const routeMid = usePlan ? pointAtPlaybackPlan(playbackPlan, 0.5) : pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
   const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
   const leadBias = cameraLeadBias(leg.mode, distance, phase, p);
-  let cinematicFocus = blendGeo(vehicle, future, leadBias);
+  let cinematicFocus = usePlan && playbackPlan?.camera?.length >= 4 ? cameraPointAtPlaybackPlan(playbackPlan, routeProgress) : blendGeo(vehicle, future, leadBias);
 
   if (phase === 'settle') {
     const nextFrom = nextActive?.leg?.from;
@@ -1547,7 +1716,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   if (cameraMode === 'route') center = blendGeo(routeMid, cinematicFocus, 0.52);
   if (cameraMode === 'continent') center = blendGeo(routeMid, cinematicFocus, 0.4);
 
-  const heading = headingAlongVisualRoute(leg, routeProgress, routedGeometries, routeStackingEnabled);
+  const heading = usePlan ? headingAtPlaybackPlan(playbackPlan, routeProgress) : headingAlongVisualRoute(leg, routeProgress, routedGeometries, routeStackingEnabled);
   const bearing = 0; // North-up. No route-heading camera rotation.
   const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
   const pitch = cameraPitch(cameraMode, phase, distance, settleT);
@@ -2237,6 +2406,9 @@ function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || g
 function routeCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
+function playbackPlanKey(leg) {
+  return `${leg?.from?.id || leg?.from?.lon}->${leg?.to?.id || leg?.to?.lon}:${leg?.mode || 'plane'}`;
+}
 
 function reverseRouteCacheKey(leg) {
   return `${routeCacheVersion()}:${leg.to.id}->${leg.from.id}:${leg.mode}`;
@@ -2246,15 +2418,16 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
   const manual = getManualRoute(leg);
   if (manual?.length > 1) return manual;
 
-  // v5.0.3: car/train/boat routes are locally generated from Natural Earth at
-  // render time unless manually overridden. This prevents bad generated/cached
-  // vessel geometries from being replayed forever after routeDetails stores them.
-  if (isNaturalEarthVesselMode(leg?.mode)) return null;
-
+  // v6: saved routeDetails geometry is the primary runtime source. Detailed
+  // vessel routes are no longer regenerated during page startup.
   if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1 && !isStraightEndpointPlaceholder(leg, leg.routeGeometry)) return leg.routeGeometry;
+
   const key = leg?.routeCacheKey || routeCacheKey(leg);
-  if (routedGeometries[key]?.length > 1 && !isStraightEndpointPlaceholder(leg, routedGeometries[key])) return routedGeometries[key];
-  const reverse = routedGeometries[reverseRouteCacheKey(leg)];
+  const direct = routedGeometries[key] || routedGeometries[routeCacheKey(leg)] || routingMemoryGeometry(leg);
+  if (direct?.length > 1 && !isStraightEndpointPlaceholder(leg, direct)) return direct;
+
+  const reverseKey = reverseRouteCacheKey(leg);
+  const reverse = routedGeometries[reverseKey];
   if (reverse?.length > 1) {
     const reversed = [...reverse].reverse();
     if (!isStraightEndpointPlaceholder(leg, reversed)) return reversed;
@@ -2320,19 +2493,9 @@ async function fetchMapboxRoute(leg, token) {
 function loadInitialRouteCache() {
   const generated = generatedRoutes?.routes || {};
   const detailed = routeDetailsGeometryCache(routeDetails);
-  let stored = {};
-  try { stored = JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {}; } catch {}
-  // Build-time route details/generated routes win over older browser cache entries.
-  return { ...stored, ...generated, ...detailed };
-}
-
-function loadStoredRouteCache() {
-  try { return JSON.parse(localStorage.getItem('journeylines.routeCache') || '{}') || {}; } catch { return {}; }
-}
-
-function persistRouteCache(cache) {
-  if (!routingSettings?.mapbox?.cacheInLocalStorage) return;
-  try { localStorage.setItem('journeylines.routeCache', JSON.stringify(cache)); } catch {}
+  // v6: startup uses only deployed geometry. Larger browser caches are restored
+  // asynchronously from IndexedDB after the first render.
+  return { ...generated, ...detailed };
 }
 
 function waypointPathForLeg(leg) {
@@ -2345,917 +2508,33 @@ function waypointPathForLeg(leg) {
   const legacy = ROUTE_WAYPOINTS[key] || (ROUTE_WAYPOINTS[reverseKey] ? [...ROUTE_WAYPOINTS[reverseKey]].reverse() : null);
   if (legacy) return [a, ...legacy, b];
 
-  const ne = naturalEarthRouteForLeg(leg);
-  if (ne?.length > 1) return ne;
-
+  // Detailed car/train/boat geometry is requested from the routing worker.
+  // This lightweight fallback keeps the map usable until that asynchronous
+  // result is ready, without parsing or traversing Natural Earth on the UI thread.
   return stylizedFallbackRoute(leg);
 }
 
-const NATURAL_EARTH_ROUTE_MEMO = new Map();
-
-function naturalEarthRouteForLeg(leg) {
-  if (!leg?.from || !leg?.to) return null;
-  const mode = leg.mode;
-  if (!(mode === 'drive' || mode === 'car' || mode === 'train' || mode === 'boat')) return null;
-  const key = `${leg.from.id}->${leg.to.id}:${mode}`;
-  if (NATURAL_EARTH_ROUTE_MEMO.has(key)) return NATURAL_EARTH_ROUTE_MEMO.get(key);
-
-  let route = null;
-  if (mode === 'drive' || mode === 'car') route = guidedSurfaceRoute(leg, naturalEarthRouting?.roads || [], 'drive');
-  else if (mode === 'train') route = guidedSurfaceRoute(leg, naturalEarthRouting?.rails || [], 'train');
-  else if (mode === 'boat') route = waterAvoidingBoatRoute(leg);
-
-  if (!route || route.length < 2) route = stylizedFallbackRoute(leg);
-  route = cleanupRouteCoordinates(route);
-  NATURAL_EARTH_ROUTE_MEMO.set(key, route);
-  return route;
-}
-
-function guidedSurfaceRoute(leg, network = [], type = 'drive') {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const distance = milesBetween(leg.from, leg.to);
-  const baja = bajaPeninsulaSurfaceRoute(leg, type);
-  if (baja) return baja;
-  const direct = stylizedSurfaceRoute(leg, type);
-
-  // Trains should be believable before they are "network exact". Natural Earth
-  // rail data is too sparse in places like Baja; if rail guidance wanders away
-  // from the direct corridor, a short rail-like route is better than a detour to
-  // mainland Mexico and back across water.
-  const broad = distance > 1200;
-  const maxDetour = type === 'train' ? (broad ? 1.16 : 1.12) : (broad ? 1.44 : 1.30);
-  const corridorPad = type === 'train' ? (broad ? 1.65 : 0.85) : (broad ? 5.2 : 2.35);
-  const candidates = networkCandidates(network, a, b, corridorPad, type === 'drive' ? 30 : 14);
-  if (candidates.length >= 2) {
-    const probes = type === 'train' ? [0.34, 0.66] : [0.25, 0.50, 0.75];
-    const shaped = [a];
-    let maxCorridorError = 0;
-    for (const probe of probes) {
-      const target = lerpCoord(a, b, probe);
-      const hit = nearestPointOnNetwork(target, candidates);
-      if (!hit) continue;
-      const corridorError = distanceFromPointToSegment(hit.point, a, b);
-      maxCorridorError = Math.max(maxCorridorError, corridorError);
-      if (!tooNearPoint(hit.point, shaped[shaped.length - 1]) && corridorError <= corridorPad * 1.15) shaped.push(hit.point);
-    }
-    shaped.push(b);
-    const detourRatio = routePathLength2(shaped) / Math.max(0.0001, coordDistance2(a, b));
-    const corridorLimit = type === 'train' ? corridorPad * 1.2 : corridorPad * 1.6;
-    if (shaped.length > 2 && detourRatio <= maxDetour && maxCorridorError <= corridorLimit) {
-      const smoothed = type === 'train'
-        ? bezierRouteThrough(shaped, 42)
-        : roadSquiggleRoute(bezierRouteThrough(shaped, 46), leg, 0.46);
-      const cleaned = cleanupRouteCoordinates(smoothed);
-      if (surfaceRouteMostlyOnLand(cleaned, naturalEarthRouting?.landRings || [])) return cleaned;
-    }
-  }
-
-  return surfaceRouteMostlyOnLand(direct, naturalEarthRouting?.landRings || []) ? direct : forceSurfaceRouteTowardLand(direct, leg, type);
-}
-function surfaceRouteMostlyOnLand(route = [], rings = []) {
-  if (!Array.isArray(route) || route.length < 2 || !rings?.length) return true;
-  let checked = 0;
-  let offLand = 0;
-  const stride = Math.max(1, Math.floor(route.length / 48));
-  for (let i = 1; i < route.length - 1; i += stride) {
-    checked++;
-    if (!pointInAnyLandRing(route[i], rings)) offLand++;
-  }
-  // v5.1.1: trains/cars should not visually drift offshore. Allow a tiny amount
-  // for coastline simplification, but reject anything more.
-  return checked === 0 || offLand / checked <= 0.04;
-}
-
-function forceSurfaceRouteTowardLand(route = [], leg, type = 'train') {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const rings = naturalEarthRouting?.landRings || [];
-  const direct = safeGatewayRoute([a, midpointCoord(a, b), b], type === 'train' ? 48 : 56);
-  if (surfaceRouteMostlyOnLand(direct, rings)) return type === 'drive' ? roadSquiggleRoute(direct, leg, 0.12) : cleanupRouteCoordinates(direct);
-
-  // If direct smoothing crosses water, use a very low bend and preserve endpoint
-  // corridor. This is intentionally conservative and avoids unnecessary coast/water
-  // excursions.
-  const low = safeGatewayRoute([a, b], type === 'train' ? 42 : 52);
-  return type === 'drive' ? roadSquiggleRoute(low, leg, 0.08) : cleanupRouteCoordinates(low);
-}
-
-function networkCandidates(network = [], a, b, pad = 3, limit = 20) {
-  const box = routeBbox(a, b, pad);
-  const mid = midpointCoord(a, b);
-  return (network || [])
-    .filter(line => bboxIntersects(box, line.b))
-    .map(line => ({ line, score: distancePointToBBox(mid, line.b) - (Number(line.w || 1) * 0.35) }))
-    .sort((x, y) => x.score - y.score)
-    .slice(0, limit)
-    .map(x => x.line);
-}
-
-function nearestPointOnNetwork(target, lines = []) {
-  let best = null;
-  for (const line of lines || []) {
-    for (const p of line.p || []) {
-      const d = coordDistance2(target, p);
-      if (!best || d < best.d) best = { point: p, d };
-    }
-  }
-  return best;
-}
-
-function waterAvoidingBoatRoute(leg) {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const land = naturalEarthRouting?.landRings || [];
-  const distance = milesBetween(leg.from, leg.to);
-  const startWater = boatWaterApproachPoint(a, b, land, 'start');
-  const endWater = boatWaterApproachPoint(b, a, land, 'end');
-
-  const sameCorridor = sameWaterCorridorRoute(startWater, endWater, land);
-  if (sameCorridor?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(sameCorridor, 180), land);
-
-  const forcedCorridor = forcedLongWaterCorridor(startWater, endWater);
-  if (forcedCorridor?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(forcedCorridor, 260), land);
-
-  const graphRoute = waterGraphRoute(startWater, endWater, land, distance);
-  if (graphRoute?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(validateWaterRoute(graphRoute, land) || graphRoute, distance > 2500 ? 220 : 120), land);
-
-  const gateway = oceanGatewayBoatRoute(startWater, endWater);
-  if (gateway?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(gateway, 180), land);
-
-  const candidates = boatRouteCandidates(a, b, distance);
-  let best = null;
-  let bestScore = Infinity;
-
-  for (const route of candidates) {
-    const smooth = safeGatewayRoute(route, 96);
-    const hits = routeSegmentsHitLand(smooth, land);
-    const length = routePathLength2(smooth);
-    const detour = length / Math.max(0.0001, coordDistance2(a, b));
-    const score = hits * 10000000 + Math.max(0, detour - 1.65) * 12000 + length;
-    if (score < bestScore) { best = smooth; bestScore = score; }
-  }
-
-  if (routeSegmentsHitLand(best || [a,b], land) > 0) {
-    const farOptions = offshoreBoatCandidates(a, b, distance).map(r => safeGatewayRoute(r, 128));
-    for (const route of farOptions) {
-      const hits = routeSegmentsHitLand(route, land);
-      const score = hits * 10000000 + routePathLength2(route);
-      if (score < bestScore) { best = route; bestScore = score; }
-    }
-  }
-
-  const broadFallback = broadOceanFallbackRoute(startWater, endWater, distance);
-  if (broadFallback?.length > 2) return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(broadFallback, 140), land);
-  return finalizeBoatRouteWithWaterApproaches(a, b, safeGatewayRoute(boatCurveRoute(leg, 0.58), 96), land);
-}
-
-function finalizeBoatRouteWithWaterApproaches(startCity, endCity, waterRoute = [], land = []) {
-  const startWater = boatWaterApproachPoint(startCity, endCity, land, 'start');
-  const endWater = boatWaterApproachPoint(endCity, startCity, land, 'end');
-
-  // v5.1.6: no post-route dogleg repairs. Boat trails are built from valid
-  // water-side approach/dock points and stop at the dock point if the city pin
-  // is on land. The city remains the trip destination for labels/timeline.
-  const visibleStart = pointInAnyLandRing(startCity, land) ? startWater : startCity;
-  const visibleEnd = pointInAnyLandRing(endCity, land) ? endWater : endCity;
-  let route = cleanupRouteCoordinates([visibleStart, ...(waterRoute || []), visibleEnd]);
-  route = removeNearDuplicateBoatApproachPoints(route);
-  route = sanitizeBoatRouteGeometry(route);
-  return cleanupRouteCoordinates(route);
-}
-
-function sanitizeBoatRouteGeometry(route = []) {
-  // Prevent visual scribbles by removing tiny segments and severe backtracking.
-  // This does not invent new doglegs; it only simplifies the chosen water route.
-  if (!Array.isArray(route) || route.length < 3) return route || [];
-  let pts = removeShortBoatSegments(route, 0.018);
-  pts = removeSharpBoatBacktracks(pts, 28);
-  return pts;
-}
-
-function removeShortBoatSegments(route = [], minDistanceDeg = 0.018) {
-  const out = [];
-  for (const p of route || []) {
-    if (!out.length || Math.sqrt(coordDistance2(out[out.length - 1], p)) >= minDistanceDeg) out.push(p);
-  }
-  if (out.length && route?.length && coordDistance2(out[out.length - 1], route[route.length - 1]) > 0.000001) out.push(route[route.length - 1]);
-  return out.length >= 2 ? out : route;
-}
-
-function removeSharpBoatBacktracks(route = [], minTurnDeg = 28) {
-  if (!Array.isArray(route) || route.length < 4) return route || [];
-  const pts = [...route];
-  let changed = true;
-  let guard = 0;
-  while (changed && guard++ < 4) {
-    changed = false;
-    for (let i = 1; i < pts.length - 1; i++) {
-      const angle = boatTurnAngleDeg(pts[i - 1], pts[i], pts[i + 1]);
-      const beforeAfter = Math.sqrt(coordDistance2(pts[i - 1], pts[i + 1]));
-      const via = Math.sqrt(coordDistance2(pts[i - 1], pts[i])) + Math.sqrt(coordDistance2(pts[i], pts[i + 1]));
-      // Remove points that create a near reversal or a pointless tiny kink.
-      if (angle < minTurnDeg || (via > 0 && beforeAfter / via < 0.42)) {
-        pts.splice(i, 1);
-        changed = true;
-        break;
-      }
-    }
-  }
-  return pts;
-}
-
-function boatTurnAngleDeg(a, b, c) {
-  const v1 = [shortestLonDelta(b[0] - a[0]), b[1] - a[1]];
-  const v2 = [shortestLonDelta(c[0] - b[0]), c[1] - b[1]];
-  const l1 = Math.hypot(v1[0], v1[1]) || 1;
-  const l2 = Math.hypot(v2[0], v2[1]) || 1;
-  const dot = Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2)));
-  return Math.acos(dot) * 180 / Math.PI;
-}
-
-function removeNearDuplicateBoatApproachPoints(route = []) {
-  const out = [];
-  for (const p of route || []) {
-    if (!out.length || coordDistance2(out[out.length - 1], p) > 0.0009) out.push(p);
-  }
-  return out;
-}
-
-function bestWaterSideConnector(fromWater, city, land = []) {
-  const p = [Number(city[0]), Number(city[1])];
-  const dirs = [];
-  for (let i = 0; i < 16; i++) {
-    const a = (Math.PI * 2 * i) / 16;
-    dirs.push([Math.cos(a), Math.sin(a)]);
-  }
-  let best = null;
-  let bestScore = Infinity;
-  for (const d of dirs) {
-    for (const dist of [0.22, 0.38, 0.62, 0.90, 1.25]) {
-      const c = [p[0] + d[0] * dist, p[1] + d[1] * dist];
-      if (pointInAnyLandRing(c, land)) continue;
-      const hits = (waterEdgeHitsLand(fromWater, c, land, false) ? 1 : 0) + (waterEdgeHitsLand(c, p, land, true) ? 1 : 0);
-      const score = hits * 100000 + coordDistance2(c, p) + coordDistance2(fromWater, c) * 0.02;
-      if (score < bestScore) { best = c; bestScore = score; }
-    }
-  }
-  return best;
-}
-
-function sameWaterCorridorRoute(a, b, land = []) {
-  const corridors = naturalEarthRouting?.waterCorridors || [];
-  let best = null;
-  let bestScore = Infinity;
-  for (const c of corridors) {
-    const nodes = (c?.nodes || []).filter(p => Array.isArray(p) && p.length >= 2).map(p => [Number(p[0]), Number(p[1])]);
-    if (nodes.length < 3) continue;
-    const ai = nearestIndexOnNodes(a, nodes);
-    const bi = nearestIndexOnNodes(b, nodes);
-    if (ai < 0 || bi < 0 || ai === bi) continue;
-    const da = Math.sqrt(coordDistance2(a, nodes[ai]));
-    const db = Math.sqrt(coordDistance2(b, nodes[bi]));
-    const maxAttach = c.kind === 'coastal' ? 7.5 : 4.5;
-    if (da > maxAttach || db > maxAttach) continue;
-    const lo = Math.min(ai, bi);
-    const hi = Math.max(ai, bi);
-    const seq = ai <= bi ? nodes.slice(lo, hi + 1) : nodes.slice(lo, hi + 1).reverse();
-    if (seq.length < 2) continue;
-    const route = [a, ...seq, b];
-    if (routeSegmentsHitLand(safeGatewayRoute(route, Math.max(60, route.length * 8)), land) > 0) continue;
-    const direct = Math.sqrt(coordDistance2(a, b)) || 1;
-    const score = (da + db) + (routePathLength2(route) / direct) * 0.03;
-    if (score < bestScore) { best = route; bestScore = score; }
-  }
-  return best;
-}
-function nearestIndexOnNodes(p, nodes = []) {
-  let best = -1;
-  let bestD = Infinity;
-  for (let i = 0; i < nodes.length; i++) {
-    const d = coordDistance2(p, nodes[i]);
-    if (d < bestD) { best = i; bestD = d; }
-  }
-  return best;
-}
-
-function broadOceanFallbackRoute(a, b, distance = 0) {
-  if (distance < 2600) return null;
-  const mid = midpointCoord(a, b);
-  const candidates = [
-    a,
-    [lerpAngle(a[0], b[0], 0.22), lerp(a[1], b[1], 0.22) - 10],
-    [mid[0], mid[1] - 14],
-    [lerpAngle(a[0], b[0], 0.78), lerp(a[1], b[1], 0.78) - 10],
-    b
-  ];
-  return candidates;
-}
-
-function forcedLongWaterCorridor(a, b) {
-  const westNorthAmerica = a[0] < -105 && a[1] > 20 && a[1] < 50;
-  const destMediterranean = b[0] > -7 && b[0] < 38 && b[1] > 30 && b[1] < 46;
-  const destNorthEurope = b[0] > -12 && b[0] < 12 && b[1] >= 46 && b[1] < 62;
-  const reverseWestNorthAmerica = b[0] < -105 && b[1] > 20 && b[1] < 50;
-  const sourceMediterranean = a[0] > -7 && a[0] < 38 && a[1] > 30 && a[1] < 46;
-  const sourceNorthEurope = a[0] > -12 && a[0] < 12 && a[1] >= 46 && a[1] < 62;
-
-  if (westNorthAmerica && destNorthEurope) {
-    return [
-      a,
-      [-117.7, 31.3], [-116.4, 28.8], [-114.4, 25.2], [-111.3, 22.0],
-      [-106.8, 18.2], [-101.2, 15.4], [-95.2, 12.9], [-89.0, 10.7],
-      [-83.6, 8.7], [-81.7, 8.1], [-80.25, 8.75], [-79.62, 9.42], [-78.4, 10.2],
-      [-76.0, 12.4], [-72.5, 13.6], [-68.8, 14.8], [-64.8, 16.3], [-58.0, 20.0],
-      [-50.0, 28.0], [-42.0, 35.0], [-32.0, 42.0], [-22.0, 48.0], [-12.0, 51.0],
-      [-7.0, 52.0], [-5.0, 54.0],
-      b
-    ];
-  }
-
-  if (sourceNorthEurope && reverseWestNorthAmerica) {
-    return [
-      a,
-      [-5.0, 54.0], [-7.0, 52.0], [-12.0, 51.0], [-22.0, 48.0], [-32.0, 42.0],
-      [-42.0, 35.0], [-50.0, 28.0], [-58.0, 20.0], [-64.8, 16.3], [-68.8, 14.8],
-      [-72.5, 13.6], [-76.0, 12.4], [-78.4, 10.2], [-79.62, 9.42], [-80.25, 8.75],
-      [-81.7, 8.1], [-83.6, 8.7], [-89.0, 10.7], [-95.2, 12.9], [-101.2, 15.4],
-      [-106.8, 18.2], [-111.3, 22.0], [-114.4, 25.2], [-116.4, 28.8], [-117.7, 31.3],
-      b
-    ];
-  }
-
-  if (westNorthAmerica && destMediterranean) {
-    return [
-      a,
-      // Pacific side of Baja, giving land a wide berth.
-      [-117.7, 31.3], [-116.4, 28.8], [-114.4, 25.2], [-111.3, 22.0],
-      [-106.8, 18.2], [-101.2, 15.4], [-95.2, 12.9], [-89.0, 10.7],
-      // Panama approach: wide berth -> west canal approach -> short canal leg -> Caribbean exit.
-      [-83.6, 8.7], [-81.7, 8.1], [-80.25, 8.75], [-79.62, 9.42], [-78.4, 10.2],
-      // Caribbean: route south of Hispaniola and north of South America, never across islands.
-      [-76.0, 12.4], [-72.5, 13.6], [-68.8, 14.8], [-64.8, 16.3], [-60.2, 18.8],
-      // Atlantic and Gibraltar.
-      [-52.0, 25.0], [-42.0, 31.2], [-30.0, 34.6], [-18.0, 35.7], [-9.0, 35.8], [-5.75, 35.9],
-      // Mediterranean: stay mid-water/north of Africa, then approach Athens from the Aegean water side.
-      [-1.0, 36.6], [4.5, 37.4], [10.0, 37.7], [15.0, 37.0], [19.5, 36.5], [22.2, 37.2],
-      [23.35, 37.72], [23.55, 37.86], [23.83, 37.68],
-      b
-    ];
-  }
-
-  if (sourceMediterranean && reverseWestNorthAmerica) {
-    return [
-      a,
-      [23.55, 37.86], [23.35, 37.72], [22.2, 37.2], [19.5, 36.5], [15.0, 37.0],
-      [10.0, 37.7], [4.5, 37.4], [-1.0, 36.6], [-5.75, 35.9], [-9.0, 35.8],
-      [-18.0, 35.7], [-30.0, 34.6], [-42.0, 31.2], [-52.0, 25.0],
-      [-60.2, 18.8], [-64.8, 16.3], [-68.8, 14.8], [-72.5, 13.6], [-76.0, 12.4],
-      [-78.4, 10.2], [-79.62, 9.42], [-80.25, 8.75], [-81.7, 8.1], [-83.6, 8.7],
-      [-89.0, 10.7], [-95.2, 12.9], [-101.2, 15.4], [-106.8, 18.2],
-      [-111.3, 22.0], [-114.4, 25.2], [-116.4, 28.8], [-117.7, 31.3],
-      b
-    ];
-  }
-  return null;
-}
-
-function validateWaterRoute(route = [], land = []) {
-  if (!Array.isArray(route) || route.length < 2) return null;
-  const cleaned = cleanupRouteCoordinates(route);
-  const sampled = safeGatewayRoute(cleaned, Math.max(80, cleaned.length * 10));
-  if (routeSegmentsHitLand(sampled, land) === 0 && islandRouteCutPenalty(sampled) === 0) return cleaned;
-  return null;
-}
-
-function islandRouteCutPenalty(route = []) {
-  for (let i = 1; i < route.length; i++) {
-    if (caribbeanIslandCutPenalty(route[i - 1], route[i]) >= 9999) return 9999;
-  }
-  return 0;
-}
-
-function boatWaterApproachPoint(city, other, land = [], kind = 'end') {
-  const p = [Number(city[0]), Number(city[1])];
-  if (!pointInAnyLandRing(p, land)) return p;
-  const away = routePerpendicular(p, other);
-  const toward = routePerpendicular(other, p);
-  const base = routePerpendicular(other, p);
-  const candidates = [];
-  const dirs = [
-    unitVec([shortestLonDelta(other[0] - p[0]) * -1, (other[1] - p[1]) * -1]),
-    unitVec([away[0], away[1]]),
-    unitVec([-away[0], -away[1]]),
-    unitVec([base[0], base[1]]),
-    unitVec([-base[0], -base[1]])
-  ];
-  for (const d of dirs) {
-    for (const dist of [0.18, 0.35, 0.62, 0.95, 1.35, 1.9]) {
-      candidates.push([p[0] + d[0] * dist, p[1] + d[1] * dist]);
-    }
-  }
-  // Known port/coast corrections.
-  if (isNearCoord(p, [23.73, 37.98], 1.2)) candidates.unshift([23.88, 37.70], [23.78, 37.62], [23.55, 37.86], [23.36, 37.74]); // Athens/Piraeus water side
-  if (isNearCoord(p, [-117.16, 32.72], 1.1)) candidates.unshift([-117.35, 32.62], [-117.55, 32.44]);
-  if (isNearCoord(p, [-109.91, 22.89], 1.1)) candidates.unshift([-110.05, 22.82], [-110.22, 22.72]);
-
-  let best = null;
-  let bestScore = Infinity;
-  for (const c of candidates) {
-    if (pointInAnyLandRing(c, land)) continue;
-    if (waterEdgeHitsLand(p, c, land, true)) continue;
-    const score = coordDistance2(p, c) + coordDistance2(c, other) * 0.02;
-    if (score < bestScore) { best = c; bestScore = score; }
-  }
-  return best || p;
-}
-function unitVec(v) {
-  const len = Math.hypot(v[0], v[1]) || 1;
-  return [v[0] / len, v[1] / len];
-}
-
-const WATER_GRAPH_NODES = [
-  // North American Pacific / Baja / Central America
-  [-117.9, 32.4], [-116.8, 30.8], [-114.8, 27.4], [-112.8, 24.2], [-110.0, 22.7],
-  [-106.0, 19.0], [-101.5, 16.1], [-96.0, 13.9], [-90.0, 12.0], [-84.0, 9.5],
-  // Panama approach/departure nodes: approach wide, then pass cleanly through canal.
-  [-82.8, 8.0], [-81.0, 7.9], [-79.95, 8.8], [-79.55, 9.45], [-78.2, 10.4], [-76.4, 11.4],
-  // Caribbean / Gulf / Atlantic passages. Keep the main corridor north/south of Hispaniola,
-  // not across the island.
-  [-83.0, 22.0], [-79.5, 23.8], [-76.6, 22.2], [-73.4, 21.2], [-70.2, 20.8],
-  [-67.0, 20.2], [-64.6, 19.4], [-61.8, 17.2], [-60.5, 14.0], [-65.0, 12.0],
-  [-70.0, 15.3], [-74.5, 15.0], [-78.4, 14.0], [-80.0, 18.0], [-86.2, 21.8],
-  // North Atlantic corridor
-  [-55.0, 25.0], [-45.0, 31.0], [-35.0, 34.5], [-25.0, 36.0], [-16.0, 36.0],
-  [-9.5, 36.0], [-5.8, 35.9],
-  // Mediterranean routing, with port/canal approach/departure nodes.
-  [0.0, 36.8], [5.5, 38.0], [10.5, 38.1], [14.5, 37.4], [18.2, 36.2],
-  [21.5, 36.3], [22.6, 37.0], [23.36, 37.74], [23.55, 37.86], [23.9, 37.7],
-  [26.0, 36.4], [28.5, 35.7], [30.0, 34.8], [31.6, 32.0], [32.5, 31.6],
-  // Suez / Red Sea / Indian Ocean with deliberate approach/departure.
-  [32.15, 31.25], [32.32, 30.4], [32.4, 29.7], [33.0, 28.6], [34.6, 27.5], [38.0, 20.0], [43.0, 13.0], [50.0, 12.5],
-  [58.0, 16.0], [66.0, 18.0], [73.0, 12.0], [80.0, 8.0], [90.0, 5.0],
-  // Pacific / Oceania / Asia broad corridors
-  [-140.0, 25.0], [-160.0, 20.0], [170.0, 15.0], [150.0, 10.0], [130.0, 12.0],
-  [120.0, 8.0], [110.0, 2.0], [104.0, 1.0], [100.0, 6.0], [95.0, 12.0],
-  // South America / South Atlantic / Cape
-  [-74.0, -10.0], [-78.0, -20.0], [-75.0, -35.0], [-68.0, -52.0],
-  [-50.0, -45.0], [-30.0, -35.0], [-10.0, -30.0], [15.0, -34.5], [30.0, -30.0],
-  // North Europe / channels
-  [-7.0, 49.5], [0.0, 50.5], [4.0, 52.0], [8.0, 55.0], [12.0, 56.0],
-  [20.0, 58.0], [28.0, 59.5]
-];
-
-function waterGraphNodesFromDatabase() {
-  const nodes = [];
-  const seen = new Set();
-  function add(p) {
-    if (!Array.isArray(p) || p.length < 2) return;
-    const lon = Number(p[0]);
-    const lat = Number(p[1]);
-    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
-    const key = `${lon.toFixed(2)},${lat.toFixed(2)}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    nodes.push([lon, lat]);
-  }
-  for (const p of (naturalEarthRouting?.waterGraphNodes || [])) add(p);
-  for (const p of (naturalEarthRouting?.waterDetailNodes || [])) add(p);
-  for (const corridor of (naturalEarthRouting?.waterCorridors || [])) {
-    for (const p of (corridor?.nodes || [])) add(p);
-  }
-  return nodes;
-}
-
-
-
-function waterGraphRoute(a, b, land = [], distance = 0) {
-  const allNodes = [a, b, ...waterGraphNodesFromDatabase(), ...WATER_GRAPH_NODES];
-  const startIndex = 0;
-  const goalIndex = 1;
-  const routeBox = routeBbox(a, b, distance > 4200 ? 32 : distance > 2200 ? 24 : distance > 800 ? 12 : 5.5);
-  let usable = allNodes
-    .map((p, i) => ({ p, i, score: waterNodeRouteScore(p, a, b, distance) }))
-    .filter(n => n.i < 2 || bboxContainsExpanded(routeBox, n.p, distance > 2200 ? 8 : 2.5) || isMajorWaterGateway(n.p));
-
-  // Dense Natural Earth water nodes are useful, but an all-pairs graph over every
-  // water point is too expensive. Keep the points most relevant to the route line,
-  // plus all major gateways. This gives detailed local/coastal routing without
-  // letting broad fallbacks pull same-coast trips into huge triangles.
-  const maxUsable = distance > 3000 ? 1150 : distance > 1200 ? 850 : 620;
-  if (usable.length > maxUsable) {
-    const pinned = usable.filter(n => n.i < 2 || isMajorWaterGateway(n.p));
-    const rest = usable.filter(n => !(n.i < 2 || isMajorWaterGateway(n.p))).sort((x, y) => x.score - y.score).slice(0, Math.max(0, maxUsable - pinned.length));
-    usable = [...pinned, ...rest];
-  }
-
-  const nodes = usable.map(n => n.p);
-  const start = usable.findIndex(n => n.i === startIndex);
-  const goal = usable.findIndex(n => n.i === goalIndex);
-  if (start < 0 || goal < 0) return null;
-
-  const edgeLimit = distance > 3200 ? 11.0 : distance > 1500 ? 7.0 : distance > 600 ? 4.0 : 2.2;
-  const neighbors = new Map();
-  for (let i = 0; i < nodes.length; i++) neighbors.set(i, []);
-  for (let i = 0; i < nodes.length; i++) {
-    const possible = [];
-    for (let j = 0; j < nodes.length; j++) {
-      if (i === j) continue;
-      const d = Math.sqrt(coordDistance2(nodes[i], nodes[j]));
-      const connector = i === start || j === goal || i === goal || j === start;
-      const limit = connector ? edgeLimit * 1.10 : edgeLimit;
-      if (d > limit && !gatewayLongEdgeAllowed(nodes[i], nodes[j], d, distance)) continue;
-      if (waterEdgeHitsLand(nodes[i], nodes[j], land, connector)) continue;
-      if (caribbeanIslandCutPenalty(nodes[i], nodes[j]) >= 9999) continue;
-      if (panamaCanalBadAnglePenalty(nodes[i], nodes[j]) >= 9999) continue;
-      const offshorePenalty = distanceFromPointToSegment(nodes[j], a, b) * (distance < 1800 ? 0.22 : 0.055);
-      const penalty = caribbeanIslandCutPenalty(nodes[i], nodes[j]) + panamaCanalBadAnglePenalty(nodes[i], nodes[j]) + offshorePenalty;
-      possible.push({ to: j, w: d + penalty });
-    }
-    possible.sort((x, y) => x.w - y.w);
-    neighbors.set(i, possible.slice(0, distance > 1800 ? 18 : 12));
-  }
-
-  const path = astarNodePath(start, goal, nodes, neighbors);
-  if (!path?.length) return null;
-  const route = path.map(i => nodes[i]);
-  const direct = Math.max(0.0001, Math.sqrt(coordDistance2(a, b)));
-  const ratio = routePathLength2(route) / Math.max(0.0001, direct * direct);
-  if (distance < 1800 && ratio > 4.2) return null;
-  return route;
-}
-
-function waterNodeRouteScore(p, a, b, distance = 0) {
-  if (isMajorWaterGateway(p)) return -1000;
-  const corridor = distanceFromPointToSegment(p, a, b);
-  const endBias = Math.min(Math.sqrt(coordDistance2(p, a)), Math.sqrt(coordDistance2(p, b))) * 0.10;
-  return corridor + endBias;
-}
-
-
-function astarNodePath(start, goal, nodes, neighbors) {
-  const open = new Set([start]);
-  const came = new Map();
-  const g = new Map([[start, 0]]);
-  const f = new Map([[start, coordDistance2(nodes[start], nodes[goal])]]);
-  let guard = 0;
-  while (open.size && guard++ < 5000) {
-    let current = null;
-    let best = Infinity;
-    for (const idx of open) {
-      const score = f.get(idx) ?? Infinity;
-      if (score < best) { best = score; current = idx; }
-    }
-    if (current === goal) {
-      const path = [current];
-      while (came.has(current)) {
-        current = came.get(current);
-        path.unshift(current);
-      }
-      return path;
-    }
-    open.delete(current);
-    for (const edge of neighbors.get(current) || []) {
-      const tentative = (g.get(current) ?? Infinity) + edge.w;
-      if (tentative < (g.get(edge.to) ?? Infinity)) {
-        came.set(edge.to, current);
-        g.set(edge.to, tentative);
-        f.set(edge.to, tentative + Math.sqrt(coordDistance2(nodes[edge.to], nodes[goal])) * 0.92);
-        open.add(edge.to);
-      }
-    }
-  }
-  return null;
-}
-
-function caribbeanIslandCutPenalty(a, b) {
-  const route = routeBbox(a, b, 0);
-  const boxes = [
-    ...(naturalEarthRouting?.islandNoCrossBoxes || []),
-    [-85.9, 18.8, -73.7, 24.2],  // Cuba
-    [-75.6, 17.0, -67.7, 20.5],  // Hispaniola
-    [-67.8, 17.3, -64.7, 19.1],  // Puerto Rico
-    [-79.0, 23.8, -72.6, 27.6],  // Bahamas
-    [-62.7, 10.0, -59.0, 19.0],  // Lesser Antilles / Trinidad field
-    [18.6, 34.2, 27.2, 41.5],    // Aegean island/Greek coast field
-    [-6.5, 30.0, 33.5, 35.2]     // North Africa coast clipping guard
-  ];
-  for (const box of boxes) {
-    if (bboxIntersects(route, box) && lineIntersectsBBoxLoose(a, b, box)) return 9999;
-  }
-  return 0;
-}
-
-
-function panamaCanalBadAnglePenalty(a, b) {
-  const canalBox = [-81.0, 7.8, -78.8, 10.0];
-  const route = routeBbox(a, b, 0);
-  if (!bboxIntersects(route, canalBox) || !lineIntersectsBBoxLoose(a, b, canalBox)) return 0;
-  const dx = Math.abs(shortestLonDelta(b[0] - a[0]));
-  const dy = Math.abs(b[1] - a[1]);
-  // Let short canal approach legs pass. Penalize steep long diagonal cuts.
-  if (dx < 1.35 && dy < 1.25) return 0;
-  return 9999;
-}
-
-function lineIntersectsBBoxLoose(a, b, box) {
-  if (pointInBBox(a, box) || pointInBBox(b, box)) return true;
-  const corners = [[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]];
-  for (let i = 0; i < 4; i++) if (segmentsIntersect(a, b, corners[i], corners[(i + 1) % 4])) return true;
-  // Sample too, because longitudes and smoothed paths can be numerically awkward.
-  for (let i = 1; i < 12; i++) {
-    const p = [lerpAngle(a[0], b[0], i / 12), lerp(a[1], b[1], i / 12)];
-    if (pointInBBox(p, box)) return true;
-  }
-  return false;
-}
-
-function waterEdgeHitsLand(a, b, land, endpointConnector = false) {
-  const samples = endpointConnector ? 12 : 18;
-  for (let i = 1; i < samples; i++) {
-    const t = i / samples;
-    if (endpointConnector && (t < 0.18 || t > 0.82)) continue;
-    const p = [lerpAngle(a[0], b[0], t), lerp(a[1], b[1], t)];
-    if (pointInAnyLandRing(p, land)) return true;
-  }
-  return lineHitsLandBoxes(a, b, land);
-}
-
-function pointInAnyLandRing(point, rings = []) {
-  const box = [point[0], point[1], point[0], point[1]];
-  return (rings || []).some(r => bboxIntersects(box, r.b) && pointInRing(point, r.p || []));
-}
-
-function bboxContainsExpanded(box, point, pad = 0) {
-  return point[0] >= box[0] - pad && point[0] <= box[2] + pad && point[1] >= box[1] - pad && point[1] <= box[3] + pad;
-}
-
-function isMajorWaterGateway(p) {
-  return (
-    isNearCoord(p, [-80.1, 8.8], 4.5) ||
-    isNearCoord(p, [-5.8, 35.9], 4.5) ||
-    isNearCoord(p, [32.4, 29.7], 4.5) ||
-    isNearCoord(p, [-79.5, 23.8], 5.5) ||
-    isNearCoord(p, [-68.0, 18.5], 5.5)
-  );
-}
-
-function gatewayLongEdgeAllowed(a, b, d, totalDistance) {
-  if (totalDistance < 1500) return false;
-  if (d > 24) return false;
-  const oceanic = Math.abs(a[1]) < 60 && Math.abs(b[1]) < 60;
-  if (!oceanic) return false;
-  return true;
-}
-
-
-function bajaPeninsulaSurfaceRoute(leg, type = 'train') {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const involvesCabo = isNearCoord(a, [-109.91, 22.89], 2.2) || isNearCoord(b, [-109.91, 22.89], 2.2);
-  const involvesSoCal = isNearCoord(a, [-117.16, 32.72], 3.0) || isNearCoord(b, [-117.16, 32.72], 3.0);
-  if (!involvesCabo || !involvesSoCal) return null;
-
-  const southbound = a[1] > b[1];
-  const corridor = [
-    [-117.16, 32.72],
-    [-116.10, 31.50],
-    [-114.70, 29.70],
-    [-113.45, 27.85],
-    [-112.20, 26.00],
-    [-110.85, 24.40],
-    [-109.91, 22.89]
-  ];
-  const points = southbound ? [a, ...corridor.slice(1, -1), b] : [a, ...corridor.slice(1, -1).reverse(), b];
-  const smoothed = safeGatewayRoute(points, type === 'train' ? 72 : 82);
-  return type === 'drive' ? roadSquiggleRoute(smoothed, leg, 0.20) : cleanupRouteCoordinates(smoothed);
-}
-function isNearCoord(a, b, degrees = 1) {
-  return Math.sqrt(coordDistance2(a, b)) <= degrees;
-}
-
-function oceanGatewayBoatRoute(a, b) {
-  const forced = forcedLongWaterCorridor(a, b);
-  if (forced?.length > 2) return forced;
-  return null;
-}
-
-function boatRouteCandidates(a, b, distance = 0) {
-  const mid = midpointCoord(a, b);
-  const perp = routePerpendicular(a, b);
-  const base = distance > 1800 ? 7.0 : distance > 650 ? 3.4 : 1.18;
-  return [
-    [a, b],
-    [a, [mid[0] + perp[0] * base, mid[1] + perp[1] * base], b],
-    [a, [mid[0] - perp[0] * base, mid[1] - perp[1] * base], b],
-    [a, [lerp(a[0], b[0], 0.30) + perp[0] * base * 0.75, lerp(a[1], b[1], 0.30) + perp[1] * base * 0.75], [lerp(a[0], b[0], 0.68) + perp[0] * base * 0.75, lerp(a[1], b[1], 0.68) + perp[1] * base * 0.75], b],
-    [a, [lerp(a[0], b[0], 0.30) - perp[0] * base * 0.75, lerp(a[1], b[1], 0.30) - perp[1] * base * 0.75], [lerp(a[0], b[0], 0.68) - perp[0] * base * 0.75, lerp(a[1], b[1], 0.68) - perp[1] * base * 0.75], b]
-  ];
-}
-
-function offshoreBoatCandidates(a, b, distance = 0) {
-  const perp = routePerpendicular(a, b);
-  const base = distance > 1800 ? 10.8 : distance > 650 ? 5.6 : 2.4;
-  const one = [
-    a,
-    [lerp(a[0], b[0], 0.24) + perp[0] * base * 0.85, lerp(a[1], b[1], 0.24) + perp[1] * base * 0.85],
-    [lerp(a[0], b[0], 0.58) + perp[0] * base, lerp(a[1], b[1], 0.58) + perp[1] * base],
-    b
-  ];
-  const two = [
-    a,
-    [lerp(a[0], b[0], 0.24) - perp[0] * base * 0.85, lerp(a[1], b[1], 0.24) - perp[1] * base * 0.85],
-    [lerp(a[0], b[0], 0.58) - perp[0] * base, lerp(a[1], b[1], 0.58) - perp[1] * base],
-    b
-  ];
-  return [one, two];
-}
-
+// v6 lightweight UI-thread fallback. Detailed routing now lives entirely in
+// routingWorker.js and is cached through IndexedDB. This curve is only shown
+// briefly if a worker route is not ready yet.
 function stylizedFallbackRoute(leg) {
-  if (leg.mode === 'boat') return boatCurveRoute(leg, 0.48);
-  if (leg.mode === 'train') return stylizedSurfaceRoute(leg, 'train');
-  if (leg.mode === 'drive' || leg.mode === 'car') return stylizedSurfaceRoute(leg, 'drive');
-  return [[leg.from.lon, leg.from.lat], [leg.to.lon, leg.to.lat]];
+  const a = [Number(leg?.from?.lon), Number(leg?.from?.lat)];
+  const b = [Number(leg?.to?.lon), Number(leg?.to?.lat)];
+  if (!Number.isFinite(a[0]) || !Number.isFinite(a[1]) || !Number.isFinite(b[0]) || !Number.isFinite(b[1])) return [a, b];
+  const mode = leg?.mode || 'plane';
+  if (mode === 'plane' || mode === 'move') return [a, b];
+  const dx = shortestLonDelta(b[0] - a[0]);
+  const dy = b[1] - a[1];
+  const length = Math.hypot(dx, dy) || 1;
+  const perp = [-dy / length, dx / length];
+  const magnitude = mode === 'boat' ? Math.min(2.2, length * 0.08) : mode === 'train' ? Math.min(0.7, length * 0.025) : Math.min(1.1, length * 0.045);
+  return [
+    a,
+    [lerpAngle(a[0], b[0], 0.33) + perp[0] * magnitude, lerp(a[1], b[1], 0.33) + perp[1] * magnitude],
+    [lerpAngle(a[0], b[0], 0.67) - perp[0] * magnitude * 0.35, lerp(a[1], b[1], 0.67) - perp[1] * magnitude * 0.35],
+    b
+  ];
 }
-
-function stylizedSurfaceRoute(leg, type = 'drive') {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const mid = midpointCoord(a, b);
-  const perp = routePerpendicular(a, b);
-  const distance = milesBetween(leg.from, leg.to);
-  const bend = (type === 'train' ? 0.12 : 0.72) * (distance > 1200 ? 1.55 : distance > 350 ? 0.95 : 0.38);
-  const c1 = [lerp(a[0], b[0], 0.32) + perp[0] * bend, lerp(a[1], b[1], 0.32) + perp[1] * bend];
-  const c2 = [lerp(a[0], b[0], 0.67) - perp[0] * bend * (type === 'train' ? 0.10 : 0.48), lerp(a[1], b[1], 0.67) - perp[1] * bend * (type === 'train' ? 0.10 : 0.48)];
-  const base = bezierRouteThrough([a, c1, mid, c2, b], type === 'train' ? 44 : 48);
-  return type === 'drive' ? roadSquiggleRoute(base, leg, 0.55) : cleanupRouteCoordinates(base);
-}
-function roadSquiggleRoute(coords = [], leg, strength = 0.45) {
-  if (!Array.isArray(coords) || coords.length < 4) return coords;
-  const distance = milesBetween(leg.from, leg.to);
-  const amp = (distance > 900 ? 0.22 : distance > 250 ? 0.115 : 0.045) * strength;
-  const out = coords.map((p, i) => {
-    if (i === 0 || i === coords.length - 1) return p;
-    const prev = coords[Math.max(0, i - 1)];
-    const next = coords[Math.min(coords.length - 1, i + 1)];
-    const dx = shortestLonDelta(next[0] - prev[0]);
-    const dy = next[1] - prev[1];
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const wave = Math.sin((i / Math.max(1, coords.length - 1)) * Math.PI * 6.0);
-    const envelope = Math.sin((i / Math.max(1, coords.length - 1)) * Math.PI);
-    return [p[0] + nx * amp * wave * envelope, p[1] + ny * amp * wave * envelope];
-  });
-  return cleanupRouteCoordinates(out);
-}
-
-function boatCurveRoute(leg, strength = 0.45) {
-  const a = [Number(leg.from.lon), Number(leg.from.lat)];
-  const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const mid = midpointCoord(a, b);
-  const perp = routePerpendicular(a, b);
-  const distance = milesBetween(leg.from, leg.to);
-  const bend = strength * (distance > 1800 ? 7 : distance > 650 ? 3.4 : 1.15);
-  return bezierRouteThrough([a, [mid[0] + perp[0] * bend, mid[1] + perp[1] * bend], b], 72);
-}
-
-function softenPolyline(points = [], tension = 0.25, samples = 40) {
-  return bezierRouteThrough(points, samples);
-}
-
-function safeGatewayRoute(points = [], samples = 120) {
-  // Use a piecewise smoothed route with low overshoot for canal/ocean gateway
-  // paths; Catmull-Rom over widely spaced waypoints can cut corners through land.
-  if (!Array.isArray(points) || points.length < 2) return points || [];
-  const out = [];
-  const perSeg = Math.max(3, Math.floor(samples / Math.max(1, points.length - 1)));
-  for (let i = 1; i < points.length; i++) {
-    for (let j = 0; j < perSeg; j++) {
-      const t = j / perSeg;
-      const eased = t * t * (3 - 2 * t);
-      out.push([lerpAngle(points[i - 1][0], points[i][0], eased), lerp(points[i - 1][1], points[i][1], eased)]);
-    }
-  }
-  out.push(points[points.length - 1]);
-  return cleanupRouteCoordinates(out);
-}
-
-function bezierRouteThrough(points = [], samples = 48) {
-  if (!Array.isArray(points) || points.length < 3) return cleanupRouteCoordinates(points || []);
-  const out = [];
-  const n = Math.max(16, samples);
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    out.push(catmullRomPoint(points, t));
-  }
-  return cleanupRouteCoordinates(out);
-}
-
-function catmullRomPoint(points, t) {
-  const n = points.length;
-  if (n < 2) return points[0] || [0,0];
-  const scaled = t * (n - 1);
-  const i = Math.min(n - 2, Math.max(0, Math.floor(scaled)));
-  const localT = scaled - i;
-  const p0 = points[Math.max(0, i - 1)];
-  const p1 = points[i];
-  const p2 = points[i + 1];
-  const p3 = points[Math.min(n - 1, i + 2)];
-  const tt = localT * localT;
-  const ttt = tt * localT;
-  const x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * localT + (2*p0[0] - 5*p1[0] + 4*p2[0] - p3[0]) * tt + (-p0[0] + 3*p1[0] - 3*p2[0] + p3[0]) * ttt);
-  const y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * localT + (2*p0[1] - 5*p1[1] + 4*p2[1] - p3[1]) * tt + (-p0[1] + 3*p1[1] - 3*p2[1] + p3[1]) * ttt);
-  return [x,y];
-}
-
-function pointOnControlPolyline(points, t, tension = 0.25) {
-  return catmullRomPoint(points, t);
-}
-
-function cleanupRouteCoordinates(coords = []) {
-  const out = [];
-  for (const c of coords || []) {
-    const p = [roundRouteCoord(c?.[0]), roundRouteCoord(c?.[1])];
-    if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
-    if (!out.length || Math.abs(out[out.length - 1][0] - p[0]) > 0.0001 || Math.abs(out[out.length - 1][1] - p[1]) > 0.0001) out.push(p);
-  }
-  return out.length >= 2 ? unwrapAntimeridianLine(out) : out;
-}
-
-function roundRouteCoord(v) { return Math.round(Number(v) * 10000) / 10000; }
-function routeBbox(a, b, pad = 0) { return [Math.min(a[0], b[0]) - pad, Math.min(a[1], b[1]) - pad, Math.max(a[0], b[0]) + pad, Math.max(a[1], b[1]) + pad]; }
-function bboxIntersects(a, b) { return a && b && a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1]; }
-function midpointCoord(a, b) { return [lerpAngle(a[0], b[0], 0.5), lerp(a[1], b[1], 0.5)]; }
-function coordDistance2(a, b) { const dx = shortestLonDelta(a[0] - b[0]); const dy = a[1] - b[1]; return dx * dx + dy * dy; }
-function distancePointToBBox(p, b) { const x = Math.max(b[0], Math.min(p[0], b[2])); const y = Math.max(b[1], Math.min(p[1], b[3])); return coordDistance2(p, [x,y]); }
-function routePerpendicular(a, b) { const dx = shortestLonDelta(b[0] - a[0]); const dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
-function tooNearPoint(a, b) { return !a || !b ? false : coordDistance2(a, b) < 0.05; }
-function lerpCoord(a, b, t) { return [lerpAngle(a[0], b[0], t), lerp(a[1], b[1], t)]; }
-function distanceFromPointToSegment(p, a, b) {
-  const ax = a[0], ay = a[1], bx = b[0], by = b[1], px = p[0], py = p[1];
-  const dx = shortestLonDelta(bx - ax);
-  const dy = by - ay;
-  const len2 = dx * dx + dy * dy || 1;
-  const relx = shortestLonDelta(px - ax);
-  const rely = py - ay;
-  const t = Math.max(0, Math.min(1, (relx * dx + rely * dy) / len2));
-  const proj = [ax + dx * t, ay + dy * t];
-  return Math.sqrt(coordDistance2(p, proj));
-}
-
-function tooFarFromCorridor(p, a, b, maxDegrees = 3) {
-  const mid = midpointCoord(a, b);
-  return Math.sqrt(coordDistance2(p, mid)) > Math.max(maxDegrees * 1.45, Math.sqrt(coordDistance2(a, b)) * 0.72);
-}
-
-function routePathLength2(route = []) { let t = 0; for (let i=1;i<route.length;i++) t += coordDistance2(route[i-1], route[i]); return t; }
-function lineHitsLandBoxes(a, b, rings = []) {
-  const box = routeBbox(a, b, 0.04);
-  return (rings || []).some(ring => bboxIntersects(box, ring.b) && lineIntersectsLandRing(a, b, ring));
-}
-function routeSegmentsHitLand(route = [], rings = []) {
-  if (!Array.isArray(route) || route.length < 2) return 0;
-  let hits = 0;
-  for (let i = 1; i < route.length; i++) {
-    const t0 = (i - 1) / Math.max(1, route.length - 1);
-    const t1 = i / Math.max(1, route.length - 1);
-    // Cities are on land. Allow very short start/end connectors to reach water.
-    if (t1 < 0.055 || t0 > 0.945) continue;
-    if (lineHitsLandBoxes(route[i - 1], route[i], rings)) hits++;
-  }
-  return hits;
-}
-function lineIntersectsLandRing(a, b, ring) {
-  const pts = ring?.p || [];
-  if (pts.length < 4) return false;
-  const samples = 5;
-  for (let i = 1; i < samples; i++) {
-    const p = [lerpAngle(a[0], b[0], i / samples), lerp(a[1], b[1], i / samples)];
-    if (pointInRing(p, pts)) return true;
-  }
-  for (let i = 1; i < pts.length; i++) {
-    if (segmentsIntersect(a, b, pts[i - 1], pts[i])) return true;
-  }
-  return false;
-}
-function pointInRing(point, ring = []) {
-  let inside = false;
-  const x = point[0], y = point[1];
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
-    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / ((yj - yi) || 0.0000001) + xi);
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-function pointInBBox(p, b) { return p[0]>=b[0] && p[0]<=b[2] && p[1]>=b[1] && p[1]<=b[3]; }
-function segmentsIntersect(a,b,c,d) {
-  const o1 = orient(a,b,c), o2 = orient(a,b,d), o3 = orient(c,d,a), o4 = orient(c,d,b);
-  return o1 * o2 < 0 && o3 * o4 < 0;
-}
-function orient(a,b,c) { return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]); }
 
 
 const ROUTE_WAYPOINTS = {
@@ -3403,6 +2682,36 @@ function smoothCamera(prev, next, amount) {
     zoom: lerp(prev.zoom, next.zoom, amount),
     pitch: lerp(prev.pitch, next.pitch, amount),
     bearing: lerpAngle(prev.bearing, next.bearing, amount)
+  };
+}
+
+function adaptiveCameraSmoothing(phase, quality = 'high') {
+  const qualityScale = quality === 'high' ? 1 : quality === 'medium' ? 0.86 : 0.72;
+  const base = phase === 'settle' ? 0.024 : phase === 'predeparture' ? 0.018 : phase === 'arrival' ? 0.038 : phase === 'takeoff' ? 0.034 : 0.030;
+  return base * qualityScale;
+}
+
+function constrainCameraToVessel(map, camera, vehicle, quality = 'high') {
+  if (!map || !camera || !vehicle) return camera;
+  const canvas = map.getCanvas?.();
+  const width = canvas?.clientWidth || window.innerWidth;
+  const height = canvas?.clientHeight || window.innerHeight;
+  const point = map.project([vehicle.lon, vehicle.lat]);
+  const safeLeft = width * 0.175;
+  const safeRight = width * 0.825;
+  const safeTop = height * 0.20;
+  const safeBottom = height * 0.80;
+  const overflowX = point.x < safeLeft ? (safeLeft - point.x) / Math.max(1, safeLeft) : point.x > safeRight ? (point.x - safeRight) / Math.max(1, width - safeRight) : 0;
+  const overflowY = point.y < safeTop ? (safeTop - point.y) / Math.max(1, safeTop) : point.y > safeBottom ? (point.y - safeBottom) / Math.max(1, height - safeBottom) : 0;
+  const overflow = Math.max(overflowX, overflowY);
+  if (overflow <= 0) return camera;
+  const strength = Math.min(0.82, 0.28 + overflow * (quality === 'low' ? 0.78 : 0.62));
+  return {
+    ...camera,
+    center: [
+      lerpAngle(camera.center[0], vehicle.lon, strength),
+      lerp(camera.center[1], vehicle.lat, strength)
+    ]
   };
 }
 function takeoffCruiseLandingEase(t) {

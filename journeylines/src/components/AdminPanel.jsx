@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
 import routeDetails from '../data/routeDetails.json';
-import { buildRouteDetailsPayload } from '../utils/routeDetails.js';
+import { buildRouteDetailsPayload, routeDetailKeyForEntry } from '../utils/routeDetails.js';
+import { flattenLegs } from '../utils/tripExpansion.js';
+import { routeLegInWorker } from '../utils/routingClient.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -662,9 +664,40 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     }
   }
 
+  async function prepareChangedVesselRoutes(nextTrips, nextLocations) {
+    const locationsById = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
+    const entries = flattenLegs(nextTrips || [], locationsById, homeBases || []);
+    const jobs = entries.filter(entry => {
+      const leg = entry?.leg;
+      if (!leg || !['drive', 'car', 'train', 'boat'].includes(leg.mode)) return false;
+      const old = routeDetails?.routes?.[routeDetailKeyForEntry(entry)];
+      const matches = String(old?.fromLocationId || '') === String(leg?.from?.id || '')
+        && String(old?.toLocationId || '') === String(leg?.to?.id || '')
+        && String(old?.mode || '') === String(leg?.mode || '')
+        && Array.isArray(old?.geometry)
+        && old.geometry.length > 1;
+      return !matches;
+    });
+    if (!jobs.length) return;
+
+    let cursor = 0;
+    const concurrency = Math.min(2, jobs.length);
+    await Promise.all(Array.from({ length: concurrency }, async () => {
+      while (cursor < jobs.length) {
+        const entry = jobs[cursor++];
+        try {
+          await routeLegInWorker(entry.leg, { reason: 'repository route save' });
+        } catch (error) {
+          console.warn('[GlobeHoppers] Background route preparation failed; the trip will still save.', entry?.trip?.id, error);
+        }
+      }
+    }));
+  }
+
   async function commitData(nextTrips = trips, nextLocations = locations, message = 'Update travel history from GlobeHoppers') {
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
     for (const trip of nextTrips || []) validateTripLocationReferences(trip, nextLocations);
+    await prepareChangedVesselRoutes(nextTrips, nextLocations);
     const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);
     const files = [
       { path: 'journeylines/src/data/locations.json', data: nextLocations },

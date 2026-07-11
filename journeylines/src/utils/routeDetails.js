@@ -1,8 +1,9 @@
 import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
+import { ROUTING_VERSION, routingMemoryGeometry } from './routingClient.js';
 
-export const ROUTE_DETAILS_VERSION = '4.22';
-export const ROUTE_DETAILS_CACHE_VERSION = 'v2.16';
+export const ROUTE_DETAILS_VERSION = '6.0';
+export const ROUTE_DETAILS_CACHE_VERSION = 'natural-earth-v6.0';
 
 export function routeDetailKeyForEntry(entry) {
   const tripId = String(entry?.trip?.id || entry?.trip?.label || entry?.trip?.title || 'trip');
@@ -113,7 +114,15 @@ function routeGeometryForPayload(leg, old = {}, cacheVersion = ROUTE_DETAILS_CAC
   const reverseKey = reverseRouteCacheKeyForLeg(leg, cacheVersion);
 
   const oldGeometry = sanitizeGeometry(old.geometry);
-  if (oldGeometry) return { geometry: oldGeometry, source: old.geometrySource || 'existingRouteDetails', detail: old.geometryDetail || 'preserved' };
+  const oldMatchesLeg = String(old?.fromLocationId || '') === String(leg?.from?.id || '')
+    && String(old?.toLocationId || '') === String(leg?.to?.id || '')
+    && String(old?.mode || '') === String(leg?.mode || '');
+  if (oldGeometry && oldMatchesLeg && old.geometrySource !== 'simpleFallback') {
+    return { geometry: oldGeometry, source: old.geometrySource || 'existingRouteDetails', detail: old.geometryDetail || 'preserved' };
+  }
+
+  const workerGeometry = sanitizeGeometry(routingMemoryGeometry(leg));
+  if (workerGeometry) return { geometry: workerGeometry, source: 'routingWorker', detail: ROUTING_VERSION };
 
   const generatedDirect = sanitizeGeometry(generated[directKey]);
   if (generatedDirect) return { geometry: generatedDirect, source: 'generatedRoutes', detail: 'direct' };
@@ -162,6 +171,7 @@ export function summarizeRouteDetails(details = {}, expectedLegs = 0) {
     if (source === 'generatedRoutes') summary.generated += 1;
     if (source === 'browserRouteCache') summary.browser += 1;
     if (source === 'existingRouteDetails') summary.existing += 1;
+    if (source === 'routingWorker') summary.generated += 1;
     if (detail === 'reverse') summary.reverse += 1;
   }
   summary.label = `${summary.records}/${summary.expected || summary.records} legs · ${summary.geometries} geometries`;
@@ -179,7 +189,7 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     if (!entry?.leg?.from || !entry?.leg?.to) continue;
     const key = routeDetailKeyForEntry(entry);
     const old = existing.routes?.[key] || {};
-    const cacheVersion = existing.cacheVersion || ROUTE_DETAILS_CACHE_VERSION;
+    const cacheVersion = ROUTE_DETAILS_CACHE_VERSION;
     const routeCacheKey = routeCacheKeyForLeg(entry.leg, cacheVersion);
     const geometryInfo = routeGeometryForPayload(entry.leg, old, cacheVersion);
     const geometry = geometryInfo.geometry;
@@ -223,8 +233,9 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     version: ROUTE_DETAILS_VERSION,
     updatedAt: new Date().toISOString(),
     source: 'globe-hoppers-website',
-    cacheVersion: existing.cacheVersion || ROUTE_DETAILS_CACHE_VERSION,
-    notes: 'Generated route metadata for faster route rendering. The website owns updates to this file after v4.19.',
+    cacheVersion: ROUTE_DETAILS_CACHE_VERSION,
+    routingVersion: ROUTE_DETAILS_CACHE_VERSION,
+    notes: 'Generated route metadata for v6 worker-first rendering. Saved geometry is reused before background routing.',
     routes
   };
 }

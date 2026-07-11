@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, tripsDataStatus = null, repoSaveStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, tripsDataStatus = null, repoSaveStatus = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -153,6 +153,16 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           {repoSaveStatus?.completedAt && (!repoSaveStatus?.completedItems || repoSaveStatus.completedItems.length === 0) && <div className="timeline-route-detail">{repoSaveStatus.state === 'error' ? 'Failed' : 'Completed'} {formatRelativeSaveTime(repoSaveStatus.completedAt)}</div>}
           {repoSaveStatus?.startedAt && repoSaveStatus?.state === 'saving' && <div className="timeline-route-detail">Started {formatRelativeSaveTime(repoSaveStatus.startedAt)}</div>}
           {repoSaveStatus?.error && <div className="timeline-route-message timeline-route-message--error">{repoSaveStatus.error}</div>}
+        </div>
+        <div className="timeline-advanced-section">
+          <div className="timeline-advanced-title">Routing engine</div>
+          <div className={`timeline-route-status timeline-routing-status--${routingStatus?.state || 'idle'}`}>{routingStatus?.label || 'Routing engine idle'}</div>
+          {routingStatus?.detail && <div className="timeline-route-detail">{routingStatus.detail}</div>}
+          <div className="timeline-route-detail">
+            Worker {routingStatus?.ready ? 'ready' : 'not ready'} · queued {routingStatus?.queued || 0} · completed {routingStatus?.completed || 0}
+          </div>
+          {routingStatus?.routingVersion && <div className="timeline-route-detail">Version {routingStatus.routingVersion}{routingStatus?.dataVersion ? ` · data ${routingStatus.dataVersion}` : ''}</div>}
+          {routingStatus?.activeJob && <div className="timeline-route-message">Active job: {routingStatus.activeJob}</div>}
         </div>
         <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Route details</div>

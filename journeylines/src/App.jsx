@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TravelMap from './components/TravelMap.jsx';
 import PlaybackControls from './components/PlaybackControls.jsx';
 import TripCard from './components/TripCard.jsx';
-import AdminPanel from './components/AdminPanel.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
@@ -15,6 +14,10 @@ import settings from './data/settings.json';
 import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
+import { playbackEngine } from './utils/playbackEngine.js';
+import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, subscribeRoutingStatus } from './utils/routingClient.js';
+
+const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -270,14 +273,20 @@ export default function App() {
   const [routeDetailsMessage, setRouteDetailsMessage] = useState('');
   const [routeDetailsBusy, setRouteDetailsBusy] = useState(false);
   const [repoSaveStatus, setRepoSaveStatus] = useState({ state: 'idle', label: 'No recent repository save', detail: '', startedAt: null, completedAt: null, error: null });
+  const [routingStatus, setRoutingStatus] = useState(() => getRoutingStatus());
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
+  const activeIndexRef = useRef(activeIndex);
+  const legsRef = useRef([]);
+  const speedRef = useRef(speed);
+  const isPlayingRef = useRef(isPlaying);
+  const playbackUiThrottleRef = useRef(0);
+  const advancePlaybackRef = useRef(() => {});
   const activePlaybackRef = useRef({ tripId: null, legIndex: 0, progress: 1, index: null });
   const pendingPlaySavedTripRef = useRef(null);
   const resumeAfterStudioRef = useRef(false);
   const resumeAfterTabHiddenRef = useRef(false);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
-  const FRAME_MS = 33.333; // cap playback state updates around 30fps for smoother wall-display playback
 
   // Committed trip/location/hopper data comes from deployed repo JSON.
   // Do not let older browser localStorage override the repository timeline/order.
@@ -295,6 +304,17 @@ export default function App() {
   useEffect(() => writeSyncedBoolean('globehoppers.routeStackingEnabled', routeStackingEnabled), [routeStackingEnabled]);
   useEffect(() => writeSyncedBoolean('globehoppers.placeBackgroundsEnabled', placeBackgroundsEnabled), [placeBackgroundsEnabled]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
+  useEffect(() => subscribeRoutingStatus(setRoutingStatus), []);
+  useEffect(() => {
+    prewarmWhenIdle();
+    const warm = () => prewarmRoutingEngine('Add/Edit Hop').catch(() => {});
+    window.addEventListener('globehoppers-open-new-trip', warm);
+    window.addEventListener('globehoppers-open-edit-trip', warm);
+    return () => {
+      window.removeEventListener('globehoppers-open-new-trip', warm);
+      window.removeEventListener('globehoppers-open-edit-trip', warm);
+    };
+  }, []);
   useEffect(() => {
     const closeStudio = () => {
       setAdmin(false);
@@ -348,6 +368,31 @@ export default function App() {
   const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
+
+  activeIndexRef.current = activeIndex;
+  legsRef.current = legs;
+  speedRef.current = speed;
+  isPlayingRef.current = isPlaying;
+
+  advancePlaybackRef.current = () => {
+    const currentLegs = legsRef.current || [];
+    if (!currentLegs.length) return;
+    const identity = activePlaybackRef.current;
+    const resolved = findLegIndexByIdentity(currentLegs, identity);
+    const baseIndex = resolved >= 0 ? resolved : Math.max(0, Math.min(activeIndexRef.current, currentLegs.length - 1));
+    const nextIndex = baseIndex + 1;
+    if (nextIndex >= currentLegs.length) {
+      const finalEntry = currentLegs[Math.max(0, currentLegs.length - 1)];
+      activePlaybackRef.current = legIdentityForEntry(finalEntry, currentLegs.length - 1, 1);
+      setLegProgress(1);
+      setIsPlaying(false);
+      return;
+    }
+    const nextEntry = currentLegs[nextIndex];
+    activePlaybackRef.current = legIdentityForEntry(nextEntry, nextIndex, 0);
+    setLegProgress(0);
+    setActiveIndex(nextIndex);
+  };
 
   useEffect(() => {
     if (!legs.length) {
@@ -450,50 +495,51 @@ export default function App() {
   }, [isPlaying, activeIndex, legProgress, legs, speed]);
 
   useEffect(() => {
-    if (!isPlaying || !legs.length) return;
-    let raf;
-    const step = (ts) => {
-      if (tRef.current.last == null) tRef.current.last = ts;
-      const dt = ts - tRef.current.last;
-      if (dt < FRAME_MS) {
-        raf = requestAnimationFrame(step);
-        return;
+    return playbackEngine.subscribe(frame => {
+      const identity = activePlaybackRef.current;
+      if (identity?.tripId && frame?.metadata?.tripId === identity.tripId) {
+        activePlaybackRef.current = { ...identity, progress: Math.max(0, Math.min(1, Number(frame.progress) || 0)) };
       }
-      tRef.current.last = ts;
-      const dur = legDurationMs(legs[Math.min(activeIndex, legs.length - 1)]?.leg.miles || 500, speed);
-      const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
-      tRef.current.elapsed += dt;
-      const p = tRef.current.elapsed / dur;
-      setLegProgress(p);
-      if (tRef.current.elapsed >= dur + settle) {
-        tRef.current.elapsed = 0;
-        tRef.current.last = null;
-        setLegProgress(0);
-        setActiveIndex(i => {
-          const currentIdentity = activePlaybackRef.current;
-          const currentIndex = findLegIndexByIdentity(legs, currentIdentity);
-          const baseIndex = currentIndex >= 0 ? currentIndex : i;
-          const nextIndex = baseIndex + 1;
-          if (nextIndex >= legs.length) {
-            const finalIndex = Math.max(0, Math.min(baseIndex, legs.length - 1));
-            activePlaybackRef.current = legIdentityForEntry(legs[finalIndex], finalIndex, 1);
-            setIsPlaying(false);
-            return finalIndex;
-          }
-          activePlaybackRef.current = legIdentityForEntry(legs[nextIndex], nextIndex, 0);
-          return nextIndex;
-        });
+      const now = Number(frame.timestamp || performance.now());
+      const shouldUpdateUi = !frame.playing || now - playbackUiThrottleRef.current >= 100 || frame.rawProgress >= 1;
+      if (shouldUpdateUi) {
+        playbackUiThrottleRef.current = now;
+        setLegProgress(Number(frame.rawProgress || 0));
       }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); tRef.current.last = null; };
-  }, [isPlaying, activeIndex, legs, speed]);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!legs.length || activeIndex < 0 || activeIndex >= legs.length) return;
+    const entry = legs[activeIndex];
+    const identity = activePlaybackRef.current;
+    const sameLeg = identity?.tripId === entry?.trip?.id && Number(identity?.legIndex || 0) === Number(entry?.legIndex || 0);
+    const progress = sameLeg ? Number(identity.progress || 0) : Math.max(0, Math.min(1, Number(legProgress) || 0));
+    const duration = legDurationMs(entry?.leg?.miles || 500, speed);
+    const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
+    playbackEngine.configure({
+      duration,
+      settle,
+      progress,
+      metadata: { index: activeIndex, tripId: entry?.trip?.id || null, legIndex: entry?.legIndex || 0 },
+      onComplete: () => advancePlaybackRef.current?.()
+    });
+    if (isPlayingRef.current) playbackEngine.play();
+  }, [activeIndex, legs, speed]);
+
+  useEffect(() => {
+    if (isPlaying) playbackEngine.play();
+    else playbackEngine.pause();
+  }, [isPlaying]);
+
 
   function freezePlaybackClock() {
-    const currentLeg = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))]?.leg;
-    const dur = legDurationMs(currentLeg?.miles || 500, speed);
-    tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
+    const snapshot = playbackEngine.snapshot();
+    playbackEngine.pause();
+    const progress = Math.max(0, Math.min(1, Number(snapshot?.progress ?? legProgress) || 0));
+    setLegProgress(progress);
+    activePlaybackRef.current = { ...activePlaybackRef.current, progress };
+    tRef.current = { last: null, elapsed: Number(snapshot?.elapsed || 0) };
   }
 
   function play() {
@@ -526,13 +572,11 @@ export default function App() {
   }
   const completeIntroLaunch = useCallback(() => {
     setIntroLaunching(false);
-    const currentLeg = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))]?.leg;
-    const dur = legDurationMs(currentLeg?.miles || 500, speed);
     const currentProgress = Math.max(0, Math.min(1, legProgress));
-    tRef.current = { last: null, elapsed: currentProgress * dur };
+    playbackEngine.seek(currentProgress);
     setLegProgress(currentProgress);
     setIsPlaying(true);
-  }, [activeIndex, legProgress, legs, speed]);
+  }, [legProgress]);
   function editTravelHistory() {
     setGlobeOverview(false);
     setShowHero(false);
@@ -545,6 +589,7 @@ export default function App() {
   }
 
   function editTimelineMarker(marker) {
+    prewarmRoutingEngine('Edit Hop').catch(() => {});
     const tripId = marker?.id || marker?.tripId;
     if (!tripId) return;
     resumeAfterStudioRef.current = isPlaying;
@@ -562,6 +607,7 @@ export default function App() {
     setIsPlaying(false);
   }
   function addTravelTimelineEntry() {
+    prewarmRoutingEngine('Add Hop').catch(() => {});
     resumeAfterStudioRef.current = isPlaying;
     freezePlaybackClock();
     setGlobeOverview(false);
@@ -593,6 +639,7 @@ export default function App() {
     setResetNonce(n => n + 1);
   }
   function reset() {
+    playbackEngine.stop(1);
     setIsPlaying(false);
     setIntroLaunching(false);
     setStarted(false);
@@ -613,11 +660,13 @@ export default function App() {
     const applyJump = () => {
       setGlobeOverview(false);
       setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
+      playbackEngine.pause();
       setStarted(true);
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
       activePlaybackRef.current = legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress);
       tRef.current = { last: null, elapsed: safeProgress * dur };
+      playbackEngine.seek(safeProgress);
       setIsPlaying(Boolean(autoPlay));
 
       window.setTimeout(() => {
@@ -662,6 +711,7 @@ export default function App() {
     jumpToLeg(index, withinLeg, true);
   }
   function openStudioForTrip(tripId) {
+    prewarmRoutingEngine('Edit Hop').catch(() => {});
     setTripDrawerOpen(false);
     setStudioEditTripId(tripId);
     setAdmin(true);
@@ -761,7 +811,7 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} tripsDataStatus={tripsDataStatus} repoSaveStatus={repoSaveStatus} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} tripsDataStatus={tripsDataStatus} repoSaveStatus={repoSaveStatus} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
     {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} onSave={saveParametersToRepo} />}
     {timelineTuningOpen && <TimelineTuningUtility values={timelineTuning} onChange={setTimelineTuning} onClose={() => setTimelineTuningOpen(false)} onReset={() => setTimelineTuning(DEFAULT_TIMELINE_TUNING)} onSave={saveParametersToRepo} />}
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
@@ -769,7 +819,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} />}
+    {admin && <Suspense fallback={null}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
   </main>;
 }
 
