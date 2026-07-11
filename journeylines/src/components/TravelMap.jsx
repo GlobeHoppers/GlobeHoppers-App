@@ -2417,22 +2417,28 @@ function surfaceRouteMostlyOnLand(route = [], rings = []) {
   if (!Array.isArray(route) || route.length < 2 || !rings?.length) return true;
   let checked = 0;
   let offLand = 0;
-  for (let i = 1; i < route.length - 1; i += Math.max(1, Math.floor(route.length / 26))) {
+  const stride = Math.max(1, Math.floor(route.length / 48));
+  for (let i = 1; i < route.length - 1; i += stride) {
     checked++;
     if (!pointInAnyLandRing(route[i], rings)) offLand++;
   }
-  return checked === 0 || offLand / checked <= 0.18;
+  // v5.1.1: trains/cars should not visually drift offshore. Allow a tiny amount
+  // for coastline simplification, but reject anything more.
+  return checked === 0 || offLand / checked <= 0.04;
 }
 
 function forceSurfaceRouteTowardLand(route = [], leg, type = 'train') {
-  // First foundation pass: if a generated surface route drifts into water,
-  // collapse it back toward a low-bend direct path. Dedicated corridors such as
-  // Baja are handled earlier with explicit land waypoints.
   const a = [Number(leg.from.lon), Number(leg.from.lat)];
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
-  const mid = midpointCoord(a, b);
-  const path = bezierRouteThrough([a, mid, b], type === 'train' ? 42 : 48);
-  return type === 'drive' ? roadSquiggleRoute(path, leg, 0.18) : cleanupRouteCoordinates(path);
+  const rings = naturalEarthRouting?.landRings || [];
+  const direct = safeGatewayRoute([a, midpointCoord(a, b), b], type === 'train' ? 48 : 56);
+  if (surfaceRouteMostlyOnLand(direct, rings)) return type === 'drive' ? roadSquiggleRoute(direct, leg, 0.12) : cleanupRouteCoordinates(direct);
+
+  // If direct smoothing crosses water, use a very low bend and preserve endpoint
+  // corridor. This is intentionally conservative and avoids unnecessary coast/water
+  // excursions.
+  const low = safeGatewayRoute([a, b], type === 'train' ? 42 : 52);
+  return type === 'drive' ? roadSquiggleRoute(low, leg, 0.08) : cleanupRouteCoordinates(low);
 }
 
 function networkCandidates(network = [], a, b, pad = 3, limit = 20) {
@@ -2462,12 +2468,14 @@ function waterAvoidingBoatRoute(leg) {
   const b = [Number(leg.to.lon), Number(leg.to.lat)];
   const land = naturalEarthRouting?.landRings || [];
   const distance = milesBetween(leg.from, leg.to);
+  const startWater = boatWaterApproachPoint(a, b, land, 'start');
+  const endWater = boatWaterApproachPoint(b, a, land, 'end');
 
-  const graphRoute = waterGraphRoute(a, b, land, distance);
-  if (graphRoute?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(graphRoute, distance > 2500 ? 220 : 120));
+  const graphRoute = waterGraphRoute(startWater, endWater, land, distance);
+  if (graphRoute?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(graphRoute, distance > 2500 ? 220 : 120), b]);
 
-  const gateway = oceanGatewayBoatRoute(a, b);
-  if (gateway?.length > 2) return cleanupRouteCoordinates(safeGatewayRoute(gateway, 180));
+  const gateway = oceanGatewayBoatRoute(startWater, endWater);
+  if (gateway?.length > 2) return cleanupRouteCoordinates([a, ...safeGatewayRoute(gateway, 180), b]);
 
   const candidates = boatRouteCandidates(a, b, distance);
   let best = null;
@@ -2494,23 +2502,65 @@ function waterAvoidingBoatRoute(leg) {
   return cleanupRouteCoordinates(best || boatCurveRoute(leg, 0.58));
 }
 
+function boatWaterApproachPoint(city, other, land = [], kind = 'end') {
+  const p = [Number(city[0]), Number(city[1])];
+  if (!pointInAnyLandRing(p, land)) return p;
+  const away = routePerpendicular(p, other);
+  const toward = routePerpendicular(other, p);
+  const base = routePerpendicular(other, p);
+  const candidates = [];
+  const dirs = [
+    unitVec([shortestLonDelta(other[0] - p[0]) * -1, (other[1] - p[1]) * -1]),
+    unitVec([away[0], away[1]]),
+    unitVec([-away[0], -away[1]]),
+    unitVec([base[0], base[1]]),
+    unitVec([-base[0], -base[1]])
+  ];
+  for (const d of dirs) {
+    for (const dist of [0.18, 0.35, 0.62, 0.95, 1.35, 1.9]) {
+      candidates.push([p[0] + d[0] * dist, p[1] + d[1] * dist]);
+    }
+  }
+  // Known port/coast corrections.
+  if (isNearCoord(p, [23.73, 37.98], 1.2)) candidates.unshift([23.55, 37.86], [23.36, 37.74], [23.88, 37.72]); // Athens/Piraeus water side
+  if (isNearCoord(p, [-117.16, 32.72], 1.1)) candidates.unshift([-117.35, 32.62], [-117.55, 32.44]);
+  if (isNearCoord(p, [-109.91, 22.89], 1.1)) candidates.unshift([-110.05, 22.82], [-110.22, 22.72]);
+
+  let best = null;
+  let bestScore = Infinity;
+  for (const c of candidates) {
+    if (pointInAnyLandRing(c, land)) continue;
+    if (waterEdgeHitsLand(p, c, land, true)) continue;
+    const score = coordDistance2(p, c) + coordDistance2(c, other) * 0.02;
+    if (score < bestScore) { best = c; bestScore = score; }
+  }
+  return best || p;
+}
+function unitVec(v) {
+  const len = Math.hypot(v[0], v[1]) || 1;
+  return [v[0] / len, v[1] / len];
+}
+
 const WATER_GRAPH_NODES = [
   // North American Pacific / Baja / Central America
   [-117.9, 32.4], [-116.8, 30.8], [-114.8, 27.4], [-112.8, 24.2], [-110.0, 22.7],
   [-106.0, 19.0], [-101.5, 16.1], [-96.0, 13.9], [-90.0, 12.0], [-84.0, 9.5],
-  [-80.2, 8.8], [-79.55, 9.45], [-77.6, 10.7],
-  // Caribbean / Gulf / Atlantic passages
-  [-83.0, 22.0], [-79.5, 23.8], [-76.0, 20.2], [-74.2, 19.5], [-71.0, 18.0],
-  [-68.0, 18.5], [-65.2, 19.0], [-61.8, 17.2], [-60.5, 14.0], [-65.0, 12.0],
-  [-75.5, 13.0], [-80.0, 18.0], [-86.2, 21.8],
+  // Panama approach/departure nodes: approach wide, then pass cleanly through canal.
+  [-82.8, 8.0], [-81.0, 7.9], [-79.95, 8.8], [-79.55, 9.45], [-78.2, 10.4], [-76.4, 11.4],
+  // Caribbean / Gulf / Atlantic passages. Keep the main corridor north/south of Hispaniola,
+  // not across the island.
+  [-83.0, 22.0], [-79.5, 23.8], [-76.6, 22.2], [-73.4, 21.2], [-70.2, 20.8],
+  [-67.0, 20.2], [-64.6, 19.4], [-61.8, 17.2], [-60.5, 14.0], [-65.0, 12.0],
+  [-70.0, 15.3], [-74.5, 15.0], [-78.4, 14.0], [-80.0, 18.0], [-86.2, 21.8],
   // North Atlantic corridor
   [-55.0, 25.0], [-45.0, 31.0], [-35.0, 34.5], [-25.0, 36.0], [-16.0, 36.0],
   [-9.5, 36.0], [-5.8, 35.9],
-  // Mediterranean routing
+  // Mediterranean routing, with port/canal approach/departure nodes.
   [0.0, 36.8], [5.5, 38.0], [10.5, 38.1], [14.5, 37.4], [18.2, 36.2],
-  [21.5, 36.3], [23.5, 37.3], [26.0, 36.4], [30.0, 34.8], [32.5, 31.6],
-  // Suez / Red Sea / Indian Ocean
-  [32.4, 29.7], [34.6, 27.5], [38.0, 20.0], [43.0, 13.0], [50.0, 12.5],
+  [21.5, 36.3], [22.6, 37.0], [23.36, 37.74], [23.55, 37.86], [23.9, 37.7],
+  [26.0, 36.4], [28.5, 35.7], [30.0, 34.8], [31.6, 32.0], [32.5, 31.6],
+  // Suez / Red Sea / Indian Ocean with deliberate approach/departure.
+  [32.15, 31.25], [32.32, 30.4], [32.4, 29.7], [33.0, 28.6], [34.6, 27.5], [38.0, 20.0], [43.0, 13.0], [50.0, 12.5],
   [58.0, 16.0], [66.0, 18.0], [73.0, 12.0], [80.0, 8.0], [90.0, 5.0],
   // Pacific / Oceania / Asia broad corridors
   [-140.0, 25.0], [-160.0, 20.0], [170.0, 15.0], [150.0, 10.0], [130.0, 12.0],
@@ -2547,7 +2597,10 @@ function waterGraphRoute(a, b, land = [], distance = 0) {
       const limit = (i === start || j === goal || i === goal || j === start) ? edgeLimit * 0.72 : edgeLimit;
       if (d > limit && !gatewayLongEdgeAllowed(nodes[i], nodes[j], d, distance)) continue;
       if (waterEdgeHitsLand(nodes[i], nodes[j], land, i === start || j === goal || i === goal || j === start)) continue;
-      possible.push({ to: j, w: d });
+      if (caribbeanIslandCutPenalty(nodes[i], nodes[j]) >= 9999) continue;
+      if (panamaCanalBadAnglePenalty(nodes[i], nodes[j]) >= 9999) continue;
+      const penalty = caribbeanIslandCutPenalty(nodes[i], nodes[j]) + panamaCanalBadAnglePenalty(nodes[i], nodes[j]);
+      possible.push({ to: j, w: d + penalty });
     }
     possible.sort((x, y) => x.w - y.w);
     neighbors.set(i, possible.slice(0, distance > 1800 ? 9 : 6));
@@ -2591,6 +2644,46 @@ function astarNodePath(start, goal, nodes, neighbors) {
     }
   }
   return null;
+}
+
+function caribbeanIslandCutPenalty(a, b) {
+  const route = routeBbox(a, b, 0);
+  const boxes = [
+    ...(naturalEarthRouting?.islandNoCrossBoxes || []),
+    [-85.7, 19.0, -73.9, 24.0],  // Cuba
+    [-75.3, 17.2, -67.9, 20.3],  // Hispaniola
+    [-67.6, 17.5, -64.9, 18.9],  // Puerto Rico
+    [-78.8, 24.0, -72.8, 27.4],  // Bahamas
+    [19.0, 34.4, 26.8, 41.3]     // Aegean island field
+  ];
+  for (const box of boxes) {
+    if (bboxIntersects(route, box) && lineIntersectsBBoxLoose(a, b, box)) return 9999;
+  }
+  return 0;
+}
+
+
+function panamaCanalBadAnglePenalty(a, b) {
+  const canalBox = [-81.0, 7.8, -78.8, 10.0];
+  const route = routeBbox(a, b, 0);
+  if (!bboxIntersects(route, canalBox) || !lineIntersectsBBoxLoose(a, b, canalBox)) return 0;
+  const dx = Math.abs(shortestLonDelta(b[0] - a[0]));
+  const dy = Math.abs(b[1] - a[1]);
+  // Let short canal approach legs pass. Penalize steep long diagonal cuts.
+  if (dx < 1.35 && dy < 1.25) return 0;
+  return 9999;
+}
+
+function lineIntersectsBBoxLoose(a, b, box) {
+  if (pointInBBox(a, box) || pointInBBox(b, box)) return true;
+  const corners = [[box[0],box[1]],[box[2],box[1]],[box[2],box[3]],[box[0],box[3]]];
+  for (let i = 0; i < 4; i++) if (segmentsIntersect(a, b, corners[i], corners[(i + 1) % 4])) return true;
+  // Sample too, because longitudes and smoothed paths can be numerically awkward.
+  for (let i = 1; i < 12; i++) {
+    const p = [lerpAngle(a[0], b[0], i / 12), lerp(a[1], b[1], i / 12)];
+    if (pointInBBox(p, box)) return true;
+  }
+  return false;
 }
 
 function waterEdgeHitsLand(a, b, land, endpointConnector = false) {
@@ -2642,15 +2735,15 @@ function bajaPeninsulaSurfaceRoute(leg, type = 'train') {
   const southbound = a[1] > b[1];
   const corridor = [
     [-117.16, 32.72],
-    [-116.45, 31.58],
-    [-115.20, 29.75],
-    [-113.95, 27.80],
-    [-112.60, 25.95],
-    [-111.15, 24.45],
+    [-116.10, 31.50],
+    [-114.70, 29.70],
+    [-113.45, 27.85],
+    [-112.20, 26.00],
+    [-110.85, 24.40],
     [-109.91, 22.89]
   ];
   const points = southbound ? [a, ...corridor.slice(1, -1), b] : [a, ...corridor.slice(1, -1).reverse(), b];
-  const smoothed = bezierRouteThrough(points, type === 'train' ? 72 : 82);
+  const smoothed = safeGatewayRoute(points, type === 'train' ? 72 : 82);
   return type === 'drive' ? roadSquiggleRoute(smoothed, leg, 0.20) : cleanupRouteCoordinates(smoothed);
 }
 function isNearCoord(a, b, degrees = 1) {

@@ -1,1 +1,1 @@
-GlobeHoppers v5.1 — routing network foundation
+GlobeHoppers v5.1.2 — water-side approaches and global island avoidance
