@@ -1,28 +1,76 @@
-GlobeHoppers v6.0 — Worker-First Routing and Smooth Playback
+GlobeHoppers v6.1 — Stable Leg IDs, Route Integrity, and Editor Hardening
 
-Base: GlobeHoppers v5.2
+Base: v6.0.1
 
-Major changes:
-- Natural Earth routing data is no longer statically imported into the main JavaScript bundle.
-- Detailed routing data is fetched and parsed in a Web Worker during browser idle time or when Add/Edit Hop opens.
-- Saved routeDetails geometry is used before any route is recalculated.
-- New and changed car/train/boat routes are calculated in the background and stored in a routing-version-aware IndexedDB cache.
-- Repository saves wait in the existing background queue for new/changed vessel route geometry, while the Add/Edit Hop window still closes immediately.
-- The active playback clock now uses one singleton requestAnimationFrame engine based on performance.now().
-- Vessel, camera, and active trail rendering are driven imperatively from that playback clock.
-- React timeline/progress state is throttled and is no longer updated every animation frame.
-- Worker-generated playback plans include equal-distance positions, headings, camera points, cumulative distance, and route LOD geometry.
-- Camera movement uses custom smoothing and a safe-screen constraint to keep the vessel visible.
-- Active trail reveal is adaptively throttled based on measured frame time.
-- Completed route geometry uses overview, regional, and detail levels based on map zoom.
-- Current and upcoming trips are routed and prepared ahead of playback.
-- AdminPanel is lazy-loaded.
-- React and MapLibre are split into cacheable vendor chunks.
-- Routing readiness, queue, active job, completed jobs, routing version, and data version appear in the ... menu.
+Playback and identity:
+- Added permanent leg IDs and point IDs.
+- Legacy trips are normalized deterministically at runtime.
+- The first repository trip save writes the normalized explicit-route model.
+- Playback identity, routeDetails keys, worker jobs, cache keys, and map route keys use stable leg IDs.
+- Legacy positional routeDetails keys remain readable during migration.
+- Playback frame validation uses trip ID, leg ID, leg index, and generation.
 
-Build status:
-- npm run build: PASS
-- Main app chunk: approximately 289 kB raw / 98 kB gzip
-- Initial JavaScript total excluding lazy AdminPanel: approximately 1.53 MB raw / 438 kB gzip
-- v5.2 main bundle comparison: approximately 4.51 MB raw / 1.47 MB gzip
-- Approximate reduction versus v5.2: 66% raw / 70% gzip
+Route integrity:
+- Saved geometry is accepted only when trip, leg, origin, destination, mode, coordinates, and routing version match.
+- Coordinate changes invalidate cached geometry.
+- Reverse routes are no longer assumed to be symmetric.
+- Route cache keys include stable leg ID and endpoint coordinates.
+- IndexedDB route cache is capped at 500 entries.
+- Playback-plan cache is capped and keyed by route geometry.
+- Duplicate route and playback-plan requests are coalesced.
+- Active vessel trips wait for detailed geometry before auto-play.
+- Route-generation failure is surfaced in the ... menu rather than silently playing an invalid fallback.
+- RouteDetails state updates live during the session.
+
+Editor and data integrity:
+- All saved trips use one explicit ordered route model.
+- Additional-leg rows use stable React keys.
+- Adding/removing middle legs preserves identities of unchanged legs.
+- Save and Delete are protected against double submission.
+- Metadata-only edits do not interrupt playback; new trips and route/date edits auto-play.
+- Prefilled autocomplete fields stay closed until the user types.
+- Autocomplete supports outside-click dismissal, Escape, arrow keys, Enter, and ARIA combobox semantics.
+- City search runs in a Web Worker instead of scanning 23,000 cities during React render.
+- Exact GeoNames identity is preferred for same-named cities.
+- Unresolved text is blocked; GlobeHoppers never creates a location at 0,0.
+- Custom destinations can be saved using validated exact coordinates.
+- Date validation rejects impossible dates and end dates before start dates.
+- Future trips are supported through five years beyond the current year.
+- Month changes clamp invalid day values.
+- Start override is no longer enabled merely because a trip uses an explicit route.
+
+Modal and GUI:
+- Unsaved edits require confirmation before close.
+- Delayed close timers are cancelled when a modal reopens.
+- Focus is trapped inside the dialog and restored to the opening control.
+- Escape closes the active dialog.
+- Long titles are truncated without moving actions.
+- The form and preview remain usable on short screens.
+- The route-preview column scrolls independently.
+- Added Apply Mode to All Legs.
+- Added a high-leg-count performance warning.
+- Added visible loading feedback while Studio lazy-loads.
+- Removed the disabled photo-upload placeholder.
+- Clarified Guest Hopper actions.
+
+Repository save safety:
+- Repository failures are non-blocking and remain visible in the ... menu.
+- Failed batches have an integrated Retry action.
+- Retry works whether Studio is already open or still loading.
+- Subsequent saves use current in-session routeDetails rather than the originally deployed snapshot.
+
+Natural Earth:
+- Rebuilt the Panama corridor with water-only Pacific/Caribbean approaches.
+- Only explicit canal-center edges may cross Natural Earth land polygons.
+- The same edge-specific permission model is available for other known canals.
+
+Verification:
+- Production build passed.
+- Stable trip/leg migration tests passed.
+- Date and unresolved-location validation tests passed.
+- RouteDetails stale endpoint and stale coordinate rejection tests passed.
+- Playback generation tests passed.
+- City-search worker tests passed.
+- Routing worker tests passed for boat, train, and car scenarios.
+- San Diego→Vancouver, San Diego→Athens, and Miami→San Juan boat routes had zero unauthorized Natural Earth land intersections.
+- Production preview and static data requests returned HTTP 200.

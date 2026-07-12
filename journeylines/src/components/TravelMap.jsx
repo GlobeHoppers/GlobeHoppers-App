@@ -9,7 +9,7 @@ import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
-import routeDetails from '../data/routeDetails.json';
+import baseRouteDetails from '../data/routeDetails.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
@@ -161,7 +161,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -199,7 +199,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const playbackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
-  const frameRenderStatsRef = useRef({ lastTrail: 0, lastPulse: false, lastRouteKey: '', lastFrame: 0 });
+  const frameRenderStatsRef = useRef({
+    lastTrail: 0,
+    lastPulse: false,
+    lastRouteKey: '',
+    lastFrame: 0,
+    lastActiveEntry: null,
+    transitionStartedAt: 0,
+    transitionKind: 'initial',
+    frozenEntry: null
+  });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
@@ -208,7 +217,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
-  const legs = useMemo(() => applyRouteDetailsToEntries(flattenLegs(trips, locById, homeBases), routeDetails), [trips, locById, homeBases]);
+  const legs = useMemo(() => applyRouteDetailsToEntries(flattenLegs(trips, locById, homeBases), routeDetailsData), [trips, locById, homeBases, routeDetailsData]);
 
   const hasActivePlayback = Boolean(isStarted || isPlaying || introLaunching);
   const completedMode = hasActivePlayback && activeIndex >= legs.length;
@@ -240,7 +249,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     trailOpacity,
     showTrails,
     isPlaying,
-    introLaunching
+    introLaunching,
+    playbackGeneration
   };
   useEffect(() => { routedGeometriesRef.current = routedGeometries; }, [routedGeometries]);
 
@@ -673,7 +683,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const color = colorForLeg(active, hopperData || travById);
 
     if (introLaunching) {
-      const launchKey = `${active.trip.id}:${active.legIndex}`;
+      const launchKey = `${active.trip.id}:${active.legId || active.leg?.legId || active.legIndex}`;
       if (introLaunchRef.current.key !== launchKey || !introLaunchRef.current.active) {
         introLaunchRef.current = { active: true, key: launchKey };
         syncActiveRoute(map, null);
@@ -697,7 +707,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
 
     const now = performance.now();
-    const activeRouteKey = `${active?.trip?.id || ''}:${active?.legIndex ?? ''}`;
+    const activeRouteKey = `${active?.trip?.id || ''}:${active?.legId || active?.leg?.legId || active?.legIndex || ''}`;
     const prevRoute = previousActiveRouteRef.current || {};
     if (prevRoute.key && prevRoute.key !== activeRouteKey && showTrails && isPlaying) {
       const previousTripId = prevRoute.active?.trip?.id || '';
@@ -772,11 +782,33 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const activeEntry = context?.active;
       if (!map || !activeEntry || context.completedMode || context.overviewMode || context.introLaunching || trailTuningOpen) return;
 
-      const routeKey = `${activeEntry?.trip?.id || ''}:${activeEntry?.legIndex ?? ''}`;
-      if (frame?.metadata?.tripId && frame.metadata.tripId !== activeEntry?.trip?.id) return;
-      const plan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg)) || null;
+      const routeKey = `${activeEntry?.trip?.id || ''}:${activeEntry?.legId || activeEntry?.leg?.legId || activeEntry?.legIndex || ''}`;
+      const metadata = frame?.metadata || {};
+      if (metadata.tripId !== activeEntry?.trip?.id) return;
+      const activeLegId = activeEntry?.legId || activeEntry?.leg?.legId || activeEntry?.leg?.id || null;
+      if (activeLegId && String(metadata.legId || '') !== String(activeLegId)) return;
+      if (Number(metadata.legIndex || 0) !== Number(activeEntry?.legIndex || 0)) return;
+      if (Number(frame.generation || metadata.generation || 0) !== Number(context.playbackGeneration || 0)) return;
+
+      const now = Number(frame.timestamp || performance.now());
+      const quality = frame.quality || 'high';
+      const trailInterval = quality === 'high' ? 42 : quality === 'medium' ? 66 : 96;
+      const stats = frameRenderStatsRef.current;
+
+      if (stats.lastRouteKey !== routeKey) {
+        const previousEntry = stats.lastActiveEntry;
+        stats.transitionKind = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg) ? 'continuous' : previousEntry ? 'relocation' : 'initial';
+        stats.transitionStartedAt = now;
+        stats.lastRouteKey = routeKey;
+        stats.lastTrail = 0;
+        stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current);
+        stats.lastActiveEntry = activeEntry;
+      }
+
+      const renderEntry = stats.frozenEntry || activeEntry;
+      const plan = playbackPlansRef.current.get(playbackPlanKey(renderEntry.leg)) || null;
       const sceneState = getScene(
-        activeEntry,
+        renderEntry,
         Number(frame.rawProgress || 0),
         context.cameraMode,
         context.nextActive,
@@ -784,44 +816,40 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         context.routeStackingEnabled,
         plan
       );
-      const color = colorForLeg(activeEntry, context.hopperVisuals);
-      const now = Number(frame.timestamp || performance.now());
-      const quality = frame.quality || 'high';
-      const trailInterval = quality === 'high' ? 42 : quality === 'medium' ? 66 : 96;
-      const stats = frameRenderStatsRef.current;
-
-      if (stats.lastRouteKey !== routeKey) {
-        stats.lastRouteKey = routeKey;
-        stats.lastTrail = 0;
-        lastCameraRef.current = null;
-      }
+      const color = colorForLeg(renderEntry, context.hopperVisuals);
 
       if (now - stats.lastTrail >= trailInterval || sceneState.lineProgress >= 0.995) {
-        syncActiveRoute(map, activeEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
+        syncActiveRoute(map, renderEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
         previousActiveRouteRef.current = {
           key: routeKey,
-          active: activeEntry,
+          active: renderEntry,
           progress: sceneState.lineProgress,
-          features: activeRouteFeaturesForFade(activeEntry, sceneState.lineProgress, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig)
+          features: activeRouteFeaturesForFade(renderEntry, sceneState.lineProgress, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig)
         };
         stats.lastTrail = now;
       }
 
       if (sceneState.pulseActive !== stats.lastPulse) {
-        syncPulse(map, activeEntry.leg.to, sceneState.pulseActive ? color : 'transparent');
+        syncPulse(map, sceneState.visibleDestination || renderEntry.leg.to, sceneState.pulseActive ? color : 'transparent');
         stats.lastPulse = sceneState.pulseActive;
       }
 
-      const smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+      const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
+      let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+      if (transitionAge < 900) {
+        smoothing = stats.transitionKind === 'continuous'
+          ? Math.max(smoothing, 0.046)
+          : Math.min(smoothing, 0.018);
+      }
       let camera = smoothCamera(lastCameraRef.current, sceneState.camera, smoothing);
       camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
       lastCameraRef.current = camera;
       if (!userCameraOverrideRef.current) map.jumpTo({ ...camera, essential: true });
 
-      currentOverlayStateRef.current = { active: activeEntry, scene: sceneState, color };
-      updateOverlay(map, activeEntry, sceneState, color);
+      currentOverlayStateRef.current = { active: renderEntry, scene: sceneState, color };
+      updateOverlay(map, renderEntry, sceneState, color);
       if (quality !== 'low' || Math.floor(now / 33) % 2 === 0) {
-        updateAirArcOverlay(map, airArcRef.current, activeEntry, sceneState, color);
+        updateAirArcOverlay(map, airArcRef.current, renderEntry, sceneState, color);
       }
       stats.lastFrame = now;
     });
@@ -1689,6 +1717,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const vehicle = usePlan ? pointAtPlaybackPlan(playbackPlan, routeProgress) : pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
   const future = usePlan ? pointAtPlaybackPlan(playbackPlan, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode))) : pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries, routeStackingEnabled);
   const routeMid = usePlan ? pointAtPlaybackPlan(playbackPlan, 0.5) : pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
+  const visibleDestination = usePlan ? pointAtPlaybackPlan(playbackPlan, 1) : pointAtVisualRouteProgress(leg, 1, routedGeometries, routeStackingEnabled);
   const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
   const leadBias = cameraLeadBias(leg.mode, distance, phase, p);
@@ -1698,8 +1727,8 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     const nextFrom = nextActive?.leg?.from;
     const driftRadius = distance > 1500 ? 0.55 : distance > 450 ? 0.28 : 0.12;
     const quietDrift = {
-      lon: leg.to.lon + Math.sin(settleT * Math.PI * 1.15) * driftRadius,
-      lat: leg.to.lat + Math.sin(settleT * Math.PI * 0.72) * driftRadius * 0.55
+      lon: visibleDestination.lon + Math.sin(settleT * Math.PI * 1.15) * driftRadius,
+      lat: visibleDestination.lat + Math.sin(settleT * Math.PI * 0.72) * driftRadius * 0.55
     };
     cinematicFocus = nextFrom && nextFrom.id !== leg.to.id
       ? blendGeo(quietDrift, nextFrom, 0.16 * smoothstep(settleT))
@@ -1731,13 +1760,14 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
     vehiclePitchDeg: vehiclePitchDeg(leg.mode, phase, p),
-    vehicleVisible: raw <= 1 && phase !== 'predeparture' && p > 0.006 && p < 0.994,
+    vehicleVisible: phase !== 'predeparture' && p > 0.006 && (phase !== 'settle' || settleT < 0.96),
+    visibleDestination,
     pulseActive: arrived,
     arrivalLabelVisible: arrived,
     newArrivalId: arrived ? leg.to.id : null,
     camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
     routedGeometries,
-    frameKey: `${active.trip.id}:${active.legIndex}:${Math.round(raw * 1000)}:${cameraMode}`
+    frameKey: `${active.trip.id}:${active.legId || active.leg?.legId || active.legIndex}:${Math.round(raw * 1000)}:${cameraMode}`
   };
 }
 
@@ -2402,17 +2432,24 @@ function projectedScreenHeading(map, leg, t, routedGeometries = {}) {
 }
 
 
-function routeCacheVersion() { return routingSettings?.mapbox?.cacheVersion || generatedRoutes?.version || 'v2.16'; }
+function routeCacheVersion() { return ROUTING_VERSION; }
 function routeCacheKey(leg) {
-  return `${routeCacheVersion()}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
+  return routeCacheKeyV6(leg, ROUTING_VERSION);
+}
+function legacyGeneratedRouteKey(leg) {
+  const version = routingSettings?.mapbox?.cacheVersion || generatedRoutes?.version || 'v2.16';
+  return `${version}:${leg.from.id}->${leg.to.id}:${leg.mode}`;
 }
 function playbackPlanKey(leg) {
-  return `${leg?.from?.id || leg?.from?.lon}->${leg?.to?.id || leg?.to?.lon}:${leg?.mode || 'plane'}`;
+  const geometry = Array.isArray(leg?.routeGeometry) ? leg.routeGeometry : [];
+  const first = geometry[0] || [];
+  const last = geometry[geometry.length - 1] || [];
+  const geometryKey = geometry.length > 1
+    ? `${geometry.length}:${Number(first[0]).toFixed(3)},${Number(first[1]).toFixed(3)}:${Number(last[0]).toFixed(3)},${Number(last[1]).toFixed(3)}`
+    : 'no-geometry';
+  return `${leg?.legId || leg?.id || 'legacy'}:${leg?.from?.id || leg?.from?.lon}->${leg?.to?.id || leg?.to?.lon}:${leg?.mode || 'plane'}:${geometryKey}`;
 }
 
-function reverseRouteCacheKey(leg) {
-  return `${routeCacheVersion()}:${leg.to.id}->${leg.from.id}:${leg.mode}`;
-}
 
 function getRoutedGeometry(leg, routedGeometries = {}) {
   const manual = getManualRoute(leg);
@@ -2423,15 +2460,11 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
   if (Array.isArray(leg?.routeGeometry) && leg.routeGeometry.length > 1 && !isStraightEndpointPlaceholder(leg, leg.routeGeometry)) return leg.routeGeometry;
 
   const key = leg?.routeCacheKey || routeCacheKey(leg);
-  const direct = routedGeometries[key] || routedGeometries[routeCacheKey(leg)] || routingMemoryGeometry(leg);
+  const direct = routedGeometries[key]
+    || routedGeometries[routeCacheKey(leg)]
+    || routedGeometries[legacyGeneratedRouteKey(leg)]
+    || routingMemoryGeometry(leg);
   if (direct?.length > 1 && !isStraightEndpointPlaceholder(leg, direct)) return direct;
-
-  const reverseKey = reverseRouteCacheKey(leg);
-  const reverse = routedGeometries[reverseKey];
-  if (reverse?.length > 1) {
-    const reversed = [...reverse].reverse();
-    if (!isStraightEndpointPlaceholder(leg, reversed)) return reversed;
-  }
   return null;
 }
 
@@ -2492,7 +2525,7 @@ async function fetchMapboxRoute(leg, token) {
 
 function loadInitialRouteCache() {
   const generated = generatedRoutes?.routes || {};
-  const detailed = routeDetailsGeometryCache(routeDetails);
+  const detailed = routeDetailsGeometryCache(baseRouteDetails);
   // v6: startup uses only deployed geometry. Larger browser caches are restored
   // asynchronously from IndexedDB after the first render.
   return { ...generated, ...detailed };
@@ -2682,6 +2715,27 @@ function smoothCamera(prev, next, amount) {
     zoom: lerp(prev.zoom, next.zoom, amount),
     pitch: lerp(prev.pitch, next.pitch, amount),
     bearing: lerpAngle(prev.bearing, next.bearing, amount)
+  };
+}
+
+function legsConnect(previousLeg, nextLeg, tolerance = 0.12) {
+  if (!previousLeg?.to || !nextLeg?.from) return false;
+  if (previousLeg.to.id && nextLeg.from.id && previousLeg.to.id === nextLeg.from.id) return true;
+  const dx = shortestLonDelta(Number(nextLeg.from.lon) - Number(previousLeg.to.lon));
+  const dy = Number(nextLeg.from.lat) - Number(previousLeg.to.lat);
+  return Math.hypot(dx, dy) <= tolerance;
+}
+
+function freezeActiveEntryGeometry(entry, routedGeometries = {}) {
+  if (!entry?.leg) return entry;
+  const frozenGeometry = waypointPathForLeg(entry.leg, routedGeometries);
+  if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
+  return {
+    ...entry,
+    leg: {
+      ...entry.leg,
+      routeGeometry: frozenGeometry.map(point => [Number(point[0]), Number(point[1])])
+    }
   };
 }
 

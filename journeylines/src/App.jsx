@@ -16,6 +16,7 @@ import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
 import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, subscribeRoutingStatus } from './utils/routingClient.js';
+import { normalizeTripsForV61 } from './utils/tripModel.js';
 
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
 
@@ -127,6 +128,7 @@ const REPO_PARAMETER_SIGNATURE = parameterSignatureFor(parameters);
 function legIdentityForEntry(entry, index = 0, progress = 0) {
   return {
     tripId: entry?.trip?.id || null,
+    legId: entry?.legId || entry?.leg?.legId || entry?.leg?.id || null,
     legIndex: Number.isFinite(Number(entry?.legIndex)) ? Number(entry.legIndex) : 0,
     progress: Math.max(0, Math.min(1, Number(progress) || 0)),
     index
@@ -135,6 +137,10 @@ function legIdentityForEntry(entry, index = 0, progress = 0) {
 
 function findLegIndexByIdentity(legs = [], identity = {}) {
   if (!identity?.tripId) return -1;
+  if (identity?.legId) {
+    const stable = (legs || []).findIndex(item => item?.trip?.id === identity.tripId && String(item?.legId || item?.leg?.legId || item?.leg?.id || '') === String(identity.legId));
+    if (stable >= 0) return stable;
+  }
   return (legs || []).findIndex(item => item?.trip?.id === identity.tripId && Number(item?.legIndex || 0) === Number(identity.legIndex || 0));
 }
 
@@ -148,7 +154,7 @@ function dataSignatureForTrips(source = []) {
       t?.day ?? '',
       t?.label || '',
       t?.toLocationId || '',
-      Array.isArray(t?.route) ? t.route.map(r => `${r?.locationId || ''}:${r?.modeFromPrevious || ''}`).join('>') : ''
+      Array.isArray(t?.route) ? t.route.map(r => `${r?.pointId || ''}:${r?.legId || ''}:${r?.locationId || ''}:${r?.modeFromPrevious || ''}`).join('>') : ''
     ].join('~'));
     return `${source?.length || 0}:${stableStringify(rows)}`;
   } catch {
@@ -156,7 +162,7 @@ function dataSignatureForTrips(source = []) {
   }
 }
 
-const REPO_TRIPS_SIGNATURE = dataSignatureForTrips(baseTrips);
+const REPO_TRIPS_SIGNATURE = dataSignatureForTrips(normalizeTripsForV61(baseTrips, homeBases));
 const REPO_LOCATIONS_SIGNATURE = `${baseLocations?.length || 0}:${stableStringify((baseLocations || []).map(l => [l?.id || '', l?.name || '', l?.lat ?? '', l?.lon ?? '']))}`;
 const REPO_HOPPERS_SIGNATURE = stableStringify({
   hoppers: baseHoppers?.hoppers || [],
@@ -237,7 +243,7 @@ function syncParameterLocalsFromRepoOnce() {
 export default function App() {
   syncParameterLocalsFromRepoOnce();
   clearStaleTripCaches();
-  const [trips, setTrips] = useState(() => baseTrips);
+  const [trips, setTrips] = useState(() => normalizeTripsForV61(baseTrips, homeBases));
   const [locations, setLocations] = useState(() => baseLocations);
   const [hopperData, setHopperData] = useState(() => baseHoppers);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -274,6 +280,8 @@ export default function App() {
   const [routeDetailsBusy, setRouteDetailsBusy] = useState(false);
   const [repoSaveStatus, setRepoSaveStatus] = useState({ state: 'idle', label: 'No recent repository save', detail: '', startedAt: null, completedAt: null, error: null });
   const [routingStatus, setRoutingStatus] = useState(() => getRoutingStatus());
+  const [liveRouteDetails, setLiveRouteDetails] = useState(() => routeDetails);
+  const [playbackGeneration, setPlaybackGeneration] = useState(0);
   const clickRef = useRef(0);
   const tRef = useRef({ last: null, elapsed: 0 });
   const activeIndexRef = useRef(activeIndex);
@@ -282,7 +290,10 @@ export default function App() {
   const isPlayingRef = useRef(isPlaying);
   const playbackUiThrottleRef = useRef(0);
   const advancePlaybackRef = useRef(() => {});
-  const activePlaybackRef = useRef({ tripId: null, legIndex: 0, progress: 1, index: null });
+  const playbackGenerationRef = useRef(0);
+  const configuredPlaybackKeyRef = useRef('');
+  const jumpTimersRef = useRef([]);
+  const activePlaybackRef = useRef({ tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: 0 });
   const pendingPlaySavedTripRef = useRef(null);
   const resumeAfterStudioRef = useRef(false);
   const resumeAfterTabHiddenRef = useRef(false);
@@ -305,6 +316,21 @@ export default function App() {
   useEffect(() => writeSyncedBoolean('globehoppers.placeBackgroundsEnabled', placeBackgroundsEnabled), [placeBackgroundsEnabled]);
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => subscribeRoutingStatus(setRoutingStatus), []);
+  useEffect(() => {
+    const handleRouteDetailsUpdate = event => {
+      if (event?.detail?.routes) setLiveRouteDetails(event.detail);
+    };
+    window.addEventListener('globehoppers-route-details-updated', handleRouteDetailsUpdate);
+    return () => window.removeEventListener('globehoppers-route-details-updated', handleRouteDetailsUpdate);
+  }, []);
+  useEffect(() => {
+    const handleRoutePreparationFailure = event => {
+      const message = event?.detail?.message || 'Detailed route unavailable.';
+      setRouteDetailsMessage(`Hop saved, but its detailed route could not be prepared: ${message}`);
+    };
+    window.addEventListener('globehoppers-route-preparation-failed', handleRoutePreparationFailure);
+    return () => window.removeEventListener('globehoppers-route-preparation-failed', handleRoutePreparationFailure);
+  }, []);
   useEffect(() => {
     prewarmWhenIdle();
     const warm = () => prewarmRoutingEngine('Add/Edit Hop').catch(() => {});
@@ -347,7 +373,7 @@ export default function App() {
   const timelineMarkers = useMemo(() => buildTimelineMarkers(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const timelineYearSegments = useMemo(() => buildTimelineYearSegments(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
-  const routeDetailsStatus = useMemo(() => summarizeRouteDetails(routeDetails, legs.length), [legs.length]);
+  const routeDetailsStatus = useMemo(() => summarizeRouteDetails(liveRouteDetails, legs.length), [liveRouteDetails, legs.length]);
   const tripsDataStatus = useMemo(() => {
     const repoFirst = baseTrips?.[0];
     const activeFirst = trips?.[0];
@@ -365,7 +391,7 @@ export default function App() {
       firstTimeline: sortedFirst ? `${sortedFirst.displayDate || sortedFirst.year || ''} ${sortedFirst.label || ''}`.trim() : ''
     };
   }, [trips, sortedTrips, legs.length]);
-  const current = legs[Math.min(activeIndex, Math.max(0, legs.length - 1))];
+  const current = started && activeIndex >= 0 && activeIndex < legs.length ? legs[activeIndex] : null;
   const expanded = current ? expandTrip(current.trip, locById, homeBases) : null;
   const traveler = current ? resolveTripVisual(current.trip, normalizedHoppers) : null;
 
@@ -383,20 +409,20 @@ export default function App() {
     const nextIndex = baseIndex + 1;
     if (nextIndex >= currentLegs.length) {
       const finalEntry = currentLegs[Math.max(0, currentLegs.length - 1)];
-      activePlaybackRef.current = legIdentityForEntry(finalEntry, currentLegs.length - 1, 1);
+      activePlaybackRef.current = { ...legIdentityForEntry(finalEntry, currentLegs.length - 1, 1), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
       setLegProgress(1);
       setIsPlaying(false);
       return;
     }
     const nextEntry = currentLegs[nextIndex];
-    activePlaybackRef.current = legIdentityForEntry(nextEntry, nextIndex, 0);
+    activePlaybackRef.current = { ...legIdentityForEntry(nextEntry, nextIndex, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
     setLegProgress(0);
     setActiveIndex(nextIndex);
   };
 
   useEffect(() => {
     if (!legs.length) {
-      activePlaybackRef.current = { tripId: null, legIndex: 0, progress: 1, index: null };
+      activePlaybackRef.current = { tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: playbackGenerationRef.current };
       setActiveIndex(0);
       setLegProgress(1);
       tRef.current = { last: null, elapsed: 0 };
@@ -428,7 +454,7 @@ export default function App() {
       setActiveIndex(fallbackTripIndex);
       setLegProgress(0);
       tRef.current = { last: null, elapsed: 0 };
-      activePlaybackRef.current = legIdentityForEntry(legs[fallbackTripIndex], fallbackTripIndex, 0);
+      activePlaybackRef.current = { ...legIdentityForEntry(legs[fallbackTripIndex], fallbackTripIndex, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
       return;
     }
 
@@ -437,14 +463,19 @@ export default function App() {
       setActiveIndex(clamped);
       setLegProgress(0);
       tRef.current = { last: null, elapsed: 0 };
-      activePlaybackRef.current = legIdentityForEntry(legs[clamped], clamped, 0);
+      activePlaybackRef.current = { ...legIdentityForEntry(legs[clamped], clamped, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
     }
   }, [legs]);
 
   useEffect(() => {
     const safeIndex = Math.max(0, Math.min(activeIndex, Math.max(0, legs.length - 1)));
     const entry = legs[safeIndex];
-    if (entry) activePlaybackRef.current = legIdentityForEntry(entry, safeIndex, legProgress);
+    if (entry) {
+      activePlaybackRef.current = {
+        ...legIdentityForEntry(entry, safeIndex, legProgress),
+        generation: activePlaybackRef.current.generation || playbackGenerationRef.current
+      };
+    }
   }, [activeIndex, legProgress]);
 
   useEffect(() => {
@@ -497,9 +528,20 @@ export default function App() {
   useEffect(() => {
     return playbackEngine.subscribe(frame => {
       const identity = activePlaybackRef.current;
-      if (identity?.tripId && frame?.metadata?.tripId === identity.tripId) {
-        activePlaybackRef.current = { ...identity, progress: Math.max(0, Math.min(1, Number(frame.progress) || 0)) };
-      }
+      const metadata = frame?.metadata || {};
+      const matchesIdentity = Boolean(
+        identity?.tripId
+        && metadata.tripId === identity.tripId
+        && (!identity.legId || String(metadata.legId || '') === String(identity.legId))
+        && Number(metadata.legIndex || 0) === Number(identity.legIndex || 0)
+        && Number(frame.generation || metadata.generation || 0) === Number(identity.generation || 0)
+      );
+      if (!matchesIdentity) return;
+
+      activePlaybackRef.current = {
+        ...identity,
+        progress: Math.max(0, Math.min(1, Number(frame.progress) || 0))
+      };
       const now = Number(frame.timestamp || performance.now());
       const shouldUpdateUi = !frame.playing || now - playbackUiThrottleRef.current >= 100 || frame.rawProgress >= 1;
       if (shouldUpdateUi) {
@@ -513,17 +555,37 @@ export default function App() {
     if (!legs.length || activeIndex < 0 || activeIndex >= legs.length) return;
     const entry = legs[activeIndex];
     const identity = activePlaybackRef.current;
-    const sameLeg = identity?.tripId === entry?.trip?.id && Number(identity?.legIndex || 0) === Number(entry?.legIndex || 0);
-    const progress = sameLeg ? Number(identity.progress || 0) : Math.max(0, Math.min(1, Number(legProgress) || 0));
+    const sameLeg = identity?.tripId === entry?.trip?.id
+      && (identity?.legId
+        ? String(identity.legId) === String(entry?.legId || entry?.leg?.legId || entry?.leg?.id || '')
+        : Number(identity?.legIndex || 0) === Number(entry?.legIndex || 0));
+    const snapshot = playbackEngine.snapshot();
+    const snapshotMatches = sameLeg
+      && snapshot?.metadata?.tripId === entry?.trip?.id
+      && (!entry?.legId || String(snapshot?.metadata?.legId || '') === String(entry?.legId || entry?.leg?.legId || entry?.leg?.id || ''))
+      && Number(snapshot?.metadata?.legIndex || 0) === Number(entry?.legIndex || 0);
+    const progress = snapshotMatches
+      ? Math.max(0, Number(snapshot.rawProgress || 0))
+      : sameLeg
+        ? Number(identity.progress || 0)
+        : Math.max(0, Math.min(1, Number(legProgress) || 0));
     const duration = legDurationMs(entry?.leg?.miles || 500, speed);
     const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
-    playbackEngine.configure({
+    const playbackKey = `${entry?.trip?.id || ''}:${entry?.legId || entry?.leg?.legId || entry?.legIndex || 0}`;
+    const generation = playbackEngine.configure({
       duration,
       settle,
       progress,
-      metadata: { index: activeIndex, tripId: entry?.trip?.id || null, legIndex: entry?.legIndex || 0 },
+      metadata: { index: activeIndex, tripId: entry?.trip?.id || null, legId: entry?.legId || entry?.leg?.legId || entry?.leg?.id || null, legIndex: entry?.legIndex || 0 },
       onComplete: () => advancePlaybackRef.current?.()
     });
+    playbackGenerationRef.current = generation;
+    setPlaybackGeneration(generation);
+    configuredPlaybackKeyRef.current = playbackKey;
+    activePlaybackRef.current = {
+      ...legIdentityForEntry(entry, activeIndex, Math.min(1, progress)),
+      generation
+    };
     if (isPlayingRef.current) playbackEngine.play();
   }, [activeIndex, legs, speed]);
 
@@ -543,31 +605,42 @@ export default function App() {
   }
 
   function play() {
+    if (!legs.length) {
+      setIsPlaying(false);
+      setIntroLaunching(false);
+      setStarted(false);
+      setShowHero(true);
+      return;
+    }
+
     const wasGlobeOverview = globeOverview;
+    const finalLegComplete = activeIndex >= legs.length - 1 && Number(legProgress || 0) >= 0.999999;
     setGlobeOverview(false);
     setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
     setShowHero(false);
     setAdmin(false);
     setStudioModalOnly(false);
     setTripDrawerOpen(false);
-    if (!started || activeIndex >= legs.length - 1) {
+
+    if (!started || finalLegComplete || activeIndex < 0 || activeIndex >= legs.length) {
       setActiveIndex(0);
       setLegProgress(0);
-      activePlaybackRef.current = legIdentityForEntry(legs[0], 0, 0);
+      activePlaybackRef.current = { ...legIdentityForEntry(legs[0], 0, 0), generation: playbackGenerationRef.current };
       tRef.current = { last: null, elapsed: 0 };
       setStarted(true);
       setIsPlaying(false);
       setIntroLaunching(true);
+      return;
+    }
+
+    const currentLeg = legs[activeIndex]?.leg;
+    const dur = legDurationMs(currentLeg?.miles || 500, speed);
+    tRef.current = { last: null, elapsed: Math.max(0, Number(legProgress) || 0) * dur };
+    if (wasGlobeOverview) {
+      setIsPlaying(false);
+      setIntroLaunching(true);
     } else {
-      const currentLeg = legs[Math.min(activeIndex, legs.length - 1)]?.leg;
-      const dur = legDurationMs(currentLeg?.miles || 500, speed);
-      tRef.current = { last: null, elapsed: Math.max(0, Math.min(1, legProgress)) * dur };
-      if (wasGlobeOverview) {
-        setIsPlaying(false);
-        setIntroLaunching(true);
-      } else {
-        setIsPlaying(true);
-      }
+      setIsPlaying(true);
     }
   }
   const completeIntroLaunch = useCallback(() => {
@@ -639,17 +712,24 @@ export default function App() {
     setResetNonce(n => n + 1);
   }
   function reset() {
+    cancelPendingJumpTimers();
     playbackEngine.stop(1);
     setIsPlaying(false);
     setIntroLaunching(false);
     setStarted(false);
-    setShowHero(false);
-    setGlobeOverview(true);
+    setShowHero(true);
+    setGlobeOverview(false);
     setActiveIndex(999999);
     setLegProgress(1);
+    activePlaybackRef.current = { tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: playbackGenerationRef.current };
     setCameraMode('global');
     setResetNonce(n => n + 1);
   }
+  function cancelPendingJumpTimers() {
+    for (const timer of jumpTimersRef.current) window.clearTimeout(timer);
+    jumpTimersRef.current = [];
+  }
+
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
@@ -664,7 +744,7 @@ export default function App() {
       setStarted(true);
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
-      activePlaybackRef.current = legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress);
+      activePlaybackRef.current = { ...legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
       tRef.current = { last: null, elapsed: safeProgress * dur };
       playbackEngine.seek(safeProgress);
       setIsPlaying(Boolean(autoPlay));
@@ -678,24 +758,36 @@ export default function App() {
       }, 0);
     };
 
+    cancelPendingJumpTimers();
     setJumpFade(true);
-    window.setTimeout(applyJump, 115);
-    window.setTimeout(() => setJumpFade(false), 360);
+    const applyTimer = window.setTimeout(applyJump, 115);
+    const fadeTimer = window.setTimeout(() => {
+      setJumpFade(false);
+      jumpTimersRef.current = [];
+    }, 360);
+    jumpTimersRef.current = [applyTimer, fadeTimer];
   }
   useEffect(() => {
     const pending = pendingPlaySavedTripRef.current;
     if (!pending?.tripId || !legs.length) return;
     const index = legs.findIndex(item => item?.trip?.id === pending.tripId);
-    if (index < 0) return;
+    if (index < 0) {
+      if (Date.now() - Number(pending.requestedAt || 0) > 5000) pendingPlaySavedTripRef.current = null;
+      return;
+    }
     pendingPlaySavedTripRef.current = null;
     resumeAfterStudioRef.current = false;
     jumpToLeg(index, 0, true);
   }, [legs]);
 
-  function handleTripSavedPlayback({ tripId, action, label } = {}) {
+  function handleTripSavedPlayback({ tripId, action, label, shouldAutoPlay = action === 'add', changeKind = 'metadata' } = {}) {
     if (!tripId) return;
-    pendingPlaySavedTripRef.current = { tripId, action, label, requestedAt: Date.now() };
     resumeAfterStudioRef.current = false;
+    if (!shouldAutoPlay) {
+      pendingPlaySavedTripRef.current = null;
+      return;
+    }
+    pendingPlaySavedTripRef.current = { tripId, action, label, changeKind, requestedAt: Date.now() };
     setGlobeOverview(false);
     setShowHero(false);
     setStarted(true);
@@ -708,7 +800,7 @@ export default function App() {
     const raw = p * legs.length;
     const index = Math.max(0, Math.min(legs.length - 1, Math.floor(raw)));
     const withinLeg = raw - index;
-    jumpToLeg(index, withinLeg, true);
+    jumpToLeg(index, withinLeg, isPlaying);
   }
   function openStudioForTrip(tripId) {
     prewarmRoutingEngine('Edit Hop').catch(() => {});
@@ -751,9 +843,11 @@ export default function App() {
     try {
       setRouteDetailsBusy(true);
       setRouteDetailsMessage('Rebuilding route details…');
-      const payload = buildRouteDetailsPayload(trips, locations, homeBases, routeDetails);
+      const payload = buildRouteDetailsPayload(trips, locations, homeBases, liveRouteDetails);
       await commitSingleJsonFile(repo, token, 'journeylines/src/data/routeDetails.json', payload, 'Rebuild GlobeHoppers route details');
       try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(payload)); } catch {}
+      setLiveRouteDetails(payload);
+      window.dispatchEvent(new CustomEvent('globehoppers-route-details-updated', { detail: payload }));
       const summary = summarizeRouteDetails(payload, legs.length);
       setRouteDetailsMessage(`Route details rebuilt: ${summary.records} legs, ${summary.geometries} geometries (${summary.detailed} detailed, ${summary.simple} simple, ${summary.missing} missing). Refresh after deploy/update to load the committed file.`);
       return true;
@@ -798,7 +892,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={isPlaying ? 'Pause' : 'Play Travel History'} onClick={isPlaying ? pause : play}>{isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} onMapClick={() => { if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -811,7 +905,17 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(v) => { setFilter(v); reset(); }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} tripsDataStatus={tripsDataStatus} repoSaveStatus={repoSaveStatus} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
+    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
+      freezePlaybackClock();
+      setIsPlaying(false);
+      setFilter(value);
+    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} tripsDataStatus={tripsDataStatus} repoSaveStatus={repoSaveStatus}
+        onRetryRepoSave={() => {
+          setAdmin(true);
+          setStudioModalOnly(false);
+          window.dispatchEvent(new CustomEvent('globehoppers-retry-repo-save'));
+          window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-retry-repo-save')), 650);
+        }} routeDetailsMessage={routeDetailsMessage} routeDetailsBusy={routeDetailsBusy} onRebuildRouteDetails={rebuildRouteDetailsToRepo} />
     {trailTuningOpen && <TrailTuningUtility values={trailTuning} onChange={setTrailTuning} onClose={() => setTrailTuningOpen(false)} onReset={() => setTrailTuning(DEFAULT_TRAIL_TUNING)} onSave={saveParametersToRepo} />}
     {timelineTuningOpen && <TimelineTuningUtility values={timelineTuning} onChange={setTimelineTuning} onClose={() => setTimelineTuningOpen(false)} onReset={() => setTimelineTuning(DEFAULT_TIMELINE_TUNING)} onSave={saveParametersToRepo} />}
     <TripTimelineDrawer open={tripDrawerOpen} rows={tripTimeline} activeIndex={activeIndex} initialScroll={studioDrawerScrollRef.current || tripDrawerScrollRef.current} onScrollStore={(y) => { tripDrawerScrollRef.current = y; }} onClose={() => setTripDrawerOpen(false)} onJump={(index) => jumpToLeg(index, 0, true)} onEditTrip={openStudioForTrip} viewType={timelineView} onViewTypeChange={setTimelineView} />
@@ -819,7 +923,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <Suspense fallback={null}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
+    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
   </main>;
 }
 

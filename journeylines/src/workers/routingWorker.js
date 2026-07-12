@@ -138,13 +138,17 @@ function buildWaterGraphData() {
   for (const corridor of routingData?.waterCorridors || []) {
     const coords = (corridor?.nodes || []).map(toCoord).filter(Boolean);
     const ids = coords.map(add).filter(i => i >= 0);
-    const permitsLandCrossing = corridor?.kind === 'canal';
+    const permittedIndexes = new Set(
+      Array.isArray(corridor?.landCrossingEdgeIndexes)
+        ? corridor.landCrossingEdgeIndexes.map(Number)
+        : []
+    );
     for (let i = 1; i < ids.length; i++) {
       corridorEdges.add(edgeKey(ids[i - 1], ids[i]));
       corridorEdges.add(edgeKey(ids[i], ids[i - 1]));
       corridorCoordEdges.add(coordEdgeKey(coords[i - 1], coords[i]));
       corridorCoordEdges.add(coordEdgeKey(coords[i], coords[i - 1]));
-      if (permitsLandCrossing) {
+      if (permittedIndexes.has(i - 1)) {
         permittedLandCrossingEdges.add(coordEdgeKey(coords[i - 1], coords[i]));
         permittedLandCrossingEdges.add(coordEdgeKey(coords[i], coords[i - 1]));
       }
@@ -163,7 +167,9 @@ function buildWaterGraphData() {
 function routeLeg(leg = {}) {
   if (!leg?.from || !leg?.to) throw new Error('Route endpoints are missing.');
   const mode = leg.mode || 'plane';
-  const key = `${routingVersion}:${leg.from.id || coordKey([leg.from.lon, leg.from.lat])}->${leg.to.id || coordKey([leg.to.lon, leg.to.lat])}:${mode}`;
+  const fromKey = `${leg.from.id || 'from'}@${Number(leg.from.lon).toFixed(5)},${Number(leg.from.lat).toFixed(5)}`;
+  const toKey = `${leg.to.id || 'to'}@${Number(leg.to.lon).toFixed(5)},${Number(leg.to.lat).toFixed(5)}`;
+  const key = `${routingVersion}:${leg.legId || leg.id || 'legacy'}:${fromKey}->${toKey}:${mode}`;
   if (routeCache.has(key)) return routeCache.get(key);
 
   let geometry;

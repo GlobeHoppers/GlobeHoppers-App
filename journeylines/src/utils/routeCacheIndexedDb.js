@@ -94,7 +94,45 @@ export async function pruneOldRoutingVersions(routingVersion) {
 }
 
 export function routeCacheKeyV6(leg, routingVersion = 'natural-earth-v6.0') {
-  const from = leg?.from?.id || `${leg?.from?.lon},${leg?.from?.lat}`;
-  const to = leg?.to?.id || `${leg?.to?.lon},${leg?.to?.lat}`;
-  return `${routingVersion}:${from}->${to}:${leg?.mode || 'plane'}`;
+  const from = `${leg?.from?.id || 'from'}@${Number(leg?.from?.lon).toFixed(5)},${Number(leg?.from?.lat).toFixed(5)}`;
+  const to = `${leg?.to?.id || 'to'}@${Number(leg?.to?.lon).toFixed(5)},${Number(leg?.to?.lat).toFixed(5)}`;
+  const legId = leg?.legId || leg?.id || 'legacy';
+  return `${routingVersion}:${legId}:${from}->${to}:${leg?.mode || 'plane'}`;
+}
+
+
+export async function deleteCachedRoute(key) {
+  memoryFallback.delete(key);
+  const db = await openDb();
+  if (!db) return;
+  await new Promise(resolve => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = resolve;
+    tx.onabort = resolve;
+  });
+}
+
+export async function enforceRouteCacheLimit(maxEntries = 500) {
+  const db = await openDb();
+  if (!db) return;
+  const rows = await new Promise(resolve => {
+    const out = [];
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      out.push({ key: cursor.value?.key, updatedAt: Number(cursor.value?.updatedAt || 0) });
+      cursor.continue();
+    };
+    tx.oncomplete = () => resolve(out);
+    tx.onerror = () => resolve(out);
+    tx.onabort = () => resolve(out);
+  });
+  if (rows.length <= maxEntries) return;
+  rows.sort((a, b) => a.updatedAt - b.updatedAt);
+  const remove = rows.slice(0, rows.length - maxEntries);
+  await Promise.all(remove.map(row => deleteCachedRoute(row.key)));
 }

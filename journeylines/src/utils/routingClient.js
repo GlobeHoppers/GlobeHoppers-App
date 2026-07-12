@@ -1,10 +1,12 @@
-import { getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
+import { enforceRouteCacheLimit, getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
 
 export const ROUTING_VERSION = 'natural-earth-v6.0';
 const listeners = new Set();
 const pending = new Map();
 const memoryRoutes = new Map();
 const memoryPlans = new Map();
+const inFlightRoutes = new Map();
+const inFlightPlans = new Map();
 
 let worker = null;
 let nextId = 1;
@@ -128,66 +130,102 @@ export async function routeLegInWorker(leg, options = {}) {
   if (!leg?.from || !leg?.to) return null;
   const key = routeCacheKeyV6(leg, ROUTING_VERSION);
   if (memoryRoutes.has(key)) return memoryRoutes.get(key);
-  const cached = await getCachedRoute(key, ROUTING_VERSION);
-  if (cached?.length > 1) {
-    memoryRoutes.set(key, cached);
-    return cached;
-  }
+  if (inFlightRoutes.has(key)) return inFlightRoutes.get(key);
 
-  await prewarmRoutingEngine(options.reason || 'route request');
-  emit({
-    state: 'working',
-    label: 'Calculating route',
-    detail: `${leg.from.name || 'Origin'} → ${leg.to.name || 'Destination'} · ${leg.mode}`,
-    activeJob: key
-  });
-  const result = await request('route', {
-    leg: {
-      mode: leg.mode,
-      from: { id: leg.from.id, name: leg.from.name, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
-      to: { id: leg.to.id, name: leg.to.name, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
-      miles: Number(leg.miles || 0)
-    },
-    routingVersion: ROUTING_VERSION
-  });
-  const geometry = result?.geometry;
-  if (Array.isArray(geometry) && geometry.length > 1) {
-    memoryRoutes.set(key, geometry);
-    await putCachedRoute(key, geometry, ROUTING_VERSION, {
-      mode: leg.mode,
-      source: result?.source || 'worker',
-      dataVersion: result?.dataVersion || status.dataVersion
-    });
+  const job = (async () => {
+    const cached = await getCachedRoute(key, ROUTING_VERSION);
+    if (cached?.length > 1) {
+      memoryRoutes.set(key, cached);
+      return cached;
+    }
+
+    await prewarmRoutingEngine(options.reason || 'route request');
     emit({
-      state: 'ready',
-      label: 'Routing engine ready',
-      detail: `Route cached · ${geometry.length.toLocaleString()} points`,
-      activeJob: null,
-      completed: Number(status.completed || 0) + 1,
-      ready: true
+      state: 'working',
+      label: 'Calculating route',
+      detail: `${leg.from.name || 'Origin'} → ${leg.to.name || 'Destination'} · ${leg.mode}`,
+      activeJob: key
     });
-    return geometry;
+    const result = await request('route', {
+      leg: {
+        id: leg.legId || leg.id || null,
+        legId: leg.legId || leg.id || null,
+        mode: leg.mode,
+        from: { id: leg.from.id, name: leg.from.name, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
+        to: { id: leg.to.id, name: leg.to.name, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
+        miles: Number(leg.miles || 0)
+      },
+      routingVersion: ROUTING_VERSION
+    });
+    const geometry = result?.geometry;
+    if (Array.isArray(geometry) && geometry.length > 1) {
+      memoryRoutes.set(key, geometry);
+      await putCachedRoute(key, geometry, ROUTING_VERSION, {
+        mode: leg.mode,
+        source: result?.source || 'worker',
+        dataVersion: result?.dataVersion || status.dataVersion
+      });
+      enforceRouteCacheLimit(500).catch(() => {});
+      emit({
+        state: 'ready',
+        label: 'Routing engine ready',
+        detail: `Route cached · ${geometry.length.toLocaleString()} points`,
+        activeJob: null,
+        completed: Number(status.completed || 0) + 1,
+        ready: true
+      });
+      return geometry;
+    }
+    return null;
+  })();
+
+  inFlightRoutes.set(key, job);
+  try {
+    return await job;
+  } finally {
+    inFlightRoutes.delete(key);
   }
-  return null;
 }
 
 export async function buildPlaybackPlanInWorker(leg, geometry, options = {}) {
   if (!leg?.from || !leg?.to) return null;
-  const key = `${routeCacheKeyV6(leg, ROUTING_VERSION)}:plan:${options.samples || 'auto'}`;
+  const geometrySignature = Array.isArray(geometry) && geometry.length > 1
+    ? `${geometry.length}:${geometry[0]?.join(',')}:${geometry[geometry.length - 1]?.join(',')}`
+    : 'no-geometry';
+  const key = `${routeCacheKeyV6(leg, ROUTING_VERSION)}:plan:${options.samples || 'auto'}:${geometrySignature}`;
   if (memoryPlans.has(key)) return memoryPlans.get(key);
-  await prewarmRoutingEngine(options.reason || 'playback plan');
-  const result = await request('playbackPlan', {
-    leg: {
-      mode: leg.mode,
-      from: { lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
-      to: { lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
-      miles: Number(leg.miles || 0)
-    },
-    geometry: Array.isArray(geometry) ? geometry : null,
-    samples: options.samples || 0
-  });
-  if (result) memoryPlans.set(key, result);
-  return result;
+  if (inFlightPlans.has(key)) return inFlightPlans.get(key);
+
+  const job = (async () => {
+    await prewarmRoutingEngine(options.reason || 'playback plan');
+    const result = await request('playbackPlan', {
+      leg: {
+        id: leg.legId || leg.id || null,
+        legId: leg.legId || leg.id || null,
+        mode: leg.mode,
+        from: { id: leg.from.id, lon: Number(leg.from.lon), lat: Number(leg.from.lat) },
+        to: { id: leg.to.id, lon: Number(leg.to.lon), lat: Number(leg.to.lat) },
+        miles: Number(leg.miles || 0)
+      },
+      geometry: Array.isArray(geometry) ? geometry : null,
+      samples: options.samples || 0
+    });
+    if (result) {
+      memoryPlans.set(key, result);
+      if (memoryPlans.size > 120) {
+        const oldestKey = memoryPlans.keys().next().value;
+        memoryPlans.delete(oldestKey);
+      }
+    }
+    return result;
+  })();
+
+  inFlightPlans.set(key, job);
+  try {
+    return await job;
+  } finally {
+    inFlightPlans.delete(key);
+  }
 }
 
 export async function prefetchRoutingForLegs(entries = [], count = 4) {

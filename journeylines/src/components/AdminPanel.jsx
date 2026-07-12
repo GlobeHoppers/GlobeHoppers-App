@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorGradient, normalizeHopperData, resolveTripVisual, segmentedCircleBackground, segmentedBorderGradient } from '../utils/hopperUtils.js';
 import routeDetails from '../data/routeDetails.json';
-import { buildRouteDetailsPayload, routeDetailKeyForEntry } from '../utils/routeDetails.js';
+import { buildRouteDetailsPayload, legacyRouteDetailKeyForEntry, routeDetailKeyForEntry } from '../utils/routeDetails.js';
 import { flattenLegs } from '../utils/tripExpansion.js';
 import { routeLegInWorker } from '../utils/routingClient.js';
+import { compareDateParts, createStableId, isResolvedLocation, normalizeTripForV61, validDateParts } from '../utils/tripModel.js';
 
 const MODE_OPTIONS = [
   { id: 'plane', label: 'Plane', icon: '✈' },
@@ -32,7 +33,10 @@ const MONTH_OPTIONS = [
 ];
 const empty = {
   year: new Date().getFullYear(), month: null, day: null, endYear: null, endMonth: null, endDay: null, label: '', travelers: [], mode: 'plane',
-  roundTrip: true, returnMode: '', fromLocationId: null, fromLocationText: '', fromCity: null, toLocationId: '', toLocationText: '', toCity: null, notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
+  roundTrip: true, returnMode: '', fromLocationId: null, fromLocationText: '', fromCity: null, toLocationId: '', toLocationText: '', toCity: null,
+  toCustomEnabled: false, toCustomName: '', toCustomLat: '', toCustomLon: '',
+  startPointId: '', mainPointId: '', mainLegId: '', returnPointId: '', returnLegId: '',
+  notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
 };
 let cityDbPromise = null;
 let cityDbCache = [];
@@ -49,6 +53,52 @@ function loadCityDatabase() {
       return [];
     });
   return cityDbPromise;
+}
+
+let citySearchWorker = null;
+let citySearchRequestId = 1;
+const citySearchPending = new Map();
+
+function cityDataUrl() {
+  const base = String(import.meta.env.BASE_URL || './').replace(/\/?$/, '/');
+  return new URL(`${base}data/cities15000.json`, window.location.href).href;
+}
+
+function ensureCitySearchWorker() {
+  if (citySearchWorker) return citySearchWorker;
+  citySearchWorker = new Worker(new URL('../workers/citySearchWorker.js', import.meta.url), {
+    type: 'module',
+    name: 'globehoppers-city-search'
+  });
+  citySearchWorker.onmessage = event => {
+    const message = event.data || {};
+    const pending = citySearchPending.get(message.id);
+    if (!pending) return;
+    citySearchPending.delete(message.id);
+    if (message.ok) pending.resolve(message.results || []);
+    else pending.reject(new Error(message.error || 'City search failed.'));
+  };
+  citySearchWorker.onerror = event => {
+    const error = new Error(event?.message || 'City search worker failed.');
+    for (const pending of citySearchPending.values()) pending.reject(error);
+    citySearchPending.clear();
+    try { citySearchWorker.terminate(); } catch {}
+    citySearchWorker = null;
+  };
+  return citySearchWorker;
+}
+
+function searchCitiesInWorker(query, limit = 24) {
+  const worker = ensureCitySearchWorker();
+  const id = citySearchRequestId++;
+  return new Promise((resolve, reject) => {
+    citySearchPending.set(id, { resolve, reject });
+    worker.postMessage({
+      id,
+      type: 'search',
+      payload: { query, limit, dataUrl: cityDataUrl() }
+    });
+  });
 }
 
 const repoSaveQueue = {
@@ -137,12 +187,18 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const [cityDb, setCityDb] = useState(() => cityDbCache);
   const [cityDbLoaded, setCityDbLoaded] = useState(() => cityDbCache.length > 0);
   const [cityDbLoading, setCityDbLoading] = useState(false);
+  const [citySearchResults, setCitySearchResults] = useState({});
+  const [citySearchLoading, setCitySearchLoading] = useState({});
   const tripsRef = useRef(trips);
   const locationsRef = useRef(locations);
+  const routeDetailsRef = useRef(routeDetails);
   const [dragId, setDragId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const studioListRef = useRef(null);
   const restoreScrollRef = useRef(null);
+  const modalCloseTimerRef = useRef(null);
+  const initialDraftSignatureRef = useRef('');
+  const modalTriggerRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   useEffect(() => { tripsRef.current = trips; }, [trips]);
@@ -179,6 +235,10 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => () => {
+    window.clearTimeout(modalCloseTimerRef.current);
+  }, []);
+
   useEffect(() => {
     function handleRequestClose() {
       requestCloseStudio();
@@ -186,23 +246,28 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     window.addEventListener('globehoppers-request-close-studio', handleRequestClose);
     return () => window.removeEventListener('globehoppers-request-close-studio', handleRequestClose);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closing]);
+  }, [closing, modal, draft]);
 
 
-  function requestCitySuggestions() {
-    if (cityDbLoaded || cityDbLoading) return;
-    setCityDbLoading(true);
-    loadCityDatabase()
-      .then(data => {
-        const usable = Array.isArray(data) ? data : [];
-        setCityDb(usable);
-        setCityDbLoaded(usable.length > 0);
+  function requestCitySuggestions(query = '') {
+    const key = normalizeSearchText(query);
+    if (key.length < 2 || citySearchResults[key] || citySearchLoading[key]) return;
+    setCitySearchLoading(previous => ({ ...previous, [key]: true }));
+    searchCitiesInWorker(query, 28)
+      .then(results => {
+        setCitySearchResults(previous => ({ ...previous, [key]: Array.isArray(results) ? results : [] }));
       })
-      .catch(() => {
-        setCityDb([]);
-        setCityDbLoaded(false);
+      .catch(error => {
+        console.warn('[GlobeHoppers] City search worker failed.', error);
+        setCitySearchResults(previous => ({ ...previous, [key]: [] }));
       })
-      .finally(() => setCityDbLoading(false));
+      .finally(() => {
+        setCitySearchLoading(previous => {
+          const next = { ...previous };
+          delete next[key];
+          return next;
+        });
+      });
   }
 
   useEffect(() => {
@@ -214,56 +279,138 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    function handleRetryRepositorySave() {
+      const queue = repoSaveQueue;
+      if (queue.saving || queue.pending || !queue.completed?.error) return;
+      const retryJob = {
+        ...queue.completed,
+        error: null,
+        completedAt: null,
+        queuedAt: Date.now()
+      };
+      queue.completed = null;
+      queue.pending = retryJob;
+      onRepoSaveStatus(repoSaveStatusPayload(queue, {
+        state: 'queued',
+        label: 'Repository retry queued',
+        detail: repoSaveBatchDetail(retryJob, false),
+        startedAt: retryJob.queuedAt,
+        completedAt: null,
+        error: null,
+        canRetry: false
+      }));
+      schedulePendingRepoSave(250);
+    }
+    window.addEventListener('globehoppers-retry-repo-save', handleRetryRepositorySave);
+    return () => window.removeEventListener('globehoppers-retry-repo-save', handleRetryRepositorySave);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   function saveLocalToken(value) { setToken(value); localStorage.setItem('journeylines.githubToken', value); }
   function saveRepo(value) { setRepo(value); localStorage.setItem('journeylines.repo', value); }
 
   function openAdd() {
+    modalTriggerRef.current = document.activeElement;
     window.dispatchEvent(new CustomEvent('globehoppers-pause-for-hop-modal'));
+    window.clearTimeout(modalCloseTimerRef.current);
     setFormError('');
     setModalClosing(false);
     setEditingId(null);
-    setDraft({ ...empty, travelers: [], year: new Date().getFullYear(), month: null, fromCity: null, toCity: null, toLocationText: '' });
+    const nextDraft = {
+      ...empty,
+      travelers: [],
+      year: new Date().getFullYear(),
+      month: null,
+      fromCity: null,
+      toCity: null,
+      toLocationText: '',
+      startPointId: createStableId('point'),
+      mainPointId: createStableId('point'),
+      mainLegId: createStableId('leg'),
+      returnPointId: createStableId('point'),
+      returnLegId: createStableId('leg')
+    };
+    initialDraftSignatureRef.current = draftSignature(nextDraft);
+    setDraft(nextDraft);
     setModal('add');
   }
   function openEdit(trip) {
+    modalTriggerRef.current = document.activeElement;
     window.dispatchEvent(new CustomEvent('globehoppers-pause-for-hop-modal'));
+    window.clearTimeout(modalCloseTimerRef.current);
     setFormError('');
     setModalClosing(false);
-    const route = Array.isArray(trip.route) ? trip.route : [];
+    const normalizedTrip = normalizeTripForV61(trip, homeBases);
+    const route = Array.isArray(normalizedTrip.route) ? normalizedTrip.route : [];
     const hasRoute = route.length > 1;
     const routeStart = hasRoute ? route[0] : null;
     const routeDestination = hasRoute ? route[1] : null;
     const routeEnd = hasRoute ? route[route.length - 1] : null;
-    const returnsToStart = !!(trip.roundTrip && routeStart?.locationId && routeEnd?.locationId === routeStart.locationId && route.length > 2);
+    const returnsToStart = !!(normalizedTrip.roundTrip && routeStart?.locationId && routeEnd?.locationId === routeStart.locationId && route.length > 2);
     const extraRouteStops = hasRoute ? route.slice(2, returnsToStart ? -1 : undefined) : [];
-    const to = locById[routeDestination?.locationId || trip.toLocationId];
-    const derivedReturnMode = returnsToStart ? (routeEnd?.modeFromPrevious || trip.returnMode || trip.mode || 'plane') : (trip.returnMode || trip.mode || 'plane');
-    setEditingId(trip.id);
-    setDraft({
+    const to = locById[routeDestination?.locationId || normalizedTrip.toLocationId];
+    const derivedReturnMode = returnsToStart
+      ? (routeEnd?.modeFromPrevious || normalizedTrip.returnMode || normalizedTrip.mode || 'plane')
+      : (normalizedTrip.returnMode || normalizedTrip.mode || 'plane');
+
+    const nextDraft = {
       ...empty,
-      ...trip,
+      ...normalizedTrip,
       returnMode: derivedReturnMode,
-      overrideFrom: !!trip.fromLocationId || !!route.length,
-      fromLocationId: routeStart?.locationId || trip.fromLocationId || null,
+      overrideFrom: Boolean(
+        normalizedTrip.fromLocationId
+        || (routeStart?.locationId && routeStart.locationId !== activeHomeBaseId(homeBases, normalizedTrip))
+      ),
+      startPointId: routeStart?.pointId || createStableId('point'),
+      mainPointId: routeDestination?.pointId || createStableId('point'),
+      mainLegId: routeDestination?.legId || createStableId('leg'),
+      returnPointId: returnsToStart ? (routeEnd?.pointId || createStableId('point')) : createStableId('point'),
+      returnLegId: returnsToStart ? (routeEnd?.legId || createStableId('leg')) : createStableId('leg'),
+      fromLocationId: routeStart?.locationId || normalizedTrip.fromLocationId || null,
       fromLocationText: routeStart?.locationId ? displayLocation(locById[routeStart.locationId]) : '',
-      toLocationId: routeDestination?.locationId || trip.toLocationId || '',
-      toLocationText: to ? displayLocation(to) : (trip.toLocationName || trip.label || ''),
+      toLocationId: routeDestination?.locationId || normalizedTrip.toLocationId || '',
+      toLocationText: to ? displayLocation(to) : (normalizedTrip.toLocationName || normalizedTrip.label || ''),
       fromCity: null,
       toCity: null,
-      extraLegs: extraRouteStops.map(r => ({ locationId: r.locationId || '', locationText: displayLocation(locById[r.locationId]) || '', modeFromPrevious: r.modeFromPrevious || trip.mode || 'plane' }))
-    });
+      extraLegs: extraRouteStops.map(routePoint => ({
+        draftId: routePoint.pointId || createStableId('draft-leg'),
+        pointId: routePoint.pointId || createStableId('point'),
+        legId: routePoint.legId || createStableId('leg'),
+        locationId: routePoint.locationId || '',
+        locationText: displayLocation(locById[routePoint.locationId]) || '',
+        modeFromPrevious: routePoint.modeFromPrevious || normalizedTrip.mode || 'plane'
+      }))
+    };
+    setEditingId(normalizedTrip.id);
+    initialDraftSignatureRef.current = draftSignature(nextDraft);
+    setDraft(nextDraft);
     setModal('edit');
   }
-  function closeModal() {
+
+  function closeModal(force = false) {
     setFormError('');
     if (!modal) return;
+    if (!force && draftSignature(draft) !== initialDraftSignatureRef.current) {
+      setConfirmRequest({
+        title: 'Discard unsaved changes?',
+        message: 'Your changes to this Hop have not been saved.',
+        confirmLabel: 'Discard changes',
+        onConfirm: async () => closeModal(true)
+      });
+      return;
+    }
+    window.clearTimeout(modalCloseTimerRef.current);
     setModalClosing(true);
-    window.setTimeout(() => {
+    modalCloseTimerRef.current = window.setTimeout(() => {
       setModal(null);
       setModalClosing(false);
       setEditingId(null);
       setDraft(empty);
+      initialDraftSignatureRef.current = '';
+      try { modalTriggerRef.current?.focus?.(); } catch {}
+      modalTriggerRef.current = null;
       window.dispatchEvent(new CustomEvent('globehoppers-resume-after-hop-modal'));
       if (modalOnly) window.dispatchEvent(new CustomEvent('globehoppers-close-studio'));
     }, 260);
@@ -280,7 +427,17 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   function chooseDestination(location) {
     setFormError('');
     const isCity = location?._source === 'city';
-    setDraft(d => ({ ...d, toLocationId: isCity ? '' : location.id, toCity: isCity ? location.city : null, toLocationText: selectedLocationText(location), label: d.label || location.name }));
+    setDraft(d => ({
+      ...d,
+      toLocationId: isCity ? '' : location.id,
+      toCity: isCity ? location.city : null,
+      toLocationText: selectedLocationText(location),
+      toCustomEnabled: false,
+      toCustomName: '',
+      toCustomLat: '',
+      toCustomLon: '',
+      label: d.label || location.name
+    }));
     previewMapLocation(location);
   }
   function chooseFrom(location) {
@@ -304,7 +461,23 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       return { ...d, extraLegs };
     });
   }
-  function addLeg() { setDraft(d => ({ ...d, extraLegs: [...(d.extraLegs || []), { locationId: '', locationText: '', city: null, modeFromPrevious: d.mode || 'plane' }] })); }
+  function addLeg() {
+    setDraft(d => ({
+      ...d,
+      extraLegs: [
+        ...(d.extraLegs || []),
+        {
+          draftId: createStableId('draft-leg'),
+          pointId: createStableId('point'),
+          legId: createStableId('leg'),
+          locationId: '',
+          locationText: '',
+          city: null,
+          modeFromPrevious: d.mode || 'plane'
+        }
+      ]
+    }));
+  }
   function removeLeg(index) { setDraft(d => ({ ...d, extraLegs: (d.extraLegs || []).filter((_, i) => i !== index) })); }
   function setReturnMode(mode) { setDraft(d => ({ ...d, returnMode: mode })); }
   function setPreviewLegMode(target, mode) {
@@ -314,29 +487,65 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   }
 
   async function saveTripFromModal() {
+    if (busy) return;
+    setBusy(true);
     try {
       validateHopDraftForSave(draft);
       const currentTrips = tripsRef.current || trips;
       const currentLocations = locationsRef.current || locations;
       const currentScroll = studioListRef.current?.scrollTop ?? null;
+      const existingTrip = editingId ? currentTrips.find(item => item.id === editingId) : null;
       const { trip, nextLocations } = normalizeTrip(draft, currentTrips, currentLocations, homeBases, normalizedHoppers);
-      const updatedTrips = editingId ? currentTrips.map(t => t.id === editingId ? { ...t, ...trip, id: editingId } : t) : [...currentTrips, trip];
+      const normalizedTrip = normalizeTripForV61(trip, homeBases);
+      const updatedTrips = editingId
+        ? currentTrips.map(item => item.id === editingId ? { ...item, ...normalizedTrip, id: editingId } : item)
+        : [...currentTrips, normalizedTrip];
       const nextTrips = insertChronologically(updatedTrips);
       const actionLabel = editingId ? 'Edit Hop' : 'Add Hop';
-      const message = `${actionLabel}: ${trip.label || trip.toLocationName || trip.id} (${trip.id})`;
+      const message = `${actionLabel}: ${normalizedTrip.label || normalizedTrip.toLocationName || normalizedTrip.id} (${normalizedTrip.id})`;
+      const changeKind = editingId ? classifyTripEdit(existingTrip, normalizedTrip) : 'add';
+      const shouldAutoPlay = !editingId || changeKind === 'route' || changeKind === 'date';
+
       if (currentScroll != null) restoreScrollRef.current = currentScroll;
-      validateTripLocationReferences(trip, nextLocations);
+      validateTripLocationReferences(normalizedTrip, nextLocations);
       tripsRef.current = nextTrips;
       locationsRef.current = nextLocations;
       setTrips(nextTrips);
       if (nextLocations !== currentLocations) setLocations(nextLocations);
-      closeModal();
-      onTripSaved({ tripId: trip.id, action: editingId ? 'edit' : 'add', label: trip.label });
-      saveDataInBackground(nextTrips, nextLocations, message, { action: editingId ? 'edit' : 'add', tripId: trip.id, label: trip.label || trip.toLocationName || trip.id });
+      initialDraftSignatureRef.current = draftSignature(draft);
+      closeModal(true);
+      const savedPlaybackRequest = {
+        tripId: normalizedTrip.id,
+        action: editingId ? 'edit' : 'add',
+        label: normalizedTrip.label,
+        changeKind,
+        shouldAutoPlay
+      };
+      if (shouldAutoPlay && tripNeedsDetailedVesselRouting(normalizedTrip, nextLocations)) {
+        prepareTripRoutesForPlayback(normalizedTrip, nextLocations)
+          .then(() => onTripSaved(savedPlaybackRequest))
+          .catch(error => {
+            console.warn('[GlobeHoppers] Saved Hop will not auto-play because its detailed route could not be prepared.', error);
+            window.dispatchEvent(new CustomEvent('globehoppers-route-preparation-failed', {
+              detail: { tripId: normalizedTrip.id, message: error?.message || String(error) }
+            }));
+            onTripSaved({ ...savedPlaybackRequest, shouldAutoPlay: false });
+          });
+      } else {
+        onTripSaved(savedPlaybackRequest);
+      }
+      saveDataInBackground(nextTrips, nextLocations, message, {
+        action: editingId ? 'edit' : 'add',
+        tripId: normalizedTrip.id,
+        label: normalizedTrip.label || normalizedTrip.toLocationName || normalizedTrip.id
+      });
     } catch (err) {
       setFormError(err.message || String(err));
+    } finally {
+      setBusy(false);
     }
   }
+
   async function deleteTripFromModal() {
     if (!editingId) return;
     const label = draft.label || draft.toLocationText || editingId;
@@ -345,6 +554,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       message: `Delete ${label}? This cannot be undone.`,
       confirmLabel: 'Delete hop',
       onConfirm: async () => {
+        if (busy) return;
+        setBusy(true);
         try {
           const currentTrips = tripsRef.current || trips;
           const currentLocations = locationsRef.current || locations;
@@ -353,10 +564,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           if (currentScroll != null) restoreScrollRef.current = currentScroll;
           tripsRef.current = nextTrips;
           setTrips(nextTrips);
-          closeModal();
+          initialDraftSignatureRef.current = draftSignature(draft);
+          closeModal(true);
           saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${editingId})`, { action: 'delete', tripId: editingId, label });
         } catch (err) {
           setFormError(err.message || String(err));
+        } finally {
+          setBusy(false);
         }
       }
     });
@@ -490,7 +704,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         completedAt: queue.completed.completedAt,
         error: errorMessage
       }));
-      window.alert(`GlobeHoppers could not save this change to GitHub. Your local view has been updated, but the repository was not updated.\n\n${errorMessage}`);
+      window.dispatchEvent(new CustomEvent('globehoppers-repository-error', {
+        detail: { message: errorMessage, items: job.items || [] }
+      }));
     } finally {
       if (lockOwner) clearRepoSaveLock(lockOwner);
       queue.saving = false;
@@ -573,7 +789,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       pendingItems,
       currentItems,
       completedItems,
-      completedAt: base.completedAt ?? queue.completed?.completedAt ?? null
+      completedAt: base.completedAt ?? queue.completed?.completedAt ?? null,
+      canRetry: base.canRetry ?? Boolean(queue.completed?.error && !queue.saving && !queue.pending)
     };
   }
 
@@ -664,16 +881,38 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     }
   }
 
+  function tripNeedsDetailedVesselRouting(trip, nextLocations) {
+    const locationsById = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
+    return flattenLegs([trip], locationsById, homeBases || [])
+      .some(entry => ['drive', 'car', 'train', 'boat'].includes(entry?.leg?.mode));
+  }
+
+  async function prepareTripRoutesForPlayback(trip, nextLocations) {
+    const locationsById = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
+    const entries = flattenLegs([trip], locationsById, homeBases || [])
+      .filter(entry => ['drive', 'car', 'train', 'boat'].includes(entry?.leg?.mode));
+    if (!entries.length) return;
+    const results = await Promise.all(entries.map(entry => routeLegInWorker(entry.leg, { reason: 'saved Hop playback' })));
+    if (results.some(geometry => !Array.isArray(geometry) || geometry.length < 2)) {
+      throw new Error('One or more detailed vessel routes could not be generated.');
+    }
+  }
+
   async function prepareChangedVesselRoutes(nextTrips, nextLocations) {
     const locationsById = Object.fromEntries((nextLocations || []).map(location => [location.id, location]));
     const entries = flattenLegs(nextTrips || [], locationsById, homeBases || []);
     const jobs = entries.filter(entry => {
       const leg = entry?.leg;
       if (!leg || !['drive', 'car', 'train', 'boat'].includes(leg.mode)) return false;
-      const old = routeDetails?.routes?.[routeDetailKeyForEntry(entry)];
+      const old = routeDetailsRef.current?.routes?.[routeDetailKeyForEntry(entry)] || routeDetailsRef.current?.routes?.[legacyRouteDetailKeyForEntry(entry)];
       const matches = String(old?.fromLocationId || '') === String(leg?.from?.id || '')
         && String(old?.toLocationId || '') === String(leg?.to?.id || '')
         && String(old?.mode || '') === String(leg?.mode || '')
+        && (!old?.legId || String(old.legId) === String(entry?.legId || leg?.legId || leg?.id || ''))
+        && Math.abs(Number(old?.coordinates?.from?.[0]) - Number(leg?.from?.lon)) <= 0.0002
+        && Math.abs(Number(old?.coordinates?.from?.[1]) - Number(leg?.from?.lat)) <= 0.0002
+        && Math.abs(Number(old?.coordinates?.to?.[0]) - Number(leg?.to?.lon)) <= 0.0002
+        && Math.abs(Number(old?.coordinates?.to?.[1]) - Number(leg?.to?.lat)) <= 0.0002
         && Array.isArray(old?.geometry)
         && old.geometry.length > 1;
       return !matches;
@@ -698,13 +937,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     if (!token || !repo) throw new Error('Enter a repo and fine-grained GitHub token in Repository Settings first.');
     for (const trip of nextTrips || []) validateTripLocationReferences(trip, nextLocations);
     await prepareChangedVesselRoutes(nextTrips, nextLocations);
-    const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetails);
+    const nextRouteDetails = buildRouteDetailsPayload(nextTrips, nextLocations, homeBases, routeDetailsRef.current);
     const files = [
       { path: 'journeylines/src/data/locations.json', data: nextLocations },
       { path: 'journeylines/src/data/trips.json', data: nextTrips },
       { path: 'journeylines/src/data/routeDetails.json', data: nextRouteDetails }
     ];
     try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(nextRouteDetails)); } catch {}
+    routeDetailsRef.current = nextRouteDetails;
+    window.dispatchEvent(new CustomEvent('globehoppers-route-details-updated', { detail: nextRouteDetails }));
     try {
       await commitFilesAtomically(files, message);
     } catch (err) {
@@ -809,6 +1050,10 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   function moveTrip() {}
   function requestCloseStudio() {
+    if (modal) {
+      closeModal();
+      return;
+    }
     if (closing) return;
     setClosing(true);
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-close-studio')), 420);
@@ -875,6 +1120,8 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       cityDb={cityDb}
       cityDbLoaded={cityDbLoaded}
       cityDbLoading={cityDbLoading}
+      citySearchResults={citySearchResults}
+      citySearchLoading={citySearchLoading}
       onRequestCitySuggestions={requestCitySuggestions}
     />}
   </section>;
@@ -882,13 +1129,93 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
 
 
+function draftSignature(value = {}) {
+  return JSON.stringify(canonicalizeDraftValue(value));
+}
+
+function canonicalizeDraftValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalizeDraftValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .filter(key => !key.startsWith('_'))
+      .sort()
+      .map(key => [key, canonicalizeDraftValue(value[key])])
+  );
+}
+
+function classifyTripEdit(previous = {}, next = {}) {
+  const previousRoute = routeEditSignature(previous);
+  const nextRoute = routeEditSignature(next);
+  if (previousRoute !== nextRoute) return 'route';
+  const previousDate = [previous.year, previous.month, previous.day, previous.endYear, previous.endMonth, previous.endDay].join('|');
+  const nextDate = [next.year, next.month, next.day, next.endYear, next.endMonth, next.endDay].join('|');
+  if (previousDate !== nextDate) return 'date';
+  return 'metadata';
+}
+
+function routeEditSignature(trip = {}) {
+  return JSON.stringify({
+    fromLocationId: trip.fromLocationId || '',
+    toLocationId: trip.toLocationId || '',
+    mode: trip.mode || '',
+    roundTrip: Boolean(trip.roundTrip),
+    returnMode: trip.returnMode || '',
+    route: (trip.route || []).map(point => ({
+      locationId: point?.locationId || '',
+      legId: point?.legId || '',
+      modeFromPrevious: point?.modeFromPrevious || ''
+    }))
+  });
+}
+
+function ensureCustomCoordinateLocation(locations = [], custom = {}, fieldLabel = 'Location') {
+  const name = String(custom.name || '').trim();
+  const lat = Number(custom.lat);
+  const lon = Number(custom.lon);
+  if (!name) throw new Error(`${fieldLabel} needs a name.`);
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) throw new Error(`${fieldLabel} latitude must be between -90 and 90.`);
+  if (!Number.isFinite(lon) || lon < -180 || lon > 180) throw new Error(`${fieldLabel} longitude must be between -180 and 180.`);
+
+  const existing = (locations || []).find(location =>
+    normalizeSearchText(location?.name) === normalizeSearchText(name)
+    && Math.abs(Number(location?.lat) - lat) <= 0.00005
+    && Math.abs(Number(location?.lon) - lon) <= 0.00005
+  );
+  if (existing) return { id: existing.id, locations };
+
+  const location = {
+    id: createStableId('location'),
+    name,
+    region: '',
+    country: '',
+    countryCode: '',
+    continent: '',
+    lat,
+    lon,
+    source: 'manual-coordinates'
+  };
+  return { id: location.id, locations: [...locations, location] };
+}
+
 function validateHopDraftForSave(draft = {}) {
   const missing = [];
+  if (!draft.year) missing.push(['Year', 'Please choose a year']);
   if (!draft.month) missing.push(['Month', 'Please choose a month']);
   if (!draft.travelers?.length && !(draft.guestHoppers || []).length) missing.push(['Hoppers', 'Please add at least one Hopper or Guest Hopper']);
-  if (!draft.toLocationId && !draft.toLocationText?.trim()) missing.push(['Destination', 'Please choose a destination']);
-  if (!missing.length) return;
-  throw new Error(`Missing Required Fields:\n${missing.map(([field, action]) => `• ${field} - ${action}`).join('\n')}`);
+  if (!draft.toCustomEnabled && !draft.toLocationId && !draft.toCity && !draft.toLocationText?.trim()) missing.push(['Destination', 'Please choose a destination']);
+  if (draft.toCustomEnabled && !String(draft.toCustomName || '').trim()) missing.push(['Custom destination name', 'Please name the custom destination']);
+  if (draft.overrideFrom && !draft.fromLocationId && !draft.fromCity && !draft.fromLocationText?.trim()) missing.push(['Start location', 'Please choose an override start location']);
+  if (missing.length) {
+    throw new Error(`Missing Required Fields:\n${missing.map(([field, action]) => `• ${field} - ${action}`).join('\n')}`);
+  }
+  if (!validDateParts(draft.year, draft.month, draft.day)) {
+    throw new Error('The selected start date is invalid for that month and year.');
+  }
+  const hasAnyEndDate = Boolean(draft.endYear || draft.endMonth || draft.endDay);
+  if (hasAnyEndDate && !validDateParts(draft.endYear, draft.endMonth, draft.endDay)) {
+    throw new Error('Choose a complete and valid end date.');
+  }
 }
 
 function formatHumanList(items = []) {
@@ -1029,10 +1356,12 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, onRequestCitySuggestions = () => {}}) {
-  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityDb, cityDbLoaded, cityDbLoading);
-  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityDb, cityDbLoaded, cityDbLoading);
-  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toLocationText || 'Edit Hop';
+function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}}) {
+  const cityMatchesFor = query => citySearchResults[normalizeSearchText(query)] || [];
+  const cityLoadingFor = query => Boolean(citySearchLoading[normalizeSearchText(query)]);
+  const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityMatchesFor(draft.toLocationText), true, cityLoadingFor(draft.toLocationText));
+  const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityMatchesFor(draft.fromLocationText), true, cityLoadingFor(draft.fromLocationText));
+  const title = mode === 'add' ? `Add ${addTripNoun}` : draft.label || draft.toCustomName || draft.toLocationText || 'Edit Hop';
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
@@ -1052,7 +1381,14 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
   const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
-  const effectiveDestination = locById[draft.toLocationId] || findLocationByText(locs, draft.toLocationText) || (draft.toLocationText ? { name: draft.toLocationText } : null);
+  const effectiveDestination = draft.toCustomEnabled
+    ? {
+        id: 'custom-coordinate-preview',
+        name: draft.toCustomName || 'Custom destination',
+        lat: Number(draft.toCustomLat),
+        lon: Number(draft.toCustomLon)
+      }
+    : locById[draft.toLocationId] || findLocationByText(locs, draft.toLocationText) || (draft.toLocationText ? { name: draft.toLocationText } : null);
   const yearOptions = buildYearOptions(locs, draft.year);
   const dateRangeLabel = formatDateRangeLabel(draft);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
@@ -1064,6 +1400,8 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const [guestColorOpen, setGuestColorOpen] = useState(false);
   const [guestDraft, setGuestDraft] = useState({ id: '', name: '', colorName: 'gray', color: '#8e99a8' });
   const dateRangeRef = useRef(null);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
   const bothHoppersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
 
   useEffect(() => {
@@ -1085,8 +1423,42 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
     });
   }, [draft.year, draft.month]);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = () => [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter(element => element.offsetParent !== null);
+    const first = focusable()[0];
+    window.setTimeout(() => first?.focus(), 0);
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) return;
+      const current = items.indexOf(document.activeElement);
+      if (event.shiftKey && current <= 0) {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      } else if (!event.shiftKey && current === items.length - 1) {
+        event.preventDefault();
+        items[0].focus();
+      }
+    }
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [mode, draft.id]);
+
   function openGuestPopup() {
-    setGuestDraft({ id: `guest-${Date.now().toString(36)}`, name: '', colorName: 'gray', color: '#8e99a8' });
+    setGuestDraft({ id: createStableId('guest'), name: '', colorName: 'gray', color: '#8e99a8' });
     setGuestColorOpen(false);
     setGuestPopupOpen(true);
   }
@@ -1140,25 +1512,29 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
       <span>{formError}</span>
       <button type="button" className="primary" onClick={() => setFormError('')}>OK</button>
     </div>}
-    <div className={`studio-modal glass studio-modal--wide ${closing ? 'is-closing' : ''}`}>
+    <div ref={dialogRef} className={`studio-modal glass studio-modal--wide ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-labelledby="studio-modal-title">
       <div className="studio-modal-sticky">
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
             <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : 'Edit Hop'}</p>
-            <h2>{title}</h2>
+            <h2 id="studio-modal-title" title={title}>{title}</h2>
             <small className="studio-modal-trip-id">Trip ID: {draft.id || (mode === 'add' ? 'new-unsaved-hop' : 'unknown')}</small>
           </div>
           <div className="studio-modal-top-actions">
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
             <button onClick={onClose}>Cancel</button>
-            <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save and commit'}</button>
+            <button className="primary" disabled={busy} onClick={onSave}>{busy ? 'Saving…' : 'Save Hop'}</button>
           </div>
         </div>
 
         <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
           <label className="title-field">Hop title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
           <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
-          <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft({...draft, month:Number(value), day:draft.day})} required variant="month" />
+          <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft(current => {
+            const month = Number(value);
+            const maxDay = new Date(Number(current.year) || new Date().getFullYear(), month, 0).getDate();
+            return { ...current, month, day: current.day ? Math.min(Number(current.day), maxDay) : null };
+          })} required variant="month" />
           <label className="date-range-field">Hop dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Hop Dates'}<span>▾</span></button>
             {dateRangeOpen && <DateRangePopover
               popoverRef={dateRangeRef}
@@ -1191,7 +1567,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                 {guestPopupOpen && <div className="guest-hopper-popover glass">
                   <label>Name<input autoFocus value={guestDraft.name} placeholder="Name" onChange={e => setGuestDraft(g => ({ ...g, name: e.target.value }))} /></label>
                   <div className="guest-color-row"><span>Color</span><ColorPopover colors={normalizedHoppers?.palette || []} value={guestDraft.colorName} color={guestDraft.color} open={guestColorOpen} onToggle={() => setGuestColorOpen(v => !v)} onChoose={(name, customColor) => { chooseGuestColor(name, customColor); if (name !== 'custom') setGuestColorOpen(false); }} /></div>
-                  <div className="guest-popover-actions"><button type="button" className="danger" onClick={() => setGuestPopupOpen(false)}>Delete</button><button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button><button type="button" className="primary" onClick={addGuestFromPopup}>OK</button></div>
+                  <div className="guest-popover-actions"><button type="button" className="secondary" onClick={() => setGuestPopupOpen(false)}>Cancel</button><button type="button" className="primary" onClick={addGuestFromPopup}>Add Guest</button></div>
                 </div>}
             </div>
           </section>
@@ -1199,7 +1575,11 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <section className="studio-pick-section compact-section transport-triptype-row">
             <div className="transport-choice-group"><h3>Mode of Transportation</h3>
             <div className="mode-selectors">
-              {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft({...draft, mode:m.id})}><span>{m.icon}</span>{m.label}</button>)}
+              {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={`mode-tile ${draft.mode === m.id ? 'is-selected' : ''}`} onClick={() => setDraft(current => ({
+                ...current,
+                mode: m.id,
+                returnMode: !current.returnMode || current.returnMode === current.mode ? m.id : current.returnMode
+              }))}><span>{m.icon}</span>{m.label}</button>)}
             </div></div>
             <div className="trip-type-selector"><h3>Hop type</h3>
               <div className="trip-type-options">
@@ -1218,16 +1598,44 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                   <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
                   <small>Auto-derived from trip date and active home base</small>
                 </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={fromMatches} onChoose={onChooseFrom} resetToken={`${draft.fromLocationId || ''}:${draft.fromLocationText || ''}`} />
+                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={fromMatches} onChoose={onChooseFrom} resetToken={`${draft.id || 'new'}:from:${draft.fromLocationId || 'unselected'}`} />
                 </div>}
                 <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft(d => ({...d, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? d.fromLocationId : null}))}/> Override start location</label>
               </div>
-              <AutocompleteField prominent label="Destination" value={draft.toLocationText || ''} onChange={v => { setDraft(d => ({...d, toLocationText:v, toLocationId:'', toCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={destinationMatches} onChoose={onChooseDestination} />
+              <div className="destination-entry-block">
+                <div className="destination-entry-heading">
+                  <strong>Destination</strong>
+                  <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
+                    ...current,
+                    toCustomEnabled: !current.toCustomEnabled,
+                    toLocationId: '',
+                    toCity: null,
+                    toLocationText: ''
+                  }))}>{draft.toCustomEnabled ? 'Use city search' : 'Use exact coordinates'}</button>
+                </div>
+                {draft.toCustomEnabled ? <div className="custom-coordinate-grid">
+                  <label>Location name<input value={draft.toCustomName || ''} onChange={event => setDraft(current => ({ ...current, toCustomName: event.target.value, label: current.label || event.target.value }))} placeholder="Private marina, island, landmark…" /></label>
+                  <label>Latitude<input type="number" min="-90" max="90" step="0.00001" value={draft.toCustomLat ?? ''} onChange={event => setDraft(current => ({ ...current, toCustomLat: event.target.value }))} placeholder="32.71570" /></label>
+                  <label>Longitude<input type="number" min="-180" max="180" step="0.00001" value={draft.toCustomLon ?? ''} onChange={event => setDraft(current => ({ ...current, toCustomLon: event.target.value }))} placeholder="-117.16110" /></label>
+                  <small>Custom points require valid coordinates and are saved into locations.json. GlobeHoppers will never substitute 0,0.</small>
+                </div> : <AutocompleteField prominent label="Destination" resetToken={`${draft.id || 'new'}:to:${draft.toLocationId || 'unselected'}`} value={draft.toLocationText || ''} onChange={v => { setDraft(d => ({...d, toLocationText:v, toLocationId:'', toCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={destinationMatches} onChoose={onChooseDestination} />}
+              </div>
               <div className="legs-block">
-                <div className="legs-header"><strong>Additional legs</strong><button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button></div>
-                {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={index}>
+                <div className="legs-header">
+                  <strong>Additional legs</strong>
+                  <div className="legs-header-actions">
+                    {!!(draft.extraLegs || []).length && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
+                      ...current,
+                      extraLegs: (current.extraLegs || []).map(leg => ({ ...leg, modeFromPrevious: current.mode || 'plane' })),
+                      returnMode: current.roundTrip ? (current.mode || 'plane') : current.returnMode
+                    }))}>Apply {MODE_OPTIONS.find(option => option.id === draft.mode)?.label || 'mode'} to all legs</button>}
+                    <button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button>
+                  </div>
+                </div>
+                {(draft.extraLegs || []).length >= 12 && <div className="studio-form-warning">This Hop has many legs. The route and repository geometry may take longer to calculate and save.</div>}
+                {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={leg.draftId || leg.legId || leg.pointId || index}>
                   <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => { onSetExtraLeg(index, { locationText: v, locationId: '', city: null }); if (String(v).trim().length >= 2) onRequestCitySuggestions(); }} matches={locationSuggestions(locs, leg.locationText || '', cityDb, cityDbLoaded, cityDbLoading)} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                  <AutocompleteField compact label={`Leg ${index + 2} destination`} resetToken={`${leg.draftId || leg.legId || index}:${leg.locationId || 'unselected'}`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => { onSetExtraLeg(index, { locationText: v, locationId: '', city: null }); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={locationSuggestions(locs, leg.locationText || '', cityMatchesFor(leg.locationText), true, cityLoadingFor(leg.locationText))} onChoose={loc => onChooseExtraLeg(index, loc)} />
                   <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
                 </div>)}
               </div>
@@ -1246,11 +1654,6 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <div className="studio-form-grid single compact-section">
             <label>Notes<textarea value={draft.notes || ''} onChange={e => setDraft({...draft, notes:e.target.value})} placeholder="Vacation, work trip, birthday, etc." /></label>
           </div>
-
-          <section className="photo-placeholder compact-section">
-            <button type="button" disabled><span>＋</span> Upload photos</button>
-            <p>Photo uploads are reserved for the next media pass.</p>
-          </section>
         </div>
 
         <div className="studio-modal-sidecol">
@@ -1400,22 +1803,93 @@ function DateRangePopover({ popoverRef, draft, cursor, setCursor, phase, onClose
   </div>;
 }
 
-function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent }) {
+function AutocompleteField({ label, value, onChange, matches, onChoose, compact, prominent, resetToken = '' }) {
   const [hideSuggestions, setHideSuggestions] = useState(true);
   const [userEdited, setUserEdited] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const rootRef = useRef(null);
+  const listIdRef = useRef(`autocomplete-${Math.random().toString(36).slice(2)}`);
+  const visibleMatches = hideSuggestions || !userEdited ? [] : (matches || []).slice(0, 10);
+
   useEffect(() => {
-    // Prefilled edit-mode values should not open suggestion popups. Suggestions
-    // only appear after the user actively types in this field.
+    if (userEdited) return;
+    setHideSuggestions(true);
+    setActiveIndex(-1);
+  }, [label, resetToken, userEdited]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setHideSuggestions(true);
+        setActiveIndex(-1);
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, []);
+
+  function choose(option) {
+    if (!option || option._source === 'loading') return;
     setHideSuggestions(true);
     setUserEdited(false);
-  }, [label]);
-  const visibleMatches = hideSuggestions || !userEdited ? [] : matches;
-  return <label className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
-    <input value={value} onFocus={() => { if (!userEdited) setHideSuggestions(true); }} onChange={e => { setUserEdited(true); setHideSuggestions(false); onChange(e.target.value); }} placeholder="Start typing a destination" />
-    {!!value && visibleMatches.length > 0 && <div className="autocomplete-menu autocomplete-menu--cities">
-      {visibleMatches.slice(0, 10).map(l => <button type="button" key={`${l._source || 'saved'}-${l.id}`} className={`autocomplete-option autocomplete-option--${l._source || 'saved'}`} onClick={() => { if (l._source === 'loading') return; setHideSuggestions(true); setUserEdited(false); onChoose(l); }}>
-        <strong>{suggestionDisplayText(l)}</strong>
-        <em>{l._label || 'Saved'}</em>
+    setActiveIndex(-1);
+    onChoose(option);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'Escape') {
+      setHideSuggestions(true);
+      setActiveIndex(-1);
+      return;
+    }
+    if (!visibleMatches.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex(index => Math.min(visibleMatches.length - 1, index + 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex(index => Math.max(0, index <= 0 ? visibleMatches.length - 1 : index - 1));
+    } else if (event.key === 'Enter' && activeIndex >= 0) {
+      event.preventDefault();
+      choose(visibleMatches[activeIndex]);
+    }
+  }
+
+  return <label ref={rootRef} className={`autocomplete-field ${compact ? 'compact' : ''} ${prominent ? 'is-prominent' : ''}`}>{label}
+    <input
+      value={value}
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={visibleMatches.length > 0}
+      aria-controls={visibleMatches.length ? listIdRef.current : undefined}
+      aria-activedescendant={activeIndex >= 0 ? `${listIdRef.current}-${activeIndex}` : undefined}
+      onFocus={() => { if (!userEdited) setHideSuggestions(true); }}
+      onBlur={() => window.setTimeout(() => {
+        setHideSuggestions(true);
+        setActiveIndex(-1);
+      }, 120)}
+      onKeyDown={handleKeyDown}
+      onChange={event => {
+        setUserEdited(true);
+        setHideSuggestions(false);
+        setActiveIndex(-1);
+        onChange(event.target.value);
+      }}
+      placeholder="Start typing a destination"
+    />
+    {!!value && visibleMatches.length > 0 && <div id={listIdRef.current} role="listbox" className="autocomplete-menu autocomplete-menu--cities">
+      {visibleMatches.map((option, index) => <button
+        type="button"
+        role="option"
+        aria-selected={index === activeIndex}
+        id={`${listIdRef.current}-${index}`}
+        key={`${option._source || 'saved'}-${option.id}`}
+        className={`autocomplete-option autocomplete-option--${option._source || 'saved'} ${index === activeIndex ? 'is-active' : ''}`}
+        onPointerDown={event => event.preventDefault()}
+        onClick={() => choose(option)}
+      >
+        <strong>{suggestionDisplayText(option)}</strong>
+        <em>{option._label || 'Saved'}</em>
       </button>)}
     </div>}
   </label>;
@@ -1430,95 +1904,141 @@ function hasAdjacentDuplicateRoutePoint(route = []) {
 }
 
 function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
-  if (!draft.year || !draft.month) throw new Error('Year and month are required before saving.');
-  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) throw new Error('Select at least one Hopper or Guest Hopper before saving.');
-  let nextLocations = locations;
-  let toLocationId = draft.toLocationId;
-  if (!toLocationId && draft.toCity) {
-    const result = ensureLocationForCity(nextLocations, draft.toCity, draft.toLocationText);
-    nextLocations = result.locations;
-    toLocationId = result.id;
+  if (!validDateParts(draft.year, draft.month, draft.day)) {
+    throw new Error('Choose a valid start date. The selected day must exist in the selected month and year.');
   }
-  if (!toLocationId && draft.toLocationText) {
-    const found = findLocationByText(nextLocations, draft.toLocationText);
-    if (found) toLocationId = found.id;
-    else {
-      const loc = createPlaceholderLocation(draft.toLocationText);
-      nextLocations = [...nextLocations, loc];
-      toLocationId = loc.id;
+  const hasAnyEndDate = Boolean(draft.endYear || draft.endMonth || draft.endDay);
+  if (hasAnyEndDate) {
+    if (!validDateParts(draft.endYear, draft.endMonth, draft.endDay)) {
+      throw new Error('Choose a complete and valid end date.');
+    }
+    if (compareDateParts(
+      { year: draft.endYear, month: draft.endMonth, day: draft.endDay || 1 },
+      { year: draft.year, month: draft.month, day: draft.day || 1 }
+    ) < 0) {
+      throw new Error('The end date cannot be before the start date.');
     }
   }
-  if (!toLocationId) throw new Error('Choose or enter a destination.');
-
-  let fromLocationId = draft.overrideFrom ? draft.fromLocationId : null;
-  if (draft.overrideFrom && !fromLocationId && draft.fromCity) {
-    const result = ensureLocationForCity(nextLocations, draft.fromCity, draft.fromLocationText);
-    nextLocations = result.locations;
-    fromLocationId = result.id;
-  }
-  if (draft.overrideFrom && !fromLocationId && draft.fromLocationText) {
-    const found = findLocationByText(nextLocations, draft.fromLocationText);
-    if (found) fromLocationId = found.id;
-    else {
-      const loc = createPlaceholderLocation(draft.fromLocationText);
-      nextLocations = [...nextLocations, loc];
-      fromLocationId = loc.id;
-    }
+  if (!draft.travelers?.length && !(draft.guestHoppers || []).length) {
+    throw new Error('Select at least one Hopper or Guest Hopper before saving.');
   }
 
-  const extraLegs = (draft.extraLegs || []).filter(l => l.locationId || l.locationText);
-  const route = [];
-  if (extraLegs.length) {
-    const homeId = fromLocationId || activeHomeBaseId(homeBases, draft);
-    route.push({ locationId: homeId, modeFromPrevious: null });
-    route.push({ locationId: toLocationId, modeFromPrevious: draft.mode || 'plane' });
-    for (const leg of extraLegs) {
-      let id = leg.locationId;
-      if (!id && leg.city) {
-        const result = ensureLocationForCity(nextLocations, leg.city, leg.locationText);
-        nextLocations = result.locations;
-        id = result.id;
-      }
-      if (!id && leg.locationText) {
-        const found = findLocationByText(nextLocations, leg.locationText);
-        if (found) id = found.id;
-        else {
-          const loc = createPlaceholderLocation(leg.locationText);
-          nextLocations = [...nextLocations, loc];
-          id = loc.id;
-        }
-      }
-      if (id) route.push({ locationId: id, modeFromPrevious: leg.modeFromPrevious || draft.mode || 'plane' });
+  let nextLocations = [...(locations || [])];
+
+  const resolveSelectedLocation = (locationId, city, text, fieldLabel, custom = null) => {
+    if (custom?.enabled) {
+      const customResult = ensureCustomCoordinateLocation(nextLocations, custom, fieldLabel);
+      nextLocations = customResult.locations;
+      return customResult.id;
     }
-    if (draft.roundTrip && homeId && route[route.length - 1]?.locationId !== homeId) {
-      const returnMode = draft.returnMode || draft.mode || 'plane';
-      route.push({ locationId: homeId, modeFromPrevious: returnMode });
+    if (locationId) {
+      const existing = nextLocations.find(location => location.id === locationId);
+      if (!isResolvedLocation(existing)) throw new Error(`${fieldLabel} does not have valid map coordinates.`);
+      return existing.id;
     }
+    if (city) {
+      const result = ensureLocationForCity(nextLocations, city, text);
+      nextLocations = result.locations;
+      const added = nextLocations.find(location => location.id === result.id);
+      if (!isResolvedLocation(added)) throw new Error(`${fieldLabel} could not be resolved to valid coordinates.`);
+      return result.id;
+    }
+    const exact = findLocationByText(nextLocations, text);
+    if (exact && isResolvedLocation(exact)) return exact.id;
+    if (String(text || '').trim()) {
+      throw new Error(`${fieldLabel} is not resolved. Select a city from the suggestions or choose a saved location before saving.`);
+    }
+    throw new Error(`Choose ${fieldLabel.toLowerCase()} before saving.`);
+  };
+
+  const toLocationId = resolveSelectedLocation(
+    draft.toLocationId,
+    draft.toCity,
+    draft.toLocationText,
+    'Destination',
+    {
+      enabled: draft.toCustomEnabled,
+      name: draft.toCustomName,
+      lat: draft.toCustomLat,
+      lon: draft.toCustomLon
+    }
+  );
+  const fromLocationId = draft.overrideFrom
+    ? resolveSelectedLocation(draft.fromLocationId, draft.fromCity, draft.fromLocationText, 'Start location')
+    : null;
+  const homeId = fromLocationId || activeHomeBaseId(homeBases, draft);
+  const home = nextLocations.find(location => location.id === homeId);
+  if (!homeId || !isResolvedLocation(home)) {
+    throw new Error('The start location could not be derived from the selected date. Choose an override start location.');
+  }
+
+  const route = [
+    {
+      pointId: draft.startPointId || createStableId('point'),
+      locationId: homeId,
+      modeFromPrevious: null
+    },
+    {
+      pointId: draft.mainPointId || createStableId('point'),
+      legId: draft.mainLegId || createStableId('leg'),
+      locationId: toLocationId,
+      modeFromPrevious: draft.mode || 'plane'
+    }
+  ];
+
+  const extraLegs = (draft.extraLegs || []).filter(leg => leg.locationId || leg.locationText || leg.city);
+  for (let index = 0; index < extraLegs.length; index++) {
+    const leg = extraLegs[index];
+    const locationId = resolveSelectedLocation(leg.locationId, leg.city, leg.locationText, `Leg ${index + 2} destination`);
+    route.push({
+      pointId: leg.pointId || createStableId('point'),
+      legId: leg.legId || createStableId('leg'),
+      locationId,
+      modeFromPrevious: leg.modeFromPrevious || draft.mode || 'plane'
+    });
+  }
+
+  if (draft.roundTrip && route[route.length - 1]?.locationId !== homeId) {
+    route.push({
+      pointId: draft.returnPointId || createStableId('point'),
+      legId: draft.returnLegId || createStableId('leg'),
+      locationId: homeId,
+      modeFromPrevious: draft.returnMode || draft.mode || 'plane'
+    });
   }
 
   const compactRoute = compactRoutePoints(route);
-  if (hasAdjacentDuplicateRoutePoint(route)) {
-    throw new Error('This route includes the same location twice in a row. Please remove the duplicate leg before saving.');
+  if (hasAdjacentDuplicateRoutePoint(compactRoute)) {
+    throw new Error('This route includes the same location twice in a row. Remove the duplicate leg before saving.');
   }
-  const routeIdsToCheck = compactRoute.length ? compactRoute.map(r => r.locationId) : [fromLocationId, toLocationId].filter(Boolean);
-  const missingRouteIds = routeIdsToCheck.filter(id => !nextLocations.some(l => l.id === id));
-  if (missingRouteIds.length) throw new Error(`Route contains location IDs that are missing from locations.json: ${Array.from(new Set(missingRouteIds)).join(', ')}`);
+  const missingRouteIds = compactRoute
+    .map(point => point.locationId)
+    .filter(id => !nextLocations.some(location => location.id === id));
+  if (missingRouteIds.length) {
+    throw new Error(`Route contains location IDs missing from locations.json: ${Array.from(new Set(missingRouteIds)).join(', ')}`);
+  }
 
   const count = trips.filter(t => Number(t.year) === Number(draft.year)).length + 1;
   const travelerCount = ((draft.travelers || []).length + (draft.guestHoppers || []).length);
   const finalTrailStyle = draft.trailStyle || (travelerCount >= 2 ? 'ribbon' : 'solid');
-  const derivedTrailColorMode = finalTrailStyle === 'solid' && activeDraftSquad(draft, hopperData || {}) && !((draft.guestHoppers || []).length) ? 'squad' : 'members';
-  const label = draft.label || displayNameFromLocation(nextLocations.find(l => l.id === toLocationId)) || draft.toLocationText || 'Trip';
-  const clean = {
+  const derivedTrailColorMode = finalTrailStyle === 'solid'
+    && activeDraftSquad(draft, hopperData || {})
+    && !((draft.guestHoppers || []).length)
+    ? 'squad'
+    : 'members';
+  const label = draft.label || displayNameFromLocation(nextLocations.find(location => location.id === toLocationId)) || draft.toLocationText || 'Trip';
+
+  const clean = normalizeTripForV61({
     id: draft.id || uniqueTripId(trips),
+    routeModelVersion: 2,
     year: Number(draft.year),
-    month: draft.month ? Number(draft.month) : null,
+    month: Number(draft.month),
     day: draft.day ? Number(draft.day) : null,
-    endYear: draft.endYear ? Number(draft.endYear) : null,
-    endMonth: draft.endMonth ? Number(draft.endMonth) : null,
-    endDay: draft.endDay ? Number(draft.endDay) : null,
+    endYear: hasAnyEndDate ? Number(draft.endYear) : null,
+    endMonth: hasAnyEndDate ? Number(draft.endMonth) : null,
+    endDay: hasAnyEndDate && draft.endDay ? Number(draft.endDay) : null,
     displayDate: formatDisplayDate(draft),
-    displayEndDate: formatEndDisplayDate(draft),
+    displayEndDate: hasAnyEndDate ? formatEndDisplayDate(draft) : '',
     sortKey: buildSortKey(draft, count),
     label,
     travelers: draft.travelers || [],
@@ -1526,14 +2046,15 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     mode: draft.mode || 'plane',
     roundTrip: !!draft.roundTrip,
     returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
-    fromLocationId,
+    fromLocationId: draft.overrideFrom ? homeId : null,
     toLocationId,
     route: compactRoute,
     notes: draft.notes || '',
     occasion: draft.occasion || '',
     trailStyle: finalTrailStyle,
     trailColorMode: derivedTrailColorMode
-  };
+  }, homeBases);
+
   return { trip: clean, nextLocations };
 }
 
@@ -1560,7 +2081,7 @@ function randomTripId() {
 function buildYearOptions(locs, currentYear) {
   const thisYear = new Date().getFullYear();
   const years = [];
-  for (let y = 2012; y <= thisYear; y++) years.push(y);
+  for (let y = 2012; y <= thisYear + 5; y++) years.push(y);
   if (currentYear && !years.includes(Number(currentYear))) years.push(Number(currentYear));
   return years.sort((a,b) => b - a);
 }
@@ -1883,7 +2404,6 @@ function locationSuggestions(locs, q, cityDb = [], cityDbLoaded = false, cityDbL
     .filter(l => !existingKeys.has(normalizeSearchText(`${l.name}|${regionShort(l.region)}|${l.country || l.countryCode || ''}`)))
     .sort((a,b) => b._score - a._score)
     .slice(0, 7);
-  if (!saved.length && !cities.length && needle.length >= 3) return [{ id: `custom-${slug(q)}`, name: String(q).trim(), region: '', country: '', _source: 'custom', _label: 'Custom' }];
   return [...saved, ...cities].slice(0, 10);
 }
 function cityField(city, key, fallback = '') {
@@ -1932,12 +2452,15 @@ function autocompleteMeta(l) {
 }
 function findLocationByText(locs, text) {
   const q = normalizeSearchText(text);
-  return locs.find(l => [l.id, l.name, displayLocation(l)].some(v => normalizeSearchText(v) === q)) || locs.find(l => normalizeSearchText(displayLocation(l)).includes(q) || q.includes(normalizeSearchText(l.name)));
+  if (!q) return null;
+  return (locs || []).find(location => [location.id, location.name, displayLocation(location)]
+    .some(value => normalizeSearchText(value) === q)) || null;
 }
 function ensureLocationForCity(locations, city, fallbackText = '') {
   const option = citySuggestionToOption(city);
   const geonameId = Number(cityField(city, 'id'));
-  const existing = findLocationByText(locations, displayLocation(option)) || locations.find(l => l.geonameId && Number(l.geonameId) === geonameId);
+  const existingByGeoname = (locations || []).find(location => location.geonameId && Number(location.geonameId) === geonameId);
+  const existing = existingByGeoname || findLocationByText(locations, displayLocation(option));
   if (existing) return { id: existing.id, locations };
   const cc = cityField(city, 'countryCode');
   const country = countryNameFromCode(cc);
@@ -1948,8 +2471,8 @@ function ensureLocationForCity(locations, city, fallbackText = '') {
     country,
     countryCode: cc || '',
     continent: '',
-    lat: Number(cityField(city, 'lat', 0)) || 0,
-    lon: Number(cityField(city, 'lon', 0)) || 0,
+    lat: Number(cityField(city, 'lat')),
+    lon: Number(cityField(city, 'lon')),
     geonameId,
     population: Number(cityField(city, 'population', 0)) || 0,
     timezone: cityField(city, 'timezone') || ''
@@ -1966,7 +2489,7 @@ function cityLocationId(city, fallbackText = '') {
   const region = String(cityField(city, 'region') || '').toLowerCase();
   return slug([cityField(city, 'asciiName') || cityField(city, 'name') || fallbackText, region || cc].filter(Boolean).join('-'));
 }
-function createPlaceholderLocation(text) { const name = String(text || 'New destination').split(',')[0].trim(); return { id: slug(text || name), name, region: '', country: '', continent: '', lat: 0, lon: 0, needsGeocoding: true }; }function regionShort(region) { const map = { California:'CA', Florida:'FL', Georgia:'GA', Illinois:'IL', 'New York':'NY', Texas:'TX', Nevada:'NV', Arizona:'AZ', Colorado:'CO', Tennessee:'TN', Kentucky:'KY', Washington:'WA', Massachusetts:'MA', Michigan:'MI', 'North Carolina':'NC', 'South Carolina':'SC', Pennsylvania:'PA', Maryland:'MD', Hawaii:'HI' }; return map[region] || region; }
+function regionShort(region) { const map = { California:'CA', Florida:'FL', Georgia:'GA', Illinois:'IL', 'New York':'NY', Texas:'TX', Nevada:'NV', Arizona:'AZ', Colorado:'CO', Tennessee:'TN', Kentucky:'KY', Washington:'WA', Massachusetts:'MA', Michigan:'MI', 'North Carolina':'NC', 'South Carolina':'SC', Pennsylvania:'PA', Maryland:'MD', Hawaii:'HI' }; return map[region] || region; }
 function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || `location-${Date.now()}`; }
 function githubHeaders(token) { return { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; }
 function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

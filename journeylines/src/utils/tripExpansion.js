@@ -1,4 +1,5 @@
 import { milesBetween } from './distanceUtils.js';
+import { normalizeTripForV61 } from './tripModel.js';
 
 export function activeHomeBase(homeBases, trip) {
   const key = `${trip.year}-${String(trip.month || 1).padStart(2, '0')}`;
@@ -18,32 +19,39 @@ export function getTravelerKey(trip, hopSquads = []) {
 }
 
 export function expandTrip(trip, locationsById, homeBases) {
-  let route = [];
-  if (trip.route?.length) {
-    route = trip.route
-      .map((r, idx) => normalizeRoutePoint(locationsById[r.locationId], idx === 0 ? null : r.modeFromPrevious || trip.mode, trip, r.locationId))
-      .filter(Boolean);
-  } else {
-    const homeId = trip.fromLocationId || activeHomeBase(homeBases, trip)?.locationId;
-    const home = normalizeRoutePoint(locationsById[homeId], null, trip, homeId);
-    const to = normalizeRoutePoint(locationsById[trip.toLocationId], trip.mode, trip, trip.toLocationId);
-    route = [home, to].filter(Boolean);
-    if (trip.roundTrip && home) route.push({ ...home, modeFromPrevious: trip.returnMode || trip.mode });
-  }
+  const normalizedTrip = normalizeTripForV61(trip, homeBases);
+  const route = (normalizedTrip.route || [])
+    .map((point, index) => normalizeRoutePoint(
+      locationsById[point.locationId],
+      index === 0 ? null : point.modeFromPrevious || normalizedTrip.mode,
+      normalizedTrip,
+      point.locationId,
+      point
+    ))
+    .filter(Boolean);
+
   const legs = [];
   for (let idx = 1; idx < route.length; idx++) {
     const from = route[idx - 1];
     const to = route[idx];
     if (!isValidLocationForLeg(from) || !isValidLocationForLeg(to)) {
-      warnInvalidLeg(trip, from, to);
+      warnInvalidLeg(normalizedTrip, from, to);
       continue;
     }
-    legs.push({ from, to, mode: to.modeFromPrevious || trip.mode || 'plane', miles: milesBetween(from, to) });
+    const legId = to.legId || normalizedTrip.route?.[idx]?.legId || `${normalizedTrip.id}-leg-${idx}`;
+    legs.push({
+      id: legId,
+      legId,
+      from,
+      to,
+      mode: to.modeFromPrevious || normalizedTrip.mode || 'plane',
+      miles: milesBetween(from, to)
+    });
   }
-  return { ...trip, route, legs };
+  return { ...normalizedTrip, route, legs };
 }
 
-function normalizeRoutePoint(location, modeFromPrevious, trip, locationId) {
+function normalizeRoutePoint(location, modeFromPrevious, trip, locationId, routePoint = {}) {
   if (!location) {
     warnInvalidLocation(trip, locationId);
     return null;
@@ -54,7 +62,7 @@ function normalizeRoutePoint(location, modeFromPrevious, trip, locationId) {
     warnInvalidLocation(trip, locationId || location.id);
     return null;
   }
-  return { ...location, lat, lon, modeFromPrevious };
+  return { ...location, lat, lon, modeFromPrevious, pointId: routePoint.pointId || null, legId: routePoint.legId || null };
 }
 
 function isValidLocationForLeg(location) {
@@ -129,7 +137,9 @@ export function flattenLegs(trips, locationsById, homeBases) {
     try {
       const expanded = expandTrip(trip, locationsById, homeBases);
       expanded.legs.forEach((leg, legIndex) => {
-        if (isValidLocationForLeg(leg?.from) && isValidLocationForLeg(leg?.to)) entries.push({ trip, leg, legIndex });
+        if (isValidLocationForLeg(leg?.from) && isValidLocationForLeg(leg?.to)) {
+          entries.push({ trip: expanded, leg, legId: leg.legId || leg.id, legIndex });
+        }
       });
     } catch (err) {
       if (typeof console !== 'undefined') console.warn('[GlobeHoppers] Skipping trip that could not be expanded.', { tripId: trip?.id, error: err });

@@ -11,7 +11,8 @@ class PlaybackEngine {
       frameMs: 16.7,
       quality: 'high',
       timestamp: 0,
-      metadata: null
+      metadata: null,
+      generation: 0
     };
     this.raf = 0;
     this.startTime = 0;
@@ -23,14 +24,16 @@ class PlaybackEngine {
   configure({ duration = 1, settle = 0, progress = 0, metadata = null, onComplete = null } = {}) {
     const wasPlaying = this.state.playing;
     const p = Math.max(0, Number(progress) || 0);
+    const generation = Number(this.state.generation || 0) + 1;
     this.state = {
       ...this.state,
       duration: Math.max(1, Number(duration) || 1),
       settle: Math.max(0, Number(settle) || 0),
-      progress: p,
+      progress: Math.max(0, Math.min(1, p)),
       rawProgress: p,
       elapsed: p * Math.max(1, Number(duration) || 1),
-      metadata
+      metadata: { ...(metadata || {}), generation },
+      generation
     };
     this.onComplete = onComplete;
     if (wasPlaying) {
@@ -38,6 +41,7 @@ class PlaybackEngine {
       this.ensureLoop();
     }
     this.notify(performance.now());
+    return generation;
   }
 
   play() {
@@ -112,7 +116,14 @@ class PlaybackEngine {
       this.state.playing = false;
       this.notify(ts);
       const callback = this.onComplete;
-      if (callback) queueMicrotask(() => callback(this.state));
+      const generation = this.state.generation;
+      const completionState = { ...this.state };
+      if (callback) {
+        queueMicrotask(() => {
+          if (this.state.generation !== generation) return;
+          callback(completionState);
+        });
+      }
       return;
     }
     this.ensureLoop();
