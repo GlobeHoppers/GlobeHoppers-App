@@ -2,7 +2,7 @@ import generatedRoutes from '../data/generatedRoutes.json';
 import { flattenLegs } from './tripExpansion.js';
 import { ROUTING_VERSION, routingMemoryGeometry, routingMemoryResult } from './routingClient.js';
 
-export const ROUTE_DETAILS_VERSION = '7.0';
+export const ROUTE_DETAILS_VERSION = '7.1';
 export const ROUTE_DETAILS_CACHE_VERSION = ROUTING_VERSION;
 
 export function routeDetailKeyForEntry(entry) {
@@ -289,7 +289,7 @@ export function buildRouteDetailsPayload(trips = [], locations = [], homeBases =
     source: 'globe-hoppers-website',
     cacheVersion: ROUTE_DETAILS_CACHE_VERSION,
     routingVersion: ROUTE_DETAILS_CACHE_VERSION,
-    notes: 'Generated route metadata for v7 multimodal route review. Saved geometry and validation are reused before background routing.',
+    notes: 'Generated route metadata for v7.1 automatic multimodal routing. Saved geometry and validation are reused before background routing.',
     routes
   };
 }

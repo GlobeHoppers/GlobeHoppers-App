@@ -1,6 +1,19 @@
 # GlobeHoppers Routing
 
-GlobeHoppers v7 uses the multimodal routing pipeline described in [`MULTIMODAL-v7.md`](MULTIMODAL-v7.md). Cars prefer Mapbox Directions when configured, trains use a local Natural Earth rail graph, and boats use the navigable-water graph. Every surface route must pass Route Review and be approved before its Hop can be saved.
+GlobeHoppers v7.1 automatically calculates and validates surface routes without requiring user approval. Driving routes use Valhalla with OpenStreetMap data as the primary live provider. Mapbox Directions is the secondary live fallback, the existing Mapbox build cache is retained as a later fallback, and Natural Earth remains the final local road approximation. Train and boat routing continue through the local worker graphs.
+
+## v7.1 driving route priority
+
+1. Manual or already-saved detailed route geometry handled by the trip/routeDetails layer
+2. Current v7.1 in-memory or IndexedDB route cache
+3. Valhalla using OpenStreetMap data
+4. Mapbox Directions when a valid runtime token is configured
+5. Existing generated Mapbox build cache
+6. Local Natural Earth road approximation
+
+Route calculation is automatic. The Add/Edit Hop interface exposes optional diagnostics and recalculation controls, but no approval gate. Saving is blocked only when endpoint data is incomplete or all routing paths fail validation.
+
+See [`journeylines/VALHALLA-v7.1.md`](journeylines/VALHALLA-v7.1.md) and [`journeylines/MULTIMODAL-v7.md`](journeylines/MULTIMODAL-v7.md) for implementation details.
 
 ## Legacy routing implementation notes
 

@@ -1,3 +1,18 @@
+GlobeHoppers v7.1 — Automatic Surface Routing with Valhalla and OpenStreetMap
+
+- Removed the required route-approval step for car, train, and boat Hops.
+- Surface routes are calculated and validated automatically; saving is blocked only when endpoints are incomplete or no safe geometry can be generated.
+- Valhalla with OpenStreetMap data is now the primary live driving-route provider.
+- Mapbox Directions is a secondary fallback, followed by the existing stored Mapbox build cache and the local Natural Earth approximation.
+- Current v7.1 browser-cached routes are reused, while older v7.0 routing caches are invalidated by the routing-version change.
+- Added sequential Valhalla endpoint failover, bounded request timeouts, response validation, endpoint-snap checks, stale-request protection, and a temporary provider circuit breaker after failures.
+- Successful routes remain cached for playback and repository persistence. Manual and already-saved detailed geometry continue to take precedence outside the automatic generation pipeline.
+- Route diagnostics remain available in a compact, optional details panel. Approximate routes display warnings without requiring user approval.
+- Provider travel duration is used when available, with mode-based estimates retained as the fallback.
+- Added v7.1 unit, provider-fallback, source-order, UI-integrity, and production-build verification.
+
+---
+
 GlobeHoppers v7.0 — Multimodal Journeys and Route Review
 
 - Added a required Route Review workflow for road, rail, and water legs before a Hop can be saved.

@@ -43,8 +43,7 @@ const emptyRouteReview = () => ({
   signature: '',
   status: 'idle',
   results: [],
-  approved: false,
-  approvedAt: null,
+  checkedAt: null,
   error: null,
   startedAt: null
 });
@@ -240,7 +239,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     if (!modal) return;
     if (!draftSurfaceReviewLegs.length) {
       routeReviewGenerationRef.current += 1;
-      if (routeReview.status !== 'idle' || routeReview.signature || routeReview.results.length || routeReview.approved) {
+      if (routeReview.status !== 'idle' || routeReview.signature || routeReview.results.length) {
         setRouteReview(emptyRouteReview());
       }
       return;
@@ -250,16 +249,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       setRouteReview({
         ...emptyRouteReview(),
         status: 'stale',
-        error: 'The route changed. Recalculate and approve the updated route before saving.'
+        error: 'The route changed. GlobeHoppers will recalculate it automatically before saving.'
       });
     }
-  }, [modal, currentRouteReviewSignature, draftSurfaceReviewLegs.length, routeReview.signature, routeReview.status, routeReview.results.length, routeReview.approved]);
+  }, [modal, currentRouteReviewSignature, draftSurfaceReviewLegs.length, routeReview.signature, routeReview.status, routeReview.results.length]);
 
   useEffect(() => {
     if (!modal || !draftSurfaceReviewLegs.length || draftSurfaceReviewLegs.length > 4) return;
     if (!currentRouteReviewSignature || !draftSurfaceReviewLegs.every(reviewLegHasValidEndpoints)) return;
     if (routeReview.signature === currentRouteReviewSignature && ['working', 'ready', 'error'].includes(routeReview.status)) return;
-    if (routeReview.approved && routeReview.signature === currentRouteReviewSignature) return;
     const timer = window.setTimeout(() => reviewDraftRoutes(false), 700);
     return () => window.clearTimeout(timer);
   // The route signature is the stable dependency; reviewDraftRoutes intentionally reads the current draft snapshot.
@@ -270,17 +268,19 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const legs = buildDraftReviewLegs(draft, locById, locs, homeBases).filter(leg => isSurfaceTravelMode(leg.mode));
     const signature = routeReviewSignature(legs);
     if (!legs.length) {
-      setRouteReview(emptyRouteReview());
-      return;
+      const next = emptyRouteReview();
+      setRouteReview(next);
+      return next;
     }
     const incomplete = legs.find(leg => !reviewLegHasValidEndpoints(leg));
     if (incomplete) {
-      setRouteReview({
+      const next = {
         ...emptyRouteReview(),
         status: 'incomplete',
-        error: `Choose valid locations for ${incomplete.from?.name || 'the origin'} and ${incomplete.to?.name || 'the destination'} before route review.`
-      });
-      return;
+        error: `Choose valid locations for ${incomplete.from?.name || 'the origin'} and ${incomplete.to?.name || 'the destination'} before routing.`
+      };
+      setRouteReview(next);
+      return next;
     }
 
     const generation = ++routeReviewGenerationRef.current;
@@ -288,8 +288,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       signature,
       status: 'working',
       results: [],
-      approved: false,
-      approvedAt: null,
+      checkedAt: null,
       error: null,
       startedAt: Date.now()
     });
@@ -303,7 +302,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         const leg = legs[index];
         try {
           const routed = await routeLegWithDiagnostics(leg, {
-            reason: 'Hop route review',
+            reason: 'automatic Hop route check',
             forceRefresh,
             preferOnline: true
           });
@@ -328,7 +327,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
             routeMiles: 0,
             estimatedMinutes: 0,
             source: 'routing-error',
-            provider: 'GlobeHoppers routing worker',
+            provider: 'GlobeHoppers routing system',
             warnings: routeEndpointContextWarnings(leg),
             errors: [error?.message || 'The route could not be calculated.'],
             confidence: 'error'
@@ -337,29 +336,35 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       }
     }));
 
-    if (generation !== routeReviewGenerationRef.current) return;
     const failed = results.filter(result => (result?.errors || []).length || !result?.geometry?.length);
-    setRouteReview({
+    const next = {
       signature,
       status: failed.length ? 'error' : 'ready',
       results,
-      approved: false,
-      approvedAt: null,
-      error: failed.length ? `${failed.length} route${failed.length === 1 ? '' : 's'} need attention before this Hop can be approved.` : null,
+      checkedAt: new Date().toISOString(),
+      error: failed.length ? `${failed.length} route${failed.length === 1 ? '' : 's'} could not be generated safely. Correct the endpoints or try Recalculate.` : null,
       startedAt: null
-    });
+    };
+    if (generation === routeReviewGenerationRef.current) setRouteReview(next);
+    return generation === routeReviewGenerationRef.current ? next : null;
   }
 
-  function approveDraftRoutes() {
-    const complete = routeReview.signature === currentRouteReviewSignature
-      && routeReview.results.length === draftSurfaceReviewLegs.length
-      && routeReview.results.every(result => result?.geometry?.length > 1 && !(result?.errors || []).length);
-    if (!complete) {
-      setFormError('Recalculate the route and resolve any routing errors before approving it.');
-      return;
-    }
-    setRouteReview(current => ({ ...current, approved: true, approvedAt: new Date().toISOString(), status: 'ready' }));
+  async function ensureDraftRoutesForSave() {
+    const legs = buildDraftReviewLegs(draft, locById, locs, homeBases).filter(leg => isSurfaceTravelMode(leg.mode));
+    if (!legs.length) return emptyRouteReview();
+    const signature = routeReviewSignature(legs);
+    const incomplete = legs.find(leg => !reviewLegHasValidEndpoints(leg));
+    if (incomplete) throw new Error('Choose valid endpoints for every road, rail, and boat leg before saving.');
+
+    const currentIsUsable = routeReview.signature === signature
+      && routeReview.status === 'ready'
+      && routeReview.results.length === legs.length
+      && routeReview.results.every(result => !(result?.errors || []).length && (result?.geometry?.length > 1 || result?.cachedRoute));
+    const resolved = currentIsUsable ? routeReview : await reviewDraftRoutes(routeReview.status === 'error');
+    validateAutomaticRouteCheckForSave(legs, signature, resolved || {});
+    return resolved;
   }
+
 
   useEffect(() => {
     if (!initialEditTripId) return;
@@ -538,7 +543,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     const initialReviewLegs = buildDraftReviewLegs(nextDraft, locById, locs, homeBases).filter(leg => isSurfaceTravelMode(leg.mode));
     const initialReviewSignature = routeReviewSignature(initialReviewLegs);
     const savedReview = normalizedTrip.routeReview;
-    const savedReviewIsCurrent = Boolean(savedReview?.approved && savedReview?.signature === initialReviewSignature);
+    const savedReviewIsCurrent = Boolean(savedReview?.signature === initialReviewSignature && Array.isArray(savedReview?.legs) && savedReview.legs.length === initialReviewLegs.length);
     routeReviewGenerationRef.current += 1;
     setRouteReview(savedReviewIsCurrent ? {
       signature: initialReviewSignature,
@@ -550,10 +555,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         from: initialReviewLegs[index]?.from,
         to: initialReviewLegs[index]?.to,
         geometry: null,
-        cachedApproval: true
+        cachedRoute: true
       })),
-      approved: true,
-      approvedAt: savedReview.approvedAt || null,
+      checkedAt: savedReview.checkedAt || savedReview.approvedAt || null,
       error: null,
       startedAt: null
     } : emptyRouteReview());
@@ -667,7 +671,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
     setBusy(true);
     try {
       validateHopDraftForSave(draft);
-      validateRouteReviewForSave(draftSurfaceReviewLegs, currentRouteReviewSignature, routeReview);
+      const resolvedRouteReview = await ensureDraftRoutesForSave();
       const currentTrips = tripsRef.current || trips;
       const currentLocations = locationsRef.current || locations;
       const currentScroll = studioListRef.current?.scrollTop ?? null;
@@ -678,7 +682,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         .map(entry => entry.leg)
         .filter(leg => isSurfaceTravelMode(leg.mode));
       const persistedReview = persistedSurfaceLegs.length
-        ? createRouteReviewSnapshot(routeReview, routeReviewSignature(persistedSurfaceLegs))
+        ? createRouteReviewSnapshot(resolvedRouteReview, routeReviewSignature(persistedSurfaceLegs))
         : null;
       const normalizedTrip = normalizeTripForV61({ ...trip, routeReview: persistedReview }, homeBases);
       const updatedTrips = editingId
@@ -1311,7 +1315,6 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       routeReviewLegs={draftSurfaceReviewLegs}
       routeReviewSignature={currentRouteReviewSignature}
       onReviewRoutes={reviewDraftRoutes}
-      onApproveRoutes={approveDraftRoutes}
     />}
   </section>;
 }
@@ -1408,18 +1411,18 @@ function validateHopDraftForSave(draft = {}) {
 }
 
 
-function validateRouteReviewForSave(legs = [], signature = '', review = {}) {
+function validateAutomaticRouteCheckForSave(legs = [], signature = '', review = {}) {
   if (!legs.length) return;
   const incomplete = legs.find(leg => !reviewLegHasValidEndpoints(leg));
   if (incomplete) throw new Error('Choose valid endpoints for every road, rail, and boat leg before saving.');
-  if (review.signature !== signature || !review.approved) {
-    throw new Error('Review and approve the road, rail, and water routes before saving this Hop.');
+  if (review.signature !== signature || review.status !== 'ready') {
+    throw new Error('GlobeHoppers could not finish checking the road, rail, and water routes. Try Recalculate and save again.');
   }
   if ((review.results || []).length !== legs.length) {
-    throw new Error('Route review is incomplete. Recalculate all surface legs before saving.');
+    throw new Error('Automatic routing is incomplete. Recalculate all surface legs before saving.');
   }
-  const failed = (review.results || []).find(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedApproval));
-  if (failed) throw new Error('One or more reviewed routes still have errors. Resolve or recalculate them before saving.');
+  const failed = (review.results || []).find(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedRoute));
+  if (failed) throw new Error('One or more routes could not be generated safely. Correct the endpoints or recalculate before saving.');
 }
 
 function buildDraftReviewLegs(draft = {}, locById = {}, locs = [], homeBases = []) {
@@ -1664,7 +1667,7 @@ function BubbleSelect({ label, value, display, options, open, setOpen, onChoose,
   </label>;
 }
 
-function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}, routeReview = emptyRouteReview(), routeReviewLegs = [], routeReviewSignature: currentReviewSignature = '', onReviewRoutes = () => {}, onApproveRoutes = () => {}}) {
+function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBases, onClose, onSave, onDelete, onTravelerToggle, onChooseDestination, onChooseFrom, onChooseExtraLeg, onSetExtraLeg, onAddLeg, onRemoveLeg, onSetReturnMode, onSetPreviewLegMode, addTripNoun = 'Hop', normalizedHoppers, formError, setFormError, cityDb = [], cityDbLoaded = false, cityDbLoading = false, citySearchResults = {}, citySearchLoading = {}, onRequestCitySuggestions = () => {}, routeReview = emptyRouteReview(), routeReviewLegs = [], routeReviewSignature: currentReviewSignature = '', onReviewRoutes = () => {}}) {
   const cityMatchesFor = query => citySearchResults[normalizeSearchText(query)] || [];
   const cityLoadingFor = query => Boolean(citySearchLoading[normalizeSearchText(query)]);
   const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityMatchesFor(draft.toLocationText), true, cityLoadingFor(draft.toLocationText));
@@ -1831,7 +1834,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <div className="studio-modal-top-actions">
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
             <button onClick={onClose}>Cancel</button>
-            <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Reviewing…' : 'Save Hop'}</button>
+            <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Checking routes…' : 'Save Hop'}</button>
           </div>
         </div>
 
@@ -1971,7 +1974,6 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
             legs={routeReviewLegs}
             currentSignature={currentReviewSignature}
             onReview={onReviewRoutes}
-            onApprove={onApproveRoutes}
           />}
           <TrailStylePanel
             draft={draft}
@@ -2062,70 +2064,72 @@ function TripRoutePreview({ draft, locById, locs, startLocation, destination, on
 }
 
 
-function RouteReviewPanel({ review = emptyRouteReview(), legs = [], currentSignature = '', onReview = () => {}, onApprove = () => {} }) {
+function RouteReviewPanel({ review = emptyRouteReview(), legs = [], currentSignature = '', onReview = () => {} }) {
   const isCurrent = Boolean(review.signature && review.signature === currentSignature);
-  const hasErrors = (review.results || []).some(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedApproval));
-  const canApprove = isCurrent && review.status === 'ready' && !hasErrors && review.results.length === legs.length && !review.approved;
-  const statusLabel = review.approved && isCurrent
-    ? 'Approved'
-    : review.status === 'working'
-      ? 'Calculating'
-      : review.status === 'error'
-        ? 'Needs attention'
-        : review.status === 'ready'
-          ? 'Ready to approve'
+  const hasErrors = (review.results || []).some(result => (result?.errors || []).length || (!result?.geometry?.length && !result?.cachedRoute));
+  const hasWarnings = (review.results || []).some(result => (result?.warnings || []).length);
+  const complete = isCurrent && review.status === 'ready' && review.results.length === legs.length && !hasErrors;
+  const statusLabel = review.status === 'working'
+    ? 'Calculating'
+    : hasErrors || review.status === 'error'
+      ? 'Needs attention'
+      : complete && hasWarnings
+        ? 'Approximate'
+        : complete
+          ? 'Ready'
           : review.status === 'stale'
-            ? 'Route changed'
-            : 'Review required';
+            ? 'Updating'
+            : 'Automatic';
 
-  return <section className={`route-review-panel compact-section route-review-panel--${review.approved && isCurrent ? 'approved' : review.status || 'idle'}`} aria-live="polite">
+  return <section className={`route-review-panel compact-section route-review-panel--${complete ? (hasWarnings ? 'warning' : 'ready') : review.status || 'idle'}`} aria-live="polite">
     <div className="route-review-heading">
       <div>
-        <p className="eyebrow">Multimodal route review</p>
+        <p className="eyebrow">Automatic route check</p>
         <h3>Road, rail & water</h3>
       </div>
       <span className="route-review-status">{statusLabel}</span>
     </div>
-    <p className="route-review-intro">GlobeHoppers checks each surface leg before saving so cars follow roads, trains follow rail corridors, and boats stay on navigable water.</p>
+    <p className="route-review-intro">GlobeHoppers calculates and validates surface routes automatically. No approval is required.</p>
 
-    <div className="route-review-list">
-      {legs.map((leg, index) => {
-        const result = (review.results || []).find(row => String(row?.legId || '') === String(leg.legId || leg.id || '')) || review.results?.[index];
-        const warnings = result?.warnings || [];
-        const errors = result?.errors || [];
-        const state = errors.length ? 'error' : warnings.length ? 'warning' : result ? 'ok' : 'pending';
-        return <article className={`route-review-leg route-review-leg--${state}`} key={leg.legId || leg.id || index}>
-          <div className="route-review-leg-head">
-            <span className="route-review-mode">{modeIcon(leg.mode)}</span>
-            <div>
-              <strong>Leg {index + 1}: {leg.from?.name || 'Origin'} → {leg.to?.name || 'Destination'}</strong>
-              <small>{MODE_OPTIONS.find(option => option.id === leg.mode)?.label || leg.mode}</small>
+    <details className="route-review-details" open={hasErrors || review.status === 'error'}>
+      <summary>{review.status === 'working' ? 'Calculating route details…' : `View route details (${legs.length})`}</summary>
+      <div className="route-review-list">
+        {legs.map((leg, index) => {
+          const result = (review.results || []).find(row => String(row?.legId || '') === String(leg.legId || leg.id || '')) || review.results?.[index];
+          const warnings = result?.warnings || [];
+          const errors = result?.errors || [];
+          const state = errors.length ? 'error' : warnings.length ? 'warning' : result ? 'ok' : 'pending';
+          return <article className={`route-review-leg route-review-leg--${state}`} key={leg.legId || leg.id || index}>
+            <div className="route-review-leg-head">
+              <span className="route-review-mode">{modeIcon(leg.mode)}</span>
+              <div>
+                <strong>Leg {index + 1}: {leg.from?.name || 'Origin'} → {leg.to?.name || 'Destination'}</strong>
+                <small>{MODE_OPTIONS.find(option => option.id === leg.mode)?.label || leg.mode}</small>
+              </div>
+              <span className="route-review-confidence">{result?.confidence || 'pending'}</span>
             </div>
-            <span className="route-review-confidence">{result?.confidence || 'pending'}</span>
-          </div>
-          <RouteReviewMiniMap geometry={result?.geometry} mode={leg.mode} />
-          {result && <div className="route-review-metrics">
-            <span><b>{Math.round(Number(result.routeMiles || result.directMiles || 0)).toLocaleString()}</b> mi</span>
-            <span><b>{formatReviewDuration(result.estimatedMinutes)}</b> estimated</span>
-            <span><b>{routeSourceLabel(result.source)}</b></span>
-          </div>}
-          {!!errors.length && <ul className="route-review-messages route-review-messages--error">{errors.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
-          {!!warnings.length && <ul className="route-review-messages route-review-messages--warning">{warnings.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
-          {!result && review.status !== 'working' && <p className="route-review-pending">Route has not been calculated yet.</p>}
-          {!result && review.status === 'working' && <p className="route-review-pending">Calculating this route…</p>}
-        </article>;
-      })}
-    </div>
+            <RouteReviewMiniMap geometry={result?.geometry} mode={leg.mode} />
+            {result && <div className="route-review-metrics">
+              <span><b>{Math.round(Number(result.routeMiles || result.directMiles || 0)).toLocaleString()}</b> mi</span>
+              <span><b>{formatReviewDuration(result.estimatedMinutes)}</b> estimated</span>
+              <span><b>{routeSourceLabel(result.source)}</b></span>
+            </div>}
+            {!!errors.length && <ul className="route-review-messages route-review-messages--error">{errors.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
+            {!!warnings.length && <ul className="route-review-messages route-review-messages--warning">{warnings.map((message, messageIndex) => <li key={`${message}-${messageIndex}`}>{message}</li>)}</ul>}
+            {!result && review.status !== 'working' && <p className="route-review-pending">Route will be calculated automatically before saving.</p>}
+            {!result && review.status === 'working' && <p className="route-review-pending">Calculating this route…</p>}
+          </article>;
+        })}
+      </div>
+    </details>
 
     {review.error && <p className="route-review-error" role="alert">{review.error}</p>}
     <div className="route-review-actions">
       <button type="button" className="secondary" disabled={review.status === 'working'} onClick={() => onReview(Boolean(review.results?.length))}>
-        {review.status === 'working' ? 'Calculating routes…' : review.results?.length ? 'Recalculate' : `Review ${legs.length} route${legs.length === 1 ? '' : 's'}`}
-      </button>
-      <button type="button" className="primary" disabled={!canApprove} onClick={onApprove}>
-        {review.approved && isCurrent ? 'Routes approved' : 'Use reviewed routes'}
+        {review.status === 'working' ? 'Calculating routes…' : review.results?.length ? 'Recalculate' : `Calculate ${legs.length} route${legs.length === 1 ? '' : 's'}`}
       </button>
     </div>
+    <p className="route-review-attribution">Driving routes use OpenStreetMap data through Valhalla when available. Mapbox and local routing are fallbacks.</p>
   </section>;
 }
 

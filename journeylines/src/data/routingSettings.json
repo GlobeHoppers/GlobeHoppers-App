@@ -1,6 +1,18 @@
 {
+  "valhalla": {
+    "enabled": true,
+    "primaryForDriving": true,
+    "endpoints": [
+      "https://valhalla1.openstreetmap.de",
+      "https://valhalla.openstreetmap.de"
+    ],
+    "timeoutMs": 18000,
+    "clientId": "GlobeHoppers",
+    "sendClientHeader": false
+  },
   "mapbox": {
     "enabled": true,
+    "fallbackOnly": true,
     "publicToken": "",
     "profile": "mapbox/driving",
     "geometries": "geojson",
@@ -11,5 +23,5 @@
     "concurrency": 4
   },
   "manualOverridesEnabled": true,
-  "notes": "v2.16 generates Mapbox driving route geometry privately during GitHub Actions and does not publish the Mapbox token."
+  "notes": "v7.1 uses Valhalla with OpenStreetMap data as the primary live driving router. Mapbox is a secondary fallback, and Natural Earth is the final local approximation. Successful route geometry is cached and persisted in routeDetails.json."
 }

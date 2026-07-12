@@ -1,5 +1,5 @@
 let routingData = null;
-let routingVersion = 'multimodal-v7.0';
+let routingVersion = 'multimodal-v7.1';
 let dataVersion = null;
 let landIndex = null;
 let waterNodeIndex = null;

@@ -13,7 +13,7 @@ import baseRouteDetails from '../data/routeDetails.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
-import { putCachedRoute, routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
+import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
@@ -950,44 +950,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     preloadTilesForLeg(nextActive?.leg, map, tilePreloadRef.current, 'next', routedGeometries);
   }, [mapReady, active?.trip?.id, active?.legIndex, nextActive?.trip?.id, nextActive?.legIndex, completedMode, routedGeometries]);
 
-  useEffect(() => {
-    if (!routingSettings?.mapbox?.enabled) return;
-    const token = getMapboxToken();
-    if (!token) { console.info('JourneyLines: browser-side Mapbox fetch disabled. Driving routes should come from generatedRoutes.json created privately during GitHub Actions. Missing routes will use manual/simple fallback geometry.'); return; }
-    const candidates = safeActiveIndex >= 0 ? legs.slice(safeActiveIndex, safeActiveIndex + 4).filter(l => l?.leg?.mode === 'drive' && !getRoutedGeometry(l.leg, routedGeometries)) : [];
-    if (!candidates.length) return;
-    console.info(`JourneyLines: fetching ${candidates.length} Mapbox driving route(s) with cache ${routeCacheVersion()}.`);
-    let cancelled = false;
-    async function fetchOne(item) {
-      const key = routeCacheKey(item.leg);
-      if (cancelled || routeRequestsRef.current.has(key)) return;
-      routeRequestsRef.current.add(key);
-      try {
-        const coords = await fetchMapboxRoute(item.leg, token);
-        if (!cancelled && coords?.length > 1) {
-          setRoutedGeometries(prev => ({ ...prev, [key]: coords }));
-          putCachedRoute(routeCacheKeyV6(item.leg, ROUTING_VERSION), coords, ROUTING_VERSION, { source: 'mapbox' }).catch(() => {});
-          console.info('JourneyLines: Mapbox route cached', key, coords.length, 'points');
-        }
-      } catch (err) {
-        console.warn('JourneyLines Mapbox route fetch failed', key, err);
-      }
-    }
-    async function runQueue() {
-      const max = routingSettings?.mapbox?.maxRoutesPerSession || 120;
-      const queue = candidates.slice(0, max);
-      const concurrency = Math.max(1, Math.min(5, routingSettings?.mapbox?.concurrency || 4));
-      let cursor = 0;
-      await Promise.all(Array.from({ length: concurrency }, async () => {
-        while (!cancelled && cursor < queue.length) {
-          const item = queue[cursor++];
-          await fetchOne(item);
-        }
-      }));
-    }
-    runQueue();
-    return () => { cancelled = true; };
-  }, [legs, routedGeometries, safeActiveIndex]);
 
   function setOverlayVisibility(visible) {
     for (const ref of [vehicleRef, pulseRef, airArcRef]) {
@@ -2569,35 +2531,6 @@ function getManualRoute(leg) {
   const reverse = routes.find(r => r.mode === leg.mode && r.fromLocationId === leg.to.id && r.toLocationId === leg.from.id);
   if (reverse?.coordinates?.length > 1) return [...reverse.coordinates].reverse();
   return null;
-}
-
-function getMapboxToken() {
-  // Published JourneyLines builds do not include the Mapbox token.
-  // GitHub Actions uses the repository secret privately to generate src/data/generatedRoutes.json.
-  // This browser-side fallback is only for local development or manual debugging.
-  return (
-    routingSettings?.mapbox?.publicToken ||
-    localStorage.getItem('journeylines.mapboxToken') ||
-    ''
-  ).trim();
-}
-
-async function fetchMapboxRoute(leg, token) {
-  const profile = routingSettings?.mapbox?.profile || 'mapbox/driving';
-  const coords = `${leg.from.lon},${leg.from.lat};${leg.to.lon},${leg.to.lat}`;
-  const params = new URLSearchParams({
-    alternatives: 'false',
-    geometries: routingSettings?.mapbox?.geometries || 'geojson',
-    overview: routingSettings?.mapbox?.overview || 'full',
-    steps: 'false',
-    access_token: token
-  });
-  const url = `https://api.mapbox.com/directions/v5/${profile}/${coords}?${params.toString()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Mapbox Directions ${res.status}`);
-  const data = await res.json();
-  const geometry = data?.routes?.[0]?.geometry?.coordinates;
-  return Array.isArray(geometry) ? geometry : null;
 }
 
 function loadInitialRouteCache() {

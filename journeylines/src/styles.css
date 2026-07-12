@@ -12582,7 +12582,7 @@ svg text {
 }
 
 
-/* GlobeHoppers v7.0 multimodal route review. */
+/* GlobeHoppers v7.1 automatic multimodal route checking. */
 .route-review-panel {
   display: grid;
   gap: 12px;
@@ -12595,9 +12595,12 @@ svg text {
   background: linear-gradient(145deg, rgba(4, 20, 35, 0.90), rgba(8, 27, 42, 0.78));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
-.route-review-panel--approved {
+.route-review-panel--ready {
   border-color: rgba(89, 235, 151, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 0 22px rgba(49, 214, 132, 0.06);
+}
+.route-review-panel--warning {
+  border-color: rgba(251, 191, 36, 0.38);
 }
 .route-review-panel--error {
   border-color: rgba(255, 115, 115, 0.42);
@@ -12633,10 +12636,41 @@ svg text {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.route-review-panel--approved .route-review-status {
+.route-review-panel--ready .route-review-status {
   background: rgba(67, 224, 139, 0.12);
   border-color: rgba(67, 224, 139, 0.34);
   color: #a7f3c5;
+}
+
+.route-review-panel--warning .route-review-status {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(251, 191, 36, 0.34);
+  color: #fde68a;
+}
+.route-review-details {
+  min-width: 0;
+}
+.route-review-details > summary {
+  cursor: pointer;
+  list-style-position: outside;
+  color: rgba(216, 236, 246, 0.78);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.35;
+  user-select: none;
+}
+.route-review-details > summary:hover,
+.route-review-details > summary:focus-visible {
+  color: rgba(242, 251, 255, 0.96);
+}
+.route-review-details[open] > summary {
+  margin-bottom: 9px;
+}
+.route-review-attribution {
+  margin: -2px 0 0;
+  color: rgba(194, 215, 228, 0.48);
+  font-size: 0.62rem;
+  line-height: 1.38;
 }
 .route-review-intro {
   margin: 0;

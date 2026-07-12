@@ -1,24 +1,31 @@
 import generatedRoutes from '../data/generatedRoutes.json';
+import routingSettings from '../data/routingSettings.json';
 import { enforceRouteCacheLimit, getCachedRoute, putCachedRoute, pruneOldRoutingVersions, routeCacheKeyV6 } from './routeCacheIndexedDb.js';
 import { assessMultimodalRoute, canonicalTravelMode, isSurfaceTravelMode, sanitizeRouteGeometry } from './multimodalRouting.js';
+import { DEFAULT_VALHALLA_ENDPOINTS, DEFAULT_VALHALLA_TIMEOUT_MS, normalizeValhallaEndpoints, requestValhallaDrivingRoute } from './valhallaRouting.js';
 
-export const ROUTING_VERSION = 'multimodal-v7.0';
+export const ROUTING_VERSION = 'multimodal-v7.1';
 const listeners = new Set();
 const pending = new Map();
 const memoryRoutes = new Map();
 const memoryRouteResults = new Map();
 const memoryPlans = new Map();
 const inFlightRoutes = new Map();
+const inFlightDiagnostics = new Map();
 const inFlightPlans = new Map();
 const WORKER_INIT_TIMEOUT_MS = 45000;
 const WORKER_REQUEST_TIMEOUT_MS = 60000;
 const MAPBOX_REQUEST_TIMEOUT_MS = 18000;
+const VALHALLA_REQUEST_TIMEOUT_MS = DEFAULT_VALHALLA_TIMEOUT_MS;
+const VALHALLA_FAILURE_COOLDOWN_MS = 90000;
 
 let worker = null;
 let workerEpoch = 0;
 let nextId = 1;
 let initialized = false;
 let initPromise = null;
+let valhallaFailureCount = 0;
+let valhallaUnavailableUntil = 0;
 let status = {
   state: 'idle',
   label: 'Routing engine idle',
@@ -191,6 +198,10 @@ export async function prewarmRoutingEngine(reason = 'idle') {
 }
 
 export async function routeLegInWorker(leg, options = {}) {
+  if (isSurfaceTravelMode(canonicalTravelMode(leg?.mode))) {
+    const result = await routeLegWithDiagnostics(leg, options);
+    return result?.geometry || null;
+  }
   const result = await routeLegResult(leg, options);
   return result?.geometry || null;
 }
@@ -200,99 +211,208 @@ export async function routeLegWithDiagnostics(leg, options = {}) {
     return assessMultimodalRoute({ leg, geometry: null, source: 'missing-endpoints' });
   }
 
-  const providerWarnings = [];
-  const mode = canonicalTravelMode(leg.mode);
-  if (mode === 'drive' && options.preferOnline !== false) {
-    const token = runtimeMapboxToken();
-    if (token) {
-      try {
-        const online = await requestMapboxDrivingRoute(leg, token);
+  const key = routeCacheKeyV6(leg, ROUTING_VERSION);
+  if (!options.forceRefresh && inFlightDiagnostics.has(key)) return inFlightDiagnostics.get(key);
+
+  const job = (async () => {
+    const mode = canonicalTravelMode(leg.mode);
+    const providerWarnings = [];
+
+    if (!options.forceRefresh) {
+      const cached = await cachedRouteResult(leg);
+      if (cached?.geometry) {
         const assessed = assessMultimodalRoute({
           leg,
-          geometry: online.geometry,
-          source: 'mapbox-directions',
-          provider: 'Mapbox Directions',
-          validation: online.validation
+          geometry: cached.geometry,
+          source: cached.source,
+          provider: cached.provider,
+          validation: cached.validation || {}
         });
         if (!assessed.errors.length) {
-          rememberRouteResult(leg, assessed);
-          try {
-            await cacheAssessedRoute(leg, assessed);
-          } catch (error) {
-            console.warn('[GlobeHoppers] Mapbox route cache write failed; continuing with the reviewed route.', error);
-          }
-          return assessed;
+          const normalized = { ...cached, ...assessed };
+          rememberRouteResult(leg, normalized);
+          return normalized;
         }
-        providerWarnings.push(...assessed.errors.map(message => `Mapbox route was rejected: ${message}`));
-      } catch (error) {
-        providerWarnings.push(`Online road routing was unavailable: ${error?.message || String(error)}`);
       }
     }
-  }
 
+    if (mode === 'drive' && options.preferOnline !== false) {
+      const valhalla = runtimeValhallaConfig();
+      if (valhalla.enabled && valhalla.endpoints.length && !valhalla.coolingDown) {
+        try {
+          emit({
+            state: 'working',
+            label: 'Calculating OpenStreetMap route',
+            detail: `${leg.from.name || 'Origin'} → ${leg.to.name || 'Destination'} · Valhalla`,
+            activeJob: key,
+            error: null
+          });
+          const online = await requestValhallaDrivingRoute(leg, {
+            endpoints: valhalla.endpoints,
+            timeoutMs: valhalla.timeoutMs,
+            clientId: valhalla.clientId,
+            sendClientHeader: valhalla.sendClientHeader
+          });
+          const assessed = assessMultimodalRoute({
+            leg,
+            geometry: online.geometry,
+            source: 'valhalla-osm',
+            provider: 'Valhalla / OpenStreetMap',
+            validation: {
+              ...online.validation,
+              valhallaEndpoint: online.endpoint,
+              valhallaDistanceMiles: online.distanceMiles,
+              valhallaDurationSeconds: online.durationSeconds
+            },
+            providerWarnings: online.warnings || []
+          });
+          if (!assessed.errors.length) {
+            valhallaFailureCount = 0;
+            valhallaUnavailableUntil = 0;
+            const normalized = { ...online, ...assessed, detail: `valhalla:${online.endpoint}` };
+            rememberRouteResult(leg, normalized);
+            await cacheAssessedRouteSafely(leg, normalized, 'Valhalla');
+            emit({
+              state: status.ready ? 'ready' : status.state,
+              label: 'OpenStreetMap route ready',
+              detail: `${normalized.geometry.length.toLocaleString()} route points · Valhalla`,
+              activeJob: null,
+              completed: Number(status.completed || 0) + 1,
+              error: null
+            });
+            return normalized;
+          }
+          providerWarnings.push(...assessed.errors.map(message => `Valhalla route was rejected: ${message}`));
+        } catch (error) {
+          valhallaFailureCount += 1;
+          valhallaUnavailableUntil = Date.now() + VALHALLA_FAILURE_COOLDOWN_MS;
+          providerWarnings.push(`Valhalla/OpenStreetMap was unavailable: ${error?.message || String(error)}`);
+        }
+      } else if (valhalla.coolingDown) {
+        providerWarnings.push('Valhalla/OpenStreetMap is temporarily paused after a provider failure; GlobeHoppers continued with fallback routing.');
+      }
+
+      const token = runtimeMapboxToken();
+      if (token) {
+        try {
+          const online = await requestMapboxDrivingRoute(leg, token);
+          const assessed = assessMultimodalRoute({
+            leg,
+            geometry: online.geometry,
+            source: 'mapbox-directions',
+            provider: 'Mapbox Directions',
+            validation: { ...online.validation, fallbackAfterValhalla: providerWarnings.length > 0 }
+          });
+          if (!assessed.errors.length) {
+            const normalized = { ...online, ...assessed, detail: 'mapbox-fallback' };
+            rememberRouteResult(leg, normalized);
+            await cacheAssessedRouteSafely(leg, normalized, 'Mapbox');
+            emit({
+              state: status.ready ? 'ready' : status.state,
+              label: 'Fallback road route ready',
+              detail: `${normalized.geometry.length.toLocaleString()} route points · Mapbox fallback`,
+              activeJob: null,
+              completed: Number(status.completed || 0) + 1,
+              error: null
+            });
+            return normalized;
+          }
+          providerWarnings.push(...assessed.errors.map(message => `Mapbox route was rejected: ${message}`));
+        } catch (error) {
+          providerWarnings.push(`Mapbox fallback was unavailable: ${error?.message || String(error)}`);
+        }
+      }
+
+      if (!options.forceRefresh) {
+        const generated = generatedDrivingRouteResult(leg);
+        if (generated?.geometry) {
+          const assessed = assessMultimodalRoute({
+            leg,
+            geometry: generated.geometry,
+            source: generated.source,
+            provider: generated.provider,
+            validation: generated.validation || {},
+            providerWarnings
+          });
+          if (!assessed.errors.length) {
+            const normalized = { ...generated, ...assessed };
+            rememberRouteResult(leg, normalized);
+            return normalized;
+          }
+          providerWarnings.push(...assessed.errors.map(message => `Stored Mapbox route was rejected: ${message}`));
+        }
+      }
+    }
+
+    try {
+      const result = await routeLegResult(leg, { ...options, skipCache: true });
+      const assessed = assessMultimodalRoute({
+        leg,
+        geometry: result?.geometry,
+        source: result?.source || 'routing-worker',
+        provider: result?.provider || 'GlobeHoppers routing worker',
+        validation: result?.validation || {},
+        providerWarnings
+      });
+      const normalized = { ...result, ...assessed };
+      rememberRouteResult(leg, normalized);
+      return normalized;
+    } catch (error) {
+      return assessMultimodalRoute({
+        leg,
+        geometry: null,
+        source: 'routing-error',
+        providerWarnings: [...providerWarnings, error?.message || String(error)]
+      });
+    }
+  })();
+
+  inFlightDiagnostics.set(key, job);
   try {
-    const result = await routeLegResult(leg, options);
-    const assessed = assessMultimodalRoute({
-      leg,
-      geometry: result?.geometry,
-      source: result?.source || 'routing-worker',
-      provider: result?.provider || 'GlobeHoppers routing worker',
-      validation: result?.validation || {},
-      providerWarnings
-    });
-    rememberRouteResult(leg, { ...result, ...assessed });
-    return { ...result, ...assessed };
-  } catch (error) {
-    return assessMultimodalRoute({
-      leg,
-      geometry: null,
-      source: 'routing-error',
-      providerWarnings: [...providerWarnings, error?.message || String(error)]
-    });
+    return await job;
+  } finally {
+    inFlightDiagnostics.delete(key);
   }
+}
+
+async function cachedRouteResult(leg) {
+  const key = routeCacheKeyV6(leg, ROUTING_VERSION);
+  if (memoryRouteResults.has(key)) return memoryRouteResults.get(key);
+  try {
+    const cached = await getCachedRoute(key, ROUTING_VERSION);
+    const geometry = sanitizeRouteGeometry(cached);
+    if (geometry) {
+      const result = {
+        geometry,
+        source: 'indexed-route-cache',
+        provider: 'Browser route cache',
+        dataVersion: status.dataVersion,
+        routingVersion: ROUTING_VERSION,
+        validation: {}
+      };
+      rememberRouteResult(leg, result);
+      return result;
+    }
+  } catch (error) {
+    console.warn('[GlobeHoppers] Route cache read failed; continuing with live routing.', error);
+  }
+  return null;
 }
 
 async function routeLegResult(leg, options = {}) {
   if (!leg?.from || !leg?.to) return null;
   const key = routeCacheKeyV6(leg, ROUTING_VERSION);
-  if (!options.forceRefresh && memoryRouteResults.has(key)) return memoryRouteResults.get(key);
+  if (!options.forceRefresh && !options.skipCache) {
+    const cached = await cachedRouteResult(leg);
+    if (cached) return cached;
+  }
   if (!options.forceRefresh && inFlightRoutes.has(key)) return inFlightRoutes.get(key);
 
   const job = (async () => {
-    if (!options.forceRefresh) {
-      const cached = await getCachedRoute(key, ROUTING_VERSION);
-      if (cached?.length > 1) {
-        const cachedResult = {
-          geometry: sanitizeRouteGeometry(cached),
-          source: 'indexed-route-cache',
-          provider: 'Browser route cache',
-          dataVersion: status.dataVersion,
-          routingVersion: ROUTING_VERSION,
-          validation: {}
-        };
-        rememberRouteResult(leg, cachedResult);
-        return cachedResult;
-      }
-      const generated = generatedDrivingRoute(leg);
-      if (generated?.geometry) {
-        const generatedResult = {
-          geometry: generated.geometry,
-          source: 'mapbox-build-cache',
-          provider: 'Mapbox Directions build cache',
-          detail: generated.reversed ? 'reversed-build-cache' : 'build-cache',
-          dataVersion: generatedRoutes?.generatedAt || generatedRoutes?.version || null,
-          routingVersion: ROUTING_VERSION,
-          validation: { maxEndpointGapMiles: 0 }
-        };
-        rememberRouteResult(leg, generatedResult);
-        return generatedResult;
-      }
-    }
-
     await prewarmRoutingEngine(options.reason || 'route request');
     emit({
       state: 'working',
-      label: 'Calculating route',
+      label: 'Calculating fallback route',
       detail: `${leg.from.name || 'Origin'} → ${leg.to.name || 'Destination'} · ${leg.mode}`,
       activeJob: key
     });
@@ -317,7 +437,7 @@ async function routeLegResult(leg, options = {}) {
       emit({
         state: 'ready',
         label: 'Multimodal routing ready',
-        detail: `Route cached · ${geometry.length.toLocaleString()} points`,
+        detail: `Fallback route cached · ${geometry.length.toLocaleString()} points`,
         activeJob: null,
         completed: Number(status.completed || 0) + 1,
         ready: true
@@ -425,6 +545,55 @@ async function cacheAssessedRoute(leg, result) {
     dataVersion: status.dataVersion
   });
   enforceRouteCacheLimit(500).catch(() => {});
+}
+
+
+async function cacheAssessedRouteSafely(leg, result, providerLabel) {
+  try {
+    await cacheAssessedRoute(leg, result);
+  } catch (error) {
+    console.warn(`[GlobeHoppers] ${providerLabel} route cache write failed; continuing with the generated route.`, error);
+  }
+}
+
+function runtimeValhallaConfig() {
+  const runtime = typeof window !== 'undefined' ? (window.JOURNEYLINES_CONFIG || {}) : {};
+  const nested = runtime.valhalla && typeof runtime.valhalla === 'object' ? runtime.valhalla : {};
+  const stored = routingSettings?.valhalla && typeof routingSettings.valhalla === 'object' ? routingSettings.valhalla : {};
+  const buildEndpoint = import.meta.env.VITE_VALHALLA_ENDPOINT || '';
+  const configured = nested.endpoints
+    || runtime.valhallaEndpoints
+    || nested.endpoint
+    || runtime.valhallaEndpoint
+    || buildEndpoint
+    || stored.endpoints
+    || stored.endpoint
+    || DEFAULT_VALHALLA_ENDPOINTS;
+  const coolingDown = Date.now() < valhallaUnavailableUntil;
+  return {
+    enabled: nested.enabled !== false && runtime.valhallaEnabled !== false && stored.enabled !== false,
+    endpoints: normalizeValhallaEndpoints(configured),
+    timeoutMs: Number(nested.timeoutMs || runtime.valhallaTimeoutMs || stored.timeoutMs || VALHALLA_REQUEST_TIMEOUT_MS),
+    clientId: String(nested.clientId || runtime.valhallaClientId || stored.clientId || 'GlobeHoppers').trim(),
+    sendClientHeader: Boolean(nested.sendClientHeader ?? runtime.valhallaSendClientHeader ?? stored.sendClientHeader),
+    coolingDown,
+    failureCount: valhallaFailureCount,
+    retryAt: coolingDown ? valhallaUnavailableUntil : null
+  };
+}
+
+function generatedDrivingRouteResult(leg) {
+  const generated = generatedDrivingRoute(leg);
+  if (!generated?.geometry) return null;
+  return {
+    geometry: generated.geometry,
+    source: 'mapbox-build-cache',
+    provider: 'Mapbox Directions build cache',
+    detail: generated.reversed ? 'reversed-build-cache' : 'build-cache',
+    dataVersion: generatedRoutes?.generatedAt || generatedRoutes?.version || null,
+    routingVersion: ROUTING_VERSION,
+    validation: { maxEndpointGapMiles: 0, fallbackAfterValhalla: true }
+  };
 }
 
 

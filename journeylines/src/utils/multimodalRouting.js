@@ -1,4 +1,4 @@
-export const MULTIMODAL_REVIEW_VERSION = '7.0';
+export const MULTIMODAL_REVIEW_VERSION = '7.1';
 export const SURFACE_MODES = new Set(['drive', 'car', 'train', 'boat']);
 
 const MODE_SPEED_MPH = {
@@ -89,7 +89,7 @@ export function assessMultimodalRoute({ leg, geometry, source = 'unknown', provi
   if (clean && directMiles > 10 && routeMiles > directMiles * indirectErrorMultiplier + indirectErrorAllowance) {
     errors.push('Generated route is excessively indirect and should be corrected with a better endpoint or waypoint.');
   } else if (clean && directMiles > 10 && routeMiles > directMiles * indirectWarningMultiplier + indirectWarningAllowance) {
-    warnings.push('Generated route is unusually indirect. Review the geometry before saving.');
+    warnings.push('Generated route is unusually indirect. GlobeHoppers saved it as approximate; add a waypoint if you want to reshape it.');
   }
   if (clean && directMiles > 2 && routeMiles < 0.25) errors.push('Routing produced a stationary path.');
 
@@ -112,13 +112,16 @@ export function assessMultimodalRoute({ leg, geometry, source = 'unknown', provi
   else if (mode === 'train' && waterRatio > 0.20) warnings.push('A meaningful portion of the fallback rail route is not on mapped land. Check for a missing rail connection.');
 
   if (/fallback|control/i.test(String(source))) warnings.push('The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor.');
-  if (source === 'indexed-route-cache') warnings.push('This review reused a previously cached route. Use Recalculate to refresh it.');
+  if (source === 'indexed-route-cache') warnings.push('GlobeHoppers reused a previously cached route. Use Recalculate to refresh it.');
 
   const uniqueWarnings = [...new Set(warnings.filter(Boolean))];
   const uniqueErrors = [...new Set(errors.filter(Boolean))];
   let confidence = 'high';
   if (uniqueErrors.length) confidence = 'error';
-  else if (uniqueWarnings.length || !/mapbox|graph|water-graph/i.test(String(source))) confidence = 'medium';
+  else if (uniqueWarnings.length || !/valhalla|mapbox|graph|water-graph|manual-override/i.test(String(source))) confidence = 'medium';
+
+  const providerDurationSeconds = Number(validation?.valhallaDurationSeconds || validation?.mapboxDurationSeconds || 0);
+  const providerMinutes = providerDurationSeconds > 0 ? Math.max(1, Math.round(providerDurationSeconds / 60)) : 0;
 
   return {
     version: MULTIMODAL_REVIEW_VERSION,
@@ -130,7 +133,7 @@ export function assessMultimodalRoute({ leg, geometry, source = 'unknown', provi
     geometryPointCount: clean?.length || 0,
     directMiles,
     routeMiles,
-    estimatedMinutes: estimateTravelMinutes(mode, routeMiles || directMiles),
+    estimatedMinutes: providerMinutes || estimateTravelMinutes(mode, routeMiles || directMiles),
     confidence,
     warnings: uniqueWarnings,
     errors: uniqueErrors,
@@ -144,8 +147,8 @@ export function createRouteReviewSnapshot(review = {}, signature = '') {
   return {
     version: MULTIMODAL_REVIEW_VERSION,
     signature,
-    approved: Boolean(review?.approved),
-    approvedAt: review?.approvedAt || null,
+    automatic: true,
+    checkedAt: review?.checkedAt || review?.approvedAt || null,
     legs: results.map(result => ({
       legId: result?.legId || null,
       mode: canonicalTravelMode(result?.mode),
@@ -165,7 +168,8 @@ export function createRouteReviewSnapshot(review = {}, signature = '') {
 
 export function routeSourceLabel(source = '') {
   const value = String(source || '');
-  if (value === 'mapbox-directions') return 'Mapbox road route';
+  if (value === 'valhalla-osm') return 'OpenStreetMap road route';
+  if (value === 'mapbox-directions') return 'Mapbox fallback route';
   if (value === 'mapbox-build-cache') return 'Mapbox build cache';
   if (value === 'natural-earth-road-graph') return 'Road network';
   if (value === 'natural-earth-rail-graph') return 'Rail network';
