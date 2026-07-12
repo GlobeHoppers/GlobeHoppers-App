@@ -12479,3 +12479,20 @@ svg text {
     grid-column: auto;
   }
 }
+
+/* GlobeHoppers v6.2 control containment and accessibility */
+.controls-advanced[role="dialog"] { overscroll-behavior: contain; }
+.controls-play-pill[aria-disabled="true"] { cursor: default; opacity: .82; }
+.timeline-hopper-status--ok { color: #86efac; }
+.timeline-hopper-status--warning { color: #fde68a; }
+.timeline-hopper-status--error { color: #fca5a5; }
+@media (max-height: 720px) {
+  .controls-advanced { max-height: min(72vh, 560px); overflow-y: auto; overscroll-behavior: contain; }
+}
+@media (max-width: 720px) {
+  .controls { max-width: calc(100vw - 20px); }
+  .controls-advanced { width: min(92vw, 380px); max-height: min(70vh, 560px); overflow-y: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .controls *, .timeline-marker, .timeline-marker__pin, .timeline-marker__tooltip { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

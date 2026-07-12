@@ -1,3 +1,17 @@
+GlobeHoppers v6.2 — Playback Command Ownership, Worker Recovery, Accessibility, and Integrity Diagnostics
+
+- Added an explicit Restart Journey command. Restart is now the only command that returns to the home/intro state.
+- Play no longer implicitly restarts a completed timeline; the completed state remains stable until Restart Journey is selected.
+- View Globe no longer also fires the reset nonce, removing overlapping camera owners and duplicate camera motion.
+- Preserved the v6.1.1 connected-handoff zoom hold/release and final globe-level completion glide.
+- Routing worker requests now have bounded timeouts, crash/message-error recovery, stale-worker protection, and a visible Retry Routing Engine action.
+- Advanced controls now support Escape dismissal, focus restoration, ARIA-expanded/dialog semantics, and clearer playback-complete labeling.
+- Added non-destructive Hopper/Hop Squad integrity auditing for duplicate IDs, missing fields, broken squad references, and trips that reference unknown permanent Hoppers.
+- Added short-screen/mobile containment and reduced-motion safeguards for playback controls.
+- Added v6.2 static verification and production-build checks.
+
+---
+
 GlobeHoppers v6.1 — Stable Leg IDs, Route Integrity, and Editor Hardening
 
 Base: v6.0.1

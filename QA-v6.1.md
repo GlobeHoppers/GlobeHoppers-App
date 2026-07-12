@@ -50,3 +50,17 @@ The container cannot perform an authenticated commit to your live GitHub reposit
 - one add/edit/delete batch
 - one repository retry using a deliberately interrupted connection
 - desktop and mobile-sized browser windows
+
+## v6.1.1 camera-polish verification additions
+
+Static checks added for:
+- Connected handoffs capture and preserve the previous camera zoom.
+- The zoom floor is held for 900 ms and released over 1200 ms.
+- Disconnected handoffs are not subject to the connected-camera clamp.
+- Pausing during a connected handoff uses the same protected camera target.
+- Timeline completion is one-shot per playback generation.
+- Timeline completion uses the live final camera center and a 2200 ms globe-level ease.
+- The previous fixed 650 ms ease to INTRO_GLOBE_CENTER is absent.
+- trips.json and website-owned hoppers.json are not modified by this patch.
+
+Run `node verify-camera-polish.mjs <repo-root>` after applying the patch to execute the static checks and production build.

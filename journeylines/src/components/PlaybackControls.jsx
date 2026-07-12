@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, tripsDataStatus = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, timelineComplete = false, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
   const [leavingMarkerId, setLeavingMarkerId] = useState(null);
   const [enteringMarkerId, setEnteringMarkerId] = useState(null);
   const advancedRef = useRef(null);
+  const advancedToggleRef = useRef(null);
   const previousActiveIdRef = useRef(activeMarkerId);
   const transitionTimerRef = useRef(null);
   const playClickCountRef = useRef(0);
@@ -14,11 +15,21 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
 
   useEffect(() => {
     if (!advancedOpen) return;
-    const close = (event) => {
+    const closeOutside = (event) => {
       if (advancedRef.current && !advancedRef.current.contains(event.target)) setAdvancedOpen(false);
     };
-    window.addEventListener('pointerdown', close);
-    return () => window.removeEventListener('pointerdown', close);
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setAdvancedOpen(false);
+      window.requestAnimationFrame(() => advancedToggleRef.current?.focus());
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
   }, [advancedOpen]);
 
   useEffect(() => {
@@ -45,6 +56,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
       onToggleTimelineUtility?.();
       return;
     }
+    if (timelineComplete) return;
     (isPlaying ? onPause : onPlay)?.();
   };
 
@@ -66,7 +78,7 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
   const tooltipMarker = hoverMarker || activeMarker;
 
   return <div className="controls glass" style={timelineStyle}>
-    <button className="controls-play-pill" onClick={handlePlayPauseClick}>{isPlaying ? 'Pause' : 'Play'}</button>
+    <button type="button" className="controls-play-pill" onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete} aria-label={timelineComplete ? 'Timeline complete. Use Restart Journey to begin again.' : (isPlaying ? 'Pause travel timeline' : 'Play travel timeline')} title={timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : 'Play')}</button>
     <label className="timeline-scrubber">Timeline
       <div className="timeline-scrubber-stack">
         <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>
@@ -122,10 +134,10 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
       </div>
     </label>
     <div className="controls-advanced-wrap" ref={advancedRef}>
-      <button className="controls-advanced-toggle" aria-label="Advanced controls" onClick={() => setAdvancedOpen(v => !v)}>⋯</button>
-      {advancedOpen && <div className="controls-advanced glass">
-        <button onClick={onReset}>Reset</button>
-        <button onClick={onViewGlobe}>View Globe</button>
+      <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => setAdvancedOpen(v => !v)}>⋯</button>
+      {advancedOpen && <div id="globehoppers-advanced-controls" className="controls-advanced glass" role="dialog" aria-label="Advanced playback controls">
+        <button type="button" onClick={() => { setAdvancedOpen(false); onReset?.(); }}>Restart Journey</button>
+  <button type="button" onClick={() => { setAdvancedOpen(false); onViewGlobe?.(); }}>View Globe</button>
         <button onClick={onToggleTripDrawer}>GlobeHopper Timeline</button>
         <label>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))}><option value={0.25}>0.25x</option><option value={0.5}>0.5x</option><option value={1}>1x</option><option value={2}>2x</option><option value={4}>4x</option></select></label>
         <label>Projection<select value={projection} onChange={e => setProjection(e.target.value)}><option value="orthographic">Globe</option><option value="naturalEarth1">Natural Earth</option><option value="equalEarth">Equal Earth</option><option value="geoMercator">Mercator</option></select></label>
@@ -143,6 +155,14 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           {tripsDataStatus?.firstRepo && <div className="timeline-route-detail">First repo item: {tripsDataStatus.firstRepo}</div>}
         </div>
         <div className="timeline-advanced-section">
+  <div className="timeline-advanced-title">Hopper integrity</div>
+  <div className={`timeline-route-status timeline-hopper-status--${hopperIntegrity?.state || 'ok'}`} aria-live="polite">{hopperIntegrity?.label || 'Hopper data healthy'}</div>
+  {hopperIntegrity?.detail && <div className="timeline-route-detail">{hopperIntegrity.detail}</div>}
+  {hopperIntegrity?.errors?.slice(0, 4).map((message, index) => <div key={`hopper-error-${index}`} className="timeline-route-message timeline-route-message--error">{message}</div>)}
+  {hopperIntegrity?.warnings?.slice(0, 4).map((message, index) => <div key={`hopper-warning-${index}`} className="timeline-route-message">{message}</div>)}
+  {(hopperIntegrity?.errors?.length || 0) + (hopperIntegrity?.warnings?.length || 0) > 8 && <div className="timeline-route-detail">Additional integrity findings are available in the returned audit object.</div>}
+  </div>
+  <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Repository save</div>
           <div className={`timeline-route-status timeline-save-status timeline-save-status--${repoSaveStatus?.state || 'idle'}`}>{repoSaveStatus?.label || 'No recent repository save'}</div>
           {repoSaveStatus?.detail && <div className="timeline-route-detail">{repoSaveStatus.detail}</div>}
@@ -168,6 +188,8 @@ export default function PlaybackControls({ isPlaying, onPlay, onPause, onReset, 
           </div>
           {routingStatus?.routingVersion && <div className="timeline-route-detail">Version {routingStatus.routingVersion}{routingStatus?.dataVersion ? ` · data ${routingStatus.dataVersion}` : ''}</div>}
           {routingStatus?.activeJob && <div className="timeline-route-message">Active job: {routingStatus.activeJob}</div>}
+  {routingStatus?.error && <div className="timeline-route-message timeline-route-message--error" role="alert">{routingStatus.error}</div>}
+  {routingStatus?.state === 'error' && <button type="button" className="timeline-route-rebuild" disabled={!onRetryRouting} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onRetryRouting?.(); }}>Retry Routing Engine</button>}
         </div>
         <div className="timeline-advanced-section">
           <div className="timeline-advanced-title">Route details</div>

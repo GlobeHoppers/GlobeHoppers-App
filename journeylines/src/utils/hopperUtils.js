@@ -8,6 +8,63 @@ export function normalizeHopperData(data = {}) {
   return { hoppers, hopSquads, palette };
 }
 
+export function auditHopperData(data = {}, trips = []) {
+  const { hoppers, hopSquads } = normalizeHopperData(data);
+  const errors = [];
+  const warnings = [];
+  const hopperIds = new Set();
+  const hopperNames = new Set();
+  const squadIds = new Set();
+
+  for (const hopper of hoppers) {
+    const id = String(hopper?.id || '').trim();
+    const name = String(hopper?.name || '').trim();
+    const normalizedName = name.toLocaleLowerCase();
+    if (!id) errors.push('A Hopper is missing an ID.');
+    else if (hopperIds.has(id)) errors.push(`Duplicate Hopper ID: ${id}`);
+    else hopperIds.add(id);
+    if (!name) errors.push(`Hopper ${id || '(unknown)'} is missing a name.`);
+    else if (hopperNames.has(normalizedName)) warnings.push(`Duplicate Hopper name: ${name}`);
+    else hopperNames.add(normalizedName);
+    if (!String(hopper?.color || '').trim()) warnings.push(`Hopper ${name || id || '(unknown)'} is missing a color.`);
+  }
+
+  for (const squad of hopSquads) {
+    const id = String(squad?.id || '').trim();
+    const name = String(squad?.name || '').trim();
+    const memberIds = Array.isArray(squad?.hopperIds) ? squad.hopperIds.filter(Boolean).map(String) : [];
+    if (!id) errors.push('A Hop Squad is missing an ID.');
+    else if (squadIds.has(id)) errors.push(`Duplicate Hop Squad ID: ${id}`);
+    else squadIds.add(id);
+    if (!name) warnings.push(`Hop Squad ${id || '(unknown)'} is missing a name.`);
+    if (new Set(memberIds).size !== memberIds.length) warnings.push(`Hop Squad ${name || id || '(unknown)'} contains duplicate members.`);
+    const missing = [...new Set(memberIds.filter(memberId => !hopperIds.has(memberId)))];
+    if (missing.length) errors.push(`Hop Squad ${name || id || '(unknown)'} references unknown Hopper IDs: ${missing.join(', ')}`);
+    if (memberIds.length < 2) warnings.push(`Hop Squad ${name || id || '(unknown)'} has fewer than two members.`);
+  }
+
+  for (const trip of Array.isArray(trips) ? trips : []) {
+    const permanentIds = Array.isArray(trip?.travelers) ? trip.travelers.filter(Boolean).map(String) : [];
+    const knownTravelerIds = new Set([...hopperIds, ...squadIds, 'both']);
+    const missing = [...new Set(permanentIds.filter(id => !knownTravelerIds.has(id)))];
+    if (missing.length) errors.push(`Trip ${trip?.label || trip?.id || '(unknown)'} references unknown Hopper IDs: ${missing.join(', ')}`);
+    const guestIds = (Array.isArray(trip?.guestHoppers) ? trip.guestHoppers : []).map(guest => String(guest?.id || '').trim()).filter(Boolean);
+    if (new Set(guestIds).size !== guestIds.length) warnings.push(`Trip ${trip?.label || trip?.id || '(unknown)'} contains duplicate Guest Hopper IDs.`);
+  }
+
+  const uniqueErrors = [...new Set(errors)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const state = uniqueErrors.length ? 'error' : uniqueWarnings.length ? 'warning' : 'ok';
+  return {
+    state,
+    label: state === 'ok' ? 'Hopper data healthy' : state === 'error' ? 'Hopper data needs attention' : 'Hopper data has warnings',
+    detail: `${hoppers.length} Hoppers · ${hopSquads.length} Hop Squads · ${uniqueErrors.length} errors · ${uniqueWarnings.length} warnings`,
+    errors: uniqueErrors,
+    warnings: uniqueWarnings,
+    counts: { hoppers: hoppers.length, hopSquads: hopSquads.length, errors: uniqueErrors.length, warnings: uniqueWarnings.length }
+  };
+}
+
 export function idsKey(ids = []) {
   return [...new Set(ids.filter(Boolean))].sort().join('|');
 }

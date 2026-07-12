@@ -5,7 +5,7 @@ import TripCard from './components/TripCard.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
 import { legDurationMs } from './utils/routeTiming.js';
-import { normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground, segmentedBorderGradient } from './utils/hopperUtils.js';
+import { auditHopperData, normalizeHopperData, resolveTripVisual, travelerListForLegacy, multiMemberCircleBackground, segmentedBorderGradient } from './utils/hopperUtils.js';
 import baseTrips from './data/trips.json';
 import baseLocations from './data/locations.json';
 import homeBases from './data/homeBases.json';
@@ -15,7 +15,7 @@ import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
-import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, subscribeRoutingStatus } from './utils/routingClient.js';
+import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRoutingEngine, subscribeRoutingStatus } from './utils/routingClient.js';
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
@@ -102,6 +102,7 @@ const DEFAULT_TIMELINE_TUNING = {
 
 
 const PARAMETER_STORAGE_SIGNATURE_KEY = 'globehoppers.parametersSignature';
+const GLOBEHOPPERS_V62 = true;
 
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
@@ -366,6 +367,7 @@ export default function App() {
   }), [sortedTrips, filter]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const normalizedHoppers = useMemo(() => normalizeHopperData(hopperData), [hopperData]);
+  const hopperIntegrity = useMemo(() => auditHopperData(normalizedHoppers, trips), [normalizedHoppers, trips]);
   const travelers = useMemo(() => travelerListForLegacy(normalizedHoppers), [normalizedHoppers]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const legs = useMemo(() => flattenLegs(filteredTrips, locById, homeBases), [filteredTrips, locById]);
@@ -615,6 +617,12 @@ export default function App() {
 
     const wasGlobeOverview = globeOverview;
     const finalLegComplete = activeIndex >= legs.length - 1 && Number(legProgress || 0) >= 0.999999;
+    if (started && finalLegComplete) {
+      playbackEngine.pause();
+      setIsPlaying(false);
+      setIntroLaunching(false);
+      return;
+    }
     setGlobeOverview(false);
     setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
     setShowHero(false);
@@ -622,7 +630,7 @@ export default function App() {
     setStudioModalOnly(false);
     setTripDrawerOpen(false);
 
-    if (!started || finalLegComplete || activeIndex < 0 || activeIndex >= legs.length) {
+    if (!started || activeIndex < 0 || activeIndex >= legs.length) {
       setActiveIndex(0);
       setLegProgress(0);
       activePlaybackRef.current = { ...legIdentityForEntry(legs[0], 0, 0), generation: playbackGenerationRef.current };
@@ -709,18 +717,26 @@ export default function App() {
     setShowHero(false);
     window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview'));
     window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview')), 12);
-    setResetNonce(n => n + 1);
   }
-  function reset() {
+  function restartJourney() {
     cancelPendingJumpTimers();
+    resumeAfterStudioRef.current = false;
+    resumeAfterTabHiddenRef.current = false;
     playbackEngine.stop(1);
     setIsPlaying(false);
     setIntroLaunching(false);
     setStarted(false);
     setShowHero(true);
     setGlobeOverview(false);
+    setAdmin(false);
+    setTripDrawerOpen(false);
+    setStudioEditTripId(null);
+    setStudioModalOnly(false);
+    setTrailTuningOpen(false);
+    setTimelineTuningOpen(false);
     setActiveIndex(999999);
     setLegProgress(1);
+    tRef.current = { last: null, elapsed: 0 };
     activePlaybackRef.current = { tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: playbackGenerationRef.current };
     setCameraMode('global');
     setResetNonce(n => n + 1);
@@ -905,11 +921,11 @@ export default function App() {
       </div>
     </section>}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} onPlay={play} onPause={pause} onReset={reset} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
+    <PlaybackControls isPlaying={isPlaying} timelineComplete={started && legs.length > 0 && activeIndex >= legs.length - 1 && Number(legProgress || 0) >= 0.999999} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => jumpToLeg(marker.firstIndex || 0, 0, true)} onMarkerEdit={editTimelineMarker} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
       freezePlaybackClock();
       setIsPlaying(false);
       setFilter(value);
-    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} tripsDataStatus={tripsDataStatus} repoSaveStatus={repoSaveStatus}
+    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} onRetryRouting={() => restartRoutingEngine('manual retry').catch(() => {})} tripsDataStatus={tripsDataStatus} hopperIntegrity={hopperIntegrity} repoSaveStatus={repoSaveStatus}
         onRetryRepoSave={() => {
           setAdmin(true);
           setStudioModalOnly(false);

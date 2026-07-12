@@ -19,6 +19,9 @@ import { playbackEngine } from '../utils/playbackEngine.js';
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
 const IDLE_SPIN_GLOBE_ZOOM = 4.20;
+const CONTINUOUS_HANDOFF_HOLD_MS = 900;
+const CONTINUOUS_HANDOFF_RELEASE_MS = 1200;
+const TIMELINE_COMPLETE_GLOBE_DURATION_MS = 2200;
 const IDLE_SPIN_SPEED = 3.5;
 
 const DEFAULT_TRAIL_TUNING = {
@@ -186,6 +189,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const labelVisibilityStateRef = useRef(new Map());
   const placardRuntimeRef = useRef({ playback: false, overview: false, activeIds: new Set() });
   const introLaunchRef = useRef({ active: false, key: null });
+  const timelineCompletionRef = useRef({ key: '', timer: null });
   const resetAnimatingRef = useRef(false);
   const forceSceneJumpRef = useRef(false);
   const manualSpinPauseRef = useRef(false);
@@ -207,6 +211,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     lastActiveEntry: null,
     transitionStartedAt: 0,
     transitionKind: 'initial',
+    transitionStartCamera: null,
     frozenEntry: null
   });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
@@ -347,6 +352,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     return () => {
       clearTimeout(arrivalTimerRef.current);
+      clearTimeout(timelineCompletionRef.current?.timer);
       clearTimeout(manualSpinResumeTimerRef.current);
       map.remove();
       mapRef.current = null;
@@ -655,6 +661,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
+    if (!completedMode && timelineCompletionRef.current.key) {
+      clearTimeout(timelineCompletionRef.current.timer);
+      timelineCompletionRef.current = { key: '', timer: null };
+      resetAnimatingRef.current = false;
+    }
 
     if (trailTuningOpen) {
       syncTrailTuningDemo(map, trailTuningConfig, trailWidth);
@@ -675,7 +686,50 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         syncCompletedRoutes(map, completedLegs, hopperData || travById, false, trailOpacity, trailWidth, routedGeometries, trailTuningConfig, []);
       }
       if (completedMode && !globeOverview) {
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, bearing: 0, pitch: 0, duration: 650, essential: true });
+        const finalEntry = completedLegs[completedLegs.length - 1] || previousActiveRouteRef.current?.active || null;
+        const finalDestination = finalEntry?.leg?.to || null;
+        const finalKey = `${finalEntry?.trip?.id || 'timeline'}:${finalEntry?.legId || finalEntry?.leg?.legId || finalEntry?.legIndex || 'final'}:${playbackGeneration}`;
+
+        if (timelineCompletionRef.current.key !== finalKey) {
+          clearTimeout(timelineCompletionRef.current.timer);
+          userCameraOverrideRef.current = false;
+          manualSpinPauseRef.current = false;
+          clearTimeout(manualSpinResumeTimerRef.current);
+          resetAnimatingRef.current = true;
+
+          const liveCenter = map.getCenter?.();
+          const liveZoom = Number(map.getZoom?.() || IDLE_SPIN_GLOBE_ZOOM);
+          const completionCenter = Number.isFinite(liveCenter?.lng) && Number.isFinite(liveCenter?.lat)
+            ? [liveCenter.lng, liveCenter.lat]
+            : [Number(finalDestination?.lon || INTRO_GLOBE_CENTER[0]), Number(finalDestination?.lat || INTRO_GLOBE_CENTER[1])];
+          const completionZoom = Math.min(liveZoom, IDLE_SPIN_GLOBE_ZOOM);
+
+          map.stop();
+          map.easeTo({
+            center: completionCenter,
+            zoom: completionZoom,
+            bearing: 0,
+            pitch: 0,
+            duration: TIMELINE_COMPLETE_GLOBE_DURATION_MS,
+            essential: true,
+            easing: t => 1 - Math.pow(1 - t, 3)
+          });
+
+          const timer = window.setTimeout(() => {
+            resetAnimatingRef.current = false;
+            const settledCenter = map.getCenter?.();
+            lastCameraRef.current = {
+              center: Number.isFinite(settledCenter?.lng) && Number.isFinite(settledCenter?.lat)
+                ? [settledCenter.lng, settledCenter.lat]
+                : completionCenter,
+              zoom: Number(map.getZoom?.() || IDLE_SPIN_GLOBE_ZOOM),
+              bearing: Number(map.getBearing?.() || 0),
+              pitch: Number(map.getPitch?.() || 0)
+            };
+          }, TIMELINE_COMPLETE_GLOBE_DURATION_MS + 80);
+
+          timelineCompletionRef.current = { key: finalKey, timer };
+        }
       }
       return;
     }
@@ -756,12 +810,23 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // conservative that the camera could fall behind the vessel and then catch
     // up in visible steps. These values still ease, but keep the camera ahead.
     const smoothing = scene.phase === 'settle' ? 0.014 : scene.phase === 'predeparture' ? 0.010 : scene.phase === 'takeoff' ? 0.020 : scene.phase === 'arrival' ? 0.022 : 0.020;
+    const transitionStats = frameRenderStatsRef.current;
+    const transitionAge = Math.max(0, now - Number(transitionStats.transitionStartedAt || 0));
+    let targetCamera = scene.camera;
+
+    if (transitionStats.transitionKind === 'continuous' && transitionStats.transitionStartCamera && transitionAge < CONTINUOUS_HANDOFF_HOLD_MS + CONTINUOUS_HANDOFF_RELEASE_MS) {
+      const releaseProgress = Math.max(0, Math.min(1, (transitionAge - CONTINUOUS_HANDOFF_HOLD_MS) / CONTINUOUS_HANDOFF_RELEASE_MS));
+      const releaseEase = releaseProgress * releaseProgress * (3 - 2 * releaseProgress);
+      const preservedZoom = lerp(transitionStats.transitionStartCamera.zoom, scene.camera.zoom, releaseEase);
+      targetCamera = { ...scene.camera, zoom: Math.max(scene.camera.zoom, preservedZoom) };
+    }
+
     let camera;
     if (forceSceneJumpRef.current) {
       camera = scene.camera;
       forceSceneJumpRef.current = false;
     } else {
-      camera = smoothCamera(lastCameraRef.current, scene.camera, smoothing);
+      camera = smoothCamera(lastCameraRef.current, targetCamera, smoothing);
     }
     lastCameraRef.current = camera;
     if (!userCameraOverrideRef.current) {
@@ -771,7 +836,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     currentOverlayStateRef.current = { active, scene, color };
     updateOverlay(map, active, scene, color);
     updateAirArcOverlay(map, airArcRef.current, active, scene, color);
-  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth, trailOpacity, showTrails, isPlaying]);
+  }, [mapReady, scene?.frameKey, active, completedMode, completedLegs, travById, routedGeometries, introLaunching, onIntroLaunchComplete, globeOverview, trailTuningOpen, trailTuningConfig, trailWidth, trailOpacity, showTrails, isPlaying, playbackGeneration]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -797,6 +862,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
       if (stats.lastRouteKey !== routeKey) {
         const previousEntry = stats.lastActiveEntry;
+      stats.transitionStartCamera = lastCameraRef.current
+        ? { ...lastCameraRef.current, center: [...lastCameraRef.current.center] }
+        : null;
         stats.transitionKind = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg) ? 'continuous' : previousEntry ? 'relocation' : 'initial';
         stats.transitionStartedAt = now;
         stats.lastRouteKey = routeKey;
@@ -836,12 +904,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
       const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
       let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
-      if (transitionAge < 900) {
+      if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS) {
         smoothing = stats.transitionKind === 'continuous'
           ? Math.max(smoothing, 0.046)
           : Math.min(smoothing, 0.018);
       }
-      let camera = smoothCamera(lastCameraRef.current, sceneState.camera, smoothing);
+
+      let targetCamera = sceneState.camera;
+      if (stats.transitionKind === 'continuous' && stats.transitionStartCamera && transitionAge < CONTINUOUS_HANDOFF_HOLD_MS + CONTINUOUS_HANDOFF_RELEASE_MS) {
+        const releaseProgress = Math.max(0, Math.min(1, (transitionAge - CONTINUOUS_HANDOFF_HOLD_MS) / CONTINUOUS_HANDOFF_RELEASE_MS));
+        const releaseEase = releaseProgress * releaseProgress * (3 - 2 * releaseProgress);
+        const preservedZoom = lerp(stats.transitionStartCamera.zoom, sceneState.camera.zoom, releaseEase);
+        targetCamera = { ...sceneState.camera, zoom: Math.max(sceneState.camera.zoom, preservedZoom) };
+      }
+
+      let camera = smoothCamera(lastCameraRef.current, targetCamera, smoothing);
       camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
       lastCameraRef.current = camera;
       if (!userCameraOverrideRef.current) map.jumpTo({ ...camera, essential: true });

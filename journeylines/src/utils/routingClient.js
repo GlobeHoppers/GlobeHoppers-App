@@ -7,8 +7,11 @@ const memoryRoutes = new Map();
 const memoryPlans = new Map();
 const inFlightRoutes = new Map();
 const inFlightPlans = new Map();
+const WORKER_INIT_TIMEOUT_MS = 30000;
+const WORKER_REQUEST_TIMEOUT_MS = 45000;
 
 let worker = null;
+let workerEpoch = 0;
 let nextId = 1;
 let initialized = false;
 let initPromise = null;
@@ -41,10 +44,40 @@ function dataUrl() {
   return new URL(`${base}data/naturalEarthRouting.json`, window.location.href).href;
 }
 
+function workerTimeoutFor(type) {
+  return type === 'init' ? WORKER_INIT_TIMEOUT_MS : WORKER_REQUEST_TIMEOUT_MS;
+}
+
+function rejectPending(error) {
+  const failure = error instanceof Error ? error : new Error(String(error || 'Routing worker reset.'));
+  for (const [, record] of pending) {
+    window.clearTimeout(record.timer);
+    try { record.reject(failure); } catch {}
+  }
+  pending.clear();
+}
+
+function disposeWorker(reason = 'Routing worker reset.', rejectJobs = true) {
+  const instance = worker;
+  worker = null;
+  workerEpoch += 1;
+  initialized = false;
+  initPromise = null;
+  if (instance) {
+    instance.onmessage = null;
+    instance.onerror = null;
+    instance.onmessageerror = null;
+    try { instance.terminate(); } catch {}
+  }
+  if (rejectJobs) rejectPending(new Error(reason));
+}
+
 function ensureWorker() {
   if (worker) return worker;
   worker = new Worker(new URL('../workers/routingWorker.js', import.meta.url), { type: 'module', name: 'globehoppers-routing' });
+  const epoch = ++workerEpoch;
   worker.onmessage = event => {
+    if (epoch !== workerEpoch) return;
     const message = event.data || {};
     if (message.type === 'status') {
       emit(message.status || {});
@@ -53,15 +86,22 @@ function ensureWorker() {
     const record = pending.get(message.id);
     if (!record) return;
     pending.delete(message.id);
+    window.clearTimeout(record.timer);
     emit({ queued: pending.size, activeJob: pending.size ? status.activeJob : null });
     if (message.ok) record.resolve(message.result);
     else record.reject(new Error(message.error || 'Routing worker failed.'));
   };
   worker.onerror = event => {
+    if (epoch !== workerEpoch) return;
     const error = event?.message || 'Routing worker crashed.';
-    emit({ state: 'error', label: 'Routing engine error', detail: error, ready: false, error });
-    for (const [, record] of pending) record.reject(new Error(error));
-    pending.clear();
+    disposeWorker(error, true);
+    emit({ state: 'error', label: 'Routing engine error', detail: error, ready: false, activeJob: null, error });
+  };
+  worker.onmessageerror = () => {
+    if (epoch !== workerEpoch) return;
+    const error = 'Routing worker returned an unreadable message.';
+    disposeWorker(error, true);
+    emit({ state: 'error', label: 'Routing engine error', detail: error, ready: false, activeJob: null, error });
   };
   return worker;
 }
@@ -69,15 +109,30 @@ function ensureWorker() {
 function request(type, payload = {}, transfer = []) {
   const instance = ensureWorker();
   const id = nextId++;
+  const timeoutMs = workerTimeoutFor(type);
   return new Promise((resolve, reject) => {
-    pending.set(id, { resolve, reject, type });
+    const timer = window.setTimeout(() => {
+      if (!pending.has(id)) return;
+      const message = `Routing worker ${type} request timed out after ${Math.round(timeoutMs / 1000)} seconds.`;
+      disposeWorker(message, true);
+      emit({ state: 'error', label: 'Routing engine timed out', detail: message, ready: false, activeJob: null, error: message });
+    }, timeoutMs);
+    pending.set(id, { resolve, reject, type, timer });
     emit({
       state: status.ready ? 'working' : 'loading',
       label: status.ready ? 'Routing job running' : 'Loading routing engine',
       activeJob: type,
       queued: pending.size
     });
-    instance.postMessage({ id, type, payload }, transfer);
+    try {
+      instance.postMessage({ id, type, payload }, transfer);
+    } catch (error) {
+      window.clearTimeout(timer);
+      pending.delete(id);
+      disposeWorker(error?.message || 'Routing worker postMessage failed.', true);
+      emit({ state: 'error', label: 'Routing engine error', detail: error?.message || String(error), ready: false, activeJob: null, error: error?.message || String(error) });
+      reject(error);
+    }
   });
 }
 
@@ -89,6 +144,12 @@ export function subscribeRoutingStatus(listener) {
 
 export function getRoutingStatus() {
   return status;
+}
+
+export async function restartRoutingEngine(reason = 'manual retry') {
+  disposeWorker(`Routing engine restarted (${reason}).`, true);
+  emit({ state: 'loading', label: 'Restarting routing engine', detail: `Creating a fresh routing worker (${reason}).`, ready: false, activeJob: null, error: null });
+  return prewarmRoutingEngine(reason);
 }
 
 export async function prewarmRoutingEngine(reason = 'idle') {
@@ -118,8 +179,7 @@ export async function prewarmRoutingEngine(reason = 'idle') {
       return getRoutingStatus();
     })
     .catch(error => {
-      initPromise = null;
-      initialized = false;
+    disposeWorker(error?.message || 'Routing engine initialization failed.', false);
       emit({ state: 'error', label: 'Routing engine unavailable', detail: error.message, ready: false, error: error.message });
       throw error;
     });
