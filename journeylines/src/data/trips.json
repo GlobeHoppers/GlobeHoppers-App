@@ -15,7 +15,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "louisville-ky",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0yurg7l"
+      },
+      {
+        "locationId": "louisville-ky",
+        "modeFromPrevious": "plane",
+        "pointId": "point-08ppdcb",
+        "legId": "leg-1qey55t"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0yo5407",
+        "legId": "leg-0doghow"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -25,7 +43,8 @@
     "guestHoppers": [],
     "returnMode": "plane",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2012-003-atlanta",
@@ -43,7 +62,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0cfc576"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0bdwpk1",
+        "legId": "leg-1rr9mil"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1udlq1o",
+        "legId": "leg-1ou9914"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -60,7 +97,8 @@
     ],
     "returnMode": "plane",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2012-002-key-west",
@@ -77,9 +115,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "key-west-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-00m1tht"
+      },
+      {
+        "locationId": "key-west-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1oijvpq",
+        "legId": "leg-1bbqmie"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0x8lumf",
+        "legId": "leg-0iq7az5"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2013-006-chicago",
@@ -97,7 +154,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "chicago-il",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1wlltm3"
+      },
+      {
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1qui52c",
+        "legId": "leg-0ymt8um"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-07e6bg5",
+        "legId": "leg-1xgq0m3"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -107,7 +182,8 @@
     "guestHoppers": [],
     "returnMode": "plane",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2013-004-bahamas",
@@ -124,9 +200,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "nassau-bs",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0lqby9e"
+      },
+      {
+        "locationId": "nassau-bs",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0mytg0u",
+        "legId": "leg-00ozh8y"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1a1hi0s",
+        "legId": "leg-1uhi2d9"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2013-005-bahamas",
@@ -144,9 +239,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "nassau-bs",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-14ts4pj"
+      },
+      {
+        "locationId": "nassau-bs",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1xmh8qt",
+        "legId": "leg-00xi43h"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-04ib481",
+        "legId": "leg-1g07d9m"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2014-007-atlanta",
@@ -164,7 +278,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0qgq4pc"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cl4ctv",
+        "legId": "leg-082cey3"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1apmwue",
+        "legId": "leg-0e9yxei"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -174,7 +306,8 @@
     "guestHoppers": [],
     "returnMode": "plane",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2014-010-bahamas",
@@ -192,9 +325,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "nassau-bs",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1oe00d2"
+      },
+      {
+        "locationId": "nassau-bs",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0kvi13m",
+        "legId": "leg-1j99r7q"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-19qjwbk",
+        "legId": "leg-194b5gh"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2014-009-destin",
@@ -212,9 +364,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "destin-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0mdgv9w"
+      },
+      {
+        "locationId": "destin-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0iesctn",
+        "legId": "leg-0r99qwp"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1melcju",
+        "legId": "leg-0rrbxw6"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2014-008-new-york",
@@ -232,9 +403,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "new-york-ny",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1m0mc1o"
+      },
+      {
+        "locationId": "new-york-ny",
+        "modeFromPrevious": "plane",
+        "pointId": "point-180aqib",
+        "legId": "leg-088wgzz"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0xpgsaa",
+        "legId": "leg-09x6p00"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2014-011-st-lucia",
@@ -252,9 +442,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "castries-lc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1ucby9s"
+      },
+      {
+        "locationId": "castries-lc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-11wm9k3",
+        "legId": "leg-0z6iuaj"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-12btnw6",
+        "legId": "leg-0kjlrs8"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-015-aruba",
@@ -272,9 +481,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "oranjestad-aw",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0ve7z6c"
+      },
+      {
+        "locationId": "oranjestad-aw",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0tsd5o7",
+        "legId": "leg-10ae5eb"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1vfcgga",
+        "legId": "leg-1hlxho8"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-012-atlanta",
@@ -292,9 +520,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1dqzh4r"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ajseuw",
+        "legId": "leg-1mx3oz6"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1g4r5z9",
+        "legId": "leg-1qvao53"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-016-atlanta",
@@ -312,9 +559,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1d1uufr"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ad2bpg",
+        "legId": "leg-183zazi"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1p16rxd",
+        "legId": "leg-100a7xf"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-014-augusta",
@@ -332,9 +598,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "augusta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1b5ti34"
+      },
+      {
+        "locationId": "augusta-ga",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1yjb85u",
+        "legId": "leg-1ak8iv8"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1veqa86",
+        "legId": "leg-15devbv"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-017-knoxville",
@@ -352,9 +637,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "knoxville-tn",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0y6v9tl"
+      },
+      {
+        "locationId": "knoxville-tn",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0mmkbxz",
+        "legId": "leg-0n6rgod"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0zejvv3",
+        "legId": "leg-1ba2qy6"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2015-013-san-diego",
@@ -372,9 +676,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-diego-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0h08btm"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1jz8ekx",
+        "legId": "leg-16mcbyh"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-09qmwmc",
+        "legId": "leg-0fnbkpw"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-025-atlanta",
@@ -392,9 +715,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-12nb77u"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cczc5l",
+        "legId": "leg-02xy5v9"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-02m6pxw",
+        "legId": "leg-0auad2o"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-024-bahamas",
@@ -412,9 +754,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "nassau-bs",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1qket15"
+      },
+      {
+        "locationId": "nassau-bs",
+        "modeFromPrevious": "boat",
+        "pointId": "point-03dupaj",
+        "legId": "leg-14ekc5b"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1rs3f2n",
+        "legId": "leg-12iof9k"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-018-cayman-islands",
@@ -432,9 +793,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "george-town-ky",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-11ernqr"
+      },
+      {
+        "locationId": "george-town-ky",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1hnd5z5",
+        "legId": "leg-0o6ee01"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-054wjtp",
+        "legId": "leg-034vi6c"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-022-chicago",
@@ -452,9 +832,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "chicago-il",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0123ed0"
+      },
+      {
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ewn68r",
+        "legId": "leg-0w95bmj"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0znez56",
+        "legId": "leg-0o9aj62"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-028-fort-lauderdale",
@@ -472,9 +871,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0r7avoh"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0aox52i",
+        "legId": "leg-14cfy56"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0f7yy6v",
+        "legId": "leg-1elz9pr"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-019-jamaica",
@@ -492,9 +910,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "montego-bay-jm",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-031rlaw"
+      },
+      {
+        "locationId": "montego-bay-jm",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1udd8at",
+        "legId": "leg-1dgq4rr"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0bx7nf2",
+        "legId": "leg-0pwy76o"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-020-jekyll-island",
@@ -512,9 +949,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "jekyll-island-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-09kobzx"
+      },
+      {
+        "locationId": "jekyll-island-ga",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0xj3nj8",
+        "legId": "leg-171xoak"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-13ib9w3",
+        "legId": "leg-0ngn8wt"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-026-knoxville",
@@ -532,9 +988,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "knoxville-tn",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1hcoi26"
+      },
+      {
+        "locationId": "knoxville-tn",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1l1dreg",
+        "legId": "leg-1d9m6kq"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0hbkhiw",
+        "legId": "leg-1fp7wyt"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-023-miami",
@@ -552,9 +1027,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "miami-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0d8gtgc"
+      },
+      {
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1lgh5mt",
+        "legId": "leg-1an019j"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0ubbaky",
+        "legId": "leg-136r0jy"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-027-phoenix",
@@ -571,9 +1065,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "phoenix-az",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-0pxxxj8"
+      },
+      {
+        "locationId": "phoenix-az",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0f020a4",
+        "legId": "leg-0gag824"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wg8uyi",
+        "legId": "leg-01wq0n3"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2016-021-san-diego",
@@ -591,9 +1104,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-diego-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-043d3qq"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1x1xbtl",
+        "legId": "leg-08lvkbl"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0seini4",
+        "legId": "leg-0rrcx5o"
+      }
+    ],
     "notes": "Move-related trip",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-035-fort-lauderdale",
@@ -611,9 +1143,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1w8l7p8"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ve9ynp",
+        "legId": "leg-0b8qjtn"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0tkdlfa",
+        "legId": "leg-1p9nlse"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-032-knoxville",
@@ -631,9 +1182,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "knoxville-tn",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0t8s31q"
+      },
+      {
+        "locationId": "knoxville-tn",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0279r72",
+        "legId": "leg-0wr6lew"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-01nghp0",
+        "legId": "leg-1y2oolf"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-030-las-vegas",
@@ -651,9 +1221,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0cmovfz"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0euwkfm",
+        "legId": "leg-1lv6g60"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1yuq0rh",
+        "legId": "leg-0a6zkgh"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-034-las-vegas",
@@ -671,9 +1260,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1ujyoxn"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cen8za",
+        "legId": "leg-17f6n7y"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1izwokp",
+        "legId": "leg-1uihkzz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-033-malibu",
@@ -691,9 +1299,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "malibu-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1ldxq1z"
+      },
+      {
+        "locationId": "malibu-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0sbvvf7",
+        "legId": "leg-0hx5cnh"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1tg5379",
+        "legId": "leg-0c008k4"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-031-miami",
@@ -711,9 +1338,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "miami-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1lt2n32"
+      },
+      {
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-149evxh",
+        "legId": "leg-1a7226b"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1awal6s",
+        "legId": "leg-05xqe9m"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2017-029-san-diego",
@@ -731,9 +1377,22 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-diego-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-16qh8c9"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1y2qckk",
+        "legId": "leg-11v538s"
+      }
+    ],
     "notes": "Move-related trip",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-039-las-vegas",
@@ -751,7 +1410,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1txchrl"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wjrf2o",
+        "legId": "leg-1wv4dh0"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-13jiswz",
+        "legId": "leg-01zz2kh"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -761,7 +1438,8 @@
     "guestHoppers": [],
     "returnMode": "plane",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-044-atlanta",
@@ -779,9 +1457,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0pq2fkt"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-119v6d4",
+        "legId": "leg-0kplp38"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-12j5c8f",
+        "legId": "leg-1wh1r45"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-040-cabo",
@@ -799,9 +1496,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cabo-san-lucas-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1tpnkbt"
+      },
+      {
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-15pymcj",
+        "legId": "leg-0alztff"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1m2ptdn",
+        "legId": "leg-141t18u"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-036-denver",
@@ -819,9 +1535,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "denver-co",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0s7xb7x"
+      },
+      {
+        "locationId": "denver-co",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1g85gzf",
+        "legId": "leg-1n1lokb"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1kfrl5r",
+        "legId": "leg-117olfi"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-047-fort-lauderdale",
@@ -839,9 +1574,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-193693s"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-131ehdl",
+        "legId": "leg-1el7tuf"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1pbuyqa",
+        "legId": "leg-0brgnq2"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-041-honolulu",
@@ -859,9 +1613,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "honolulu-hi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0qxuafx"
+      },
+      {
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0uf1ggs",
+        "legId": "leg-043v3oo"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-13qx73j",
+        "legId": "leg-1fka5jf"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-042-las-vegas",
@@ -879,9 +1652,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0uw35cj"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0by14am",
+        "legId": "leg-1qokcye"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0g2lra9",
+        "legId": "leg-1qr5n93"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-046-philadelphia",
@@ -899,9 +1691,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "philadelphia-pa",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1lga9yj"
+      },
+      {
+        "locationId": "philadelphia-pa",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1fs5dvd",
+        "legId": "leg-1htbiup"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mnhvh5",
+        "legId": "leg-0q1jdsg"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-038-rosarito",
@@ -918,9 +1729,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "rosarito-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1287cl2"
+      },
+      {
+        "locationId": "rosarito-mx",
+        "modeFromPrevious": "drive",
+        "pointId": "point-03bx5m4",
+        "legId": "leg-112jhnc"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-09dqqyk",
+        "legId": "leg-1fju26x"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-037-san-francisco-and-oakland",
@@ -941,23 +1771,31 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0arfgcm"
       },
       {
         "locationId": "san-francisco-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1d70fel",
+        "legId": "leg-0pzg2mz"
       },
       {
         "locationId": "oakland-ca",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-1fy9jd5",
+        "legId": "leg-03fsm0x"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-0fm3rfl",
+        "legId": "leg-1gjuv48"
       }
     ],
     "notes": "San Diego to San Francisco, drive to Oakland, then home.",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-043-seattle",
@@ -975,9 +1813,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "seattle-wa",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-10pvwrv"
+      },
+      {
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane",
+        "pointId": "point-10gapar",
+        "legId": "leg-0y3u76z"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1tufujd",
+        "legId": "leg-00xi4ao"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2018-045-tokyo",
@@ -994,9 +1851,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "tokyo-jp",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0lzg4cn"
+      },
+      {
+        "locationId": "tokyo-jp",
+        "modeFromPrevious": "plane",
+        "pointId": "point-10qcebn",
+        "legId": "leg-0aq73wb"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0rz0itx",
+        "legId": "leg-0sx8jhw"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-136-seattle",
@@ -1013,13 +1889,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "seattle-wa",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0dbvuif"
+      },
+      {
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1i0jekf",
+        "legId": "leg-02fej33"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1yyyh51",
+        "legId": "leg-0gf47es"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-051-atlanta",
@@ -1037,9 +1932,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1qyd7iq"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-00hj9m3",
+        "legId": "leg-1ofqb0t"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1apohw8",
+        "legId": "leg-0i61su0"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-056-atlanta",
@@ -1057,9 +1971,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0xgqxk1"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ujy4qs",
+        "legId": "leg-068g9vs"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ca8bmb",
+        "legId": "leg-0vvnow9"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-052-chicago",
@@ -1077,9 +2010,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "chicago-il",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-04y88ug"
+      },
+      {
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0dvv7x5",
+        "legId": "leg-1056v9z"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-143v3uq",
+        "legId": "leg-1kjx5by"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-049-denver",
@@ -1097,9 +2049,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "denver-co",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-10c61so"
+      },
+      {
+        "locationId": "denver-co",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1lz49d8",
+        "legId": "leg-1nucejm"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1gkurf6",
+        "legId": "leg-1ahw233"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-057-fort-lauderdale",
@@ -1117,9 +2088,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1j7sh1i"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0jp7t1j",
+        "legId": "leg-1i0wlc1"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1318tzg",
+        "legId": "leg-0894lgg"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-050-honolulu",
@@ -1137,9 +2127,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "honolulu-hi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0nvkb8g"
+      },
+      {
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-01uj007",
+        "legId": "leg-0d9kgz5"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0fgj72y",
+        "legId": "leg-0byw3zi"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-048-las-vegas",
@@ -1157,9 +2166,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-17py1bc"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-10dgeut",
+        "legId": "leg-1hmwx37"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0if50yq",
+        "legId": "leg-1ptnwnq"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-054-las-vegas",
@@ -1176,9 +2204,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1380vkj"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0k9yuim",
+        "legId": "leg-0t29xna"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0oejhi9",
+        "legId": "leg-0t4v7xz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-053-london-scotland-versailles-and-paris",
@@ -1199,31 +2246,43 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0517wn5"
       },
       {
         "locationId": "london-uk",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-15hc8uj",
+        "legId": "leg-1xqmwmr"
       },
       {
         "locationId": "edinburgh-uk",
-        "modeFromPrevious": "train"
+        "modeFromPrevious": "train",
+        "pointId": "point-0crj706",
+        "legId": "leg-1mciz07"
       },
       {
         "locationId": "versailles-fr",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1oys4a3",
+        "legId": "leg-0l62h42"
       },
       {
         "locationId": "paris-fr",
-        "modeFromPrevious": "train"
+        "modeFromPrevious": "train",
+        "pointId": "point-1o36129",
+        "legId": "leg-0r6lcwq"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1wnr7o0",
+        "legId": "leg-0vmqi68"
       }
     ],
     "notes": "San Diego to London, train to Scotland, plane to Versailles, train to Paris, then home.",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-058-puerto-rico",
@@ -1241,9 +2300,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-juan-pr",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0b3di0n"
+      },
+      {
+        "locationId": "san-juan-pr",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ry71rs",
+        "legId": "leg-0577ev0"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1yetbid",
+        "legId": "leg-0qa4ayz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2019-055-seoul",
@@ -1260,9 +2338,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "seoul-kr",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0cttup7"
+      },
+      {
+        "locationId": "seoul-kr",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0z9lyt2",
+        "legId": "leg-0j6abem"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-15ydsgp",
+        "legId": "leg-18tf5wn"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-061-las-vegas",
@@ -1280,9 +2377,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1qe9sfz"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0j403aa",
+        "legId": "leg-07zn020"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1rabpm5",
+        "legId": "leg-1khnq0x"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-062-las-vegas",
@@ -1300,9 +2416,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0sqwg2w"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0bq8zg5",
+        "legId": "leg-1wt34j5"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0gc4sbm",
+        "legId": "leg-1aqi6uk"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-064-las-vegas",
@@ -1320,9 +2455,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1uzdxqy"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0rz5p23",
+        "legId": "leg-0y2a7wd"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-04dazxc",
+        "legId": "leg-0n5tghw"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-059-mammoth",
@@ -1339,9 +2493,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "mammoth-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0njcqbw"
+      },
+      {
+        "locationId": "mammoth-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1qkelkj",
+        "legId": "leg-00b9fmv"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-13pwddy",
+        "legId": "leg-17ojubu"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-060-melbourne",
@@ -1359,9 +2532,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "melbourne-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-121ngai"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-14fhwsd",
+        "legId": "leg-1cvbo7n"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0dgoghs",
+        "legId": "leg-1ych90i"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2020-063-palm-springs",
@@ -1379,9 +2571,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "palm-springs-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1xjiv2h"
+      },
+      {
+        "locationId": "palm-springs-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-0e6ivrg",
+        "legId": "leg-16rc67a"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1pw9nvf",
+        "legId": "leg-0pykr3x"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-067-atlanta",
@@ -1399,9 +2610,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0djoz37"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1se4m8h",
+        "legId": "leg-0ddu8d2"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0dtx4rd",
+        "legId": "leg-1ju0vg1"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-070-atlanta",
@@ -1419,9 +2649,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1mthjr3"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1lti1hx",
+        "legId": "leg-0rc8kw2"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-15qe8j9",
+        "legId": "leg-0d2w7m5"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-068-cape-canaveral",
@@ -1438,9 +2687,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cape-canaveral-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1mf7qme"
+      },
+      {
+        "locationId": "cape-canaveral-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1pcmfi8",
+        "legId": "leg-1p0fyg3"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cin8r8",
+        "legId": "leg-0fe77so"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-066-fort-lauderdale",
@@ -1458,9 +2726,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1vlfww4"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0606w7i",
+        "legId": "leg-1t9qq87"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1pfvyly",
+        "legId": "leg-13us938"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-071-fort-lauderdale",
@@ -1478,9 +2765,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1ocs3iw"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1k7uykq",
+        "legId": "leg-0ipknij"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1vxxf1m",
+        "legId": "leg-1ieu66w"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-065-honolulu",
@@ -1498,9 +2804,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "honolulu-hi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0jbgfzs"
+      },
+      {
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0o6vft2",
+        "legId": "leg-10ewbwl"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-18nswp6",
+        "legId": "leg-1s20e9q"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-072-las-vegas",
@@ -1518,9 +2843,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0c2s535"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1457ne7",
+        "legId": "leg-1b0bjw0"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mddjd7",
+        "legId": "leg-1l3corz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2021-069-san-francisco",
@@ -1538,9 +2882,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-francisco-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-10hq4mj"
+      },
+      {
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0fnicbr",
+        "legId": "leg-0nkbyg8"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0xys7oh",
+        "legId": "leg-0p84htz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-077-alaska",
@@ -1558,9 +2921,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "anchorage-ak",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0jf0job"
+      },
+      {
+        "locationId": "anchorage-ak",
+        "modeFromPrevious": "plane",
+        "pointId": "point-08suaf8",
+        "legId": "leg-0n6ssaz"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0hpj64x",
+        "legId": "leg-0qqevnu"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-078-buffalo",
@@ -1577,9 +2959,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "buffalo-ny",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-163v2vq"
+      },
+      {
+        "locationId": "buffalo-ny",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0powp43",
+        "legId": "leg-0rzi0tu"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1f44gmc",
+        "legId": "leg-1nauxlf"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-073-cape-canaveral",
@@ -1596,9 +2997,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cape-canaveral-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0iwl5vr"
+      },
+      {
+        "locationId": "cape-canaveral-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1r0qwab",
+        "legId": "leg-1k0vzde"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-05hdbbx",
+        "legId": "leg-0ilbr69"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-079-cape-canaveral",
@@ -1616,9 +3036,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cape-canaveral-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-01py4kp"
+      },
+      {
+        "locationId": "cape-canaveral-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ecpuhl",
+        "legId": "leg-0frrpw0"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1wdc5pv",
+        "legId": "leg-1i1y0rf"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-076-catalina",
@@ -1636,9 +3075,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "catalina-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0s7fxt8"
+      },
+      {
+        "locationId": "catalina-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-04ulvh8",
+        "legId": "leg-1ot09x9"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-00q9iu6",
+        "legId": "leg-1o5wzjy"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-080-fort-lauderdale",
@@ -1656,9 +3114,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-104brkr"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mo1yqd",
+        "legId": "leg-0yg1pfe"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0efbgr5",
+        "legId": "leg-1nc63g1"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-074-honolulu",
@@ -1676,9 +3153,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "honolulu-hi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1ittm3r"
+      },
+      {
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0i0gpm7",
+        "legId": "leg-0dhse2e"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1qnwpq5",
+        "legId": "leg-0vw79op"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2022-075-las-vegas",
@@ -1696,9 +3192,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-00xy5yx"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1gh1nev",
+        "legId": "leg-11wcaxk"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-058nugz",
+        "legId": "leg-1l9db7b"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-090-atlanta",
@@ -1716,9 +3231,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0x89str"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0j7bjgl",
+        "legId": "leg-0pkwtiq"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-01h5bz9",
+        "legId": "leg-0he3lh9"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-088-austin",
@@ -1735,9 +3269,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "austin-tx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0kzl8dn"
+      },
+      {
+        "locationId": "austin-tx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0s1qlb8",
+        "legId": "leg-17e7i1p"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1jduun5",
+        "legId": "leg-047134s"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-089-barcelona",
@@ -1755,9 +3308,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "barcelona-es",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1fog06z"
+      },
+      {
+        "locationId": "barcelona-es",
+        "modeFromPrevious": "plane",
+        "pointId": "point-155kmkv",
+        "legId": "leg-1fqch5k"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0sxo2ep",
+        "legId": "leg-0y3t21b"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-093-cancun",
@@ -1775,9 +3347,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cancun-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1uimam5"
+      },
+      {
+        "locationId": "cancun-mx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1l3yamd",
+        "legId": "leg-0ieuy9s"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1moj6zr",
+        "legId": "leg-0dqb7wr"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-081-cape-canaveral",
@@ -1794,9 +3385,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cape-canaveral-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0l8m0h9"
+      },
+      {
+        "locationId": "cape-canaveral-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-07kgv6d",
+        "legId": "leg-0m42bus"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-01b9imv",
+        "legId": "leg-0ih54f3"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-092-fort-lauderdale",
@@ -1814,9 +3424,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-09soptj"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1yf8vwp",
+        "legId": "leg-0yyvmau"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-02gxzwt",
+        "legId": "leg-0ytn8jx"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-082-italy-switzerland-and-evian",
@@ -1837,43 +3466,61 @@
     "route": [
       {
         "locationId": "los-angeles-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0lh948q"
       },
       {
         "locationId": "rome-it",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1fvouav",
+        "legId": "leg-1468ehc"
       },
       {
         "locationId": "florence-it",
-        "modeFromPrevious": "train"
+        "modeFromPrevious": "train",
+        "pointId": "point-1sisr8d",
+        "legId": "leg-06ywcka"
       },
       {
         "locationId": "venice-it",
-        "modeFromPrevious": "train"
+        "modeFromPrevious": "train",
+        "pointId": "point-1qrzc7u",
+        "legId": "leg-1lili06"
       },
       {
         "locationId": "geneva-ch",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-0xxo2dl",
+        "legId": "leg-0a41b89"
       },
       {
         "locationId": "interlaken-ch",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-0s3mqxx",
+        "legId": "leg-0iff809"
       },
       {
         "locationId": "evian-fr",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-10gnwy5",
+        "legId": "leg-1rr38vk"
       },
       {
         "locationId": "geneva-ch",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-086ctp8",
+        "legId": "leg-1urmrd4"
       },
       {
         "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-0k9py6q",
+        "legId": "leg-0d0qqn4"
       }
     ],
     "notes": "Los Angeles to Rome, Florence, Venice, Geneva, Swiss Alps, Evian, back to Geneva, then home.",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-084-las-vegas",
@@ -1891,9 +3538,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0bm6788"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1c9sdjy",
+        "legId": "leg-1n7vps7"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wp859m",
+        "legId": "leg-1m33bho"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-086-las-vegas",
@@ -1911,9 +3577,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0kd2b66"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1h5u9cc",
+        "legId": "leg-1gh2lr9"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1brzjj0",
+        "legId": "leg-13z6mau"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-083-miami",
@@ -1930,9 +3615,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "miami-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1su89lr"
+      },
+      {
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ztpzan",
+        "legId": "leg-1gf1248"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wqzp1x",
+        "legId": "leg-0dl0gkz"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-091-orlando",
@@ -1950,9 +3654,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "orlando-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-03amrz4"
+      },
+      {
+        "locationId": "orlando-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0vx21i2",
+        "legId": "leg-00v5gtv"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1gm9nv6",
+        "legId": "leg-03boe3k"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-087-starbase",
@@ -1969,9 +3692,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "starbase-tx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0xd0wub"
+      },
+      {
+        "locationId": "starbase-tx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-122g8gl",
+        "legId": "leg-11qlhsk"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-069wttl",
+        "legId": "leg-1lxihc7"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2023-085-tampa",
@@ -1989,9 +3731,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "tampa-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0me2ka7"
+      },
+      {
+        "locationId": "tampa-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1gz2pml",
+        "legId": "leg-10blfye"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1po25et",
+        "legId": "leg-15k4irx"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-094-indianapolis",
@@ -2009,13 +3770,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "indianapolis-in",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0gh45r9"
+      },
+      {
+        "locationId": "indianapolis-in",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ldawi1",
+        "legId": "leg-12y3g19"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-07g87tj",
+        "legId": "leg-1owmtl8"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-095-greenville",
@@ -2032,13 +3812,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "greenville-sc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1nt8ifa"
+      },
+      {
+        "locationId": "greenville-sc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0r2t7g5",
+        "legId": "leg-0y2brb7"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-17movd8",
+        "legId": "leg-0m09ooo"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-096-west-palm-beach",
@@ -2056,13 +3855,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "west-palm-beach-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-00v44jw"
+      },
+      {
+        "locationId": "west-palm-beach-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1srsal6",
+        "legId": "leg-0aguru4"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1vs8tja",
+        "legId": "leg-1on0l2b"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-099-baltimore",
@@ -2079,13 +3897,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "baltimore-md",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1wcr20c"
+      },
+      {
+        "locationId": "baltimore-md",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1yoj54a",
+        "legId": "leg-1qe66ss"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1bu4sti",
+        "legId": "leg-1uw4rsz"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-097-las-vegas",
@@ -2103,13 +3940,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1w22pq8"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-02q2v19",
+        "legId": "leg-0efyma3"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1v5knzu",
+        "legId": "leg-0xktkse"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-098-washington-dc",
@@ -2126,13 +3982,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "washington-dc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1wy9uoy"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-13sbp07",
+        "legId": "leg-1c2dxs9"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0n7yt2g",
+        "legId": "leg-0nrz1e6"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-101-toronto",
@@ -2150,13 +4025,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "toronto-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-15u3r3q"
+      },
+      {
+        "locationId": "toronto-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wz0xql",
+        "legId": "leg-1r9187f"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0czn5h8",
+        "legId": "leg-1h09rhm"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-100-west-palm-beach",
@@ -2174,13 +4068,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "west-palm-beach-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0v2jy3k"
+      },
+      {
+        "locationId": "west-palm-beach-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0jjtrm6",
+        "legId": "leg-15g8szs"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0mnity2",
+        "legId": "leg-1v5en0v"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-102-las-vegas",
@@ -2198,13 +4111,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1ulxvs3"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1oon432",
+        "legId": "leg-1o3jsrq"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1nghtf5",
+        "legId": "leg-127ivd3"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-103-montreal",
@@ -2221,13 +4153,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "montreal-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1fwer8v"
+      },
+      {
+        "locationId": "montreal-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1tlv4d5",
+        "legId": "leg-0g10ndl"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mjix7h",
+        "legId": "leg-0nxwoko"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-104-seattle-vancouver-and-philadelphia",
@@ -2248,27 +4199,38 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-04s92wm"
       },
       {
         "locationId": "philadelphia-pa",
-        "modeFromPrevious": "mixed"
+        "modeFromPrevious": "mixed",
+        "pointId": "point-0adffkq",
+        "legId": "leg-07o3uf1"
       },
       {
         "locationId": "vancouver-ca",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-10q0qgk",
+        "legId": "leg-0batcir"
       },
       {
         "locationId": "seattle-wa",
-        "modeFromPrevious": "drive"
+        "modeFromPrevious": "drive",
+        "pointId": "point-0gesgug",
+        "legId": "leg-16p47bg"
       },
       {
         "locationId": "philadelphia-pa",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-13i9kzh",
+        "legId": "leg-0f37pi8"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1soehtj",
+        "legId": "leg-1kr9bma"
       }
     ],
     "notes": "Bonnie flew home after Seattle; Joey continued to Philadelphia.",
@@ -2276,7 +4238,8 @@
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-106-maui",
@@ -2295,7 +4258,25 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "maui-hi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-09vyd62"
+      },
+      {
+        "locationId": "maui-hi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0aa5amr",
+        "legId": "leg-023510l"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1i8htps",
+        "legId": "leg-0xkqj1u"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
@@ -2305,7 +4286,8 @@
     "guestHoppers": [],
     "returnMode": "plane",
     "trailStyle": "stripe",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-105-san-jose",
@@ -2322,13 +4304,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-jose-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1t3ap3t"
+      },
+      {
+        "locationId": "san-jose-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0npif7z",
+        "legId": "leg-0zr4g4r"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1rw33l7",
+        "legId": "leg-0y68nvq"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-107-atlanta",
@@ -2346,13 +4347,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1v6g1ky"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ldcjwb",
+        "legId": "leg-1lhd6gt"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1tkpy14",
+        "legId": "leg-0e0se7c"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2024-108-fort-lauderdale",
@@ -2370,13 +4390,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1nsjh0n"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ot6rgm",
+        "legId": "leg-0hynone"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0nujwad",
+        "legId": "leg-07hk053"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-109-atlanta-and-washington-dc-split-return",
@@ -2397,19 +4436,26 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0lyayw0"
       },
       {
         "locationId": "washington-dc",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cmpp9d",
+        "legId": "leg-1jdvx9b"
       },
       {
         "locationId": "washington-dc",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-15f5la0",
+        "legId": "leg-0etsxxe"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1v8qnjr",
+        "legId": "leg-01n05rl"
       }
     ],
     "notes": "Bonnie returned from Atlanta; Joey continued to Washington DC, then San Diego.",
@@ -2417,7 +4463,8 @@
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-110-washington-dc",
@@ -2434,13 +4481,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "washington-dc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0vkph46"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-16o0ny3",
+        "legId": "leg-0vqw25h"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1g3bqb0",
+        "legId": "leg-1h8ne8a"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-111-chicago-and-st-louis",
@@ -2461,19 +4527,26 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0dbu0uu"
       },
       {
         "locationId": "chicago-il",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-04n5qqz",
+        "legId": "leg-1srx3ud"
       },
       {
         "locationId": "st-louis-mo",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ju12kj",
+        "legId": "leg-1bqzztv"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-0zmvc6p",
+        "legId": "leg-11zs8ew"
       }
     ],
     "notes": "San Diego to Chicago to St. Louis to San Diego.",
@@ -2483,7 +4556,8 @@
     "endDay": null,
     "displayEndDate": "",
     "guestHoppers": [],
-    "returnMode": ""
+    "returnMode": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-112-seoul-and-tokyo",
@@ -2504,19 +4578,26 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-1yef6yl"
       },
       {
         "locationId": "seoul-kr",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1iztot8",
+        "legId": "leg-1upmqao"
       },
       {
         "locationId": "tokyo-jp",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1436q02",
+        "legId": "leg-1y4cvn4"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mwd2j6",
+        "legId": "leg-0fqubpx"
       }
     ],
     "notes": "San Diego to Seoul to Tokyo to San Diego.",
@@ -2528,7 +4609,8 @@
     "guestHoppers": [],
     "returnMode": "",
     "trailStyle": "stripe",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-113-miami",
@@ -2545,13 +4627,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "miami-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0zknugg"
+      },
+      {
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1el3yzj",
+        "legId": "leg-0anlzeh"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1b5fsdm",
+        "legId": "leg-0vmp8xw"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-114-washington-dc",
@@ -2568,13 +4669,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "washington-dc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0t53c7u"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1dw0vnz",
+        "legId": "leg-1pf89ep"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-11k4gdc",
+        "legId": "leg-0ong2ue"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-115-fort-lauderdale",
@@ -2591,13 +4711,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0r3vl38"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-11w19cd",
+        "legId": "leg-0d7bcwj"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0pm3va6",
+        "legId": "leg-0784a5i"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-116-houston",
@@ -2614,13 +4753,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "houston-tx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-10wi6jy"
+      },
+      {
+        "locationId": "houston-tx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ubasbc",
+        "legId": "leg-04yebgu"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0q50wyc",
+        "legId": "leg-1nkzfz5"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-117-scottsdale",
@@ -2637,13 +4795,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "scottsdale-az",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1rugnff"
+      },
+      {
+        "locationId": "scottsdale-az",
+        "modeFromPrevious": "plane",
+        "pointId": "point-151nu80",
+        "legId": "leg-0fxwzx8"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-00glsnd",
+        "legId": "leg-0hekm6f"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-118-las-vegas",
@@ -2661,13 +4838,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0dw6ee7"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0z1nn7m",
+        "legId": "leg-0n042eq"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1kpg6fh",
+        "legId": "leg-0p9vloz"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-119-seattle",
@@ -2684,13 +4880,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "seattle-wa",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-19ucr2f"
+      },
+      {
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0zoqfan",
+        "legId": "leg-0ga6er3"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ftx5jp",
+        "legId": "leg-1cs1mxg"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-120-las-vegas",
@@ -2707,13 +4922,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0lguh8i"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-046wtsj",
+        "legId": "leg-1omcrpx"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1lcbo7c",
+        "legId": "leg-1c86lcs"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-121-montreal",
@@ -2730,13 +4964,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "montreal-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1l5ip5o"
+      },
+      {
+        "locationId": "montreal-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1n5pxmc",
+        "legId": "leg-1el5xea"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0v7igra",
+        "legId": "leg-0s8ager"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-123-grand-forks",
@@ -2753,13 +5006,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "grand-forks-nd",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1pqv1vi"
+      },
+      {
+        "locationId": "grand-forks-nd",
+        "modeFromPrevious": "plane",
+        "pointId": "point-03nobt6",
+        "legId": "leg-16f5rac"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0knth2c",
+        "legId": "leg-09nrdlj"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-122-washington-dc",
@@ -2776,13 +5048,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "washington-dc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0lk3um5"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-15gu4lm",
+        "legId": "leg-1x7r6ci"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1p4wgen",
+        "legId": "leg-1oj1yix"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-124-atlanta",
@@ -2800,13 +5091,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "atlanta-ga",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0emobsi"
+      },
+      {
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1a81fbf",
+        "legId": "leg-0hw1oh9"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-15vsrjs",
+        "legId": "leg-1madwgo"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2025-125-fort-lauderdale",
@@ -2824,13 +5134,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "fort-lauderdale-fl",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-180reu1"
+      },
+      {
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane",
+        "pointId": "point-04in814",
+        "legId": "leg-1kmxsso"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0ew7h2j",
+        "legId": "leg-0dqspe9"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-126-washington-dc",
@@ -2847,13 +5176,32 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "washington-dc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-14bm0tu"
+      },
+      {
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0dlz0jr",
+        "legId": "leg-0cbqlsp"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1vkqgl4",
+        "legId": "leg-0dp7f4u"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "endYear": null,
     "endMonth": null,
     "endDay": null,
-    "displayEndDate": ""
+    "displayEndDate": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-127-chicago",
@@ -2871,9 +5219,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "chicago-il",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-14anga3"
+      },
+      {
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0003z8u",
+        "legId": "leg-16h270u"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1xf7e1l",
+        "legId": "leg-11zj4kb"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-128-charlotte",
@@ -2891,9 +5258,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "charlotte-nc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1gsutf0"
+      },
+      {
+        "locationId": "charlotte-nc",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0dw89a3",
+        "legId": "leg-1amvitp"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0wa8k86",
+        "legId": "leg-1mf6mok"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-129-san-francisco",
@@ -2910,9 +5296,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "san-francisco-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1uv38gy"
+      },
+      {
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1rdr0zl",
+        "legId": "leg-1m45jdj"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0l4s6ug",
+        "legId": "leg-1powb8q"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-130-london-and-amsterdam",
@@ -2932,19 +5337,26 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-01o0w8k"
       },
       {
         "locationId": "london-uk",
-        "modeFromPrevious": "mixed"
+        "modeFromPrevious": "mixed",
+        "pointId": "point-0n9kuy0",
+        "legId": "leg-0h29z9n"
       },
       {
         "locationId": "amsterdam-nl",
-        "modeFromPrevious": "train"
+        "modeFromPrevious": "train",
+        "pointId": "point-1pts4f5",
+        "legId": "leg-070ddzo"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-0a1uahn",
+        "legId": "leg-01larmg"
       }
     ],
     "notes": "San Diego to London, train to Amsterdam, then home.",
@@ -2956,7 +5368,8 @@
     "guestHoppers": [],
     "returnMode": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-131-syracuse-and-lakeland",
@@ -2976,23 +5389,31 @@
     "route": [
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": null
+        "modeFromPrevious": null,
+        "pointId": "point-0rra00c"
       },
       {
         "locationId": "lakeland-fl",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1vipc1q",
+        "legId": "leg-0wz0dqo"
       },
       {
         "locationId": "lakeland-fl",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-18n3hkn",
+        "legId": "leg-1np1jta"
       },
       {
         "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
+        "modeFromPrevious": "plane",
+        "pointId": "point-1fl0vbn",
+        "legId": "leg-16iu0us"
       }
     ],
     "notes": "San Diego to Syracuse to Lakeland to San Diego.",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-132-detroit",
@@ -3009,9 +5430,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "detroit-mi",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-11z8on8"
+      },
+      {
+        "locationId": "detroit-mi",
+        "modeFromPrevious": "plane",
+        "pointId": "point-016rlo7",
+        "legId": "leg-0kf3n9l"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1cw0qji",
+        "legId": "leg-1kyfahc"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-133-boston",
@@ -3029,9 +5469,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "boston-ma",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-09xlp1f"
+      },
+      {
+        "locationId": "boston-ma",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1lpiotq",
+        "legId": "leg-0olvgzq"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0qxncep",
+        "legId": "leg-1noogsl"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-134-dominican-republic",
@@ -3048,9 +5507,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "puerto-plata-do",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1tq0lms"
+      },
+      {
+        "locationId": "puerto-plata-do",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0c9dsv7",
+        "legId": "leg-14ytpmt"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1s88vtq",
+        "legId": "leg-1052opu"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-135-cabo",
@@ -3068,9 +5546,28 @@
     "roundTrip": true,
     "fromLocationId": null,
     "toLocationId": "cabo-san-lucas-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1iw0u4j"
+      },
+      {
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0n7kg9t",
+        "legId": "leg-04mu29h"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-00uyfip",
+        "legId": "leg-03vymus"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-140-boston",
@@ -3094,9 +5591,28 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "boston-ma",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1p3ldup"
+      },
+      {
+        "locationId": "boston-ma",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1532868",
+        "legId": "leg-144ig30"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-04vypxv",
+        "legId": "leg-1mvg2w7"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-142-kentucky",
@@ -3128,11 +5644,30 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "louisville-ky",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1p4ebl6"
+      },
+      {
+        "locationId": "louisville-ky",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ntroi8",
+        "legId": "leg-0iqizzy"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0yftq5s",
+        "legId": "leg-0nttx83"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-138-london",
@@ -3157,9 +5692,28 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "london-uk",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1touwu3"
+      },
+      {
+        "locationId": "london-uk",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0u2i9gp",
+        "legId": "leg-0bl4qgd"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1i4swh5",
+        "legId": "leg-0x8nqdk"
+      }
+    ],
     "notes": "",
-    "occasion": ""
+    "occasion": "",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-146-los-angeles",
@@ -3182,11 +5736,30 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "los-angeles-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-04s289m"
+      },
+      {
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1ogm3qk",
+        "legId": "leg-1ncq64a"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-10yrcf4",
+        "legId": "leg-1i51i1t"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-144-albuquerque",
@@ -3209,11 +5782,30 @@
     "returnMode": "train",
     "fromLocationId": null,
     "toLocationId": "albuquerque-nm",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1cy2rlc"
+      },
+      {
+        "locationId": "albuquerque-nm",
+        "modeFromPrevious": "train",
+        "pointId": "point-0qs81ej",
+        "legId": "leg-0zhceax"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "train",
+        "pointId": "point-04ljb1m",
+        "legId": "leg-0gb7x5s"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-143-las-vegas",
@@ -3244,11 +5836,30 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "las-vegas-nv",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-0l0n8sk"
+      },
+      {
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1nxhfux",
+        "legId": "leg-19895db"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-0vxfaou",
+        "legId": "leg-0fcszia"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "stripe",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-139-tokyo",
@@ -3273,11 +5884,116 @@
     "returnMode": "plane",
     "fromLocationId": null,
     "toLocationId": "tokyo-jp",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-01kdhq0"
+      },
+      {
+        "locationId": "tokyo-jp",
+        "modeFromPrevious": "plane",
+        "pointId": "point-1mv79t0",
+        "legId": "leg-07zt9u2"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane",
+        "pointId": "point-19cd3xu",
+        "legId": "leg-0762fp1"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "stripe",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
+  },
+  {
+    "id": "knnr1f",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-10-99-2026-10-99-144",
+    "label": "Minneapolis",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": "oklahoma-city-ok",
+    "toLocationId": "minneapolis-mn",
+    "route": [
+      {
+        "pointId": "point-1f0dd98b4bcb",
+        "locationId": "oklahoma-city-ok",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-86bee282f0df",
+        "legId": "leg-d794ea71026d",
+        "locationId": "minneapolis-mn",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-81a1c6e019db",
+        "legId": "leg-7fadf4372810",
+        "locationId": "oklahoma-city-ok",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.0",
+      "signature": "[{\"id\":\"leg-d794ea71026d\",\"mode\":\"drive\",\"from\":\"oklahoma-city-ok@-97.51643@35.46756\",\"to\":\"minneapolis-mn@-93.26384@44.97997\"},{\"id\":\"leg-7fadf4372810\",\"mode\":\"drive\",\"from\":\"minneapolis-mn@-93.26384@44.97997\",\"to\":\"oklahoma-city-ok@-97.51643@35.46756\"}]",
+      "approved": true,
+      "approvedAt": "2026-07-12T23:25:23.618Z",
+      "legs": [
+        {
+          "legId": "leg-d794ea71026d",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 694.21,
+          "routeMiles": 703.35,
+          "estimatedMinutes": 824,
+          "confidence": "medium",
+          "warnings": [
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 130,
+          "reviewedAt": "2026-07-12T23:24:59.642Z"
+        },
+        {
+          "legId": "leg-7fadf4372810",
+          "mode": "drive",
+          "source": "natural-earth-road-fallback",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 694.21,
+          "routeMiles": 703.35,
+          "estimatedMinutes": 824,
+          "confidence": "medium",
+          "warnings": [
+            "The detailed network was incomplete, so GlobeHoppers used a lower-confidence fallback corridor."
+          ],
+          "errors": [],
+          "geometryPointCount": 130,
+          "reviewedAt": "2026-07-12T23:24:59.654Z"
+        }
+      ]
+    }
   },
   {
     "id": "7s32xd",
@@ -3289,7 +6005,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-144",
+    "sortKey": "2026-10-99-2026-10-99-145",
     "label": "Vancouver",
     "travelers": [
       "joey"
@@ -3300,11 +6016,30 @@
     "returnMode": "boat",
     "fromLocationId": null,
     "toLocationId": "vancouver-ca",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1inylhs"
+      },
+      {
+        "locationId": "vancouver-ca",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0fbg785",
+        "legId": "leg-1re5yl5"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0hyvvii",
+        "legId": "leg-1q9rl5u"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "5yvjxp",
@@ -3316,7 +6051,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-145",
+    "sortKey": "2026-11-99-2026-11-99-146",
     "label": "Athens",
     "travelers": [
       "bonnie"
@@ -3327,11 +6062,30 @@
     "returnMode": "boat",
     "fromLocationId": null,
     "toLocationId": "athens-esye31",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1kyftk3"
+      },
+      {
+        "locationId": "athens-esye31",
+        "modeFromPrevious": "boat",
+        "pointId": "point-09gg9qy",
+        "legId": "leg-0akwvnm"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0cb5gfl",
+        "legId": "leg-0rlqc2n"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-145-cabo-san-lucas",
@@ -3343,7 +6097,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-146",
+    "sortKey": "2026-11-99-2026-11-99-147",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -3354,11 +6108,30 @@
     "returnMode": "boat",
     "fromLocationId": null,
     "toLocationId": "cabo-san-lucas-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1hon7vq"
+      },
+      {
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "train",
+        "pointId": "point-0av4wwi",
+        "legId": "leg-1jzar5k"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0c5hyng",
+        "legId": "leg-0kdiwwr"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "olbkjy",
@@ -3370,7 +6143,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-147",
+    "sortKey": "2026-12-99-2026-12-99-148",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -3381,11 +6154,30 @@
     "returnMode": "boat",
     "fromLocationId": "melbourne-fl",
     "toLocationId": "castries-lc",
-    "route": [],
+    "route": [
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null,
+        "pointId": "point-1uvepec"
+      },
+      {
+        "locationId": "castries-lc",
+        "modeFromPrevious": "boat",
+        "pointId": "point-1esfcun",
+        "legId": "leg-1ccpezh"
+      },
+      {
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "boat",
+        "pointId": "point-08b9vgq",
+        "legId": "leg-07cmkzk"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "m7g1ym",
@@ -3397,7 +6189,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-148",
+    "sortKey": "2026-12-99-2026-12-99-149",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -3408,11 +6200,30 @@
     "returnMode": "boat",
     "fromLocationId": null,
     "toLocationId": "cabo-san-lucas-mx",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-1kd36vj"
+      },
+      {
+        "locationId": "cabo-san-lucas-mx",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0gmzj2l",
+        "legId": "leg-1bav7sf"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "boat",
+        "pointId": "point-0gsal31",
+        "legId": "leg-1v1z9ro"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   },
   {
     "id": "2026-143-phoenix",
@@ -3424,7 +6235,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-149",
+    "sortKey": "2026-12-99-2026-12-99-150",
     "label": "Phoenix",
     "travelers": [
       "joey"
@@ -3435,10 +6246,29 @@
     "returnMode": "drive",
     "fromLocationId": null,
     "toLocationId": "phoenix-az",
-    "route": [],
+    "route": [
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null,
+        "pointId": "point-12vwcao"
+      },
+      {
+        "locationId": "phoenix-az",
+        "modeFromPrevious": "drive",
+        "pointId": "point-1ltgbmu",
+        "legId": "leg-11dfif6"
+      },
+      {
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive",
+        "pointId": "point-11zeaka",
+        "legId": "leg-1su5z2d"
+      }
+    ],
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
-    "trailColorMode": "members"
+    "trailColorMode": "members",
+    "routeModelVersion": 2
   }
 ]
