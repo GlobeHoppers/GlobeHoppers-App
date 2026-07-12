@@ -5910,7 +5910,7 @@
     "routeModelVersion": 2
   },
   {
-    "id": "knnr1f",
+    "id": "1ihvwt",
     "routeModelVersion": 2,
     "year": 2026,
     "month": 10,
@@ -5921,6 +5921,88 @@
     "displayDate": "October 2026",
     "displayEndDate": "",
     "sortKey": "2026-10-99-2026-10-99-144",
+    "label": "Las Vegas",
+    "travelers": [
+      "hopper-mrcyz5l4"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": "scottsdale-az",
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-83a8daa76e60",
+        "locationId": "scottsdale-az",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f2df9d848fff",
+        "legId": "leg-382552a58a2a",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-beee65e969ed",
+        "legId": "leg-b07e24691cd4",
+        "locationId": "scottsdale-az",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-382552a58a2a\",\"mode\":\"drive\",\"from\":\"scottsdale-az@-111.92610@33.49420\",\"to\":\"las-vegas-nv@-115.13910@36.17160\"},{\"id\":\"leg-b07e24691cd4\",\"mode\":\"drive\",\"from\":\"las-vegas-nv@-115.13910@36.17160\",\"to\":\"scottsdale-az@-111.92610@33.49420\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-12T23:57:25.326Z",
+      "legs": [
+        {
+          "legId": "leg-382552a58a2a",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 259.63,
+          "routeMiles": 355.32,
+          "estimatedMinutes": 344,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 4756,
+          "reviewedAt": "2026-07-12T23:57:25.232Z"
+        },
+        {
+          "legId": "leg-b07e24691cd4",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 259.63,
+          "routeMiles": 310.87,
+          "estimatedMinutes": 318,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 4308,
+          "reviewedAt": "2026-07-12T23:57:25.324Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "knnr1f",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-10-99-2026-10-99-145",
     "label": "Minneapolis",
     "travelers": [
       "bonnie"
@@ -6005,7 +6087,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-145",
+    "sortKey": "2026-10-99-2026-10-99-146",
     "label": "Vancouver",
     "travelers": [
       "joey"
@@ -6051,7 +6133,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-146",
+    "sortKey": "2026-11-99-2026-11-99-147",
     "label": "Athens",
     "travelers": [
       "bonnie"
@@ -6097,7 +6179,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-147",
+    "sortKey": "2026-11-99-2026-11-99-148",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -6143,7 +6225,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-148",
+    "sortKey": "2026-12-99-2026-12-99-149",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -6189,7 +6271,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-149",
+    "sortKey": "2026-12-99-2026-12-99-150",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -6235,7 +6317,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-150",
+    "sortKey": "2026-12-99-2026-12-99-151",
     "label": "Phoenix",
     "travelers": [
       "joey"
