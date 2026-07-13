@@ -5762,6 +5762,92 @@
     "routeModelVersion": 2
   },
   {
+    "id": "9111ys",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-08-99-2026-08-99-141",
+    "label": "Maui",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "boat",
+    "roundTrip": true,
+    "returnMode": "boat",
+    "fromLocationId": "los-angeles-ca",
+    "toLocationId": "maui-hi",
+    "route": [
+      {
+        "pointId": "point-1e36beec1c39",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-26e3f6c417b4",
+        "legId": "leg-948fe1b82f47",
+        "locationId": "maui-hi",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-12fa2698bc37",
+        "legId": "leg-4a9fad79f827",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "boat"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-948fe1b82f47\",\"mode\":\"boat\",\"from\":\"los-angeles-ca@-118.24370@34.05220\",\"to\":\"maui-hi@-156.33190@20.79840\"},{\"id\":\"leg-4a9fad79f827\",\"mode\":\"boat\",\"from\":\"maui-hi@-156.33190@20.79840\",\"to\":\"los-angeles-ca@-118.24370@34.05220\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-13T03:33:32.387Z",
+      "legs": [
+        {
+          "legId": "leg-948fe1b82f47",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 2491.28,
+          "routeMiles": 2490.77,
+          "estimatedMinutes": 7140,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 7,
+          "reviewedAt": "2026-07-13T03:33:31.852Z"
+        },
+        {
+          "legId": "leg-4a9fad79f827",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 2491.28,
+          "routeMiles": 2498.35,
+          "estimatedMinutes": 7162,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 6,
+          "reviewedAt": "2026-07-13T03:33:32.387Z"
+        }
+      ]
+    }
+  },
+  {
     "id": "2026-144-albuquerque",
     "year": 2026,
     "month": 9,
@@ -5771,7 +5857,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-141",
+    "sortKey": "2026-09-99-2026-09-99-142",
     "label": "Albuquerque",
     "travelers": [
       "joey"
@@ -5817,7 +5903,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-142",
+    "sortKey": "2026-09-99-2026-09-99-143",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -5871,7 +5957,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-143",
+    "sortKey": "2026-09-99-2026-09-99-144",
     "label": "Tokyo",
     "travelers": [
       "joey",
@@ -5920,7 +6006,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-144",
+    "sortKey": "2026-10-99-2026-10-99-145",
     "label": "Las Vegas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -6002,7 +6088,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-145",
+    "sortKey": "2026-10-99-2026-10-99-146",
     "label": "Minneapolis",
     "travelers": [
       "bonnie"
@@ -6087,7 +6173,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-146",
+    "sortKey": "2026-10-99-2026-10-99-147",
     "label": "Vancouver",
     "travelers": [
       "joey"
@@ -6133,7 +6219,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-147",
+    "sortKey": "2026-11-99-2026-11-99-148",
     "label": "Athens",
     "travelers": [
       "bonnie"
@@ -6179,7 +6265,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-148",
+    "sortKey": "2026-11-99-2026-11-99-149",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -6225,7 +6311,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-149",
+    "sortKey": "2026-12-99-2026-12-99-150",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -6271,7 +6357,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-150",
+    "sortKey": "2026-12-99-2026-12-99-151",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -6317,7 +6403,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-151",
+    "sortKey": "2026-12-99-2026-12-99-152",
     "label": "Phoenix",
     "travelers": [
       "joey"
