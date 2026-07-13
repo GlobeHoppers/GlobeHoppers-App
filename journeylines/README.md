@@ -1,5 +1,11 @@
 # GlobeHoppers
 
+Current release: **v7.4.0**
+
+GlobeHoppers is an animated, editable travel-history globe. v7.4 restores direct globe manipulation, route-faithful surface playback, animated timeline navigation, and a route-first Add Hop workflow.
+
+# GlobeHoppers
+
 **All your hops, skips & jumps.**
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.

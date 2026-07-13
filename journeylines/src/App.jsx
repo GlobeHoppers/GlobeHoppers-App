@@ -935,6 +935,7 @@ export default function App() {
     setProjection('globe');
     setCameraMode('global');
     setGlobeOverview(true);
+    setGlobeSpinPaused(false);
     setIsPlaying(false);
     setIntroLaunching(false);
     setShowHero(false);
@@ -1189,19 +1190,23 @@ export default function App() {
 
 
 function DestinationTripQueue({ selection, onSelect, onCancel }) {
-  return <aside className="destination-trip-queue glass" role="dialog" aria-label={`Trips to ${selection.locationName}`}>
+  return <aside className="destination-trip-queue" role="dialog" aria-label={`Trips to ${selection.locationName}`}>
     <div className="destination-trip-queue__head">
       <div><p className="eyebrow">Choose a Hop</p><h3>{selection.locationName}</h3></div>
       <button type="button" aria-label="Cancel destination selection" onClick={onCancel}>×</button>
     </div>
-    <p className="destination-trip-queue__hint">This destination appears in {selection.matches.length} Hops. Pick a card or one of the raised timeline pins.</p>
+    <p className="destination-trip-queue__hint">This destination appears in {selection.matches.length} Hops. Choose a card to play it.</p>
     <div className="destination-trip-queue__list">
-      {selection.matches.map(row => <button key={row.id} type="button" className="destination-trip-queue__card" style={{
+      {selection.matches.map((row, index) => <button key={row.id} type="button" className="destination-trip-queue__card gh-timeline-trip-row" style={{
         '--queue-color': row.color || '#00e5ff',
         '--queue-border': row.borderGradient || row.color || '#00e5ff',
-        '--queue-marker': row.markerBackground || row.color || '#00e5ff'
+        '--queue-marker': row.markerBackground || row.color || '#00e5ff',
+        '--queue-index': index
       }} onClick={() => onSelect(row)}>
-        <small>{row.date}</small><strong>{row.title}</strong><span>{row.route}</span><em>{row.traveler}</em>
+        <TimelineRowBorder colors={row.borderColors || [row.color || '#00e5ff']} />
+        <span className="destination-trip-queue__ball" aria-hidden="true"></span>
+        <span className="destination-trip-queue__date">{row.date}</span>
+        <strong>{row.title}</strong><span>{row.route}</span><em>{row.traveler}</em>
       </button>)}
     </div>
   </aside>;

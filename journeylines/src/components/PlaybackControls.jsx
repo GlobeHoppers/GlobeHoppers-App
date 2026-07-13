@@ -13,6 +13,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const playClickCountRef = useRef(0);
   const playClickTimerRef = useRef(null);
   const [timelineZoom, setTimelineZoom] = useState(1);
+  const [timelineAnimating, setTimelineAnimating] = useState(false);
+  const timelineAnimationTimerRef = useRef(null);
   const timelineViewportRef = useRef(null);
   const timelineDragRef = useRef(null);
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
@@ -71,14 +73,19 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     const viewport = timelineViewportRef.current;
     const previousZoom = timelineZoom;
     const clamped = Math.max(1, Math.min(8, Number(nextZoom) || 1));
-    if (clamped === previousZoom) return;
+    if (Math.abs(clamped - previousZoom) < 0.001) return;
     const viewportWidth = viewport?.clientWidth || 1;
-    const focusX = Math.max(0, Math.min(1, focusProgress)) * viewportWidth * previousZoom - (viewport?.scrollLeft || 0);
+    const focus = Math.max(0, Math.min(1, Number(focusProgress) || 0));
+    const focusX = focus * viewportWidth * previousZoom - (viewport?.scrollLeft || 0);
+    clearTimeout(timelineAnimationTimerRef.current);
+    setTimelineAnimating(true);
     setTimelineZoom(clamped);
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!viewport) return;
-      viewport.scrollLeft = Math.max(0, Math.max(0, focusProgress) * viewportWidth * clamped - focusX);
-    });
+      const targetLeft = clamped <= 1.001 ? 0 : Math.max(0, focus * viewportWidth * clamped - focusX);
+      viewport.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      timelineAnimationTimerRef.current = window.setTimeout(() => setTimelineAnimating(false), 620);
+    }));
   };
 
   const recenterTimeline = () => {
@@ -141,14 +148,14 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         <span>Timeline</span>
         <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
-          <button type="button" onClick={() => changeTimelineZoom(1, 0)} disabled={timelineZoom <= 1.001}>Fit</button>
+          <button type="button" onClick={() => changeTimelineZoom(1, 0.5)} disabled={timelineZoom <= 1.001}>Fit</button>
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom * 1.5)} disabled={timelineZoom >= 7.999} aria-label="Zoom timeline in">+</button>
           <button type="button" onClick={recenterTimeline} disabled={timelineZoom <= 1.001}>Recenter</button>
         </div>
       </div>
       <div
         ref={timelineViewportRef}
-        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''}`}
+        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
         onPointerDown={beginTimelinePan}
         onPointerMove={moveTimelinePan}
         onPointerUp={endTimelinePan}
@@ -203,7 +210,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
                     onBlur={() => setHoverMarker(null)}
                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerEdit?.(marker); }}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
-                  >{isDestinationMatch && <span className="timeline-marker__match-pill"><strong>{marker.title}</strong><small>{marker.date}</small></span>}</button>;
+                  ></button>;
                 })}
                 {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
                   <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>

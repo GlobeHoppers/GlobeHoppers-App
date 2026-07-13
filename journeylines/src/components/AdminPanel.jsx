@@ -37,7 +37,7 @@ const empty = {
   roundTrip: true, returnMode: '', fromLocationId: null, fromLocationText: '', fromCity: null, toLocationId: '', toLocationText: '', toCity: null,
   toCustomEnabled: false, toCustomName: '', toCustomLat: '', toCustomLon: '',
   startPointId: '', mainPointId: '', mainLegId: '', returnPointId: '', returnLegId: '',
-  notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, trailStyle: 'solid', trailColorMode: 'members'
+  notes: '', occasion: '', route: [], extraLegs: [], overrideFrom: false, _fromTouched: false, _titleMode: 'auto', trailStyle: 'solid', trailColorMode: 'members'
 };
 const emptyRouteReview = () => ({
   signature: '',
@@ -57,6 +57,8 @@ function createNewHopDraft() {
     fromCity: null,
     toCity: null,
     toLocationText: '',
+    _fromTouched: false,
+    _titleMode: 'auto',
     startPointId: createStableId('point'),
     mainPointId: createStableId('point'),
     mainLegId: createStableId('leg'),
@@ -66,7 +68,7 @@ function createNewHopDraft() {
 }
 
 function isDraftMeaningfullyBlank(value = {}) {
-  return !String(value.label || '').trim()
+  return !(value._titleMode === 'custom' && String(value.label || '').trim())
     && !value.month
     && !value.day
     && !value.endMonth
@@ -594,10 +596,9 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       ...empty,
       ...normalizedTrip,
       returnMode: derivedReturnMode,
-      overrideFrom: Boolean(
-        normalizedTrip.fromLocationId
-        || (routeStart?.locationId && routeStart.locationId !== activeHomeBaseId(homeBases, normalizedTrip))
-      ),
+      overrideFrom: false,
+      _fromTouched: true,
+      _titleMode: 'custom',
       startPointId: routeStart?.pointId || createStableId('point'),
       mainPointId: routeDestination?.pointId || createStableId('point'),
       mainLegId: routeDestination?.legId || createStableId('leg'),
@@ -716,14 +717,13 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       toCustomEnabled: false,
       toCustomName: '',
       toCustomLat: '',
-      toCustomLon: '',
-      label: d.label || location.name
+      toCustomLon: ''
     }));
     previewMapLocation(location);
   }
   function chooseFrom(location) {
     const isCity = location?._source === 'city';
-    setDraft(d => ({ ...d, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: selectedLocationText(location), overrideFrom: true }));
+    setDraft(d => ({ ...d, fromLocationId: isCity ? '' : location.id, fromCity: isCity ? location.city : null, fromLocationText: selectedLocationText(location), overrideFrom: false, _fromTouched: true }));
     previewMapLocation(location);
   }
   function chooseExtraLeg(index, location) {
@@ -1725,7 +1725,7 @@ function validateHopDraftForSave(draft = {}) {
   if (!draft.travelers?.length && !(draft.guestHoppers || []).length) missing.push(['Hoppers', 'Please add at least one Hopper or Guest Hopper']);
   if (!draft.toCustomEnabled && !draft.toLocationId && !draft.toCity && !draft.toLocationText?.trim()) missing.push(['Destination', 'Please choose a destination']);
   if (draft.toCustomEnabled && !String(draft.toCustomName || '').trim()) missing.push(['Custom destination name', 'Please name the custom destination']);
-  if (draft.overrideFrom && !draft.fromLocationId && !draft.fromCity && !draft.fromLocationText?.trim()) missing.push(['Start location', 'Please choose an override start location']);
+  if (!draft.fromLocationId && !draft.fromCity && !draft.fromLocationText?.trim()) missing.push(['Start location', 'Please choose a start location']);
   if (missing.length) {
     throw new Error(`Missing Required Fields:\n${missing.map(([field, action]) => `• ${field} - ${action}`).join('\n')}`);
   }
@@ -1755,9 +1755,8 @@ function validateAutomaticRouteCheckForSave(legs = [], signature = '', review = 
 
 function buildDraftReviewLegs(draft = {}, locById = {}, locs = [], homeBases = []) {
   const defaultFromId = activeHomeBaseId(homeBases, draft);
-  const start = draft.overrideFrom
-    ? previewDraftLocation(draft.fromLocationId, draft.fromCity, draft.fromLocationText, locById, locs)
-    : previewDraftLocation(defaultFromId, null, '', locById, locs);
+  const start = previewDraftLocation(draft.fromLocationId || defaultFromId, draft.fromCity, draft.fromLocationText, locById, locs)
+    || previewDraftLocation(defaultFromId, null, '', locById, locs);
   const destination = draft.toCustomEnabled
     ? previewCustomLocation(draft)
     : previewDraftLocation(draft.toLocationId, draft.toCity, draft.toLocationText, locById, locs);
@@ -2003,7 +2002,8 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const destinationMatches = locationSuggestions(locs, draft.toLocationText || '', cityMatchesFor(draft.toLocationText), true, cityLoadingFor(draft.toLocationText));
   const fromMatches = locationSuggestions(locs, draft.fromLocationText || '', cityMatchesFor(draft.fromLocationText), true, cityLoadingFor(draft.fromLocationText));
   const batchMode = mode === 'batch';
-  const title = mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : draft.label || draft.toCustomName || draft.toLocationText || 'Edit Hop';
+  const automaticTitle = automaticHopTitle(draft, locById, locs);
+  const title = draft.label || automaticTitle || (mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop');
   const currentHopSquad = activeDraftSquad(draft, normalizedHoppers || {});
   const currentHopSquadColor = currentHopSquad?.color || null;
   const currentDraftVisual = resolveTripVisual(draft, normalizedHoppers || {});
@@ -2022,7 +2022,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   }, [mode, selectedTravelerCount, draft._trailStyleTouched, draft.trailStyle, setDraft]);
   const defaultFromId = activeHomeBaseId(homeBases, draft);
   const defaultFrom = locById[defaultFromId];
-  const effectiveStart = draft.overrideFrom ? (locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || { name: draft.fromLocationText || 'Override start' }) : defaultFrom;
+  const effectiveStart = locById[draft.fromLocationId] || findLocationByText(locs, draft.fromLocationText) || defaultFrom || (draft.fromLocationText ? { name: draft.fromLocationText } : null);
   const effectiveDestination = draft.toCustomEnabled
     ? {
         id: 'custom-coordinate-preview',
@@ -2038,6 +2038,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const [calendarCursor, setCalendarCursor] = useState(() => ({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || new Date().getMonth() + 1 }));
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [titleEditorOpen, setTitleEditorOpen] = useState(false);
   const [guestPopupOpen, setGuestPopupOpen] = useState(false);
   const [guestColorOpen, setGuestColorOpen] = useState(false);
   const [guestDraft, setGuestDraft] = useState({ id: '', name: '', colorName: 'gray', color: '#8e99a8' });
@@ -2045,6 +2046,22 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
   const dialogRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const bothHoppersSelected = draft.travelers?.includes('joey') && draft.travelers?.includes('bonnie');
+
+  useEffect(() => {
+    if (draft._fromTouched) return;
+    const homeId = activeHomeBaseId(homeBases, draft);
+    const home = locById[homeId];
+    if (!homeId || !home) return;
+    const homeText = displayLocation(home);
+    if (draft.fromLocationId === homeId && draft.fromLocationText === homeText && !draft.fromCity) return;
+    setDraft(current => current._fromTouched ? current : ({ ...current, fromLocationId: homeId, fromLocationText: homeText, fromCity: null, overrideFrom: false }));
+  }, [draft.year, draft.month, draft.day, draft._fromTouched, draft.fromLocationId, draft.fromLocationText, homeBases, locById, setDraft]);
+
+  useEffect(() => {
+    if (draft._titleMode === 'custom') return;
+    if (!automaticTitle || draft.label === automaticTitle) return;
+    setDraft(current => current._titleMode === 'custom' ? current : ({ ...current, label: automaticTitle, _titleMode: 'auto' }));
+  }, [automaticTitle, draft._titleMode, draft.label, setDraft]);
 
   useEffect(() => {
     if (!dateRangeOpen) return;
@@ -2159,7 +2176,8 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
         <div className="studio-modal-header studio-modal-header--with-actions">
           <div className="studio-title-block">
             <p className="eyebrow">{mode === 'add' ? `Add ${addTripNoun}` : batchMode ? 'Batch Add Hops' : 'Edit Hop'}</p>
-            <h2 id="studio-modal-title" title={title}>{title}</h2>
+            <div className="studio-generated-title-row"><h2 id="studio-modal-title" title={title}>{title}</h2><button type="button" className="secondary compact studio-title-edit-button" onClick={() => setTitleEditorOpen(value => !value)}>{titleEditorOpen ? 'Done' : 'Edit Title'}</button></div>
+            {titleEditorOpen && <div className="studio-title-editor"><input aria-label="Hop title" value={draft.label || ''} onChange={event => setDraft(current => ({ ...current, label: event.target.value, _titleMode: 'custom' }))} />{draft._titleMode === 'custom' && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({ ...current, label: automaticTitle, _titleMode: 'auto' }))}>Use Automatic Title</button>}</div>}
             <small className="studio-modal-trip-id">Trip ID: {draft.id || ((mode === 'add' || batchMode) ? 'new-unsaved-hop' : 'unknown')}</small>
           </div>
           <div className="studio-modal-top-actions">
@@ -2171,14 +2189,13 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
         </div>
 
         <div className="studio-form-grid studio-form-grid--sticky-fields studio-form-grid--dates">
-          <label className="title-field">Hop title<input value={draft.label || ''} onChange={e => setDraft({...draft, label:e.target.value})} placeholder="Cabo Trip" /></label>
-          <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
           <BubbleSelect label="Month" value={draft.month || ''} display={monthLabel(draft.month) || 'Choose month'} options={MONTH_OPTIONS.filter(m => m.value).map(m => ({ value: m.value, label: m.label }))} open={monthPickerOpen} setOpen={setMonthPickerOpen} onChoose={(value) => setDraft(current => {
             const month = Number(value);
             const maxDay = new Date(Number(current.year) || new Date().getFullYear(), month, 0).getDate();
             return { ...current, month, day: current.day ? Math.min(Number(current.day), maxDay) : null };
           })} required variant="month" />
-          <label className="date-range-field">Hop dates<button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Hop Dates'}<span>▾</span></button>
+          <BubbleSelect label="Year" value={draft.year || ''} display={draft.year || 'Choose year'} options={yearOptions.map(y => ({ value: y, label: String(y) }))} open={yearPickerOpen} setOpen={setYearPickerOpen} onChoose={(value) => setDraft({...draft, year:Number(value)})} required variant="year" />
+          <label className="date-range-field">Exact Hop Dates <span className="optional-field-badge">Optional</span><button type="button" className="date-range-button" onClick={() => { setCalendarCursor({ year: Number(draft.year) || new Date().getFullYear(), month: Number(draft.month) || 1 }); setDateRangeOpen(v => !v); setRangePhase('start'); }}>{dateRangeLabel || 'Choose Exact Hop Dates'}<span>▾</span></button>
             {dateRangeOpen && <DateRangePopover
               popoverRef={dateRangeRef}
               draft={draft}
@@ -2235,15 +2252,9 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
           <section className="studio-pick-section route-section compact-section">
             <h3>Route</h3>
             <div className="route-form">
-              <div className="default-start-row">
-                {!draft.overrideFrom ? <div className="default-start-card">
-                  <span>Start location</span>
-                  <strong>{displayLocation(defaultFrom) || 'Current home base'}</strong>
-                  <small>Auto-derived from trip date and active home base</small>
-                </div> : <div className="default-start-card override-start-card">
-                  <AutocompleteField compact prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={fromMatches} onChoose={onChooseFrom} resetToken={`${draft.id || 'new'}:from:${draft.fromLocationId || 'unselected'}`} />
-                </div>}
-                <label className="check premium-check override-check"><input type="checkbox" checked={!!draft.overrideFrom} onChange={e => setDraft(d => ({...d, overrideFrom:e.target.checked, fromLocationId:e.target.checked ? d.fromLocationId : null}))}/> Override start location</label>
+              <div className="start-entry-block">
+                <AutocompleteField prominent label="Start Location" value={draft.fromLocationText || displayLocation(locById[draft.fromLocationId]) || ''} onChange={v => { setDraft(d => ({...d, fromLocationText:v, fromLocationId:'', fromCity:null, overrideFrom:false, _fromTouched:true})); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={fromMatches} onChoose={onChooseFrom} resetToken={`${draft.id || 'new'}:from:${draft.fromLocationId || 'unselected'}`} />
+                <small>Pre-filled from the active home base for this date. Type another location to change it.</small>
               </div>
               <div className="destination-entry-block">
                 <div className="destination-entry-heading">
@@ -2257,7 +2268,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                   }))}>{draft.toCustomEnabled ? 'Use city search' : 'Use exact coordinates'}</button>
                 </div>
                 {draft.toCustomEnabled ? <div className="custom-coordinate-grid">
-                  <label>Location name<input value={draft.toCustomName || ''} onChange={event => setDraft(current => ({ ...current, toCustomName: event.target.value, label: current.label || event.target.value }))} placeholder="Private marina, island, landmark…" /></label>
+                  <label>Location name<input value={draft.toCustomName || ''} onChange={event => setDraft(current => ({ ...current, toCustomName: event.target.value }))} placeholder="Private marina, island, landmark…" /></label>
                   <label>Latitude<input type="number" min="-90" max="90" step="0.00001" value={draft.toCustomLat ?? ''} onChange={event => setDraft(current => ({ ...current, toCustomLat: event.target.value }))} placeholder="32.71570" /></label>
                   <label>Longitude<input type="number" min="-180" max="180" step="0.00001" value={draft.toCustomLon ?? ''} onChange={event => setDraft(current => ({ ...current, toCustomLon: event.target.value }))} placeholder="-117.16110" /></label>
                   <small>Custom points require valid coordinates and are saved into locations.json. GlobeHoppers will never substitute 0,0.</small>
@@ -2772,13 +2783,14 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
       lon: draft.toCustomLon
     }
   );
-  const fromLocationId = draft.overrideFrom
+  const derivedHomeId = activeHomeBaseId(homeBases, draft);
+  const fromLocationId = (draft.fromLocationId || draft.fromCity || String(draft.fromLocationText || '').trim())
     ? resolveSelectedLocation(draft.fromLocationId, draft.fromCity, draft.fromLocationText, 'Start location')
-    : null;
-  const homeId = fromLocationId || activeHomeBaseId(homeBases, draft);
+    : derivedHomeId;
+  const homeId = fromLocationId || derivedHomeId;
   const home = nextLocations.find(location => location.id === homeId);
   if (!homeId || !isResolvedLocation(home)) {
-    throw new Error('The start location could not be derived from the selected date. Choose an override start location.');
+    throw new Error('Choose a valid start location before saving.');
   }
 
   const route = [
@@ -2835,7 +2847,10 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     && !((draft.guestHoppers || []).length)
     ? 'squad'
     : 'members';
-  const label = draft.label || displayNameFromLocation(nextLocations.find(location => location.id === toLocationId)) || draft.toLocationText || 'Trip';
+  const automaticLabel = automaticHopTitle(draft, Object.fromEntries(nextLocations.map(location => [location.id, location])), nextLocations);
+  const label = draft._titleMode === 'custom' && String(draft.label || '').trim()
+    ? String(draft.label).trim()
+    : automaticLabel || draft.label || displayNameFromLocation(nextLocations.find(location => location.id === toLocationId)) || draft.toLocationText || 'Trip';
 
   const clean = normalizeTripForV61({
     id: draft.id || uniqueTripId(trips),
@@ -2855,7 +2870,7 @@ function normalizeTrip(draft, trips, locations, homeBases, hopperData = {}) {
     mode: draft.mode || 'plane',
     roundTrip: !!draft.roundTrip,
     returnMode: draft.roundTrip ? (draft.returnMode || draft.mode || 'plane') : '',
-    fromLocationId: draft.overrideFrom ? homeId : null,
+    fromLocationId: homeId === derivedHomeId ? null : homeId,
     toLocationId,
     route: compactRoute,
     notes: draft.notes || '',
@@ -3100,6 +3115,22 @@ function normalizeHexColor(value = '#00e5ff') {
   if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
   if (/^#[0-9a-f]{3}$/i.test(raw)) return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
   return '#00e5ff';
+}
+
+function automaticHopTitle(draft = {}, locById = {}, locs = []) {
+  const shortName = (location, fallback = '') => {
+    const raw = location?.name || location?.city?.name || fallback || '';
+    return String(raw).split(',')[0].trim();
+  };
+  const destinations = [];
+  if (draft.toCustomEnabled) destinations.push(shortName(null, draft.toCustomName));
+  else destinations.push(shortName(locById[draft.toLocationId] || findLocationByText(locs, draft.toLocationText), draft.toLocationText));
+  for (const leg of draft.extraLegs || []) {
+    destinations.push(shortName(locById[leg.locationId] || findLocationByText(locs, leg.locationText), leg.locationText));
+  }
+  const names = destinations.map(value => String(value || '').trim()).filter(Boolean);
+  const date = [monthLabel(draft.month), draft.year ? String(draft.year) : ''].filter(Boolean).join(' ');
+  return [names.join(' + '), date].filter(Boolean).join(' ').trim();
 }
 
 function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }

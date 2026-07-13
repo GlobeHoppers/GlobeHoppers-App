@@ -177,6 +177,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
   const airArcRef = useRef(null);
+  const liveTrailConnectorRef = useRef(null);
   const originLabelRef = useRef(null);
   const destLabelRef = useRef(null);
   const pulseRef = useRef(null);
@@ -204,6 +205,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const forceSceneJumpRef = useRef(false);
   const manualSpinPauseRef = useRef(false);
   const manualSpinResumeTimerRef = useRef(null);
+  const manualGestureRef = useRef({ pointerDown: false, lastWheelAt: 0, wheelTimer: null });
   const idleCameraRef = useRef(null);
   const idleModePreviousRef = useRef(false);
   const destinationSelectionActiveRef = useRef(false);
@@ -532,42 +534,63 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const canvas = map.getCanvas?.();
-    const claimManualCamera = (event) => {
-      if (isPlaying || relocationGlideRef.current.id || introLaunchRef.current.active) return;
-      const nativeInput = event?.originalEvent
-        || ['pointerdown', 'touchstart', 'wheel', 'dblclick', 'keydown'].includes(event?.type);
-      if (!nativeInput) return;
-      // A paused map interaction owns the camera immediately. Stop any residual
-      // cinematic easing before latching the override so drag and wheel gestures
-      // never have to fight a stale follow-camera animation.
-      try { map.stop(); } catch {}
+    const latchManualCamera = () => {
+      if (isPlaying || relocationGlideRef.current.id || introLaunchRef.current.active) return false;
       resetAnimatingRef.current = false;
       manualSpinPauseRef.current = true;
       clearTimeout(manualSpinResumeTimerRef.current);
       userCameraOverrideRef.current = true;
       lastCameraRef.current = null;
+      return true;
     };
-    map.on('movestart', claimManualCamera);
-    map.on('dragstart', claimManualCamera);
-    map.on('zoomstart', claimManualCamera);
-    map.on('rotatestart', claimManualCamera);
-    map.on('pitchstart', claimManualCamera);
-    canvas?.addEventListener('pointerdown', claimManualCamera, { passive: true });
-    canvas?.addEventListener('touchstart', claimManualCamera, { passive: true });
-    canvas?.addEventListener('wheel', claimManualCamera, { passive: true });
-    canvas?.addEventListener('dblclick', claimManualCamera, { passive: true });
-    canvas?.addEventListener('keydown', claimManualCamera);
+    // Stop a cinematic transition once, before MapLibre starts the user's gesture.
+    // Never call stop() from dragstart/movestart/zoomstart: doing so cancels the
+    // gesture after only a few pixels and makes wheel zoom feel artificially tiny.
+    const beginPointerGesture = () => {
+      if (!latchManualCamera()) return;
+      manualGestureRef.current.pointerDown = true;
+      try { map.stop(); } catch {}
+    };
+    const endPointerGesture = () => { manualGestureRef.current.pointerDown = false; };
+    const beginWheelGesture = () => {
+      if (!latchManualCamera()) return;
+      const now = performance.now();
+      if (now - Number(manualGestureRef.current.lastWheelAt || 0) > 180) {
+        try { map.stop(); } catch {}
+      }
+      manualGestureRef.current.lastWheelAt = now;
+      clearTimeout(manualGestureRef.current.wheelTimer);
+      manualGestureRef.current.wheelTimer = window.setTimeout(() => { manualGestureRef.current.lastWheelAt = 0; }, 240);
+    };
+    const latchFromMap = () => { latchManualCamera(); };
+    map.on('movestart', latchFromMap);
+    map.on('dragstart', latchFromMap);
+    map.on('zoomstart', latchFromMap);
+    map.on('rotatestart', latchFromMap);
+    map.on('pitchstart', latchFromMap);
+    canvas?.addEventListener('pointerdown', beginPointerGesture, { passive: true, capture: true });
+    canvas?.addEventListener('pointerup', endPointerGesture, { passive: true });
+    canvas?.addEventListener('pointercancel', endPointerGesture, { passive: true });
+    canvas?.addEventListener('touchstart', beginPointerGesture, { passive: true, capture: true });
+    canvas?.addEventListener('touchend', endPointerGesture, { passive: true });
+    canvas?.addEventListener('wheel', beginWheelGesture, { passive: true });
+    canvas?.addEventListener('dblclick', beginWheelGesture, { passive: true });
+    canvas?.addEventListener('keydown', latchFromMap);
     return () => {
-      map.off('movestart', claimManualCamera);
-      map.off('dragstart', claimManualCamera);
-      map.off('zoomstart', claimManualCamera);
-      map.off('rotatestart', claimManualCamera);
-      map.off('pitchstart', claimManualCamera);
-      canvas?.removeEventListener('pointerdown', claimManualCamera);
-      canvas?.removeEventListener('touchstart', claimManualCamera);
-      canvas?.removeEventListener('wheel', claimManualCamera);
-      canvas?.removeEventListener('dblclick', claimManualCamera);
-      canvas?.removeEventListener('keydown', claimManualCamera);
+      map.off('movestart', latchFromMap);
+      map.off('dragstart', latchFromMap);
+      map.off('zoomstart', latchFromMap);
+      map.off('rotatestart', latchFromMap);
+      map.off('pitchstart', latchFromMap);
+      canvas?.removeEventListener('pointerdown', beginPointerGesture, true);
+      canvas?.removeEventListener('pointerup', endPointerGesture);
+      canvas?.removeEventListener('pointercancel', endPointerGesture);
+      canvas?.removeEventListener('touchstart', beginPointerGesture, true);
+      canvas?.removeEventListener('touchend', endPointerGesture);
+      canvas?.removeEventListener('wheel', beginWheelGesture);
+      canvas?.removeEventListener('dblclick', beginWheelGesture);
+      canvas?.removeEventListener('keydown', latchFromMap);
+      clearTimeout(manualGestureRef.current.wheelTimer);
     };
   }, [mapReady, isPlaying]);
 
@@ -585,7 +608,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       manualSpinPauseRef.current = true;
       resetAnimatingRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
-      try { map.stop(); } catch {}
     };
     const resumeAfterIdle = () => {
       clearTimeout(manualSpinResumeTimerRef.current);
@@ -617,22 +639,26 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     map.on('dragstart', pauseSpin);
     map.on('rotatestart', pauseSpin);
     map.on('pitchstart', pauseSpin);
+    map.on('zoomstart', pauseSpin);
     map.on('mouseup', resumeAfterIdle);
     map.on('touchend', resumeAfterIdle);
     map.on('dragend', resumeAfterIdle);
     map.on('rotateend', resumeAfterIdle);
     map.on('pitchend', resumeAfterIdle);
+    map.on('zoomend', resumeAfterIdle);
     return () => {
       map.off('mousedown', pauseSpin);
       map.off('touchstart', pauseSpin);
       map.off('dragstart', pauseSpin);
       map.off('rotatestart', pauseSpin);
       map.off('pitchstart', pauseSpin);
+      map.off('zoomstart', pauseSpin);
       map.off('mouseup', resumeAfterIdle);
       map.off('touchend', resumeAfterIdle);
       map.off('dragend', resumeAfterIdle);
       map.off('rotateend', resumeAfterIdle);
       map.off('pitchend', resumeAfterIdle);
+      map.off('zoomend', resumeAfterIdle);
       clearTimeout(manualSpinResumeTimerRef.current);
     };
   }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, idleMode, trailTuningOpen]);
@@ -743,6 +769,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
     try { isPlaying ? map.dragRotate.disable() : map.dragRotate.enable(); } catch {}
     try { isPlaying ? map.touchZoomRotate.disableRotation() : map.touchZoomRotate.enable(); } catch {}
+    if (!isPlaying) {
+      // Restore familiar interactive-map zoom response. The earlier conservative
+      // rates made each wheel notch move only a few hundredths of a zoom level.
+      try { map.scrollZoom?.setWheelZoomRate?.(1 / 360); } catch {}
+      try { map.scrollZoom?.setZoomRate?.(1 / 70); } catch {}
+    }
     if (isPlaying) {
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
@@ -855,8 +887,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const targetZoom = relocationTargetZoom(distance, request.nextMode, cameraMode);
     const overviewZoom = relocationOverviewZoom(distance);
     const zoomOutDuration = Math.round(clamp(1500 + Math.sqrt(Math.max(1, distance)) * 14, 1800, 3000));
-    const zoomInDuration = Math.round(clamp(1700 + Math.sqrt(Math.max(1, distance)) * 15, 2000, 3400));
-    const totalDuration = zoomOutDuration + zoomInDuration;
+    const repositionDuration = Math.round(clamp(1800 + Math.sqrt(Math.max(1, distance)) * 17, 2300, 4300));
+    const zoomInDuration = Math.round(clamp(1900 + Math.sqrt(Math.max(1, distance)) * 16, 2200, 3800));
+    const totalDuration = zoomOutDuration + repositionDuration + zoomInDuration;
     let finished = false;
     let stageCleanup = null;
 
@@ -901,16 +934,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const zoomInAtDestination = () => {
       if (finished || relocationGlideRef.current.id !== request.id) return;
-      try {
-        // Reposition only after the camera is already at overview altitude. A
-        // low-zoom center jump is visually stable and avoids MapLibre trying to
-        // interpolate center, pitch, bearing, and zoom across a continent.
-        map.jumpTo({ center: [lon, lat], zoom: overviewZoom, pitch: 18, bearing: 0, essential: true });
-        window.requestAnimationFrame(() => runEaseStage({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0 }, zoomInDuration, () => finish('complete')));
-      } catch {
-        try { map.jumpTo({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0, essential: true }); } catch {}
-        finish('jump-fallback');
-      }
+      runEaseStage({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0 }, zoomInDuration, () => finish('complete'));
+    };
+    const glideAtOverview = () => {
+      if (finished || relocationGlideRef.current.id !== request.id) return;
+      // Keep the globe at overview altitude and visibly glide across it. A jump
+      // here was the remaining cut between disconnected trips.
+      runEaseStage({ center: [lon, lat], zoom: overviewZoom, pitch: 18, bearing: 0 }, repositionDuration, zoomInAtDestination);
     };
 
     relocationGlideRef.current = { id: request.id, timer: null, finish };
@@ -919,9 +949,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const center = Number.isFinite(currentCenter?.lng) && Number.isFinite(currentCenter?.lat)
         ? [currentCenter.lng, currentCenter.lat]
         : [Number(request.from?.lon) || lon, Number(request.from?.lat) || lat];
-      runEaseStage({ center, zoom: overviewZoom, pitch: 18, bearing: 0 }, zoomOutDuration, zoomInAtDestination);
+      runEaseStage({ center, zoom: overviewZoom, pitch: 18, bearing: 0 }, zoomOutDuration, glideAtOverview);
     } catch {
-      zoomInAtDestination();
+      glideAtOverview();
     }
 
     return () => {
@@ -1279,7 +1309,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
 
   function setOverlayVisibility(visible) {
-    for (const ref of [vehicleRef, pulseRef, airArcRef]) {
+    for (const ref of [vehicleRef, pulseRef, airArcRef, liveTrailConnectorRef]) {
       if (ref.current) ref.current.style.opacity = visible ? '1' : '0';
     }
   }
@@ -1294,10 +1324,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // v2.22: all top-down PNG vessel icons are authored nose-up. Rotate the icon so
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
-    const projectedRotation = projectedHeadingFromScene(map, sceneState);
+    const tangentRotation = projectedHeadingFromScene(map, sceneState);
+    const previousScreenPoint = vehicleRef.current.__jlVehicleScreenPoint;
+    const movementDx = previousScreenPoint ? Number(vehiclePt.x) - Number(previousScreenPoint.x) : 0;
+    const movementDy = previousScreenPoint ? Number(vehiclePt.y) - Number(previousScreenPoint.y) : 0;
+    const movementRotation = Math.hypot(movementDx, movementDy) >= 0.55
+      ? Math.atan2(movementDx, -movementDy) * 180 / Math.PI
+      : tangentRotation;
+    vehicleRef.current.__jlVehicleScreenPoint = { x: vehiclePt.x, y: vehiclePt.y };
+    const projectedRotation = isSurfaceRouteMode(mode) ? movementRotation : tangentRotation;
     const rawRotation = applyVesselSpriteOffset(projectedRotation, iconMode);
     const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
-    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 0.90 : iconMode === 'train' ? 0.78 : 0.62;
+    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 1 : iconMode === 'train' ? 0.94 : 0.90;
     const rotation = Number.isFinite(previousRotation)
       ? lerpAngle(previousRotation, rawRotation, rotationBlend)
       : rawRotation;
@@ -1335,6 +1373,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(900px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
 
+    if (liveTrailConnectorRef.current) {
+      const lastProgress = Number(frameRenderStatsRef.current.lastTrailProgress);
+      const currentProgress = Number(sceneState.lineProgress);
+      if (isSurfaceRouteMode(mode) && Number.isFinite(lastProgress) && lastProgress >= 0 && currentProgress > lastProgress + 0.00001 && sceneState.vehicleVisible) {
+        const anchor = pointAtVisualRouteProgress(leg, lastProgress, routedGeometriesRef.current, Boolean(trailTuningConfig?.routeStackingEnabled));
+        const anchorPt = map.project([anchor.lon, anchor.lat]);
+        liveTrailConnectorRef.current.setAttribute('d', `M ${anchorPt.x.toFixed(2)} ${anchorPt.y.toFixed(2)} L ${vehiclePt.x.toFixed(2)} ${vehiclePt.y.toFixed(2)}`);
+        liveTrailConnectorRef.current.style.stroke = color || '#00e5ff';
+        liveTrailConnectorRef.current.style.opacity = '1';
+      } else {
+        liveTrailConnectorRef.current.style.opacity = '0';
+        liveTrailConnectorRef.current.setAttribute('d', '');
+      }
+    }
+
     if (sceneState.pulseActive) {
       const destPt = map.project([leg.to.lon, leg.to.lat]);
       updatePulseOverlay(pulseRef.current, destPt, color, true);
@@ -1350,6 +1403,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     <div className="maplibre-map" ref={containerRef} />
     <div className="cinema-vignette" />
     <div className="map-overlay" ref={overlayRef}>
+      <svg className="jl-live-trail-overlay" aria-hidden="true"><path ref={liveTrailConnectorRef} /></svg>
       <svg className="jl-air-arc-overlay" aria-hidden="true"><path ref={airArcRef} /></svg>
       <div className="jl-arrival-ripple" ref={pulseRef} />
       <div className="jl-vehicle-overlay" ref={vehicleRef} />
@@ -2169,7 +2223,7 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const leg = active.leg;
   const distance = milesBetween(leg.from, leg.to);
   const routeProgress = takeoffCruiseLandingEase(p);
-  const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
+  const lineProgress = isSurfaceRouteMode(leg.mode) ? routeProgress : lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
   // Surface vessels must travel on the exact same presentation polyline that
   // renders their trail. Equal-distance playback samples can bridge across a
   // sharp corner between samples, which made boats/cars visibly drift away from
@@ -2566,7 +2620,7 @@ function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, vis
   // Playback mode favors smooth globe motion. Labels are allowed to drift with
   // their locked offsets, but horizon culling still needs to react quickly as
   // the camera crosses a hemisphere boundary.
-  const minInterval = runtime.playback ? 240 : 120;
+  const minInterval = runtime.playback ? 90 : 120;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -2614,17 +2668,22 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const focusDistance = focus?.lon != null && focus?.lat != null
       ? angularDistanceDeg({ lon: Number(focus.lon), lat: Number(focus.lat) }, { lon: loc.lon, lat: loc.lat })
       : angularDistance;
+    let markerOpacity = 1;
     if (playback) {
-      const centerCutoff = Math.min(78, hardPlacardHorizonCutoffDeg(zoom));
-      const focusCutoff = activePlacard ? 72 : Math.min(60, localPlacardFocusCutoffDeg(zoom) + 34);
+      // Cull before the geometric limb. Perspective and placard height make a
+      // marker look behind the horizon well before 90 degrees on pitched views.
+      const centerCutoff = activePlacard ? 68 : Math.min(62, hardPlacardHorizonCutoffDeg(zoom) - 12);
+      const fadeStart = centerCutoff - (activePlacard ? 8 : 10);
+      const focusCutoff = activePlacard ? 68 : Math.min(54, localPlacardFocusCutoffDeg(zoom) + 25);
       const safelyVisible = onScreenLoose && angularDistance <= centerCutoff && focusDistance <= focusCutoff;
+      markerOpacity = safelyVisible ? clamp((centerCutoff - angularDistance) / Math.max(1, centerCutoff - fadeStart), 0, 1) : 0;
       if (!safelyVisible) {
         visible = false;
-        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 900);
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 520);
         prior.seenSafeSince = 0;
       } else {
         if (!prior.seenSafeSince) prior.seenSafeSince = now;
-        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 100;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 60;
       }
     } else {
       const horizonCutoff = Math.min(82, hardPlacardHorizonCutoffDeg(zoom));
@@ -2641,14 +2700,15 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     el.classList.toggle('is-selected-destination', Boolean(selectedDestination));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
-    try { el.__jlMarker?.setOpacity?.(visible ? '1' : '0', '0'); } catch {}
+    try { el.__jlMarker?.setOpacity?.(visible ? String(markerOpacity) : '0', '0'); } catch {}
 
     if (visible) {
       el.style.display = '';
       el.style.visibility = 'visible';
       // Leave opacity ownership to MapLibre's occlusion-aware Marker renderer.
       // Writing opacity:1 here defeated occludedOpacity=0 on the far hemisphere.
-      el.style.removeProperty('opacity');
+      if (playback && markerOpacity < 0.999) el.style.opacity = String(markerOpacity);
+      else el.style.removeProperty('opacity');
       const priority = (activePlacard ? 100 : 0) + (loc.isActiveHomeBase ? 35 : 0) + (loc.isHomeBase ? 20 : 0) + Math.max(0, 20 - angularDistance / 3);
       visibleItems.push({ el, loc, pt, activePlacard, priority });
     } else {
@@ -3397,10 +3457,10 @@ function lookAhead(distance, p, mode = 'plane') {
 function surfaceTangentWindow(mode, distance, progress) {
   const normalized = String(mode || '').toLowerCase();
   if (normalized === 'drive' || normalized === 'car') {
-    return distance > 700 ? 0.008 : distance > 250 ? 0.0065 : 0.005;
+    return distance > 700 ? 0.0045 : distance > 250 ? 0.0035 : 0.0028;
   }
-  if (normalized === 'train') return distance > 1000 ? 0.012 : 0.009;
-  if (normalized === 'boat') return distance > 1200 ? 0.018 : 0.013;
+  if (normalized === 'train') return distance > 1000 ? 0.007 : 0.0055;
+  if (normalized === 'boat') return distance > 1200 ? 0.009 : 0.007;
   return Math.max(0.006, Math.min(0.035, lookAhead(distance, progress, normalized) * 0.52));
 }
 

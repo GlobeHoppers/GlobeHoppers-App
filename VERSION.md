@@ -1,3 +1,18 @@
+# GlobeHoppers v7.4.0
+
+Released: July 13, 2026
+
+## v7.4.0 — Direct Interaction and Route-Faithful Playback
+
+- Restores uninterrupted globe dragging and normal wheel/trackpad zoom while playback is paused, in Hero mode, and in View Globe.
+- Starts View Globe rotation immediately and preserves user camera ownership until the interaction idle period ends.
+- Animates timeline Zoom In, Zoom Out, Fit, and Recenter changes instead of snapping the time scale.
+- Restyles destination-choice cards to match GlobeHopper Timeline rows without opening timeline pills.
+- Keeps cars, trains, and boats exactly on their route; only heading is smoothed. A lightweight live connector keeps the active trail touching the vessel center.
+- Replaces the disconnected-trip overview cut with a continuous overview glide.
+- Culls and fades far-side place labels earlier during active playback.
+- Reorganizes Add Hop around Month, Year, optional Exact Hop Dates, editable Start Location, route-first entry, and automatic destination-based titles.
+
 GlobeHoppers v7.3.1 — Playback and Interaction Regression Recovery
 
 - Restored timeline pin visibility with dedicated pin headroom and retained individual pins for the current travel-history density.

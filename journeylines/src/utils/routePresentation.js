@@ -40,6 +40,7 @@ export function buildSurfacePresentationGeometry(geometry, mode, options = {}) {
   let selected = simplifyTowardBudget(working, budget, minimumTolerance, maximumTolerance)
     .map(index => workingIndexes[index]);
   selected = enforceRouteCorridor(clean, selected, cumulative, normalizedMode, totalMiles);
+  selected = refineSharpPresentationCorners(clean, selected, cumulative, normalizedMode, totalMiles);
 
   const output = selected.map(index => [...clean[index]]);
   output[0] = [...clean[0]];
@@ -223,6 +224,80 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
 
   appendSafeSpan(points, cumulative, start, split, mode, totalMiles, output, depth + 1);
   appendSafeSpan(points, cumulative, split, end, mode, totalMiles, output, depth + 1);
+}
+
+
+function refineSharpPresentationCorners(points, selectedIndexes, cumulative, mode, totalMiles) {
+  if (!Array.isArray(selectedIndexes) || selectedIndexes.length < 3) return selectedIndexes || [];
+  const selected = [...new Set(selectedIndexes)].sort((a, b) => a - b);
+  const additions = new Set(selected);
+  const turnThreshold = mode === 'boat' ? 28 : mode === 'train' ? 32 : 38;
+  const targetMiles = mode === 'boat'
+    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.85, 4, 24)
+    : mode === 'train'
+      ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.52, 2.5, 15)
+      : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.34, 1.5, 9);
+
+  for (let position = 1; position < selected.length - 1; position += 1) {
+    const previous = selected[position - 1];
+    const current = selected[position];
+    const next = selected[position + 1];
+    const turn = presentationTurnDegrees(points[previous], points[current], points[next]);
+    if (turn < turnThreshold) continue;
+
+    const before = indexAtDistanceBefore(cumulative, current, previous, targetMiles);
+    const after = indexAtDistanceAfter(cumulative, current, next, targetMiles);
+    if (before > previous && before < current) additions.add(before);
+    if (after > current && after < next) additions.add(after);
+
+    // Very abrupt retained corners receive a second pair of route-native anchors.
+    // The vessel still travels only through provider points; the extra anchors
+    // distribute the visual turn instead of cutting one sharp presentation elbow.
+    if (turn > 78) {
+      const innerBefore = indexAtDistanceBefore(cumulative, current, previous, targetMiles * 0.42);
+      const innerAfter = indexAtDistanceAfter(cumulative, current, next, targetMiles * 0.42);
+      if (innerBefore > previous && innerBefore < current) additions.add(innerBefore);
+      if (innerAfter > current && innerAfter < next) additions.add(innerAfter);
+    }
+  }
+  return [...additions].sort((a, b) => a - b);
+}
+
+function presentationTurnDegrees(a, b, c) {
+  if (!a || !b || !c) return 0;
+  const referenceLat = (Number(a[1]) + Number(b[1]) + Number(c[1])) / 3;
+  const cosLat = Math.max(0.05, Math.cos(toRadians(referenceLat)));
+  const incoming = [shortestLongitudeDelta(Number(b[0]) - Number(a[0])) * cosLat, Number(b[1]) - Number(a[1])];
+  const outgoing = [shortestLongitudeDelta(Number(c[0]) - Number(b[0])) * cosLat, Number(c[1]) - Number(b[1])];
+  const inLength = Math.hypot(...incoming);
+  const outLength = Math.hypot(...outgoing);
+  if (inLength < 1e-12 || outLength < 1e-12) return 0;
+  const dot = clamp((incoming[0] * outgoing[0] + incoming[1] * outgoing[1]) / (inLength * outLength), -1, 1);
+  return Math.acos(dot) * 180 / Math.PI;
+}
+
+function indexAtDistanceBefore(cumulative, current, lowerBound, miles) {
+  const target = Math.max(cumulative[lowerBound] || 0, (cumulative[current] || 0) - Math.max(0, miles));
+  let low = lowerBound;
+  let high = current;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if ((cumulative[middle] || 0) > target) high = middle - 1;
+    else low = middle;
+  }
+  return low;
+}
+
+function indexAtDistanceAfter(cumulative, current, upperBound, miles) {
+  const target = Math.min(cumulative[upperBound] || 0, (cumulative[current] || 0) + Math.max(0, miles));
+  let low = current;
+  let high = upperBound;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((cumulative[middle] || 0) < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 
 function rdpIndexes(points, toleranceMiles) {
