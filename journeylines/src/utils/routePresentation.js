@@ -142,9 +142,9 @@ export function presentationPointBudget(totalMiles, mode, profile = 'playback', 
   const normalizedMode = normalizeMode(mode);
   const miles = Math.max(0, Number(totalMiles) || 0);
   const profileScale = profile === 'overview' ? 0.45 : profile === 'regional' ? 0.70 : 1;
-  const base = normalizedMode === 'boat' ? 28 : normalizedMode === 'train' ? 34 : 40;
-  const distanceFactor = normalizedMode === 'boat' ? 4.2 : normalizedMode === 'train' ? 5.0 : 6.0;
-  const maximum = normalizedMode === 'boat' ? 160 : normalizedMode === 'train' ? 190 : 220;
+  const base = normalizedMode === 'boat' ? 20 : normalizedMode === 'train' ? 34 : 40;
+  const distanceFactor = normalizedMode === 'boat' ? 2.8 : normalizedMode === 'train' ? 5.0 : 6.0;
+  const maximum = normalizedMode === 'boat' ? 100 : normalizedMode === 'train' ? 190 : 220;
   return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), 24, maximum);
 }
 
@@ -211,7 +211,10 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
   const alongMiles = Math.max(directMiles, (cumulative[end] || 0) - (cumulative[start] || 0));
   const stretchRatio = alongMiles / directMiles;
   const maxSegmentMiles = maximumPresentationSegmentMiles(mode, totalMiles);
-  const stretchLimit = mode === 'boat' ? 1.30 : mode === 'train' ? 1.25 : 1.22;
+  // Marine presentation is intentionally less literal than road/rail. Broad
+  // route-native chords keep boats offshore instead of tracing every cove,
+  // while the corridor guard still prevents implausible long shortcuts.
+  const stretchLimit = mode === 'boat' ? 1.42 : mode === 'train' ? 1.25 : 1.22;
   const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit;
 
   if (safe) {
@@ -231,9 +234,9 @@ function refineSharpPresentationCorners(points, selectedIndexes, cumulative, mod
   if (!Array.isArray(selectedIndexes) || selectedIndexes.length < 3) return selectedIndexes || [];
   const selected = [...new Set(selectedIndexes)].sort((a, b) => a - b);
   const additions = new Set(selected);
-  const turnThreshold = mode === 'boat' ? 28 : mode === 'train' ? 32 : 38;
+  const turnThreshold = mode === 'boat' ? 44 : mode === 'train' ? 32 : 38;
   const targetMiles = mode === 'boat'
-    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.85, 4, 24)
+    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 1.15, 8, 38)
     : mode === 'train'
       ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.52, 2.5, 15)
       : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.34, 1.5, 9);
@@ -344,20 +347,20 @@ function cumulativeMidpointIndex(cumulative, start, end) {
 
 function maximumPresentationSegmentMiles(mode, totalMiles) {
   const routeScale = Math.sqrt(Math.max(1, totalMiles));
-  if (mode === 'boat') return clamp(routeScale * 5.0, 40, 180);
+  if (mode === 'boat') return clamp(routeScale * 6.4, 55, 235);
   if (mode === 'train') return clamp(routeScale * 3.2, 28, 110);
   return clamp(routeScale * 2.6, 20, 90);
 }
 
 function minimumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 2.2 : profile === 'regional' ? 1.5 : 1;
-  const base = mode === 'boat' ? 0.16 : mode === 'train' ? 0.10 : 0.065;
+  const base = mode === 'boat' ? 0.24 : mode === 'train' ? 0.10 : 0.065;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 18, 0.8, 2.4);
 }
 
 function maximumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 1.8 : profile === 'regional' ? 1.3 : 1;
-  const base = mode === 'boat' ? 5.5 : mode === 'train' ? 2.8 : 1.8;
+  const base = mode === 'boat' ? 8.5 : mode === 'train' ? 2.8 : 1.8;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 28, 0.65, 2.4);
 }
 

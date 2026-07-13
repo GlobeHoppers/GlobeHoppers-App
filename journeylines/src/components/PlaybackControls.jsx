@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
+import HopResultCards from './HopResultCards.jsx';
 
-export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, globeControlsVisible = false, globeSpinSpeed = 0.55, onGlobeSpinSpeedChange = () => {}, globeSpinPaused = false, onToggleGlobeSpin = () => {}, onGlobeZoom = () => {}, progress, onSeekProgress, onMarkerJump, onMarkerEdit, destinationMatchIds = [], speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, globeControlsVisible = false, globeSpinSpeed = 0.55, onGlobeSpinSpeedChange = () => {}, globeSpinPaused = false, onToggleGlobeSpin = () => {}, onGlobeZoom = () => {}, progress, onSeekProgress, onMarkerJump, onMarkerEdit, destinationMatchIds = [], speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], monthTicks = [], timelineYearSpan = 1, searchRows = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [hoverMarker, setHoverMarker] = useState(null);
   const [leavingMarkerId, setLeavingMarkerId] = useState(null);
   const [enteringMarkerId, setEnteringMarkerId] = useState(null);
   const advancedRef = useRef(null);
+  const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   const advancedToggleRef = useRef(null);
   const previousActiveIdRef = useRef(activeMarkerId);
   const transitionTimerRef = useRef(null);
@@ -20,6 +27,49 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
   const displayMarkers = useMemo(() => clusterTimelineMarkers(tripMarkers, timelineZoom, destinationMatchSet), [tripMarkers, timelineZoom, destinationMatchSet]);
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
+  const visibleTimelineYears = Math.max(1 / 12, Number(timelineYearSpan) || 1) / Math.max(1, timelineZoom);
+  const visibleMonthTicks = useMemo(() => {
+    if (visibleTimelineYears > 2.15) return [];
+    const step = visibleTimelineYears <= 1.15 ? 1 : 2;
+    return (monthTicks || []).filter(tick => step === 1 || (Number(tick.month) - 1) % step === 0);
+  }, [monthTicks, visibleTimelineYears]);
+  const searchResults = useMemo(() => {
+    const query = normalizeSearchText(debouncedSearchText);
+    if (query.length < 2) return [];
+    const terms = query.split(/\s+/).filter(Boolean);
+    return (searchRows || []).filter(row => {
+      const haystack = normalizeSearchText([
+        row.title, row.date, row.year, row.route, row.traveler, row.mode, row.notes,
+        row.trip?.occasion, row.trip?.label, row.trip?.displayDate
+      ].filter(Boolean).join(' '));
+      return terms.every(term => haystack.includes(term));
+    }).slice(0, 80);
+  }, [debouncedSearchText, searchRows]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchText(searchText), 120);
+    return () => window.clearTimeout(timer);
+  }, [searchText]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    setAdvancedOpen(false);
+    window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    const closeOutside = event => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) setSearchOpen(false);
+    };
+    const closeOnEscape = event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setSearchOpen(false);
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!advancedOpen) return;
@@ -144,8 +194,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   return <div className="controls glass" style={timelineStyle}>
     <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
     <div className="timeline-scrubber">
-      <div className="timeline-scrubber__header">
-        <span>Timeline</span>
+      <div className="timeline-scrubber__header timeline-scrubber__header--controls-only">
         <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
           <button type="button" onClick={() => changeTimelineZoom(1, 0.5)} disabled={timelineZoom <= 1.001}>Fit</button>
@@ -233,6 +282,11 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
                 <b>{segment.year}</b>
               </span>)}
             </div>
+            {visibleMonthTicks.length > 0 && <div className="timeline-month-scale" aria-hidden="true">
+              {visibleMonthTicks.map(tick => <span key={tick.id} className="timeline-month-scale__tick" style={{ left: `${tick.progress * 100}%` }}>
+                <i></i><b>{tick.label}</b>
+              </span>)}
+            </div>}
           </div>
         </div>
       </div>
@@ -245,8 +299,23 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       <button type="button" onClick={() => onGlobeSpinSpeedChange(globeSpinSpeed + 0.15)} aria-label="Speed up globe spin">Spin +</button>
       <button type="button" onClick={onToggleGlobeSpin}>{globeSpinPaused ? 'Resume Spin' : 'Pause Spin'}</button>
     </div>}
+    <div className="controls-search-wrap" ref={searchRef}>
+      <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen} onClick={() => setSearchOpen(value => !value)}><Search size={17} strokeWidth={2.2} /></button>
+      {searchOpen && <div className="timeline-search-panel glass" role="dialog" aria-label="Search Hops">
+        <div className="timeline-search-panel__head">
+          <Search size={16} aria-hidden="true" />
+          <input ref={searchInputRef} value={searchText} onChange={event => setSearchText(event.target.value)} placeholder="Search Hops…" aria-label="Search Hops" autoComplete="off" />
+          {searchText && <button type="button" aria-label="Clear search" onClick={() => setSearchText('')}>×</button>}
+        </div>
+        <div className="timeline-search-panel__body">
+          {searchText.trim().length < 2
+            ? <div className="timeline-search-message">Type at least 2 characters.</div>
+            : <HopResultCards rows={searchResults} emptyMessage="No matching Hops." onSelect={row => { setSearchOpen(false); setSearchText(''); onMarkerJump?.(row); }} />}
+        </div>
+      </div>}
+    </div>
     <div className="controls-advanced-wrap" ref={advancedRef}>
-      <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => setAdvancedOpen(v => !v)}>⋯</button>
+      <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => { setSearchOpen(false); setAdvancedOpen(v => !v); }}>⋯</button>
       {advancedOpen && <div id="globehoppers-advanced-controls" className="controls-advanced glass" role="dialog" aria-label="Advanced playback controls">
         <button type="button" onClick={() => { setAdvancedOpen(false); onReset?.(); }}>Restart Journey</button>
   <button type="button" onClick={() => { setAdvancedOpen(false); onViewGlobe?.(); }}>View Globe</button>
@@ -323,6 +392,16 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   </div>;
 }
 
+
+
+function normalizeSearchText(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 
 function clusterTimelineMarkers(markers = [], zoom = 1, destinationMatchSet = new Set()) {
   if (zoom > 1.12 || markers.length < 220 || destinationMatchSet.size) return markers.map(marker => ({ type: 'marker', marker }));

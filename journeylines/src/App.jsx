@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TravelMap from './components/TravelMap.jsx';
 import PlaybackControls from './components/PlaybackControls.jsx';
+import HopResultCards from './components/HopResultCards.jsx';
 import TripCard from './components/TripCard.jsx';
 import { sortTrips } from './utils/dateUtils.js';
 import { expandTrip, flattenLegs, getTravelerKey } from './utils/tripExpansion.js';
@@ -399,6 +400,8 @@ export default function App() {
   const tripTimeline = useMemo(() => buildTripTimeline(filteredTrips, legs, locById, normalizedHoppers), [filteredTrips, legs, locById, normalizedHoppers]);
   const timelineMarkers = useMemo(() => buildTimelineMarkers(tripTimeline, legs.length), [tripTimeline, legs.length]);
   const timelineYearSegments = useMemo(() => buildTimelineYearSegments(tripTimeline, legs.length), [tripTimeline, legs.length]);
+  const timelineMonthTicks = useMemo(() => buildTimelineMonthTicks(tripTimeline, legs.length), [tripTimeline, legs.length]);
+  const timelineYearSpan = useMemo(() => buildTimelineYearSpan(tripTimeline), [tripTimeline]);
   const tripCardRows = useMemo(() => buildTripCardRows(tripTimeline, activeIndex), [tripTimeline, activeIndex]);
   const routeDetailsStatus = useMemo(() => summarizeRouteDetails(liveRouteDetails, legs.length), [liveRouteDetails, legs.length]);
   const tripsDataStatus = useMemo(() => {
@@ -589,6 +592,7 @@ export default function App() {
     setGlobeOverview(Boolean(snapshot.globeOverview));
     setCameraMode(snapshot.cameraMode || 'follow');
     setShowHero(Boolean(snapshot.showHero));
+    setGlobeSpinPaused(Boolean(snapshot.globeSpinPaused));
     setIsPlaying(Boolean(snapshot.isPlaying));
     if (snapshot.camera) {
       window.dispatchEvent(new CustomEvent('globehoppers-restore-camera', { detail: { camera: snapshot.camera, reason } }));
@@ -597,7 +601,7 @@ export default function App() {
 
   useEffect(() => {
     const handleDestinationClick = event => {
-      if (isPlayingRef.current || relocationTransitionRef.current || admin) return;
+      if (relocationTransitionRef.current || admin) return;
       const locationId = event?.detail?.locationId;
       if (!locationId) return;
       const matches = tripTimeline.filter(row => row.destinationLocationIds?.includes(locationId));
@@ -620,6 +624,7 @@ export default function App() {
           globeOverview,
           cameraMode,
           showHero,
+          globeSpinPaused,
           camera: event?.detail?.camera || null
         }
       };
@@ -630,7 +635,7 @@ export default function App() {
     };
     window.addEventListener('globehoppers-destination-click', handleDestinationClick);
     return () => window.removeEventListener('globehoppers-destination-click', handleDestinationClick);
-  }, [tripTimeline, admin, started, activeIndex, legProgress, isPlaying, globeOverview, cameraMode, showHero]);
+  }, [tripTimeline, admin, started, activeIndex, legProgress, isPlaying, globeOverview, cameraMode, showHero, globeSpinPaused]);
 
   useEffect(() => {
     if (!destinationSelection) return;
@@ -1150,7 +1155,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isPlaying && !isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -1162,13 +1167,13 @@ export default function App() {
         <button className="secondary big" onClick={viewGlobe}>Explore the Globe</button>
       </div>
     </section>}
-    {destinationSelection && <DestinationTripQueue selection={destinationSelection} onSelect={(row) => { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(false); jumpToLeg(row.firstIndex || 0, 0, true); }} onCancel={() => cancelDestinationSelection('queue-cancel')} />}
+    {destinationSelection && <DestinationTripQueue selection={destinationSelection} onSelect={(row) => { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(Boolean(destinationSelection.snapshot?.globeSpinPaused)); jumpToLeg(row.firstIndex || 0, 0, true); }} onCancel={() => cancelDestinationSelection('queue-cancel')} />}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} isRelocating={isRelocating} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} globeControlsVisible={!isPlaying && (!started || globeOverview || idleMode)} globeSpinSpeed={globeSpinSpeed} onGlobeSpinSpeedChange={(value) => setGlobeSpinSpeed(clampGlobeSpinSpeed(value))} globeSpinPaused={globeSpinPaused} onToggleGlobeSpin={() => setGlobeSpinPaused(value => !value)} onGlobeZoom={(delta) => window.dispatchEvent(new CustomEvent('globehoppers-globe-zoom', { detail: { delta } }))} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => { if (destinationSelectionRef.current) { const match = destinationSelectionRef.current.matches.find(row => row.id === marker.id); if (match) { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(false); jumpToLeg(match.firstIndex || 0, 0, true); return; } } jumpToLeg(marker.firstIndex || 0, 0, true); }} onMarkerEdit={editTimelineMarker} destinationMatchIds={destinationSelection?.matches?.map(row => row.id) || []} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
+    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} isRelocating={isRelocating} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} globeControlsVisible={!isPlaying && (!started || globeOverview || idleMode)} globeSpinSpeed={globeSpinSpeed} onGlobeSpinSpeedChange={(value) => setGlobeSpinSpeed(clampGlobeSpinSpeed(value))} globeSpinPaused={globeSpinPaused} onToggleGlobeSpin={() => setGlobeSpinPaused(value => !value)} onGlobeZoom={(delta) => window.dispatchEvent(new CustomEvent('globehoppers-globe-zoom', { detail: { delta } }))} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => { if (destinationSelectionRef.current) { const selection = destinationSelectionRef.current; const match = selection.matches.find(row => row.id === marker.id); if (match) { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(Boolean(selection.snapshot?.globeSpinPaused)); jumpToLeg(match.firstIndex || 0, 0, true); return; } } jumpToLeg(marker.firstIndex || 0, 0, true); }} onMarkerEdit={editTimelineMarker} destinationMatchIds={destinationSelection?.matches?.map(row => row.id) || []} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
       freezePlaybackClock();
       setIsPlaying(false);
       setFilter(value);
-    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} onRetryRouting={() => restartRoutingEngine('manual retry').catch(() => {})} tripsDataStatus={tripsDataStatus} hopperIntegrity={hopperIntegrity} repoSaveStatus={repoSaveStatus}
+    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} monthTicks={timelineMonthTicks} timelineYearSpan={timelineYearSpan} searchRows={tripTimeline} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} onRetryRouting={() => restartRoutingEngine('manual retry').catch(() => {})} tripsDataStatus={tripsDataStatus} hopperIntegrity={hopperIntegrity} repoSaveStatus={repoSaveStatus}
         onRetryRepoSave={() => {
           setAdmin(true);
           setStudioModalOnly(false);
@@ -1197,17 +1202,7 @@ function DestinationTripQueue({ selection, onSelect, onCancel }) {
     </div>
     <p className="destination-trip-queue__hint">This destination appears in {selection.matches.length} Hops. Choose a card to play it.</p>
     <div className="destination-trip-queue__list">
-      {selection.matches.map((row, index) => <button key={row.id} type="button" className="destination-trip-queue__card gh-timeline-trip-row" style={{
-        '--queue-color': row.color || '#00e5ff',
-        '--queue-border': row.borderGradient || row.color || '#00e5ff',
-        '--queue-marker': row.markerBackground || row.color || '#00e5ff',
-        '--queue-index': index
-      }} onClick={() => onSelect(row)}>
-        <TimelineRowBorder colors={row.borderColors || [row.color || '#00e5ff']} />
-        <span className="destination-trip-queue__ball" aria-hidden="true"></span>
-        <span className="destination-trip-queue__date">{row.date}</span>
-        <strong>{row.title}</strong><span>{row.route}</span><em>{row.traveler}</em>
-      </button>)}
+      <HopResultCards rows={selection.matches} onSelect={onSelect} />
     </div>
   </aside>;
 }
@@ -1846,6 +1841,8 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       legCount: tripLegs.length,
       destinationLocationIds,
       year: trip.year || String(trip.date || '').slice(0, 4) || '',
+      month: normalizeTimelineMonth(trip.month, trip.displayDate || trip.date),
+      day: normalizeTimelineDay(trip.day, trip.startDay, trip.displayDate || trip.date),
       toLocationId: trip.toLocationId,
       notes: trip.notes || trip.occasion || '',
       trip
@@ -1883,6 +1880,83 @@ function buildTimelineYearSegments(rows = [], totalLegs = 0) {
     start: seg.start,
     end: index < starts.length - 1 ? starts[index + 1].start : 1
   }));
+}
+
+
+function buildTimelineMonthTicks(rows = [], totalLegs = 0) {
+  const dated = (rows || []).map((row, index) => {
+    const year = Number(String(row.year || row.date || '').match(/\d{4}/)?.[0]);
+    if (!Number.isFinite(year)) return null;
+    const month = Math.max(1, Math.min(12, Number(row.month) || 7));
+    const day = Math.max(1, Math.min(28, Number(row.day) || 15));
+    return {
+      row,
+      index,
+      time: Date.UTC(year, month - 1, day),
+      progress: Math.max(0, Math.min(1, Number(row.firstIndex || 0) / Math.max(1, totalLegs)))
+    };
+  }).filter(Boolean).sort((a, b) => a.time - b.time || a.index - b.index);
+  if (dated.length < 2) return [];
+
+  const first = new Date(dated[0].time);
+  const last = new Date(dated[dated.length - 1].time);
+  const cursor = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 1));
+  const ticks = [];
+  while (cursor <= end) {
+    const year = cursor.getUTCFullYear();
+    const monthIndex = cursor.getUTCMonth();
+    const targetTime = Date.UTC(year, monthIndex, 15);
+    let progress = dated[0].progress;
+    if (targetTime >= dated[dated.length - 1].time) progress = dated[dated.length - 1].progress;
+    else if (targetTime > dated[0].time) {
+      let upperIndex = 1;
+      while (upperIndex < dated.length && dated[upperIndex].time < targetTime) upperIndex += 1;
+      const lower = dated[Math.max(0, upperIndex - 1)];
+      const upper = dated[Math.min(dated.length - 1, upperIndex)];
+      const fraction = upper.time === lower.time ? 0 : (targetTime - lower.time) / (upper.time - lower.time);
+      progress = lower.progress + (upper.progress - lower.progress) * Math.max(0, Math.min(1, fraction));
+    }
+    ticks.push({
+      id: `${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+      year,
+      month: monthIndex + 1,
+      label: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(cursor),
+      progress: Math.max(0, Math.min(1, progress))
+    });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return ticks;
+}
+
+function buildTimelineYearSpan(rows = []) {
+  const values = (rows || []).map(row => {
+    const year = Number(String(row.year || row.date || '').match(/\d{4}/)?.[0]);
+    if (!Number.isFinite(year)) return null;
+    const month = Math.max(1, Math.min(12, Number(row.month) || 7));
+    return year + (month - 1) / 12;
+  }).filter(Number.isFinite);
+  if (values.length < 2) return 1;
+  return Math.max(1 / 12, Math.max(...values) - Math.min(...values) + 1 / 12);
+}
+
+function normalizeTimelineMonth(value, dateText = '') {
+  const numeric = Number(value);
+  if (numeric >= 1 && numeric <= 12) return numeric;
+  const text = String(dateText || '').toLowerCase();
+  const names = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const index = names.findIndex(name => text.includes(name) || text.includes(name.slice(0, 3)));
+  return index >= 0 ? index + 1 : 7;
+}
+
+function normalizeTimelineDay(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (numeric >= 1 && numeric <= 31) return numeric;
+    const match = String(value || '').match(/\b([12]?\d|3[01])\b/);
+    if (match) return Number(match[1]);
+  }
+  return 15;
 }
 
 function TripTimelineDrawer({ open, rows, activeIndex, initialScroll, onScrollStore, onClose, onJump, onEditTrip, viewType = 'expanded', onViewTypeChange }) {

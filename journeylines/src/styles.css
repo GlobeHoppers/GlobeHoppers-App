@@ -13445,3 +13445,219 @@ svg text {
   .studio-form-grid--dates { grid-template-columns: 1fr !important; }
   .studio-generated-title-row { align-items: flex-start; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.0 — camera freedom, timeline search, and map readability  */
+/* ========================================================================== */
+:root { --gh-map-ui-scale: 1; }
+
+/* Destination and search cards share one compact, content-first layout. */
+.destination-trip-queue__card::before { display: none !important; content: none !important; }
+.destination-trip-queue__card.gh-timeline-trip-row {
+  grid-template-columns: 17px minmax(0, 1fr) !important;
+  grid-template-areas: "ball content" !important;
+  gap: 5px !important;
+  min-height: 72px !important;
+  padding: 9px 10px 9px 6px !important;
+  border-radius: 17px !important;
+}
+.destination-trip-queue__ball {
+  grid-area: ball !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.15), 0 0 12px var(--queue-color) !important;
+}
+.destination-trip-queue__content {
+  grid-area: content;
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  padding-right: 1px;
+}
+.destination-trip-queue__content .destination-trip-queue__date,
+.destination-trip-queue__content strong,
+.destination-trip-queue__content .destination-trip-queue__route,
+.destination-trip-queue__content em {
+  min-width: 0;
+  max-width: none !important;
+  overflow-wrap: anywhere;
+}
+.destination-trip-queue__content .destination-trip-queue__date {
+  color: rgba(225,241,248,.74) !important;
+  font-size: .67rem !important;
+  font-weight: 720;
+}
+.destination-trip-queue__content strong {
+  color: #f7fdff !important;
+  font-size: .91rem !important;
+  line-height: 1.13;
+}
+.destination-trip-queue__content .destination-trip-queue__route {
+  color: rgba(225,241,248,.84) !important;
+  font-size: .69rem !important;
+  line-height: 1.18;
+}
+.destination-trip-queue__content em {
+  color: rgba(209,229,239,.67) !important;
+  font-size: .64rem !important;
+  font-style: normal;
+}
+.hop-result-cards { display: grid; gap: 7px; }
+.hop-result-cards__empty,
+.timeline-search-message {
+  padding: 18px 12px;
+  color: rgba(219,237,245,.68);
+  font-size: .76rem;
+  text-align: center;
+}
+
+/* Timeline header is now utility-only; search sits immediately left of More. */
+.timeline-scrubber__header--controls-only { justify-content: flex-end !important; }
+.controls-search-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.controls-search-wrap + .controls-advanced-wrap { margin-left: 0 !important; }
+.controls-search-toggle,
+.controls-advanced-toggle {
+  width: calc(42px * var(--gh-map-ui-scale)) !important;
+  min-width: calc(42px * var(--gh-map-ui-scale)) !important;
+  height: calc(42px * var(--gh-map-ui-scale)) !important;
+}
+.controls-search-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+.timeline-search-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 11px);
+  z-index: 90;
+  width: min(390px, calc(100vw - 28px));
+  max-height: min(70vh, 720px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(99,213,236,.23);
+  border-radius: 18px;
+  background: rgba(4,13,23,.95) !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,.46);
+}
+.timeline-search-panel__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid rgba(111,214,234,.14);
+}
+.timeline-search-panel__head input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  font-size: .82rem;
+}
+.timeline-search-panel__head button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border-radius: 50%;
+}
+.timeline-search-panel__body {
+  min-height: 80px;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-gutter: stable;
+}
+
+/* Months appear only when the timeline is close enough to make them useful. */
+.timeline-month-scale {
+  position: relative;
+  height: 15px;
+  margin-top: 1px;
+  pointer-events: none;
+  overflow: visible;
+}
+.timeline-month-scale__tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  color: rgba(211,231,240,.62);
+  white-space: nowrap;
+}
+.timeline-month-scale__tick i {
+  width: 1px;
+  height: 4px;
+  background: rgba(151,208,225,.42);
+}
+.timeline-month-scale__tick b {
+  font-size: .52rem;
+  font-weight: 650;
+  line-height: 1;
+}
+.timeline-scroll-viewport.is-animating .timeline-month-scale__tick {
+  transition: left 560ms cubic-bezier(.22,.78,.2,1);
+}
+
+/* Zoom and screen-size aware city labels with a larger invisible click target. */
+.jl-map-pin {
+  min-width: calc(24px * var(--gh-map-label-scale, 1));
+  min-height: calc(24px * var(--gh-map-label-scale, 1));
+}
+.jl-map-pin::before {
+  content: '';
+  position: absolute;
+  inset: calc(-7px * var(--gh-map-label-scale, 1));
+  border-radius: 12px;
+}
+.jl-map-pin-inner {
+  gap: calc(3px * var(--gh-map-label-scale, 1)) !important;
+  padding: calc(2px * var(--gh-map-label-scale, 1)) calc(3px * var(--gh-map-label-scale, 1)) !important;
+}
+.jl-map-pin-name {
+  font-size: calc(11px * var(--gh-map-label-scale, 1)) !important;
+  line-height: 1.02 !important;
+}
+.jl-map-pin-dot {
+  width: calc(9px * var(--gh-map-label-scale, 1)) !important;
+  height: calc(9px * var(--gh-map-label-scale, 1)) !important;
+  min-width: calc(9px * var(--gh-map-label-scale, 1)) !important;
+}
+.jl-map-pin-text { gap: calc(2px * var(--gh-map-label-scale, 1)) !important; }
+.jl-map-pin-ticks { gap: calc(2px * var(--gh-map-label-scale, 1)) !important; }
+.jl-visit-tick {
+  width: calc(9px * var(--gh-map-label-scale, 1)) !important;
+  height: calc(3px * var(--gh-map-label-scale, 1)) !important;
+}
+.controls button,
+.topbar-pill,
+.globe-playback-controls {
+  font-size: calc(.68rem * var(--gh-map-ui-scale)) !important;
+}
+.controls-play-pill { font-size: calc(.76rem * var(--gh-map-ui-scale)) !important; }
+
+/* Editor order: Route → Hoppers → transport/type → extra legs → Notes. */
+.studio-modal-maincol .route-section { order: 1; }
+.studio-modal-maincol .travelers-section { order: 2; }
+.studio-modal-maincol .transport-triptype-row { order: 3; }
+.studio-modal-maincol .additional-legs-section { order: 4; }
+.studio-modal-maincol > .studio-form-grid.single { order: 5; }
+.additional-legs-section .legs-block { margin: 0; }
+
+@media (max-width: 700px) {
+  .timeline-search-panel { position: fixed; right: 10px; left: 10px; bottom: 82px; width: auto; }
+  .destination-trip-queue__card.gh-timeline-trip-row { min-height: 68px !important; }
+}

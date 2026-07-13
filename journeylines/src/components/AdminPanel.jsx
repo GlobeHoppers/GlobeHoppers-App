@@ -2274,35 +2274,38 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
                   <small>Custom points require valid coordinates and are saved into locations.json. GlobeHoppers will never substitute 0,0.</small>
                 </div> : <AutocompleteField prominent label="Destination" resetToken={`${draft.id || 'new'}:to:${draft.toLocationId || 'unselected'}`} value={draft.toLocationText || ''} onChange={v => { setDraft(d => ({...d, toLocationText:v, toLocationId:'', toCity:null})); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={destinationMatches} onChoose={onChooseDestination} />}
               </div>
-              <div className="legs-block">
-                <div className="legs-header">
-                  <strong>Additional legs</strong>
-                  <div className="legs-header-actions">
-                    {!!(draft.extraLegs || []).length && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
-                      ...current,
-                      extraLegs: (current.extraLegs || []).map(leg => ({ ...leg, modeFromPrevious: current.mode || 'plane' })),
-                      returnMode: current.roundTrip ? (current.mode || 'plane') : current.returnMode
-                    }))}>Apply {MODE_OPTIONS.find(option => option.id === draft.mode)?.label || 'mode'} to all legs</button>}
-                    <button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button>
-                  </div>
-                </div>
-                {(draft.extraLegs || []).length >= 12 && <div className="studio-form-warning">This Hop has many legs. The route and repository geometry may take longer to calculate and save.</div>}
-                {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={leg.draftId || leg.legId || leg.pointId || index}>
-                  <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
-                  <AutocompleteField compact label={`Leg ${index + 2} destination`} resetToken={`${leg.draftId || leg.legId || index}:${leg.locationId || 'unselected'}`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => { onSetExtraLeg(index, { locationText: v, locationId: '', city: null }); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={locationSuggestions(locs, leg.locationText || '', cityMatchesFor(leg.locationText), true, cityLoadingFor(leg.locationText))} onChoose={loc => onChooseExtraLeg(index, loc)} />
-                  <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
-                </div>)}
-              </div>
-              {draft.roundTrip && <div className="return-mode-card">
-                <div>
-                  <span>Return home method</span>
-                  <small>Defaults to Leg 1, but can be changed for chained trips.</small>
-                </div>
-                <div className="return-mode-options">
-                  {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={(draft.returnMode || draft.mode || 'plane') === m.id ? 'is-selected' : ''} onClick={() => onSetReturnMode(m.id)}><span>{m.icon}</span>{m.label}</button>)}
-                </div>
-              </div>}
             </div>
+          </section>
+
+          <section className="studio-pick-section additional-legs-section compact-section">
+            <div className="legs-block">
+              <div className="legs-header">
+                <strong>Additional legs</strong>
+                <div className="legs-header-actions">
+                  {!!(draft.extraLegs || []).length && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
+                    ...current,
+                    extraLegs: (current.extraLegs || []).map(leg => ({ ...leg, modeFromPrevious: current.mode || 'plane' })),
+                    returnMode: current.roundTrip ? (current.mode || 'plane') : current.returnMode
+                  }))}>Apply {MODE_OPTIONS.find(option => option.id === draft.mode)?.label || 'mode'} to all legs</button>}
+                  <button className="add-leg-button" type="button" onClick={onAddLeg}><span>＋</span> Add Leg</button>
+                </div>
+              </div>
+              {(draft.extraLegs || []).length >= 12 && <div className="studio-form-warning">This Hop has many legs. The route and repository geometry may take longer to calculate and save.</div>}
+              {(draft.extraLegs || []).map((leg, index) => <div className="leg-row" key={leg.draftId || leg.legId || leg.pointId || index}>
+                <select value={leg.modeFromPrevious || draft.mode || 'plane'} onChange={e => onSetExtraLeg(index, { modeFromPrevious: e.target.value })}>{MODE_OPTIONS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select>
+                <AutocompleteField compact label={`Leg ${index + 2} destination`} resetToken={`${leg.draftId || leg.legId || index}:${leg.locationId || 'unselected'}`} value={leg.locationText || displayLocation(locById[leg.locationId]) || ''} onChange={v => { onSetExtraLeg(index, { locationText: v, locationId: '', city: null }); if (String(v).trim().length >= 2) onRequestCitySuggestions(v); }} matches={locationSuggestions(locs, leg.locationText || '', cityMatchesFor(leg.locationText), true, cityLoadingFor(leg.locationText))} onChoose={loc => onChooseExtraLeg(index, loc)} />
+                <button type="button" onClick={() => onRemoveLeg(index)}>Remove</button>
+              </div>)}
+            </div>
+            {draft.roundTrip && <div className="return-mode-card">
+              <div>
+                <span>Return home method</span>
+                <small>Defaults to Leg 1, but can be changed for chained trips.</small>
+              </div>
+              <div className="return-mode-options">
+                {MODE_OPTIONS.map(m => <button key={m.id} type="button" className={(draft.returnMode || draft.mode || 'plane') === m.id ? 'is-selected' : ''} onClick={() => onSetReturnMode(m.id)}><span>{m.icon}</span>{m.label}</button>)}
+              </div>
+            </div>}
           </section>
 
           <div className="studio-form-grid single compact-section">
@@ -3129,7 +3132,9 @@ function automaticHopTitle(draft = {}, locById = {}, locs = []) {
     destinations.push(shortName(locById[leg.locationId] || findLocationByText(locs, leg.locationText), leg.locationText));
   }
   const names = destinations.map(value => String(value || '').trim()).filter(Boolean);
-  const date = [monthLabel(draft.month), draft.year ? String(draft.year) : ''].filter(Boolean).join(' ');
+  const year = String(draft.year || new Date().getFullYear());
+  if (!names.length) return `New Trip ${year}`;
+  const date = [monthLabel(draft.month), year].filter(Boolean).join(' ');
   return [names.join(' + '), date].filter(Boolean).join(' ').trim();
 }
 

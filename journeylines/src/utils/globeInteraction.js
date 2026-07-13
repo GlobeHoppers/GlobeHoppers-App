@@ -8,14 +8,20 @@ export function clampGlobeSpinSpeed(value) {
   return Math.max(MIN_GLOBE_SPIN_SPEED, Math.min(MAX_GLOBE_SPIN_SPEED, Math.round(number * 100) / 100));
 }
 
-export function autoLevelGlobeCamera(camera = {}) {
+export function autoLevelGlobeCamera(camera = {}, options = {}) {
   const center = Array.isArray(camera.center) ? camera.center : [0, 0];
   const lon = normalizeLongitude(center[0]);
-  const lat = Number(center[1]) || 0;
+  const latValue = Number(center[1]);
+  const lat = Number.isFinite(latValue) ? latValue : 0;
   const targetLat = Math.max(-34, Math.min(34, lat));
+  const requestedZoom = Number(options.zoom);
+  const cameraZoom = Number(camera.zoom);
+  const zoom = Number.isFinite(requestedZoom)
+    ? requestedZoom
+    : Number.isFinite(cameraZoom) ? cameraZoom : 3.8;
   return {
     center: [lon, targetLat],
-    zoom: Number(camera.zoom) || 3.8,
+    zoom,
     pitch: 0,
     bearing: 0
   };

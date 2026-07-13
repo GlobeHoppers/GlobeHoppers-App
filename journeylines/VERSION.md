@@ -1,6 +1,23 @@
-# GlobeHoppers v7.4.0
+# GlobeHoppers v7.5.0
 
 Released: July 13, 2026
+
+## v7.5.0 — Playback Camera Freedom, Search, and Map Readability
+
+- Keeps playback running while the user drags, rotates, tilts, or zooms the map, then smoothly reacquires the vessel's live cinematic camera after interaction ends.
+- Restores reliable Hero/View Globe spin and makes upright auto-level preserve the current longitude and zoom instead of falling back to an unrelated camera scale.
+- Adds pin-derived month labels when timeline zoom reaches an effective one-to-two-year range.
+- Replaces destination results with compact shared cards that use one left Hopper marker and devote nearly all remaining width to readable trip text.
+- Makes the complete location placard, including its white circle and city text, a larger clickable destination target.
+- Adds zoom- and viewport-aware city-label and control sizing, tighter marker spacing, and earlier far-side horizon culling.
+- Gives long car, train, and boat Hops slower mode-specific cinematic timing while keeping airplanes brisk.
+- Simplifies marine presentation into broader source-native offshore chords rather than tracing every shoreline detail.
+- Moves Additional legs below Hoppers, transportation mode, and Hop type and above Notes.
+- Generates `New Trip <current year>` for a blank Hop and `Destination <year>` until a month is selected.
+- Restores readable airplane scale plus visible takeoff and landing pitch near route endpoints.
+- Replaces the Timeline text label with a two-character, 120-millisecond-debounced Hop search immediately left of More.
+
+---
 
 ## v7.4.0 — Direct Interaction and Route-Faithful Playback
 
