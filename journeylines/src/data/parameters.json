@@ -1,6 +1,6 @@
 {
   "version": "4.21",
-  "updatedAt": "2026-07-10T08:48:12.817Z",
+  "updatedAt": "2026-07-13T16:13:04.449Z",
   "trailTuning": {
     "solidThickness": 0.8,
     "solidGlow": 0.5,
@@ -22,7 +22,7 @@
     "stripeActiveThickness": 3.65,
     "stripeActiveSegmentMiles": 45,
     "stripeActiveSeparator": 0.45,
-    "stripeActiveGlow": 0.75,
+    "stripeActiveGlow": 1.95,
     "stripeActiveBevel": 0.45,
     "stripeActiveLaneEffect": 0.4,
     "stripeActiveOpacity": 1,
@@ -40,7 +40,7 @@
     "ribbonActiveThickness": 5,
     "ribbonActiveSpread": 0,
     "ribbonActiveGap": 0.75,
-    "ribbonActiveGlow": 0,
+    "ribbonActiveGlow": 1.95,
     "ribbonActiveOpacity": 1,
     "ribbonPassiveThickness": 2,
     "ribbonPassiveSpread": 0.65,
