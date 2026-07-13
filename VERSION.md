@@ -1,3 +1,16 @@
+# GlobeHoppers v7.5.6
+
+Released: July 13, 2026
+
+## v7.5.6 — Deployment Dependency Stabilization
+
+- Replaced environment-specific package-lock URLs with public npm registry URLs.
+- Replaced floating `latest` dependencies with exact tested versions.
+- Changed GitHub Actions to deterministic `npm ci`, with caching and a bounded install timeout.
+- Application behavior is unchanged from v7.5.5.
+
+---
+
 # GlobeHoppers v7.5.3
 
 Released: July 13, 2026
