@@ -6802,5 +6802,52 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "k528b7",
+    "routeModelVersion": 2,
+    "year": 2027,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2027",
+    "displayEndDate": "",
+    "sortKey": "2027-07-99-2027-07-99-159",
+    "label": "Boston July 2027",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": "chicago-il",
+    "toLocationId": "boston-ma",
+    "route": [
+      {
+        "pointId": "point-65ad02b976b7",
+        "locationId": "chicago-il",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4ad1d5037e54",
+        "legId": "leg-6b9c0afdc119",
+        "locationId": "boston-ma",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6861bb5f55cd",
+        "legId": "leg-26eee84edab7",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
