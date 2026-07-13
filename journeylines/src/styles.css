@@ -11178,7 +11178,6 @@ small,
 
 /* Fainter route/location connector marks so they do not clutter the globe. */
 .jl-arrival-ripple {
-  opacity: .55 !important;
   border-width: 1px !important;
   box-shadow: 0 0 10px var(--pulse-color, #00e5ff) !important;
 }
@@ -13183,4 +13182,111 @@ svg text {
   .timeline-zoom-controls button { flex: 1 1 auto; }
   .globe-playback-controls { width: 100%; justify-content: center; border-radius: 14px; }
   .destination-trip-queue { left: 10px; right: 10px; width: auto; }
+}
+
+/* ========================================================================== */
+/* v7.3.1 interaction and playback regression recovery                         */
+/* ========================================================================== */
+/* overflow-x:hidden converts overflow-y:visible into clipping in browsers.
+   Keep the default fitted timeline fully visible so pins can extend above the
+   rail. A zoomed timeline reserves an internal top gutter before enabling its
+   horizontal scrollport. */
+.timeline-scroll-viewport {
+  overflow: visible !important;
+}
+.timeline-scroll-viewport.is-zoomed {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-top: calc(var(--tl-active-lift, 34px) + var(--tl-active-stem, 42px) + var(--tl-active-head, 14px) + 18px);
+  margin-top: calc(-1 * (var(--tl-active-lift, 34px) + var(--tl-active-stem, 42px) + var(--tl-active-head, 14px) + 18px));
+}
+.timeline-scroll-viewport.is-zoomed .timeline-scroll-content {
+  min-height: calc(var(--tl-active-lift, 34px) + var(--tl-active-stem, 42px) + var(--tl-active-head, 14px) + 38px);
+  display: flex;
+  align-items: flex-end;
+}
+.timeline-scroll-viewport.is-zoomed .timeline-scrubber-stack {
+  width: 100%;
+}
+
+/* Destination-choice cards use the same segmented Hopper palette carried by
+   queue/timeline cards instead of collapsing every squad to one base color. */
+.destination-trip-queue__card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid transparent !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--queue-color) 10%, rgba(5, 16, 27, .96)), rgba(5, 16, 27, .96)) padding-box,
+    var(--queue-border, var(--queue-color)) border-box !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .24), 0 0 14px color-mix(in srgb, var(--queue-color) 18%, transparent) !important;
+}
+.destination-trip-queue__card::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 11px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.78);
+  background: var(--queue-marker, var(--queue-color));
+  box-shadow: 0 0 0 1px rgba(2,9,16,.72);
+}
+
+
+/* ========================================================================== */
+/* v7.3.1 regression hotfix: timeline, pulse, and globe occlusion             */
+/* ========================================================================== */
+.timeline-scroll-viewport {
+  box-sizing: border-box;
+  min-height: 38px;
+  padding-top: 24px;
+  margin-top: -16px;
+  overflow: visible !important;
+}
+.timeline-scroll-content,
+.timeline-scrubber-stack,
+.progress--scrubbable,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-scroll-viewport.is-zoomed {
+  min-height: 54px;
+  padding-top: 40px;
+  margin-top: -32px;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+.timeline-scroll-viewport.is-zoomed .timeline-scroll-content {
+  min-height: 38px;
+  display: block;
+}
+.timeline-marker,
+.timeline-marker--cluster {
+  visibility: visible !important;
+}
+
+/* The pulse exists only during its explicit destination-arrival state. Earlier
+   v4 CSS forced it to 55% opacity even after JS hid it, leaving a cyan ring at
+   old vessel/start coordinates. */
+.jl-arrival-ripple {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  animation: none !important;
+}
+.jl-arrival-ripple.is-active {
+  visibility: visible !important;
+  opacity: .55 !important;
+  animation: jl-puddle-ripple 1.45s cubic-bezier(.16, .84, .26, 1) infinite !important;
+}
+
+/* A culled far-hemisphere marker cannot be resurrected by legacy placard rules
+   or by MapLibre's marker wrapper while the timeline is moving. */
+.jl-map-pin.is-culled,
+.jl-map-pin.is-flicker-locked,
+.maplibregl-marker.jl-map-pin[aria-hidden='true'] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }

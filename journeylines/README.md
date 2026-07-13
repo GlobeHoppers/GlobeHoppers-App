@@ -4,7 +4,7 @@
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 
-## v7.3.0: Globe Interaction and Timeline Navigation
+## v7.3.1: Globe Interaction and Timeline Navigation
 
 Vessel sprites now follow the exact rendered playback-plan tangent, surface and air routes retain exact endpoint anchors, and arrival pulses remain fixed at the destination. Long Valhalla drives automatically divide into bounded route requests and stitch the results before falling back to an approximate corridor.
 

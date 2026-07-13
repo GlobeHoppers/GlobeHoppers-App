@@ -1196,7 +1196,11 @@ function DestinationTripQueue({ selection, onSelect, onCancel }) {
     </div>
     <p className="destination-trip-queue__hint">This destination appears in {selection.matches.length} Hops. Pick a card or one of the raised timeline pins.</p>
     <div className="destination-trip-queue__list">
-      {selection.matches.map(row => <button key={row.id} type="button" className="destination-trip-queue__card" style={{ '--queue-color': row.color || '#00e5ff' }} onClick={() => onSelect(row)}>
+      {selection.matches.map(row => <button key={row.id} type="button" className="destination-trip-queue__card" style={{
+        '--queue-color': row.color || '#00e5ff',
+        '--queue-border': row.borderGradient || row.color || '#00e5ff',
+        '--queue-marker': row.markerBackground || row.color || '#00e5ff'
+      }} onClick={() => onSelect(row)}>
         <small>{row.date}</small><strong>{row.title}</strong><span>{row.route}</span><em>{row.traveler}</em>
       </button>)}
     </div>

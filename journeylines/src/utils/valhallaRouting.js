@@ -132,8 +132,14 @@ export function parseValhallaRouteResponse(payload = {}, leg = {}) {
 export async function requestValhallaDrivingRoute(leg, options = {}) {
   const endpoints = normalizeValhallaEndpoints(options.endpoints || DEFAULT_VALHALLA_ENDPOINTS);
   if (!endpoints.length) throw new Error('No valid Valhalla endpoint is configured.');
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (typeof fetchImpl !== 'function') throw new Error('This browser cannot make Valhalla route requests.');
+  const rawFetch = options.fetchImpl || globalThis.fetch;
+  if (typeof rawFetch !== 'function') throw new Error('This browser cannot make Valhalla route requests.');
+  // Some browsers require the native Window.fetch function to be invoked with
+  // Window/globalThis as its receiver. Passing an unbound fetch reference down
+  // the routing stack caused Chrome to throw "Illegal invocation" before a
+  // Valhalla request could even leave the page. The wrapper is also compatible
+  // with test doubles and hosted/self-hosted Valhalla endpoints.
+  const fetchImpl = (...args) => Reflect.apply(rawFetch, globalThis, args);
   const timeoutMs = clampTimeout(options.timeoutMs);
   const errors = [];
 

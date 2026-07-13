@@ -40,7 +40,7 @@ equal(sanitized, [[0, 0], [1, 1]], 'Surface presentation must remove invalid and
 // Renderer and worker must share one surface presentation implementation.
 check(travelMap.includes("from '../utils/routePresentation.js'") || travelMap.includes("from '../utils/routeSmoothing.js'"), 'TravelMap must import the shared surface-route utility.');
 check(travelMap.includes('buildSurfacePresentationGeometry(raw, leg.mode') || travelMap.includes('smoothSurfaceRouteGeometry(raw, leg.mode'), 'Rendered surface routes must use shared presentation geometry.');
-check(travelMap.includes('surfaceRouteRenderSamples(routed, leg.mode, n, profile)'), 'Surface route drawing must use the shared render-sample policy.');
+check(travelMap.includes('stableRoutePrefix(routed, progress)') || travelMap.includes('surfaceRouteRenderSamples(routed, leg.mode, n, profile)'), 'Surface route drawing must use the shared lightweight presentation policy.');
 check(worker.includes("from '../utils/routePresentation.js'") || worker.includes("from '../utils/routeSmoothing.js'"), 'Routing worker must import the shared surface-route utility.');
 check(worker.includes('buildSurfacePresentationGeometry(route, mode') || worker.includes('smoothSurfaceRouteGeometry(route, mode'), 'Worker playback plans must use the same presentation route as rendering.');
 

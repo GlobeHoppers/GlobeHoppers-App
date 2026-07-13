@@ -59,6 +59,48 @@ export function anchorRouteGeometryToEndpoints(geometry, leg = {}) {
   return anchored;
 }
 
+/**
+ * Returns the immutable prefix of a presentation route at a normalized progress.
+ * Every already-travelled source vertex is preserved byte-for-byte; only the
+ * current frontier point is interpolated. This prevents a laid surface trail
+ * from shifting as its visible prefix grows.
+ */
+export function stableRoutePrefix(geometry, progress = 1) {
+  const clean = Array.isArray(geometry) ? geometry : [];
+  if (!clean.length) return [[0, 0], [0, 0]];
+  if (clean.length === 1) return [clean[0], clean[0]];
+  const t = clamp(Number(progress), 0, 1);
+  if (t <= 0.000001) return [clean[0], clean[0]];
+  if (t >= 0.999999) return clean;
+
+  const cumulative = cumulativeMiles(clean);
+  const total = cumulative[cumulative.length - 1] || 0;
+  if (!total) return [clean[0], clean[0]];
+  const target = t * total;
+  let low = 1;
+  let high = clean.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if ((cumulative[middle] || 0) < target) low = middle + 1;
+    else high = middle;
+  }
+  const index = Math.max(1, low);
+  const startDistance = cumulative[index - 1] || 0;
+  const segmentDistance = Math.max(1e-12, (cumulative[index] || 0) - startDistance);
+  const u = clamp((target - startDistance) / segmentDistance, 0, 1);
+  const start = clean[index - 1];
+  const end = clean[index];
+  const endpoint = [
+    interpolateLongitude(start[0], end[0], u),
+    Number(start[1]) + (Number(end[1]) - Number(start[1])) * u
+  ];
+  const prefix = clean.slice(0, index);
+  const last = prefix[prefix.length - 1];
+  if (!last || Math.abs(shortestLongitudeDelta(endpoint[0] - last[0])) > 1e-10 || Math.abs(endpoint[1] - last[1]) > 1e-10) prefix.push(endpoint);
+  if (prefix.length === 1) prefix.push(endpoint);
+  return prefix;
+}
+
 function endpointCoordinate(value = {}) {
   const lon = Number(value?.lon);
   const lat = Number(value?.lat);
@@ -309,6 +351,10 @@ function haversineMiles(a, b) {
 
 function shortestLongitudeDelta(value) {
   return ((Number(value) + 540) % 360) - 180;
+}
+
+function interpolateLongitude(start, end, t) {
+  return normalizeLongitude(Number(start) + shortestLongitudeDelta(Number(end) - Number(start)) * clamp(t, 0, 1));
 }
 
 function normalizeLongitude(value) {

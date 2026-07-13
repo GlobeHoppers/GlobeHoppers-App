@@ -29,7 +29,7 @@ const admin = read('src/components/AdminPanel.jsx');
 const css = read('src/styles.css');
 const packageJson = JSON.parse(read('package.json'));
 
-check(packageJson.version === '7.3.0', 'package version is 7.3.0');
+check(/^7\.3\./.test(packageJson.version), 'package version remains in the v7.3 release family');
 check(packageJson.scripts?.['verify:v7.3']?.includes('verify-v7.3.mjs'), 'v7.3 verifier script is registered');
 
 // Route endpoints are presentation invariants.

@@ -1,3 +1,18 @@
+GlobeHoppers v7.3.1 — Playback and Interaction Regression Recovery
+
+- Restored timeline pin visibility with dedicated pin headroom and retained individual pins for the current travel-history density.
+- Paused drag, rotation, pitch, and wheel zoom now immediately stop residual camera easing and retain manual camera ownership until an explicit playback or navigation action.
+- Retired the legacy map-layer arrival pulse and removed the CSS rule that kept a stale cyan ripple visible outside arrival settle.
+- Surface vehicles and active trails now share one exact presentation route. Route stacking is calculated from the complete route before an immutable prefix is revealed, preventing boats/cars from detaching and preventing completed trail sections from shifting.
+- Tightened car tangent sampling and heading response so cars adhere more directly to road turns.
+- Strengthened travel-mode horizon culling with the actual camera subpoint and stopped overriding MapLibre's globe-occlusion opacity.
+- Fixed Valhalla browser requests by invoking fetch with its required global receiver, eliminating `Illegal invocation` failures.
+- Prevented blue source icons from flashing on red, pink, or other colored Hops while recolored vessel assets load.
+- Applied segmented Hopper queue coloring to destination-choice cards.
+- Added v7.3.1 geometry, camera-ownership, pulse, horizon, Valhalla-binding, vessel-color, timeline, and production-build verification.
+
+---
+
 GlobeHoppers v7.3.0 — Globe Interaction, Timeline Navigation, and Camera/Routing Polish
 
 - Corrected plane, car, train, and boat orientation using the actual playback-plan screen tangent and mode-specific sprite offsets.

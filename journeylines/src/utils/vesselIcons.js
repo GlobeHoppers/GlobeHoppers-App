@@ -47,6 +47,10 @@ export function getCachedRecoloredVesselIconUrl(mode, color) {
   return iconValueCache.get(key) || getBaseVesselIconUrl(mode);
 }
 
+export function peekRecoloredVesselIconUrl(mode, color) {
+  return iconValueCache.get(cacheKey(mode, color)) || null;
+}
+
 export function primeRecoloredVesselIcon(mode, color) {
   const key = cacheKey(mode, color);
   if (iconValueCache.has(key)) return Promise.resolve(iconValueCache.get(key));

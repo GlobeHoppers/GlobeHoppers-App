@@ -318,7 +318,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
 
 
 function clusterTimelineMarkers(markers = [], zoom = 1, destinationMatchSet = new Set()) {
-  if (zoom > 1.12 || markers.length < 55 || destinationMatchSet.size) return markers.map(marker => ({ type: 'marker', marker }));
+  if (zoom > 1.12 || markers.length < 220 || destinationMatchSet.size) return markers.map(marker => ({ type: 'marker', marker }));
   const threshold = 0.012;
   const groups = [];
   let current = [];

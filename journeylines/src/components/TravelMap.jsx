@@ -11,11 +11,11 @@ import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
 import baseRouteDetails from '../data/routeDetails.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
-import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
+import { peekRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
-import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, surfaceRouteRenderSamples } from '../utils/routePresentation.js';
+import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
 import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame } from '../utils/playbackPerformance.js';
 import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
@@ -527,6 +527,49 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     raf = requestAnimationFrame(spin);
     return () => cancelAnimationFrame(raf);
   }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, idleMode, trailTuningOpen, globeSpinSpeed, globeSpinPaused]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const canvas = map.getCanvas?.();
+    const claimManualCamera = (event) => {
+      if (isPlaying || relocationGlideRef.current.id || introLaunchRef.current.active) return;
+      const nativeInput = event?.originalEvent
+        || ['pointerdown', 'touchstart', 'wheel', 'dblclick', 'keydown'].includes(event?.type);
+      if (!nativeInput) return;
+      // A paused map interaction owns the camera immediately. Stop any residual
+      // cinematic easing before latching the override so drag and wheel gestures
+      // never have to fight a stale follow-camera animation.
+      try { map.stop(); } catch {}
+      resetAnimatingRef.current = false;
+      manualSpinPauseRef.current = true;
+      clearTimeout(manualSpinResumeTimerRef.current);
+      userCameraOverrideRef.current = true;
+      lastCameraRef.current = null;
+    };
+    map.on('movestart', claimManualCamera);
+    map.on('dragstart', claimManualCamera);
+    map.on('zoomstart', claimManualCamera);
+    map.on('rotatestart', claimManualCamera);
+    map.on('pitchstart', claimManualCamera);
+    canvas?.addEventListener('pointerdown', claimManualCamera, { passive: true });
+    canvas?.addEventListener('touchstart', claimManualCamera, { passive: true });
+    canvas?.addEventListener('wheel', claimManualCamera, { passive: true });
+    canvas?.addEventListener('dblclick', claimManualCamera, { passive: true });
+    canvas?.addEventListener('keydown', claimManualCamera);
+    return () => {
+      map.off('movestart', claimManualCamera);
+      map.off('dragstart', claimManualCamera);
+      map.off('zoomstart', claimManualCamera);
+      map.off('rotatestart', claimManualCamera);
+      map.off('pitchstart', claimManualCamera);
+      canvas?.removeEventListener('pointerdown', claimManualCamera);
+      canvas?.removeEventListener('touchstart', claimManualCamera);
+      canvas?.removeEventListener('wheel', claimManualCamera);
+      canvas?.removeEventListener('dblclick', claimManualCamera);
+      canvas?.removeEventListener('keydown', claimManualCamera);
+    };
+  }, [mapReady, isPlaying]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1108,6 +1151,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
       if (stats.lastRouteKey !== routeKey) {
         const previousEntry = stats.lastActiveEntry;
+        // A route transition must begin with no arrival pulse. The old map-layer
+        // pulse could otherwise survive until the first settle-state frame.
+        syncPulse(map, null, 'transparent');
+        if (pulseRef.current) {
+          pulseRef.current.classList.remove('is-active');
+          pulseRef.current.style.opacity = '0';
+        }
+        stats.lastPulse = false;
         const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
         const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
         stats.transitionStartCamera = lastCameraRef.current
@@ -1246,14 +1297,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const projectedRotation = projectedHeadingFromScene(map, sceneState);
     const rawRotation = applyVesselSpriteOffset(projectedRotation, iconMode);
     const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
+    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 0.90 : iconMode === 'train' ? 0.78 : 0.62;
     const rotation = Number.isFinite(previousRotation)
-      ? lerpAngle(previousRotation, rawRotation, iconMode === 'plane' ? 0.32 : 0.48)
+      ? lerpAngle(previousRotation, rawRotation, rotationBlend)
       : rawRotation;
     vehicleRef.current.__jlVehicleRotation = rotation;
     const iconKey = `${iconMode}:${String(color || '#00e5ff')}`;
     if (vehicleRef.current.__jlVehicleIconKey !== iconKey) {
-      primeRecoloredVesselIcon(iconMode, color);
-      const iconUrl = getCachedRecoloredVesselIconUrl(iconMode, color);
+      const requestId = Number(vehicleRef.current.__jlVehicleIconRequestId || 0) + 1;
+      vehicleRef.current.__jlVehicleIconRequestId = requestId;
+      const iconUrl = peekRecoloredVesselIconUrl(iconMode, color);
+      // Never flash the blue source icon for a red/pink/etc. Hop. Use the
+      // currentColor SVG silhouette for the first frame, then swap in the exact
+      // recolored PNG as soon as its cached generation completes.
       const nextMarkup = iconUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(iconUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
       if (vehicleRef.current.__jlVehicleMarkup !== nextMarkup) {
         vehicleRef.current.innerHTML = nextMarkup;
@@ -1263,6 +1319,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       vehicleRef.current.dataset.mode = iconMode;
       vehicleRef.current.dataset.iconColor = String(color || '#00e5ff');
       vehicleRef.current.style.setProperty('--vehicle-color', color);
+      // The first synchronous lookup may still be the blue base asset while the
+      // requested color is being generated. Update the live icon when the async
+      // recolor finishes, but only if this vessel/color request is still current.
+      primeRecoloredVesselIcon(iconMode, color).then((resolvedUrl) => {
+        const el = vehicleRef.current;
+        if (!el || el.__jlVehicleIconKey !== iconKey || Number(el.__jlVehicleIconRequestId || 0) !== requestId) return;
+        const resolvedMarkup = resolvedUrl ? `<img class="jl-vehicle-img" src="${escapeHtml(resolvedUrl)}" alt="" draggable="false" />` : vehicleSvg(iconMode);
+        if (el.__jlVehicleMarkup !== resolvedMarkup) {
+          el.innerHTML = resolvedMarkup;
+          el.__jlVehicleMarkup = resolvedMarkup;
+        }
+      }).catch(() => {});
     }
     vehicleRef.current.style.transform = `translate3d(${vehiclePt.x}px, ${vehiclePt.y}px, 0) translate(-50%, -50%) rotate(${rotation}deg) perspective(900px) rotateX(${sceneState.vehiclePitchDeg || 0}deg) scale(${sceneState.vehicleScale})`;
     vehicleRef.current.style.opacity = sceneState.vehicleVisible && isCoordinateVisibleOnGlobe(map, sceneState.vehicle.lon, sceneState.vehicle.lat) ? '1' : '0';
@@ -1338,7 +1406,10 @@ function addRouteSourcesAndLayers(map) {
 function addPulseLayer(map) {
   if (map.getSource('arrival-pulse')) return;
   map.addSource('arrival-pulse', { type: 'geojson', data: emptyCollection() });
-  map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 6, 24], 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-blur': 0.55 } });
+  // The arrival animation is rendered by the HTML overlay. Keep this legacy
+  // source/layer inert so an old GeoJSON point cannot linger at a vessel start
+  // position or follow the vehicle between legs.
+  map.addLayer({ id: 'arrival-pulse', type: 'circle', source: 'arrival-pulse', paint: { 'circle-radius': 0, 'circle-color': '#00e5ff', 'circle-opacity': 0 } });
 }
 
 function syncCompletedRoutes(map, completedLegs, travelersById, showTrails, opacity, width, routedGeometries = {}, trailTuning = DEFAULT_TRAIL_TUNING, fadeFeatures = [], activeTripId = null, morphTripId = null, morphProgress = null) {
@@ -1563,8 +1634,10 @@ function startTrailProfileMorph(map, morphRef, morphTripId, completedLegs, trave
 }
 
 function syncPulse(map, loc, color) {
-  if (!loc || color === 'transparent') { map.getSource('arrival-pulse')?.setData(emptyCollection()); return; }
-  map.getSource('arrival-pulse')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { color }, geometry: { type: 'Point', coordinates: [loc.lon, loc.lat] } }] });
+  // v7.3.1: the DOM ripple is the single owner of arrival pulses. Always clear
+  // the retired map-layer source to prevent a stale cyan circle from surviving
+  // a route transition.
+  map.getSource('arrival-pulse')?.setData(emptyCollection());
 }
 
 function trailVisualForLeg(active, travelerData) {
@@ -1878,9 +1951,15 @@ function boundarySegmentAroundJoin(previousSegment, nextSegment) {
 
 
 function stackedRouteCoordinates(leg, progress = 1, n = 64, routedGeometries = {}, stackOffset = 0) {
-  const coords = routeCoordinates(leg, progress, n, routedGeometries);
-  if (!stackOffset || coords.length < 2) return coords;
-  return taperStackedCoordinates(coords, stackOffset, Number(leg?.miles) || polylineMiles(coords));
+  // Build and offset the complete presentation route once, then reveal an
+  // immutable prefix. Offsetting a growing prefix changed the route's reference
+  // latitude and tangent normals every update, which made already-laid boat/car
+  // trails drift and left the vessel visually detached from its line.
+  const fullRoute = routeCoordinates(leg, 1, n, routedGeometries);
+  const fullStacked = stackOffset && fullRoute.length > 1
+    ? taperStackedCoordinates(fullRoute, stackOffset, Number(leg?.miles) || polylineMiles(fullRoute))
+    : fullRoute;
+  return stableRoutePrefix(fullStacked, progress);
 }
 
 function taperStackedCoordinates(coords = [], stackOffset = 0, totalMilesHint = 0) {
@@ -2091,9 +2170,13 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const distance = milesBetween(leg.from, leg.to);
   const routeProgress = takeoffCruiseLandingEase(p);
   const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
-  const usePlan = playbackPlan?.positions?.length >= 4 && !routeStackingEnabled;
+  // Surface vessels must travel on the exact same presentation polyline that
+  // renders their trail. Equal-distance playback samples can bridge across a
+  // sharp corner between samples, which made boats/cars visibly drift away from
+  // the line. Air routes may continue to use the prepared cinematic plan.
+  const usePlan = playbackPlan?.positions?.length >= 4 && !routeStackingEnabled && !isSurfaceRouteMode(leg.mode);
   const vehicle = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, routeProgress, leg) : pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
-  const tangentWindow = Math.max(0.006, Math.min(0.035, lookAhead(distance, p, leg.mode) * 0.52));
+  const tangentWindow = surfaceTangentWindow(leg.mode, distance, p);
   const behind = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, Math.max(0, routeProgress - tangentWindow), leg) : pointAtVisualRouteProgress(leg, Math.max(0, routeProgress - tangentWindow), routedGeometries, routeStackingEnabled);
   const future = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, Math.min(1, routeProgress + Math.max(tangentWindow, lookAhead(distance, p, leg.mode))), leg) : pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + Math.max(tangentWindow, lookAhead(distance, p, leg.mode))), routedGeometries, routeStackingEnabled);
   const routeMid = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, 0.5, leg) : pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
@@ -2481,8 +2564,9 @@ function throttledRefreshPersistentPinPositions(map, labelsRef, throttleRef, vis
   const now = performance.now();
   const runtime = runtimeRef?.current || {};
   // Playback mode favors smooth globe motion. Labels are allowed to drift with
-  // their locked offsets and only refresh visibility/collisions a few times/sec.
-  const minInterval = runtime.playback ? 520 : 120;
+  // their locked offsets, but horizon culling still needs to react quickly as
+  // the camera crosses a hemisphere boundary.
+  const minInterval = runtime.playback ? 240 : 120;
   if (throttleRef?.current?.t && now - throttleRef.current.t < minInterval) return;
   if (throttleRef) throttleRef.current = { t: now, camera: null };
   refreshPersistentPinPositions(map, labelsRef, visibilityStateRef, runtimeRef);
@@ -2496,6 +2580,14 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const zoom = map.getZoom?.() || 1.5;
   const runtime = runtimeRef?.current || {};
   const visibleGlobeCenter = visualGlobeCenterCoordinate(map, w, h);
+  const cameraTarget = (() => {
+    try {
+      const center = map.getCenter();
+      return { lon: Number(center.lng) || 0, lat: Number(center.lat) || 0 };
+    } catch {
+      return visibleGlobeCenter;
+    }
+  })();
   const activeIds = runtime.activeIds || new Set();
   const playback = Boolean(runtime.playback);
   const stateMap = visibilityStateRef?.current;
@@ -2505,7 +2597,12 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const angularDistance = angularDistanceDeg(visibleGlobeCenter, { lon: loc.lon, lat: loc.lat });
+    // In pitched travel mode, unprojecting the screen center can land far ahead
+    // of the camera target and make true backside cities appear artificially
+    // close. Use the actual cinematic target for hemisphere ownership while
+    // playing; the visual-center method remains ideal for upright globe mode.
+    const horizonCenter = cameraSubpointCoordinate(map) || (playback ? cameraTarget : visibleGlobeCenter);
+    const angularDistance = angularDistanceDeg(horizonCenter, { lon: loc.lon, lat: loc.lat });
     const activePlacard = activeIds.has(loc.id);
     const now = performance.now();
     const prior = stateMap?.get(loc.id) || { visible: false, hiddenUntil: 0, seenSafeSince: 0 };
@@ -2518,8 +2615,8 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
       ? angularDistanceDeg({ lon: Number(focus.lon), lat: Number(focus.lat) }, { lon: loc.lon, lat: loc.lat })
       : angularDistance;
     if (playback) {
-      const centerCutoff = activePlacard ? 78 : 70;
-      const focusCutoff = activePlacard ? 74 : 62;
+      const centerCutoff = Math.min(78, hardPlacardHorizonCutoffDeg(zoom));
+      const focusCutoff = activePlacard ? 72 : Math.min(60, localPlacardFocusCutoffDeg(zoom) + 34);
       const safelyVisible = onScreenLoose && angularDistance <= centerCutoff && focusDistance <= focusCutoff;
       if (!safelyVisible) {
         visible = false;
@@ -2549,7 +2646,9 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     if (visible) {
       el.style.display = '';
       el.style.visibility = 'visible';
-      el.style.opacity = '1';
+      // Leave opacity ownership to MapLibre's occlusion-aware Marker renderer.
+      // Writing opacity:1 here defeated occludedOpacity=0 on the far hemisphere.
+      el.style.removeProperty('opacity');
       const priority = (activePlacard ? 100 : 0) + (loc.isActiveHomeBase ? 35 : 0) + (loc.isHomeBase ? 20 : 0) + Math.max(0, 20 - angularDistance / 3);
       visibleItems.push({ el, loc, pt, activePlacard, priority });
     } else {
@@ -2672,6 +2771,17 @@ function isVisibleOnGlobe(map, point, margin = 1.06) {
 function shortestLongitudeDelta(a, b) {
   let d = ((b - a + 540) % 360) - 180;
   return d;
+}
+
+function cameraSubpointCoordinate(map) {
+  try {
+    const freeCamera = map.getFreeCameraOptions?.();
+    const lngLat = freeCamera?.position?.toLngLat?.();
+    if (lngLat && Number.isFinite(lngLat.lng) && Number.isFinite(lngLat.lat)) {
+      return { lon: Number(lngLat.lng), lat: Number(lngLat.lat) };
+    }
+  } catch {}
+  return null;
 }
 
 function visualGlobeCenterCoordinate(map, width = 0, height = 0) {
@@ -2804,11 +2914,14 @@ function routeCoordinates(leg, progress = 1, n = 64, routedGeometries = {}) {
   if (leg.mode === 'plane' || leg.mode === 'move') return routeSamples(leg.from, leg.to, progress, Math.max(2, n));
   const routed = getVisualRoutedGeometry(leg, routedGeometries);
   if (routed?.length > 1) {
-    const profile = n >= 180 ? 'active' : n >= 80 ? 'regional' : 'overview';
-    return samplePolyline(routed, progress, surfaceRouteRenderSamples(routed, leg.mode, n, profile));
+    // Presentation geometry is already capped and simplified. Preserve every
+    // point that has been laid down behind the vessel and only interpolate the
+    // newest trail endpoint. Re-sampling the entire traveled prefix on each
+    // frame made old trail segments visibly slide after the vessel passed.
+    return stableRoutePrefix(routed, progress);
   }
   const pts = waypointPathForLeg(leg);
-  return samplePolyline(pts, progress, n);
+  return stableRoutePrefix(pts, progress);
 }
 
 function pointAtRouteProgress(leg, t, routedGeometries = {}) {
@@ -3281,6 +3394,16 @@ function lookAhead(distance, p, mode = 'plane') {
   return base * (1 - 0.55 * endpoint);
 }
 
+function surfaceTangentWindow(mode, distance, progress) {
+  const normalized = String(mode || '').toLowerCase();
+  if (normalized === 'drive' || normalized === 'car') {
+    return distance > 700 ? 0.008 : distance > 250 ? 0.0065 : 0.005;
+  }
+  if (normalized === 'train') return distance > 1000 ? 0.012 : 0.009;
+  if (normalized === 'boat') return distance > 1200 ? 0.018 : 0.013;
+  return Math.max(0.006, Math.min(0.035, lookAhead(distance, progress, normalized) * 0.52));
+}
+
 function cameraLeadBias(mode, distance, phase, p) {
   if (phase === 'predeparture') return 0.02;
   if (phase === 'settle') return 0.06;
@@ -3366,7 +3489,7 @@ function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {
   // Keep the line visually tucked under the vessel without drawing noticeably
   // ahead of the nose/body.
   const isAir = mode === 'plane' || mode === 'move';
-  const isSurface = mode === 'drive' || mode === 'boat' || mode === 'train';
+  const isSurface = mode === 'drive' || mode === 'car' || mode === 'boat' || mode === 'train';
   const overlap =
     isAir ? (distance > 3000 ? 0.0015 : distance > 900 ? 0.0025 : 0.0040) :
     isSurface ? (distance > 900 ? 0.0015 : distance > 250 ? 0.0025 : 0.0040) :
@@ -3391,7 +3514,7 @@ function dashForMode(mode) {
 }
 
 function vehicleSvg(mode) {
-  if (mode === 'drive') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 3 L-14 -8 L-6 -13 L8 -13 L16 -7 L20 3 L17 10 L-17 10 Z"/><circle cx="-9" cy="10" r="4"/><circle cx="10" cy="10" r="4"/></svg>';
+  if (mode === 'drive' || mode === 'car') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 3 L-14 -8 L-6 -13 L8 -13 L16 -7 L20 3 L17 10 L-17 10 Z"/><circle cx="-9" cy="10" r="4"/><circle cx="10" cy="10" r="4"/></svg>';
   if (mode === 'boat') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M-18 6 C-10 16 10 16 18 6 Z"/><path d="M-1 6 L-1 -18 L14 3 Z"/><path d="M-4 6 L-4 -14 L-15 4 Z"/></svg>';
   if (mode === 'train') return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><rect x="-12" y="-18" width="24" height="34" rx="6"/><path d="M-7 -10 H7 M-7 0 H7"/><circle cx="-6" cy="18" r="3"/><circle cx="6" cy="18" r="3"/></svg>';
   return '<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0 -22 L6 -4 L23 3 L23 9 L5 6 L2 18 L8 22 L8 25 L0 21 L-8 25 L-8 22 L-2 18 L-5 6 L-23 9 L-23 3 L-6 -4 Z"/></svg>';
