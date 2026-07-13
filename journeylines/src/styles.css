@@ -13661,3 +13661,171 @@ svg text {
   .timeline-search-panel { position: fixed; right: 10px; left: 10px; bottom: 82px; width: auto; }
   .destination-trip-queue__card.gh-timeline-trip-row { min-height: 68px !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.1 — playback stability and interaction correction pass   */
+/* ========================================================================== */
+:root { --gh-map-label-scale: 1; }
+
+/* One outer result card only. The text lives directly in that card and both
+   destination choices and timeline search share this component. */
+.destination-trip-queue__card.hop-result-card {
+  position: relative !important;
+  isolation: isolate;
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  grid-template-areas: "ball content" !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+  min-height: 72px !important;
+  padding: 9px 11px 9px 6px !important;
+  overflow: hidden !important;
+  border: 1px solid transparent !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--queue-color) 10%, rgba(5, 16, 27, .96)), rgba(5, 16, 27, .96)) padding-box,
+    var(--queue-border, var(--queue-color)) border-box !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.24), 0 0 14px color-mix(in srgb, var(--queue-color) 16%, transparent) !important;
+  animation: destinationCardFlyIn 460ms cubic-bezier(.16,.88,.26,1.08) both;
+  animation-delay: calc(var(--queue-index, 0) * 38ms);
+}
+.destination-trip-queue__card.hop-result-card::before,
+.destination-trip-queue__card.hop-result-card::after,
+.destination-trip-queue__card.hop-result-card .gh-timeline-row-border {
+  display: none !important;
+  content: none !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Fill the available vertical rail and stop immediately above the timeline. */
+.destination-trip-queue {
+  top: 68px !important;
+  bottom: 76px !important;
+  right: 16px !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+  padding: 12px 8px 0 !important;
+}
+.destination-trip-queue__list {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 4px 8px 12px 4px !important;
+}
+
+/* Timeline months need a reserved row inside the horizontal scrollport. */
+.timeline-scroll-viewport.is-zoomed {
+  min-height: 76px !important;
+  padding-bottom: 21px !important;
+}
+.timeline-scroll-viewport.is-zoomed .timeline-scroll-content {
+  min-height: 59px !important;
+  align-items: flex-start !important;
+}
+.timeline-scrubber-stack {
+  min-height: 56px !important;
+  padding-bottom: 18px !important;
+}
+.timeline-month-scale {
+  position: relative !important;
+  display: block !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  margin-top: 2px !important;
+  overflow: visible !important;
+  z-index: 45 !important;
+  color: rgba(231,246,252,.82) !important;
+}
+.timeline-month-scale__tick {
+  position: absolute !important;
+  top: 0 !important;
+  transform: translateX(-50%) !important;
+  white-space: nowrap !important;
+}
+.timeline-month-scale__tick b {
+  display: block !important;
+  font-size: .57rem !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+  color: rgba(232,247,253,.82) !important;
+}
+.timeline-month-scale__tick i {
+  display: block !important;
+  width: 1px !important;
+  height: 4px !important;
+  margin: 0 auto 1px !important;
+  background: rgba(194,229,241,.48) !important;
+}
+
+.timeline-search-panel__head input {
+  color: #fff !important;
+  caret-color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+.timeline-search-panel__head input::placeholder { color: rgba(225,241,248,.58) !important; }
+
+/* The entire placard, including the white dot, is one accessible hit target. */
+.jl-map-pin,
+.jl-map-pin-inner,
+.jl-map-pin-dot,
+.jl-map-pin-text,
+.jl-map-pin-name {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+.jl-map-pin:focus-visible .jl-map-pin-inner {
+  outline: 2px solid rgba(255,255,255,.96) !important;
+  outline-offset: 3px;
+}
+
+/* Additional Legs receives the same framed section treatment as Route, while
+   all primary editor section labels share the same typography. */
+.studio-modal-maincol .additional-legs-section.route-section {
+  padding: 10px 12px !important;
+  border: 1px solid rgba(180,220,240,.14) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, rgba(18,33,50,.34), rgba(7,17,29,.28)) !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-header { margin-bottom: 8px !important; }
+.studio-modal-maincol .additional-legs-section .legs-header h3 { margin: 0 !important; }
+.studio-modal-maincol .route-section > h3,
+.studio-modal-maincol .travelers-section h3,
+.studio-modal-maincol .transport-choice-group > h3,
+.studio-modal-maincol .trip-type-group > h3,
+.studio-modal-maincol .additional-legs-section h3,
+.studio-modal-maincol .autocomplete-field > label,
+.studio-modal-maincol .studio-form-grid.single > label {
+  font-family: var(--gh-font-ui, 'Plus Jakarta Sans', Inter, system-ui, sans-serif) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  font-weight: 720 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: rgba(238,248,253,.92) !important;
+}
+
+@media (max-width: 700px) {
+  .destination-trip-queue {
+    top: 58px !important;
+    bottom: 76px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
+  .destination-trip-queue__card.hop-result-card { min-height: 66px !important; }
+}

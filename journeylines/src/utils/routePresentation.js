@@ -6,10 +6,10 @@ const MAX_CACHE_VARIANTS_PER_GEOMETRY = 6;
  * Builds the lightweight geometry used for surface playback and trail rendering.
  *
  * Provider geometry remains the source of truth. This function selects a much
- * smaller set of original route points instead of creating hundreds of new
- * equal-distance samples. Each retained span is constrained to the original
- * route corridor, which prevents the simplifier from inventing large shortcuts
- * across bays, lakes, peninsulas, islands, or other route detours.
+ * smaller set of route anchors, preserves the exact endpoints, then applies a
+ * bounded corner-softening pass for stable cinematic playback. Road and rail
+ * remain close to their provider corridor while marine presentation is allowed
+ * broader offshore chords instead of tracing every shoreline micro-turn.
  */
 export function buildSurfacePresentationGeometry(geometry, mode, options = {}) {
   const normalizedMode = normalizeMode(mode);
@@ -45,7 +45,14 @@ export function buildSurfacePresentationGeometry(geometry, mode, options = {}) {
   const output = selected.map(index => [...clean[index]]);
   output[0] = [...clean[0]];
   output[output.length - 1] = [...clean[clean.length - 1]];
-  return remember(geometry, cacheKey, output);
+
+  // Playback should suggest the real road/rail/marine route without forcing the
+  // vessel through every provider micro-turn. A light corner-cutting pass creates
+  // stable, cinematic curves once up front; no route shaping occurs per frame.
+  const softened = softenPresentationCorners(output, normalizedMode);
+  softened[0] = [...clean[0]];
+  softened[softened.length - 1] = [...clean[clean.length - 1]];
+  return remember(geometry, cacheKey, softened);
 }
 
 
@@ -110,7 +117,8 @@ function endpointCoordinate(value = {}) {
 }
 
 // Backward-compatible name retained for prior release verification and any
-// third-party imports. v7.1.3 no longer densifies or performs per-turn smoothing.
+// third-party imports. The current implementation performs bounded one-time
+// presentation smoothing and never reshapes routes inside the playback frame.
 export function smoothSurfaceRouteGeometry(geometry, mode, options = {}) {
   return buildSurfacePresentationGeometry(geometry, mode, options);
 }
@@ -142,9 +150,9 @@ export function presentationPointBudget(totalMiles, mode, profile = 'playback', 
   const normalizedMode = normalizeMode(mode);
   const miles = Math.max(0, Number(totalMiles) || 0);
   const profileScale = profile === 'overview' ? 0.45 : profile === 'regional' ? 0.70 : 1;
-  const base = normalizedMode === 'boat' ? 20 : normalizedMode === 'train' ? 34 : 40;
-  const distanceFactor = normalizedMode === 'boat' ? 2.8 : normalizedMode === 'train' ? 5.0 : 6.0;
-  const maximum = normalizedMode === 'boat' ? 100 : normalizedMode === 'train' ? 190 : 220;
+  const base = normalizedMode === 'boat' ? 12 : normalizedMode === 'train' ? 30 : 24;
+  const distanceFactor = normalizedMode === 'boat' ? 1.55 : normalizedMode === 'train' ? 4.0 : 3.25;
+  const maximum = normalizedMode === 'boat' ? 54 : normalizedMode === 'train' ? 150 : 118;
   return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), 24, maximum);
 }
 
@@ -214,7 +222,7 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
   // Marine presentation is intentionally less literal than road/rail. Broad
   // route-native chords keep boats offshore instead of tracing every cove,
   // while the corridor guard still prevents implausible long shortcuts.
-  const stretchLimit = mode === 'boat' ? 1.42 : mode === 'train' ? 1.25 : 1.22;
+  const stretchLimit = mode === 'boat' ? 2.20 : mode === 'train' ? 1.38 : 1.48;
   const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit;
 
   if (safe) {
@@ -347,20 +355,46 @@ function cumulativeMidpointIndex(cumulative, start, end) {
 
 function maximumPresentationSegmentMiles(mode, totalMiles) {
   const routeScale = Math.sqrt(Math.max(1, totalMiles));
-  if (mode === 'boat') return clamp(routeScale * 6.4, 55, 235);
-  if (mode === 'train') return clamp(routeScale * 3.2, 28, 110);
-  return clamp(routeScale * 2.6, 20, 90);
+  if (mode === 'boat') return clamp(routeScale * 11.0, 110, 420);
+  if (mode === 'train') return clamp(routeScale * 4.0, 36, 145);
+  return clamp(routeScale * 4.2, 34, 155);
+}
+
+function softenPresentationCorners(points, mode) {
+  if (!Array.isArray(points) || points.length < 3) return points || [];
+  const iterations = mode === 'boat' ? 2 : 1;
+  const amount = mode === 'boat' ? 0.30 : mode === 'train' ? 0.15 : 0.22;
+  let current = points.map(point => [...point]);
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const next = [[...current[0]]];
+    for (let index = 0; index < current.length - 1; index += 1) {
+      const a = current[index];
+      const b = current[index + 1];
+      const lonDelta = shortestLongitudeDelta(Number(b[0]) - Number(a[0]));
+      next.push([
+        normalizeLongitude(Number(a[0]) + lonDelta * amount),
+        Number(a[1]) + (Number(b[1]) - Number(a[1])) * amount
+      ]);
+      next.push([
+        normalizeLongitude(Number(a[0]) + lonDelta * (1 - amount)),
+        Number(a[1]) + (Number(b[1]) - Number(a[1])) * (1 - amount)
+      ]);
+    }
+    next.push([...current[current.length - 1]]);
+    current = next;
+  }
+  return current;
 }
 
 function minimumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 2.2 : profile === 'regional' ? 1.5 : 1;
-  const base = mode === 'boat' ? 0.24 : mode === 'train' ? 0.10 : 0.065;
+  const base = mode === 'boat' ? 0.70 : mode === 'train' ? 0.16 : 0.20;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 18, 0.8, 2.4);
 }
 
 function maximumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 1.8 : profile === 'regional' ? 1.3 : 1;
-  const base = mode === 'boat' ? 8.5 : mode === 'train' ? 2.8 : 1.8;
+  const base = mode === 'boat' ? 18.0 : mode === 'train' ? 4.2 : 5.5;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 28, 0.65, 2.4);
 }
 

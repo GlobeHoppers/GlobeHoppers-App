@@ -207,7 +207,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const manualSpinResumeTimerRef = useRef(null);
   const manualSpinGestureRef = useRef({ camera: null, zoomChanged: false });
   const manualGestureRef = useRef({ pointerDown: false, lastWheelAt: 0, wheelTimer: null });
-  const playbackCameraReturnRef = useRef({ active: false, start: 0, duration: 1250, from: null, timer: null });
+  const playbackCameraReturnRef = useRef(createPlaybackReturnState());
   const latestDesiredCameraRef = useRef(null);
   const idleCameraRef = useRef(null);
   const idleModePreviousRef = useRef(false);
@@ -216,7 +216,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const [mapReady, setMapReady] = useState(false);
   const [zoomReadout, setZoomReadout] = useState(INTRO_GLOBE_ZOOM);
   const fadeTrailRef = useRef({ active: false, features: [], started: 0, duration: 520, raf: 0, timer: 0, key: '' });
-  const trailProfileMorphRef = useRef({ active: false, tripId: '', started: 0, duration: 900, raf: 0, timer: 0 });
+  const trailProfileMorphRef = useRef({ active: false, tripId: '', started: 0, duration: 1800, raf: 0, timer: 0 });
   const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
   const completedRouteRenderRef = useRef({ signature: '' });
   const playbackPlansRef = useRef(new Map());
@@ -448,7 +448,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       lastCameraRef.current = null;
       map.stop();
       map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-      window.setTimeout(() => { resetAnimatingRef.current = false; }, 140);
+      window.setTimeout(() => {
+        try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
+        resetAnimatingRef.current = false;
+      }, 1580);
     } catch { resetAnimatingRef.current = false; }
   }, [globeOverview, mapReady, idleMode]);
 
@@ -468,9 +471,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         clearTimeout(manualSpinResumeTimerRef.current);
         map.stop();
         map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 2200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-        // Allow the idle spin to start almost immediately instead of waiting
-        // for the whole zoom-out animation to complete.
-        window.setTimeout(() => { resetAnimatingRef.current = false; }, 120);
+        // Preserve ownership until the zoom-out completes, then lock the exact
+        // globe overview zoom before idle spin resumes.
+        window.setTimeout(() => {
+          try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
+          resetAnimatingRef.current = false;
+        }, 2280);
       } catch { resetAnimatingRef.current = false; }
     }
     window.addEventListener('globehoppers-force-globe-overview', handleForceGlobeOverview);
@@ -542,7 +548,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const cancelPlaybackReturn = () => {
       clearTimeout(playbackCameraReturnRef.current.timer);
-      playbackCameraReturnRef.current = { active: false, start: 0, duration: 1250, from: null, timer: null };
+      playbackCameraReturnRef.current = createPlaybackReturnState();
     };
     const schedulePlaybackReturn = () => {
       manualGestureRef.current.pointerDown = false;
@@ -555,11 +561,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           userCameraOverrideRef.current = false;
           return;
         }
+        const target = { ...latestDesiredCameraRef.current, center: [...latestDesiredCameraRef.current.center] };
+        const safeZoom = Math.min(Number(from.zoom), Number(target.zoom), INTRO_GLOBE_ZOOM);
+        const needsZoomOut = Number(from.zoom) > safeZoom + 0.035;
         playbackCameraReturnRef.current = {
           active: true,
-          start: performance.now(),
-          duration: 1250,
+          stage: needsZoomOut ? 'zoom-out' : 'orient',
+          stageStart: performance.now(),
+          stageDuration: needsZoomOut ? 300 : 900,
           from,
+          stageFrom: from,
+          target,
+          safeZoom,
           timer: null
         };
       }, 500);
@@ -855,13 +868,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     try { map.scrollZoom?.setZoomRate?.(1 / 70); } catch {}
     if (isPlaying) {
       clearTimeout(playbackCameraReturnRef.current.timer);
-      playbackCameraReturnRef.current = { active: false, start: 0, duration: 1250, from: null, timer: null };
+      playbackCameraReturnRef.current = createPlaybackReturnState();
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
     } else {
       clearTimeout(playbackCameraReturnRef.current.timer);
-      playbackCameraReturnRef.current = { active: false, start: 0, duration: 1250, from: null, timer: null };
+      playbackCameraReturnRef.current = createPlaybackReturnState();
     }
   }, [isPlaying]);
 
@@ -1257,7 +1270,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const now = Number(frame.timestamp || performance.now());
       const quality = frame.quality || 'high';
       const trailInterval = quality === 'high' ? 84 : quality === 'medium' ? 100 : 125;
-      const cameraInterval = quality === 'high' ? 16 : quality === 'medium' ? 25 : 34;
+      const cameraInterval = quality === 'high' ? 28 : quality === 'medium' ? 35 : 44;
       const stats = frameRenderStatsRef.current;
       recordPlaybackFrame(now, quality);
 
@@ -1351,24 +1364,31 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           targetCamera = { ...sceneState.camera, zoom: Math.max(sceneState.camera.zoom, preservedZoom) };
         }
 
-        let camera = smoothCamera(lastCameraRef.current, targetCamera, smoothing);
-        camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
-        latestDesiredCameraRef.current = camera;
         const returnState = playbackCameraReturnRef.current;
-        if (returnState.active && returnState.from) {
-          const elapsed = Math.max(0, now - Number(returnState.start || now));
-          const t = clamp(elapsed / Math.max(1, Number(returnState.duration || 1250)), 0, 1);
-          const eased = t * t * (3 - 2 * t);
-          const returnCamera = smoothCamera(returnState.from, camera, eased);
-          map.jumpTo({ ...returnCamera, essential: true });
-          if (t >= 1) {
-            playbackCameraReturnRef.current = { active: false, start: 0, duration: 1250, from: null, timer: null };
-            userCameraOverrideRef.current = false;
+        const desiredPrevious = returnState.active ? latestDesiredCameraRef.current : lastCameraRef.current;
+        let camera = smoothCamera(desiredPrevious, targetCamera, smoothing);
+        // During staged reacquisition the live map is intentionally looking away
+        // from the vessel. Screen-space constraint math against that temporary
+        // camera would tug the desired target every frame and cause visible jitter.
+        if (!returnState.active) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
+        latestDesiredCameraRef.current = camera;
+        if (returnState.active && returnState.stageFrom) {
+          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now);
+          if (returnCamera && cameraChangedEnough(captureCameraState(map), returnCamera)) {
+            map.jumpTo({ ...returnCamera, essential: true });
           }
-        } else if (!userCameraOverrideRef.current) {
-          map.jumpTo({ ...camera, essential: true });
+          lastCameraRef.current = returnCamera || lastCameraRef.current;
+          if (!returnState.active) {
+            playbackCameraReturnRef.current = createPlaybackReturnState();
+            userCameraOverrideRef.current = false;
+            lastCameraRef.current = returnCamera || camera;
+          }
+        } else {
+          if (!userCameraOverrideRef.current && cameraChangedEnough(captureCameraState(map), camera)) {
+            map.jumpTo({ ...camera, essential: true });
+          }
+          lastCameraRef.current = camera;
         }
-        lastCameraRef.current = camera;
         stats.lastCamera = now;
         recordPlaybackEvent('cameraUpdates');
       }
@@ -1421,17 +1441,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
     const tangentRotation = projectedHeadingFromScene(map, sceneState);
-    const previousScreenPoint = vehicleRef.current.__jlVehicleScreenPoint;
-    const movementDx = previousScreenPoint ? Number(vehiclePt.x) - Number(previousScreenPoint.x) : 0;
-    const movementDy = previousScreenPoint ? Number(vehiclePt.y) - Number(previousScreenPoint.y) : 0;
-    const movementRotation = Math.hypot(movementDx, movementDy) >= 0.55
-      ? Math.atan2(movementDx, -movementDy) * 180 / Math.PI
-      : tangentRotation;
-    vehicleRef.current.__jlVehicleScreenPoint = { x: vehiclePt.x, y: vehiclePt.y };
-    const projectedRotation = isSurfaceRouteMode(mode) ? movementRotation : tangentRotation;
+    // Screen-space movement includes camera motion. Using it as a heading made
+    // cars and boats rotate wildly whenever the follow camera moved. Route
+    // tangent is camera-stable and remains the single source of orientation.
+    const projectedRotation = tangentRotation;
     const rawRotation = applyVesselSpriteOffset(projectedRotation, iconMode);
     const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
-    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 1 : iconMode === 'train' ? 0.94 : 0.90;
+    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 0.30 : iconMode === 'train' ? 0.26 : 0.22;
     const rotation = Number.isFinite(previousRotation)
       ? lerpAngle(previousRotation, rawRotation, rotationBlend)
       : rawRotation;
@@ -1493,7 +1509,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
   }
 
-  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (e.target?.closest?.('.maplibre-shell')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (!e.target?.closest?.('.jl-map-pin, .destination-trip-queue, .timeline-search-panel, button, input, textarea, select')) onMapClick?.(); }}>
     <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />
@@ -1768,19 +1784,31 @@ function startTrailProfileMorph(map, morphRef, morphTripId, completedLegs, trave
   if (!map || !morphRef?.current || !morphTripId || !showTrails) return;
   window.cancelAnimationFrame(morphRef.current.raf || 0);
   window.clearTimeout(morphRef.current.timer || 0);
-  const duration = Math.min(900, morphRef.current.duration || 900);
+  const duration = Math.min(1800, morphRef.current.duration || 1800);
   morphRef.current = { ...morphRef.current, active: true, tripId: morphTripId, started: performance.now(), duration };
-  // Build the final feature collection once. MapLibre paint transitions provide
-  // the visual settling without serializing the entire route history every RAF.
-  syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId, morphTripId, 1);
-  setCompletedRoutePaintState(map, { multiplier: 0.82, duration: 0, playback: true });
-  requestAnimationFrame(() => setCompletedRoutePaintState(map, { multiplier: 1, duration, playback: true }));
-  morphRef.current.timer = window.setTimeout(() => {
-    if (morphRef.current.tripId !== morphTripId) return;
-    morphRef.current.active = false;
-    morphRef.current.tripId = '';
-    syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId);
-  }, duration + 40);
+  // Seed the completed source with the just-finished active profile so the line
+  // does not snap the instant the next Hop begins. Advance through a small number
+  // of cached profile states instead of rebuilding the route every animation frame.
+  const steps = 8;
+  let step = 0;
+  syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId, morphTripId, 0);
+  setCompletedRoutePaintState(map, { multiplier: 1, duration: 180, playback: true });
+  morphRef.current.timer = window.setInterval(() => {
+    if (morphRef.current.tripId !== morphTripId) {
+      window.clearInterval(morphRef.current.timer);
+      return;
+    }
+    step += 1;
+    const raw = Math.min(1, step / steps);
+    const eased = raw * raw * (3 - 2 * raw);
+    syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId, morphTripId, eased);
+    if (raw >= 1) {
+      window.clearInterval(morphRef.current.timer);
+      morphRef.current.active = false;
+      morphRef.current.tripId = '';
+      syncCompletedRoutes(map, completedLegs, travelersById, true, opacity, width, routedGeometries, trailTuning, [], activeTripId);
+    }
+  }, Math.max(120, Math.round(duration / steps)));
 }
 
 function syncPulse(map, loc, color) {
@@ -2425,7 +2453,22 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
   const dx = tail.x - fromPt.x;
   const dy = tail.y - fromPt.y;
   const dist = Math.hypot(dx, dy);
-  if (dist < 8) { pathEl.style.opacity = '0'; pathEl.setAttribute('d', ''); return; }
+  const canvas = map.getCanvas?.();
+  const canvasWidth = canvas?.clientWidth || window.innerWidth;
+  const canvasHeight = canvas?.clientHeight || window.innerHeight;
+  const routeKey = `${activeLeg?.trip?.id || 'trip'}:${activeLeg?.legId || activeLeg?.legIndex || 'leg'}`;
+  if (pathEl.__jlArcRouteKey !== routeKey) {
+    pathEl.__jlArcRouteKey = routeKey;
+    pathEl.setAttribute('d', '');
+  }
+  // A wrapped or nearly horizon-to-horizon projection can turn the decorative
+  // takeoff arc into a stray horizontal line. The real route remains on the map;
+  // suppress only this short-lived screen-space embellishment.
+  if (dist < 8 || dist > Math.hypot(canvasWidth, canvasHeight) * 0.72 || Math.abs(dx) > canvasWidth * 0.68) {
+    pathEl.style.opacity = '0';
+    pathEl.setAttribute('d', '');
+    return;
+  }
   const lift = Math.min(560, Math.max(86, dist * 0.58));
   const cx = (fromPt.x + tail.x) / 2 - dy / dist * lift;
   const cy = (fromPt.y + tail.y) / 2 + dx / dist * lift - lift * 0.98;
@@ -2614,10 +2657,12 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       try { el.__jlMarker.setOpacity?.('1', '0'); } catch {}
-      el.addEventListener('click', event => {
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      const dispatchDestination = event => {
         if (!el.__jlSelectable || !el.__jlLocation) return;
-        event.preventDefault();
-        event.stopPropagation();
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
         const selected = el.__jlLocation;
         window.dispatchEvent(new CustomEvent('globehoppers-destination-click', {
           detail: {
@@ -2626,6 +2671,28 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
             camera: captureCameraState(map)
           }
         }));
+      };
+      el.addEventListener('pointerdown', event => {
+        el.__jlPointerStart = { x: event.clientX, y: event.clientY, at: performance.now() };
+        event.stopPropagation();
+      });
+      el.addEventListener('pointerup', event => {
+        const start = el.__jlPointerStart;
+        el.__jlPointerStart = null;
+        if (!start || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 7) return;
+        el.__jlLastPointerSelect = performance.now();
+        dispatchDestination(event);
+      });
+      el.addEventListener('click', event => {
+        if (performance.now() - Number(el.__jlLastPointerSelect || 0) < 350) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        dispatchDestination(event);
+      });
+      el.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') dispatchDestination(event);
       });
       labelsRef.current.set(loc.id, el);
     } else if (el.__jlMarker) {
@@ -2649,6 +2716,7 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
 
     let inner = el.querySelector('.jl-map-pin-inner');
     const displayName = displayNameForLocation(loc);
+    el.setAttribute('aria-label', `Show Hops to ${displayName}`);
     if (!inner) {
       el.innerHTML = `<span class="jl-map-pin-inner"><span class="jl-map-pin-dot"><span class="jl-map-pin-home-icon">⌂</span></span><span class="jl-map-pin-text"><span class="jl-map-pin-name"></span><span class="jl-map-pin-ticks"></span></span><span class="jl-map-pin-tail"></span></span>`;
       inner = el.querySelector('.jl-map-pin-inner');
@@ -2730,10 +2798,16 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const zoom = map.getZoom?.() || 1.5;
   const runtime = runtimeRef?.current || {};
   const screenBoost = clamp((Math.min(w, h) - 720) / 1800, 0, 0.22);
-  const zoomBoost = clamp((zoom - 4.1) * 0.075, 0, 0.34);
-  const labelScale = clamp(1 + screenBoost + zoomBoost, 1, 1.48);
-  const uiScale = clamp(1 + screenBoost * 0.55 + zoomBoost * 0.28, 1, 1.24);
-  try { document.documentElement.style.setProperty('--gh-map-ui-scale', uiScale.toFixed(3)); } catch {}
+  const zoomBoost = clamp((zoom - 3.8) * 0.13, 0, 0.62);
+  const labelScale = clamp(1 + screenBoost + zoomBoost, 1, 1.72);
+  const uiScale = clamp(1 + screenBoost * 0.55 + zoomBoost * 0.22, 1, 1.27);
+  const rootStyle = document.documentElement.style;
+  const previousLabelScale = Number(rootStyle.getPropertyValue('--gh-map-label-scale')) || 0;
+  const previousUiScale = Number(rootStyle.getPropertyValue('--gh-map-ui-scale')) || 0;
+  try {
+    if (Math.abs(previousLabelScale - labelScale) > 0.015) rootStyle.setProperty('--gh-map-label-scale', labelScale.toFixed(3));
+    if (Math.abs(previousUiScale - uiScale) > 0.015) rootStyle.setProperty('--gh-map-ui-scale', uiScale.toFixed(3));
+  } catch {}
   const visibleGlobeCenter = visualGlobeCenterCoordinate(map, w, h);
   const cameraTarget = (() => {
     try {
@@ -2751,7 +2825,6 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   for (const el of labelsRef.current.values()) {
     const loc = el.__jlLocation;
     if (!loc) continue;
-    el.style.setProperty('--gh-map-label-scale', labelScale.toFixed(3));
     const pt = map.project([loc.lon, loc.lat]);
     // In pitched travel mode, unprojecting the screen center can land far ahead
     // of the camera target and make true backside cities appear artificially
@@ -3466,6 +3539,87 @@ function relocationTargetZoom(distanceMiles = 0, mode = 'plane', cameraMode = 'f
   return surfaceMode ? 6.35 : 5.95;
 }
 
+function createPlaybackReturnState() {
+  return {
+    active: false,
+    stage: 'idle',
+    stageStart: 0,
+    stageDuration: 0,
+    from: null,
+    stageFrom: null,
+    target: null,
+    safeZoom: INTRO_GLOBE_ZOOM,
+    timer: null
+  };
+}
+
+function stagedPlaybackReturnCamera(state, latestTarget, now) {
+  if (!state?.active || !state.stageFrom) return null;
+  const elapsed = Math.max(0, Number(now) - Number(state.stageStart || now));
+  const duration = Math.max(1, Number(state.stageDuration || 1));
+  const t = clamp(elapsed / duration, 0, 1);
+  const eased = t * t * (3 - 2 * t);
+  const safeZoom = Math.min(Number(state.safeZoom) || INTRO_GLOBE_ZOOM, INTRO_GLOBE_ZOOM);
+  let endpoint;
+
+  if (state.stage === 'zoom-out') {
+    endpoint = { ...state.stageFrom, center: [...state.stageFrom.center], zoom: safeZoom };
+  } else if (state.stage === 'orient') {
+    const target = state.target || latestTarget;
+    endpoint = {
+      center: [...target.center],
+      zoom: safeZoom,
+      pitch: target.pitch,
+      bearing: target.bearing
+    };
+  } else {
+    const target = state.target || latestTarget;
+    // Orientation is already correct. The final phase changes only zoom, which
+    // prevents the camera from cutting through the globe while turning.
+    endpoint = {
+      center: [...state.stageFrom.center],
+      zoom: Number(target.zoom),
+      pitch: state.stageFrom.pitch,
+      bearing: state.stageFrom.bearing
+    };
+  }
+
+  const camera = smoothCamera(state.stageFrom, endpoint, eased);
+  if (t < 1) return camera;
+
+  if (state.stage === 'zoom-out') {
+    state.stage = 'orient';
+    state.stageStart = now;
+    state.stageDuration = 900;
+    state.stageFrom = endpoint;
+    state.target = { ...(latestTarget || state.target), center: [...(latestTarget || state.target).center] };
+    return endpoint;
+  }
+  if (state.stage === 'orient') {
+    state.stage = 'zoom-in';
+    state.stageStart = now;
+    state.stageDuration = 580;
+    state.stageFrom = endpoint;
+    state.target = { ...(latestTarget || state.target), center: [...endpoint.center] };
+    return endpoint;
+  }
+
+  state.active = false;
+  return endpoint;
+}
+
+function cameraChangedEnough(current, next) {
+  if (!current || !next) return true;
+  const centerDelta = Math.hypot(
+    shortestLonDelta(Number(next.center?.[0]) - Number(current.center?.[0])),
+    Number(next.center?.[1]) - Number(current.center?.[1])
+  );
+  return centerDelta > 0.00008
+    || Math.abs(Number(next.zoom) - Number(current.zoom)) > 0.00035
+    || Math.abs(Number(next.pitch) - Number(current.pitch)) > 0.015
+    || Math.abs(shortestLonDelta(Number(next.bearing) - Number(current.bearing))) > 0.015;
+}
+
 function smoothCamera(prev, next, amount) {
   if (!prev) return next;
   return {
@@ -3493,7 +3647,7 @@ function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = 
     const frozenGeometry = getRoutedGeometry(entry.leg, routedGeometries);
     if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
     const presentationGeometry = isSurfaceRouteMode(entry.leg.mode)
-      ? anchorRouteGeometryToEndpoints(playbackPlanPresentationGeometry(playbackPlan) || buildSurfacePresentationGeometry(frozenGeometry, entry.leg.mode, { profile: 'playback' }), entry.leg)
+      ? anchorRouteGeometryToEndpoints(buildSurfacePresentationGeometry(frozenGeometry, entry.leg.mode, { profile: 'playback' }), entry.leg)
       : null;
     return {
       ...entry,
@@ -3645,9 +3799,9 @@ function vehicleScale(mode, phase, endpointBias, progress) {
 function vehiclePitchDeg(mode, phase, progress) {
   if (!(mode === 'plane' || mode === 'move')) return 0;
   const p = clamp(Number(progress) || 0, 0, 1);
-  const takeoffWindow = 1 - smoothstep(clamp(p / 0.22, 0, 1));
-  const landingWindow = smoothstep(clamp((p - 0.76) / 0.24, 0, 1));
-  return Math.round((landingWindow * 48 - takeoffWindow * 28) * 10) / 10;
+  const takeoffWindow = 1 - smoothstep(clamp(p / 0.25, 0, 1));
+  const landingWindow = smoothstep(clamp((p - 0.70) / 0.30, 0, 1));
+  return Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10;
 }
 
 function lineProgressBehindVehicle(mode, distance, routeProgress, rawP) {

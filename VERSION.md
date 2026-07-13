@@ -1,3 +1,25 @@
+# GlobeHoppers v7.5.1
+
+Released: July 13, 2026
+
+## v7.5.1 — Playback Stability and Interaction Corrections
+
+- Replaces the single moving-target camera blend with a staged outside-globe return: safe zoom-out, orientation, then zoom-in.
+- Reduces playback camera write frequency and removes temporary screen-space constraint feedback that caused return-camera stutter.
+- Stops cars, trains, and boats from interpreting camera motion as vehicle heading; surface sprites now use only the route tangent with gentle angle smoothing.
+- Uses one-time cached cinematic presentation routes for surface playback. Cars broadly follow road geometry with softened corners, while boats use broader offshore chords and fewer shoreline micro-turns.
+- Slows the active-to-passive trail-profile change to approximately 1.8 seconds using eight bounded transition steps.
+- Holds View Globe camera ownership through the complete transition and locks the final overview to Zoom 4.20 before spin resumes.
+- Extends timeline zoom to 16×, widens the month-label activation range, and reserves a visible row for month ticks.
+- Removes the nested inner pill from destination and search results, expands the result rail to the timeline, and preserves a single left Hopper indicator.
+- Makes the white location circle, label, and placard hit area share pointer and keyboard destination selection.
+- Increases close-zoom map-label scaling while reducing repeated per-marker style writes.
+- Suppresses oversized wrapped decorative air arcs that could appear as horizontal lines on Tokyo or date-line-adjacent flights.
+- Gives Additional Legs the same framed treatment as the route section and normalizes primary Add/Edit Hop label typography.
+- Makes search text explicitly white and strengthens airplane takeoff and landing pitch.
+
+---
+
 # GlobeHoppers v7.5.0
 
 Released: July 13, 2026

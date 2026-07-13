@@ -2277,10 +2277,10 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
             </div>
           </section>
 
-          <section className="studio-pick-section additional-legs-section compact-section">
+          <section className="studio-pick-section additional-legs-section compact-section route-section">
             <div className="legs-block">
               <div className="legs-header">
-                <strong>Additional legs</strong>
+                <h3>Additional legs</h3>
                 <div className="legs-header-actions">
                   {!!(draft.extraLegs || []).length && <button type="button" className="secondary compact" onClick={() => setDraft(current => ({
                     ...current,

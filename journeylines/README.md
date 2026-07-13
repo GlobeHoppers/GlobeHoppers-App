@@ -1,6 +1,6 @@
 # GlobeHoppers
 
-Current release: **v7.5.0**
+Current release: **v7.5.1**
 
 GlobeHoppers is an animated, editable travel-history globe. v7.5 adds direct map freedom during playback, zoom-preserving globe auto-level, close-range timeline months, responsive Hop search, compact destination results, and refined mode-specific presentation.
 

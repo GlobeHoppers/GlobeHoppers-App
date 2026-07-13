@@ -29,8 +29,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
   const visibleTimelineYears = Math.max(1 / 12, Number(timelineYearSpan) || 1) / Math.max(1, timelineZoom);
   const visibleMonthTicks = useMemo(() => {
-    if (visibleTimelineYears > 2.15) return [];
-    const step = visibleTimelineYears <= 1.15 ? 1 : 2;
+    if (visibleTimelineYears > 3.25) return [];
+    const step = visibleTimelineYears <= 1.25 ? 1 : visibleTimelineYears <= 2.15 ? 2 : 3;
     return (monthTicks || []).filter(tick => step === 1 || (Number(tick.month) - 1) % step === 0);
   }, [monthTicks, visibleTimelineYears]);
   const searchResults = useMemo(() => {
@@ -122,7 +122,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const changeTimelineZoom = (nextZoom, focusProgress = activeMarker?.progress ?? progress ?? 0) => {
     const viewport = timelineViewportRef.current;
     const previousZoom = timelineZoom;
-    const clamped = Math.max(1, Math.min(8, Number(nextZoom) || 1));
+    const clamped = Math.max(1, Math.min(16, Number(nextZoom) || 1));
     if (Math.abs(clamped - previousZoom) < 0.001) return;
     const viewportWidth = viewport?.clientWidth || 1;
     const focus = Math.max(0, Math.min(1, Number(focusProgress) || 0));
@@ -198,7 +198,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
           <button type="button" onClick={() => changeTimelineZoom(1, 0.5)} disabled={timelineZoom <= 1.001}>Fit</button>
-          <button type="button" onClick={() => changeTimelineZoom(timelineZoom * 1.5)} disabled={timelineZoom >= 7.999} aria-label="Zoom timeline in">+</button>
+          <button type="button" onClick={() => changeTimelineZoom(timelineZoom * 1.5)} disabled={timelineZoom >= 15.999} aria-label="Zoom timeline in">+</button>
           <button type="button" onClick={recenterTimeline} disabled={timelineZoom <= 1.001}>Recenter</button>
         </div>
       </div>
