@@ -602,6 +602,7 @@ export default function App() {
   useEffect(() => {
     const handleDestinationClick = event => {
       if (relocationTransitionRef.current || admin) return;
+      window.dispatchEvent(new CustomEvent('globehoppers-close-search'));
       const locationId = event?.detail?.locationId;
       if (!locationId) return;
       const matches = tripTimeline.filter(row => row.destinationLocationIds?.includes(locationId));
@@ -636,6 +637,16 @@ export default function App() {
     window.addEventListener('globehoppers-destination-click', handleDestinationClick);
     return () => window.removeEventListener('globehoppers-destination-click', handleDestinationClick);
   }, [tripTimeline, admin, started, activeIndex, legProgress, isPlaying, globeOverview, cameraMode, showHero, globeSpinPaused]);
+
+  useEffect(() => {
+    const closeDestinationForSearch = () => {
+      if (!destinationSelectionRef.current) return;
+      destinationSelectionRef.current = null;
+      setDestinationSelection(null);
+    };
+    window.addEventListener('globehoppers-search-opened', closeDestinationForSearch);
+    return () => window.removeEventListener('globehoppers-search-opened', closeDestinationForSearch);
+  }, []);
 
   useEffect(() => {
     if (!destinationSelection) return;

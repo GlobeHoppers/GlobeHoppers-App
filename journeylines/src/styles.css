@@ -14008,3 +14008,189 @@ svg text {
   .hop-result-card__identity strong { font-size: .82rem !important; }
   .hop-result-card__details .destination-trip-queue__route { font-size: .64rem !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.3 — stabilization and presentation ownership             */
+/* ========================================================================== */
+
+/* The timeline background remains compact, while pins/tooltips and date scales
+   are allowed to rise beyond it. Fit has no scroll affordance; zoomed views do. */
+.controls,
+.timeline-scrubber,
+.timeline-scrubber__header,
+.timeline-scrubber-stack,
+.progress,
+.timeline-marker-layer {
+  overflow: visible !important;
+}
+.timeline-scroll-viewport,
+.timeline-scroll-viewport.is-zoomed {
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  margin-top: -30px !important;
+  padding: 36px 8px 0 !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
+}
+.timeline-scroll-viewport::-webkit-scrollbar { display: none !important; }
+.timeline-scroll-viewport:not(.is-zoomed) {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+.timeline-scroll-viewport.is-zoomed {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+.timeline-scroll-content {
+  min-width: 100% !important;
+  height: 22px !important;
+  padding-inline: 10px !important;
+  box-sizing: border-box !important;
+}
+.timeline-marker-layer {
+  left: 10px !important;
+  right: 10px !important;
+  width: auto !important;
+}
+.timeline-marker {
+  transform-origin: 50% 100% !important;
+}
+.timeline-marker.is-current,
+.timeline-marker.is-active {
+  transform: translateX(-50%) translateY(calc(-1 * var(--tl-active-lift))) scale(1.08) !important;
+}
+.timeline-marker__tooltip {
+  z-index: 5000 !important;
+  max-width: 180px !important;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+.timeline-year-scale,
+.timeline-month-scale {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  bottom: -1px !important;
+  height: 14px !important;
+  overflow: visible !important;
+}
+.timeline-year-scale__segment b,
+.timeline-month-scale__tick b {
+  display: block !important;
+  color: rgba(215,236,246,.72) !important;
+  font-size: .58rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.timeline-scroll-viewport:not(.is-zoomed) .timeline-scroll-content {
+  width: 100% !important;
+}
+
+/* Shared polished result card. One visual surface, deliberate two-column grid. */
+.destination-trip-queue,
+.timeline-search-panel {
+  --result-card-height: 70px;
+}
+.destination-trip-queue__list,
+.timeline-search-panel__body {
+  padding-right: 4px !important;
+}
+.destination-trip-queue__card.hop-result-card {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  min-height: var(--result-card-height) !important;
+  padding: 8px 10px 8px 6px !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  display: grid !important;
+  grid-template-columns: minmax(84px, .43fr) minmax(112px, .57fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+.hop-result-card__identity,
+.hop-result-card__details {
+  padding: 2px 0 !important;
+}
+.hop-result-card__identity strong {
+  font-size: .83rem !important;
+  line-height: 1.15 !important;
+}
+.hop-result-card__identity em,
+.hop-result-card__details .destination-trip-queue__date {
+  font-size: .60rem !important;
+  line-height: 1.15 !important;
+}
+.hop-result-card__details .destination-trip-queue__route {
+  font-size: .65rem !important;
+  line-height: 1.18 !important;
+}
+.destination-trip-queue__ball {
+  align-self: start !important;
+  margin-top: 3px !important;
+}
+.destination-trip-queue__card.hop-result-card::after {
+  content: none !important;
+}
+
+/* Labels must never be clipped by an old fixed-width placard rule. */
+.maplibre-shell .jl-map-pin,
+.maplibre-shell .jl-map-pin-inner,
+.maplibre-shell .jl-map-pin-text,
+.maplibre-shell .jl-map-pin-name {
+  overflow: visible !important;
+  max-width: none !important;
+}
+.maplibre-shell .jl-map-pin-inner {
+  width: max-content !important;
+  min-width: 0 !important;
+}
+.maplibre-shell .jl-map-pin-name {
+  display: block !important;
+  width: max-content !important;
+  max-width: 220px !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  text-overflow: clip !important;
+}
+
+/* Additional Legs is a first-class editor section. Its button occupies the
+   former inner heading position rather than creating a second nested heading. */
+.studio-modal-maincol .additional-legs-section {
+  padding: 10px 12px !important;
+  border: 1px solid rgba(0,229,255,.28) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, rgba(0,229,255,.085), rgba(255,255,255,.025)) !important;
+}
+.studio-modal-maincol .additional-legs-section > h3 {
+  margin: 0 0 9px !important;
+  font-family: var(--gh-font-ui, 'Plus Jakarta Sans', Inter, system-ui, sans-serif) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  font-weight: 720 !important;
+  color: rgba(238,250,253,.96) !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-block {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-header {
+  justify-content: flex-end !important;
+  margin: 0 0 8px !important;
+}
+.studio-modal-maincol .additional-legs-section .legs-header-actions {
+  width: 100% !important;
+  justify-content: flex-end !important;
+}
+
+@media (max-width: 700px) {
+  .destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+    grid-template-columns: minmax(76px, .42fr) minmax(104px, .58fr) !important;
+    gap: 8px !important;
+  }
+}

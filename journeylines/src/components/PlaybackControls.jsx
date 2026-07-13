@@ -77,6 +77,25 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   }, [searchOpen]);
 
   useEffect(() => {
+    const closeSearch = () => { setSearchOpen(false); setSearchText(''); };
+    window.addEventListener('globehoppers-close-search', closeSearch);
+    return () => window.removeEventListener('globehoppers-close-search', closeSearch);
+  }, []);
+
+  useEffect(() => {
+    const handleSpacebar = (event) => {
+      if (event.code !== 'Space' || event.repeat) return;
+      const target = event.target;
+      if (target?.closest?.('input, textarea, select, button, [contenteditable="true"]')) return;
+      event.preventDefault();
+      if (timelineComplete || isRelocating) return;
+      (isPlaying ? onPause : onPlay)?.();
+    };
+    window.addEventListener('keydown', handleSpacebar);
+    return () => window.removeEventListener('keydown', handleSpacebar);
+  }, [isPlaying, timelineComplete, isRelocating, onPause, onPlay]);
+
+  useEffect(() => {
     if (!advancedOpen) return;
     const closeOutside = (event) => {
       if (advancedRef.current && !advancedRef.current.contains(event.target)) setAdvancedOpen(false);
@@ -138,7 +157,12 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!viewport) return;
       const targetLeft = clamped <= 1.001 ? 0 : Math.max(0, focus * viewportWidth * clamped - focusX);
-      viewport.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      if (clamped <= 1.001) {
+        viewport.scrollLeft = 0;
+        viewport.scrollTo({ left: 0, behavior: 'auto' });
+      } else {
+        viewport.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      }
       timelineAnimationTimerRef.current = window.setTimeout(() => setTimelineAnimating(false), 620);
     }));
   };
@@ -305,7 +329,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       <button type="button" onClick={onToggleGlobeSpin}>{globeSpinPaused ? 'Resume Spin' : 'Pause Spin'}</button>
     </div>}
     <div className="controls-search-wrap" ref={searchRef}>
-      <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen} onClick={() => setSearchOpen(value => !value)}><Search size={17} strokeWidth={2.2} /></button>
+      <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen} onClick={() => setSearchOpen(value => { const next = !value; if (next) window.dispatchEvent(new CustomEvent('globehoppers-search-opened')); return next; })}><Search size={17} strokeWidth={2.2} /></button>
       {searchOpen && <div className="timeline-search-panel glass" role="dialog" aria-label="Search Hops">
         <div className="timeline-search-panel__head">
           <Search size={16} aria-hidden="true" />

@@ -1,3 +1,16 @@
+# GlobeHoppers v7.5.3
+
+Released: July 13, 2026
+
+## v7.5.3 — Playback Camera and Timeline Stabilization
+
+- Establishes active playback as the authoritative camera owner and prevents stale relocation, idle, or overview zoom state from taking control after a leg begins.
+- Finishes manual camera reacquisition on the continuously updated live route target.
+- Restores timeline dates/months, pin and pill overflow, fixed rail height, and Fit behavior without an unnecessary scrollbar.
+- Adds Spacebar Play/Pause, mutually exclusive search/destination overlays, polished shared result cards, unclipped responsive labels, wider open-water boat arcs, stricter horizon culling, antimeridian arc suppression, and corrected Additional Legs hierarchy.
+
+---
+
 # GlobeHoppers v7.5.2
 
 Released: July 13, 2026
@@ -84,6 +97,23 @@ GlobeHoppers v7.3.1 — Playback and Interaction Regression Recovery
 - Prevented blue source icons from flashing on red, pink, or other colored Hops while recolored vessel assets load.
 - Applied segmented Hopper queue coloring to destination-choice cards.
 - Added v7.3.1 geometry, camera-ownership, pulse, horizon, Valhalla-binding, vessel-color, timeline, and production-build verification.
+
+---
+
+GlobeHoppers v7.3.0 — Globe Interaction, Timeline Navigation, and Camera/Routing Polish
+
+- Corrected plane, car, train, and boat orientation using the actual playback-plan screen tangent and mode-specific sprite offsets.
+- Anchored every presentation route to its exact origin and destination so route lines reach location circles after simplification.
+- Tightened visible-hemisphere placard culling using the visual canvas center, preventing far-side cities from showing through pitched globe views.
+- Added resilient Valhalla error-154 recovery that divides long drives into bounded sections, recursively splits any still-oversized section, stitches geometry, and preserves route diagnostics.
+- Stabilized arrival camera holds, reduced settle drift, slowed long-flight framing changes, and retained the staged zoom-out/reposition/zoom-in transition for disconnected trips.
+- Added distinct Timeline and Add Hop lazy-load commands, swapped the top actions to Add Hop, Hoppers, GlobeHopper Timeline, and grouped Batch Add actions with Update Current Hop wording.
+- Added a zoomable/pannable timeline with Fit, Recenter, individual pins, and cluster drill-down only at extreme density.
+- Added slower Hero/View Globe rotation, zoom/spin controls, immediate drag ownership, delayed upright auto-leveling, and gradual spin resumption.
+- Added destination-marker trip selection with direct single-Hop launch, multi-Hop queue and raised pins, and exact state restoration on cancel.
+- Added 30-second idle globe mode for paused/not-started timelines with exact Resume restoration and first-Hop Play behavior.
+- Fixed arrival-pulse ownership so the pulse remains anchored to the destination, and delayed vessel shrink until the final few percent of travel.
+- Added v7.3 interaction documentation, QA coverage, utility tests, provider segmentation tests, static ownership checks, and a production build gate.
 
 ---
 
@@ -210,16 +240,6 @@ GlobeHoppers v6.2 — Playback Command Ownership, Worker Recovery, Accessibility
 - Added non-destructive Hopper/Hop Squad integrity auditing for duplicate IDs, missing fields, broken squad references, and trips that reference unknown permanent Hoppers.
 - Added short-screen/mobile containment and reduced-motion safeguards for playback controls.
 - Added v6.2 static verification and production-build checks.
-
----
-
-GlobeHoppers v6.1.1 — Connected Camera Handoffs and Timeline Completion Glide
-
-- Connected return legs and connected subsequent trips retain the prior camera zoom through the handoff instead of pulling back aggressively.
-- The existing 0.12-degree endpoint tolerance continues to determine whether a handoff is continuous or a true relocation.
-- Disconnected trips retain the established relocation behavior.
-- Timeline completion eases to the existing globe-level zoom around the final live camera center rather than cutting back to the intro/home center.
-- Completion remains a finished timeline state; restart behavior remains reserved for the future restart command.
 
 ---
 

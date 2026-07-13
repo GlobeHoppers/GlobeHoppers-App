@@ -150,10 +150,10 @@ export function presentationPointBudget(totalMiles, mode, profile = 'playback', 
   const normalizedMode = normalizeMode(mode);
   const miles = Math.max(0, Number(totalMiles) || 0);
   const profileScale = profile === 'overview' ? 0.45 : profile === 'regional' ? 0.70 : 1;
-  const base = normalizedMode === 'boat' ? 6 : normalizedMode === 'train' ? 30 : 24;
-  const distanceFactor = normalizedMode === 'boat' ? 0.78 : normalizedMode === 'train' ? 4.0 : 3.25;
-  const maximum = normalizedMode === 'boat' ? 34 : normalizedMode === 'train' ? 150 : 118;
-  const minimum = normalizedMode === 'boat' ? 18 : 24;
+  const base = normalizedMode === 'boat' ? 4 : normalizedMode === 'train' ? 30 : 24;
+  const distanceFactor = normalizedMode === 'boat' ? 0.46 : normalizedMode === 'train' ? 4.0 : 3.25;
+  const maximum = normalizedMode === 'boat' ? 22 : normalizedMode === 'train' ? 150 : 118;
+  const minimum = normalizedMode === 'boat' ? 10 : 24;
   return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), minimum, maximum);
 }
 
@@ -223,7 +223,7 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
   // Marine presentation is intentionally less literal than road/rail. Broad
   // route-native chords keep boats offshore instead of tracing every cove,
   // while the corridor guard still prevents implausible long shortcuts.
-  const stretchLimit = mode === 'boat' ? 3.50 : mode === 'train' ? 1.38 : 1.48;
+  const stretchLimit = mode === 'boat' ? 5.25 : mode === 'train' ? 1.38 : 1.48;
   const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit;
 
   if (safe) {

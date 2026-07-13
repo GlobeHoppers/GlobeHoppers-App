@@ -1334,10 +1334,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         stats.lastPulse = false;
         const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
         const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
-        stats.transitionStartCamera = lastCameraRef.current
+        const transitionScene = getScene(
+          activeEntry,
+          Number(frame.rawProgress || 0),
+          context.cameraMode,
+          context.nextActive,
+          routedGeometriesRef.current,
+          context.routeStackingEnabled,
+          livePlan
+        );
+        const capturedTransitionCamera = lastCameraRef.current
           ? { ...lastCameraRef.current, center: [...lastCameraRef.current.center] }
           : null;
-        stats.transitionKind = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg) ? 'continuous' : previousEntry ? 'relocation' : 'initial';
+        // A disconnected leg has already completed its dedicated relocation glide.
+        // Never seed playback from a stale overview/idle camera after that glide.
+        const connectedTransition = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg);
+        stats.transitionStartCamera = connectedTransition && capturedTransitionCamera
+          ? { ...capturedTransitionCamera, zoom: Math.max(Number(capturedTransitionCamera.zoom || 0), Number(transitionScene.camera.zoom || 0)) }
+          : { ...transitionScene.camera, center: [...transitionScene.camera.center] };
+        if (!connectedTransition) {
+          lastCameraRef.current = { ...transitionScene.camera, center: [...transitionScene.camera.center] };
+          latestDesiredCameraRef.current = { ...transitionScene.camera, center: [...transitionScene.camera.center] };
+        }
+        stats.transitionKind = connectedTransition ? 'continuous' : previousEntry ? 'relocation' : 'initial';
         stats.transitionStartedAt = now;
         stats.lastRouteKey = routeKey;
         stats.lastTrail = 0;
@@ -2480,7 +2499,11 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
 
   const heading = usePlan ? headingAtPlaybackPlan(playbackPlan, routeProgress) : headingAlongVisualRoute(leg, routeProgress, routedGeometries, routeStackingEnabled);
   const bearing = 0; // North-up. No route-heading camera rotation.
-  const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
+  const requestedZoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
+  const activeFollowFloor = cameraMode === 'follow'
+    ? (isSurfaceRouteMode(leg.mode) ? (distance > 1500 ? 5.15 : 5.75) : (distance > 3500 ? 4.72 : distance > 1500 ? 5.10 : 5.65))
+    : requestedZoom;
+  const zoom = Math.max(requestedZoom, activeFollowFloor);
   const pitch = cameraPitch(cameraMode, phase, distance, settleT);
   const arrived = phase === 'settle';
 
@@ -2564,7 +2587,7 @@ function updateAirArcOverlay(map, pathEl, activeLeg, sceneState, color) {
     && vehiclePt.x >= -endpointMarginX && vehiclePt.x <= canvasWidth + endpointMarginX
     && fromPt.y >= -endpointMarginY && fromPt.y <= canvasHeight + endpointMarginY
     && vehiclePt.y >= -endpointMarginY && vehiclePt.y <= canvasHeight + endpointMarginY;
-  const dateLineRoute = Math.abs(shortestLonDelta(Number(leg.to.lon) - Number(leg.from.lon))) > 150;
+  const dateLineRoute = Math.abs(Number(leg.to.lon) - Number(leg.from.lon)) > 180 || Math.abs(shortestLonDelta(Number(leg.to.lon) - Number(leg.from.lon))) > 150;
   if (!endpointsNearViewport || dateLineRoute || dist < 8 || dist > Math.hypot(canvasWidth, canvasHeight) * 0.58 || Math.abs(dx) > canvasWidth * 0.52) {
     pathEl.style.opacity = '0';
     pathEl.setAttribute('d', '');
@@ -3104,13 +3127,13 @@ function isCoordinateVisibleOnGlobe(map, lon, lat, marginDeg = 58) {
       ? { lon: Number(mapCenterRaw.lng), lat: Number(mapCenterRaw.lat) }
       : visualCenter;
     const pitch = Number(map.getPitch?.() || 0);
-    const conservativeCutoff = Math.min(Number(marginDeg) || 58, pitch > 45 ? 50 : pitch > 24 ? 53 : 57);
+    const conservativeCutoff = Math.min(Number(marginDeg) || 54, pitch > 45 ? 46 : pitch > 24 ? 49 : 53);
     const coordinate = { lon: Number(lon), lat: Number(lat) };
     const visualDistance = angularDistanceDeg(visualCenter, coordinate);
     const targetDistance = angularDistanceDeg(mapCenter, coordinate);
     if (Math.max(visualDistance, targetDistance) > conservativeCutoff) return false;
     const point = map.project([coordinate.lon, coordinate.lat]);
-    return isVisibleOnGlobe(map, point, 0.955);
+    return isVisibleOnGlobe(map, point, 0.90);
   } catch {
     return false;
   }
@@ -3689,7 +3712,7 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
   if (state.stage === 'zoom-out') {
     endpoint = { ...state.stageFrom, center: [...state.stageFrom.center], zoom: safeZoom };
   } else if (state.stage === 'orient') {
-    const target = state.target || latestTarget;
+    const target = latestTarget || state.target;
     endpoint = {
       center: [...target.center],
       zoom: safeZoom,
@@ -3697,7 +3720,7 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
       bearing: target.bearing
     };
   } else {
-    const target = state.target || latestTarget;
+    const target = latestTarget || state.target;
     // Orientation is already correct. The final phase changes only zoom, which
     // prevents the camera from cutting through the globe while turning.
     endpoint = {
@@ -3729,7 +3752,8 @@ function stagedPlaybackReturnCamera(state, latestTarget, now) {
   }
 
   state.active = false;
-  return endpoint;
+  const finalTarget = latestTarget || state.target || endpoint;
+  return { ...finalTarget, center: [...finalTarget.center] };
 }
 
 function cameraChangedEnough(current, next) {

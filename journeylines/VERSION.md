@@ -1,3 +1,16 @@
+# GlobeHoppers v7.5.3
+
+Released: July 13, 2026
+
+## v7.5.3 — Playback Camera and Timeline Stabilization
+
+- Establishes active playback as the authoritative camera owner and prevents stale relocation, idle, or overview zoom state from taking control after a leg begins.
+- Finishes manual camera reacquisition on the continuously updated live route target.
+- Restores timeline dates/months, pin and pill overflow, fixed rail height, and Fit behavior without an unnecessary scrollbar.
+- Adds Spacebar Play/Pause, mutually exclusive search/destination overlays, polished shared result cards, unclipped responsive labels, wider open-water boat arcs, stricter horizon culling, antimeridian arc suppression, and corrected Additional Legs hierarchy.
+
+---
+
 # GlobeHoppers v7.5.2
 
 Released: July 13, 2026
