@@ -30,13 +30,16 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const visibleTimelineYears = Math.max(1 / 12, Number(timelineYearSpan) || 1) / Math.max(1, timelineZoom);
   const visibleMonthTicks = useMemo(() => {
     if (visibleTimelineYears > 3.25) return [];
-    const step = visibleTimelineYears <= 1.25 ? 1 : visibleTimelineYears <= 2.15 ? 2 : 3;
-    return (monthTicks || [])
-      .filter(tick => step === 1 || (Number(tick.month) - 1) % step === 0)
-      .map(tick => ({
-        ...tick,
-        displayLabel: Number(tick.month) === 1 ? `Jan ${tick.year}` : tick.label
-      }));
+    // A month label is meaningful only when a Hop exists in that month. Keeping
+    // labels attached to actual pins avoids an artificial calendar grid and
+    // makes the rail read like a travel timeline.
+    const seen = new Set();
+    return (monthTicks || []).filter(tick => {
+      const key = `${tick.year}-${tick.month}`;
+      if (!tick.hasPin || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).map(tick => ({ ...tick, displayLabel: tick.label }));
   }, [monthTicks, visibleTimelineYears]);
   const searchResults = useMemo(() => {
     const query = normalizeSearchText(debouncedSearchText);

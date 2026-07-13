@@ -14350,3 +14350,103 @@ svg text {
 /* Globe display filters. Route-only removes DOM placards; locations-only hides
    map route layers through MapLibre layout properties. */
 .maplibre-shell.globe-display-routes .jl-map-pin { display: none !important; }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.5 — stable follow camera and timeline/card refinement     */
+/* ========================================================================== */
+
+/* Timeline is a fixed-height rail. The labels and active callout may escape
+   the rail, but the page itself must not acquire a second horizontal scroller. */
+.controls { overflow: visible !important; }
+.timeline-shell,
+.timeline-scrubber,
+.timeline-scrubber__body,
+.timeline-scrubber-stack,
+.timeline-marker-layer { overflow: visible !important; }
+.timeline-scroll-viewport {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding: 20px 4px 0 !important;
+  margin-top: -18px !important;
+  scrollbar-width: none !important;
+}
+.timeline-scroll-viewport::-webkit-scrollbar { display: none !important; }
+.timeline-scroll-content { overflow: visible !important; min-height: 48px !important; }
+.timeline-year-scale {
+  bottom: 1px !important;
+  height: 10px !important;
+  overflow: visible !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.timeline-year-scale__segment,
+.timeline-year-scale__segment b {
+  overflow: visible !important;
+  clip-path: none !important;
+  transform: none !important;
+  writing-mode: horizontal-tb !important;
+  white-space: nowrap !important;
+}
+.timeline-year-scale__segment b { font-size: .52rem !important; line-height: 1 !important; }
+.timeline-month-scale {
+  bottom: 11px !important;
+  height: 10px !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+.timeline-month-scale__tick { transform: translateX(-50%) !important; width: auto !important; }
+.timeline-month-scale__tick i { display: none !important; }
+.timeline-month-scale__tick b {
+  font-size: .48rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  transform: none !important;
+}
+.timeline-marker__tooltip {
+  font-size: .56rem !important;
+  line-height: 1.02 !important;
+  white-space: nowrap !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.timeline-marker__tooltip-title { font-size: .58rem !important; }
+.timeline-marker__tooltip-date { font-size: .49rem !important; }
+
+/* Shared result-card geometry: 75% identity, 25% route/date. */
+.destination-trip-queue {
+  width: min(680px, calc(100vw - 28px)) !important;
+  max-width: min(680px, calc(100vw - 28px)) !important;
+}
+.timeline-search-panel { width: min(720px, calc(100vw - 28px)) !important; }
+.destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+  grid-template-columns: minmax(0, 3fr) minmax(150px, 1fr) !important;
+  gap: 10px !important;
+}
+.hop-result-card__identity { padding: 7px 10px 7px 12px !important; }
+.hop-result-card__identity strong { font-size: 1.28rem !important; line-height: 1.08 !important; }
+.hop-result-card__identity em { font-size: .78rem !important; font-style: normal !important; }
+.hop-result-card__traveler-plus { color: rgba(238,247,252,.72) !important; }
+.hop-result-card__details { padding: 8px 8px 8px 12px !important; }
+.hop-result-card__details .destination-trip-queue__route { font-size: .76rem !important; line-height: 1.16 !important; }
+.hop-result-card__details .destination-trip-queue__date { font-size: .68rem !important; line-height: 1.1 !important; }
+
+/* The globe menu is a compact mode chooser. */
+.topbar-globe-menu__panel { min-width: 132px !important; }
+.topbar-globe-menu__panel button { padding: 7px 9px !important; font-size: .72rem !important; }
+
+@media (max-width: 700px) {
+  .destination-trip-queue { width: min(94vw, 520px) !important; }
+  .timeline-search-panel { width: min(94vw, 540px) !important; }
+  .destination-trip-queue__card.hop-result-card .destination-trip-queue__content {
+    grid-template-columns: minmax(0, 2.6fr) minmax(104px, 1fr) !important;
+  }
+  .hop-result-card__identity strong { font-size: .96rem !important; }
+  .hop-result-card__identity em { font-size: .62rem !important; }
+  .hop-result-card__details .destination-trip-queue__route { font-size: .62rem !important; }
+  .hop-result-card__details .destination-trip-queue__date { font-size: .56rem !important; }
+}

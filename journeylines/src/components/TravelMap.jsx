@@ -3920,15 +3920,22 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
     close = distance > 4500 ? 4.72 : distance > 1500 ? 5.42 : distance > 500 ? 6.70 : 7.50;
   }
 
-  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
-  const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.48 : 0;
+  const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.06 : 0;
+  const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.36 : 0;
   const settleLocalPush = phase === 'settle' ? 0.34 : 0;
-  // v2.30: arrival should feel like a local-region/county view rather than a
-  // broad regional view. +0.58 zoom is roughly 50% closer; ease it in near the
-  // destination and keep it during the settle drift.
   const countyArrivalPush = phase === 'settle'
-    ? 0.58
-    : p > 0.78 ? 0.58 * smoothstep((p - 0.78) / 0.22) : 0;
+    ? 0.52
+    : p > 0.78 ? 0.52 * smoothstep((p - 0.78) / 0.22) : 0;
+
+  if (mode === 'follow') {
+    // Follow playback owns a stable route-scale zoom. Earlier versions blended
+    // from the close endpoint zoom down to cruise on every leg; that legitimate
+    // formula looked like a competing controller repeatedly pulling the camera
+    // out. Keep a single baseline for the leg and permit only additive arrival
+    // emphasis, never a mid-leg zoom-out.
+    const stableFollow = cruise + modeBoost + Math.min(0.46, Math.max(0.18, (close - cruise) * 0.34));
+    return stableFollow + landingPop + settleLocalPush + countyArrivalPush;
+  }
   return cruise + modeBoost + (close - cruise) * smoothstep(endpointBias) + takeoffPop + landingPop + settleLocalPush + countyArrivalPush;
 }
 function cameraPitch(mode, phase, distance, settleT = 0) {

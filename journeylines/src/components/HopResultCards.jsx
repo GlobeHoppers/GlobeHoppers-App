@@ -1,5 +1,11 @@
 import React from 'react';
 
+function renderTravelerNames(value, colors = [], fallback = '#00e5ff') {
+  const names = String(value || '').split(/\s*\+\s*/).filter(Boolean);
+  const palette = Array.isArray(colors) && colors.length ? colors : [fallback];
+  return names.map((name, index) => <React.Fragment key={`${name}-${index}`}><span style={{ color: palette[index % palette.length] || fallback }}>{name}</span>{index < names.length - 1 && <span className="hop-result-card__traveler-plus"> + </span>}</React.Fragment>);
+}
+
 export default function HopResultCards({ rows = [], onSelect = () => {}, className = '', emptyMessage = 'No matching Hops.' }) {
   if (!rows.length) return <div className="hop-result-cards__empty">{emptyMessage}</div>;
   return <div className={`hop-result-cards ${className}`.trim()}>
@@ -19,7 +25,7 @@ export default function HopResultCards({ rows = [], onSelect = () => {}, classNa
       <span className="destination-trip-queue__content">
         <span className="hop-result-card__identity">
           <strong>{row.title || 'Hop'}</strong>
-          {row.traveler && <em>{row.traveler}</em>}
+          {row.traveler && <em>{renderTravelerNames(row.traveler, row.borderColors, row.color)}</em>}
         </span>
         <span className="hop-result-card__details">
           <span className="destination-trip-queue__route">{row.route || ''}</span>

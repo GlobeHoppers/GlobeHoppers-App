@@ -3139,7 +3139,12 @@ function automaticHopTitle(draft = {}, locById = {}, locs = []) {
   return [names.join(' + '), date].filter(Boolean).join(' ').trim();
 }
 
-function monthLabel(month) { return MONTH_OPTIONS.find(m => Number(m.value) === Number(month))?.label || ''; }
+function monthLabel(month) {
+  if (month == null || String(month).trim() === '') return '';
+  const numeric = Number(month);
+  if (!Number.isFinite(numeric) || numeric < 1 || numeric > 12) return '';
+  return MONTH_OPTIONS.find(m => Number(m.value) === numeric)?.label || '';
+}
 function modeIcon(mode) { return MODE_OPTIONS.find(m => m.id === mode)?.icon || '•'; }
 function travelerSummary(travelers = [], guestHoppers = [], hopperData = {}) {
   return resolveTripVisual({ travelers, guestHoppers }, hopperData || {}).name || 'No hoppers selected';

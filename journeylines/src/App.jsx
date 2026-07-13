@@ -1165,6 +1165,7 @@ export default function App() {
       <div className="topbar-globe-menu">
         <button className="topbar-pill topbar-icon-pill topbar-globe-button" title="View Globe" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>🌐</button>
         <div className="topbar-globe-menu__panel" role="menu" aria-label="Globe view options">
+          <button type="button" role="menuitem" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>Globe View</button>
           <button type="button" role="menuitem" onClick={() => { setGlobeDisplayMode('routes'); viewGlobe(); }}>Routes only</button>
           <button type="button" role="menuitem" onClick={() => { setGlobeDisplayMode('locations'); viewGlobe(); }}>Locations only</button>
         </div>
@@ -1902,49 +1903,25 @@ function buildTimelineYearSegments(rows = [], totalLegs = 0) {
 
 
 function buildTimelineMonthTicks(rows = [], totalLegs = 0) {
-  const dated = (rows || []).map((row, index) => {
+  const denom = Math.max(1, totalLegs - 1);
+  const seen = new Set();
+  return (rows || []).map((row, index) => {
     const year = Number(String(row.year || row.date || '').match(/\d{4}/)?.[0]);
-    if (!Number.isFinite(year)) return null;
-    const month = Math.max(1, Math.min(12, Number(row.month) || 7));
-    const day = Math.max(1, Math.min(28, Number(row.day) || 15));
+    const month = Number(row.month);
+    if (!Number.isFinite(year) || month < 1 || month > 12) return null;
+    const key = `${year}-${month}`;
+    if (seen.has(key)) return null;
+    seen.add(key);
     return {
-      row,
-      index,
-      time: Date.UTC(year, month - 1, day),
-      progress: Math.max(0, Math.min(1, Number(row.firstIndex || 0) / Math.max(1, totalLegs)))
-    };
-  }).filter(Boolean).sort((a, b) => a.time - b.time || a.index - b.index);
-  if (dated.length < 2) return [];
-
-  const first = new Date(dated[0].time);
-  const last = new Date(dated[dated.length - 1].time);
-  const cursor = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1));
-  const end = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 1));
-  const ticks = [];
-  while (cursor <= end) {
-    const year = cursor.getUTCFullYear();
-    const monthIndex = cursor.getUTCMonth();
-    const targetTime = Date.UTC(year, monthIndex, 15);
-    let progress = dated[0].progress;
-    if (targetTime >= dated[dated.length - 1].time) progress = dated[dated.length - 1].progress;
-    else if (targetTime > dated[0].time) {
-      let upperIndex = 1;
-      while (upperIndex < dated.length && dated[upperIndex].time < targetTime) upperIndex += 1;
-      const lower = dated[Math.max(0, upperIndex - 1)];
-      const upper = dated[Math.min(dated.length - 1, upperIndex)];
-      const fraction = upper.time === lower.time ? 0 : (targetTime - lower.time) / (upper.time - lower.time);
-      progress = lower.progress + (upper.progress - lower.progress) * Math.max(0, Math.min(1, fraction));
-    }
-    ticks.push({
-      id: `${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+      id: `${key}-${row.id || index}`,
       year,
-      month: monthIndex + 1,
-      label: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(cursor),
-      progress: Math.max(0, Math.min(1, progress))
-    });
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
-  return ticks;
+      month,
+      label: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, 1))),
+      progress: Math.max(0, Math.min(1, Number(row.firstIndex || 0) / denom)),
+      hasPin: true,
+      markerId: row.id
+    };
+  }).filter(Boolean);
 }
 
 function buildTimelineYearSpan(rows = []) {

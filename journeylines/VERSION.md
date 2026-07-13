@@ -1,3 +1,14 @@
+# GlobeHoppers v7.5.5
+
+Release date: 2026-07-13
+
+## Highlights
+- Stabilized follow-camera zoom so playback no longer continually pulls back from the route.
+- Reworked timeline year/month labeling around actual Hop pins with no masks, flipping, or excess rail padding.
+- Added Globe View as the first compact globe-menu option.
+- Refined shared search and destination-result cards to a 75/25 identity/detail layout with Hopper-colored names.
+- Prevented the automatic Hop title from ever rendering the month-selector placeholder.
+
 # GlobeHoppers v7.5.4
 
 Released: July 13, 2026
