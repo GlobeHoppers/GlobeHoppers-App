@@ -231,7 +231,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -264,6 +264,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const modalCloseTimerRef = useRef(null);
   const initialDraftSignatureRef = useRef('');
   const initialAddRequestRef = useRef(0);
+  const initialTimelineRequestRef = useRef(0);
   const modalTriggerRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
@@ -428,6 +429,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   // The request id is a one-shot command from the lazy-loaded parent.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAddRequestId]);
+
+  useEffect(() => {
+    if (!initialTimelineRequestId || initialTimelineRequestRef.current === initialTimelineRequestId) return;
+    initialTimelineRequestRef.current = initialTimelineRequestId;
+    if (modal) closeModal();
+  // This is a distinct, durable parent command. It must never be interpreted as
+  // an Add Hop request when Studio mounts lazily or reopens.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTimelineRequestId]);
 
   useEffect(() => {
     if (!initialEditTripId) return;
@@ -2156,10 +2166,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
             {onDelete && <button className="danger" disabled={busy} onClick={onDelete}>Delete hop</button>}
             {mode === 'add' && <button className="secondary" type="button" onClick={onOpenBatch}>Batch Add Hops</button>}
             <button onClick={onClose}>Cancel</button>
-            {batchMode ? <>
-              <button className="secondary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Staging…' : batchEditingStageId ? 'Update Staged Hop' : 'Done with Hop'}</button>
-              <button className="primary" disabled={busy || !batchRows.length && isDraftMeaningfullyBlank(draft)} onClick={onSaveBatch}>{busy ? 'Saving…' : `Save Batch${batchRows.length ? ` (${batchRows.length})` : ''}`}</button>
-            </> : <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Checking routes…' : 'Save Hop'}</button>}
+            {!batchMode && <button className="primary" disabled={busy || routeReview.status === 'working'} onClick={onSave}>{busy ? 'Saving…' : routeReview.status === 'working' ? 'Checking routes…' : 'Save Hop'}</button>}
           </div>
         </div>
 
@@ -2302,7 +2309,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
             {!!routeReviewLegs.length && <RouteReviewPanel review={routeReview} legs={routeReviewLegs} currentSignature={currentReviewSignature} onReview={onReviewRoutes} />}
             <TrailStylePanel draft={draft} currentHopSquad={currentHopSquad} currentDraftVisual={currentDraftVisual} selectedTravelerCount={selectedTravelerCount} effectiveTrailColorMode={effectiveTrailColorMode} effectiveTrailStyle={effectiveTrailStyle} onSetTrailStyle={setTrailStyle} onSetTrailColorMode={setTrailColorMode} />
           </div>
-          <BatchHopTable rows={batchRows} activeStageId={batchEditingStageId} baseLocations={locs} hopperData={normalizedHoppers} onAddAnother={onAddAnotherBatchHop} onEdit={onEditBatchHop} onDelete={onDeleteBatchHop} />
+          <BatchHopTable rows={batchRows} activeStageId={batchEditingStageId} baseLocations={locs} hopperData={normalizedHoppers} busy={busy} routeWorking={routeReview.status === 'working'} draftBlank={isDraftMeaningfullyBlank(draft)} onStage={onSave} onSaveBatch={onSaveBatch} onAddAnother={onAddAnotherBatchHop} onEdit={onEditBatchHop} onDelete={onDeleteBatchHop} />
         </>}
 
       </div>
@@ -2311,7 +2318,7 @@ function TripModal({mode, closing, draft, setDraft, busy, locs, locById, homeBas
 }
 
 
-function BatchHopTable({ rows = [], activeStageId = null, baseLocations = [], hopperData = {}, onAddAnother = () => {}, onEdit = () => {}, onDelete = () => {} }) {
+function BatchHopTable({ rows = [], activeStageId = null, baseLocations = [], hopperData = {}, busy = false, routeWorking = false, draftBlank = false, onStage = () => {}, onSaveBatch = () => {}, onAddAnother = () => {}, onEdit = () => {}, onDelete = () => {} }) {
   const sortedRows = sortBatchRows(rows);
   return <section className="batch-hop-section compact-section">
     <div className="batch-hop-heading">
@@ -2319,7 +2326,11 @@ function BatchHopTable({ rows = [], activeStageId = null, baseLocations = [], ho
         <p className="eyebrow">Staged Hops</p>
         <h3>{sortedRows.length ? `${sortedRows.length} Hop${sortedRows.length === 1 ? '' : 's'} ready` : 'No Hops staged yet'}</h3>
       </div>
-      <button type="button" className="primary" onClick={onAddAnother}>＋ Add Another Hop</button>
+      <div className="batch-hop-actions">
+        <button type="button" className="secondary" disabled={busy || routeWorking} onClick={onStage}>{busy ? 'Working…' : activeStageId ? 'Update Current Hop' : 'Done with Hop'}</button>
+        <button type="button" className="primary" disabled={busy} onClick={onAddAnother}>＋ Add Another Hop</button>
+        <button type="button" className="primary batch-save-button" disabled={busy || (!rows.length && draftBlank)} onClick={onSaveBatch}>{busy ? 'Saving…' : `Save Hop Batch${rows.length ? ` (${rows.length})` : ''}`}</button>
+      </div>
     </div>
     <p className="batch-hop-help">Hops are shown chronologically. Routes are calculated when each Hop is staged, and the entire batch is saved in one repository update.</p>
     <div className="batch-hop-table-wrap" role="region" aria-label="Staged Hops" tabIndex="0">

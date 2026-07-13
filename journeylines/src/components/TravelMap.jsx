@@ -15,19 +15,22 @@ import { getCachedRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseV
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
-import { buildSurfacePresentationGeometry, isSurfaceRouteMode, surfaceRouteRenderSamples } from '../utils/routePresentation.js';
+import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, surfaceRouteRenderSamples } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
 import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame } from '../utils/playbackPerformance.js';
+import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
+import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '../utils/globeInteraction.js';
 
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
 const IDLE_SPIN_GLOBE_ZOOM = 4.20;
 const CONTINUOUS_HANDOFF_HOLD_MS = 900;
-const CONTINUOUS_HANDOFF_RELEASE_MS = 1200;
+const CONTINUOUS_HANDOFF_RELEASE_MS = 2600;
 const TIMELINE_COMPLETE_GLOBE_DURATION_MS = 2200;
 const RELOCATION_GLIDE_MIN_MS = 1900;
 const RELOCATION_GLIDE_MAX_MS = 5200;
-const IDLE_SPIN_SPEED = 3.5;
+const AUTO_LEVEL_DELAY_MS = 3600;
+const AUTO_LEVEL_DURATION_MS = 2400;
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -169,7 +172,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -201,6 +204,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const forceSceneJumpRef = useRef(false);
   const manualSpinPauseRef = useRef(false);
   const manualSpinResumeTimerRef = useRef(null);
+  const idleCameraRef = useRef(null);
+  const idleModePreviousRef = useRef(false);
+  const destinationSelectionActiveRef = useRef(false);
   const trailTuningFramedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [zoomReadout, setZoomReadout] = useState(INTRO_GLOBE_ZOOM);
@@ -316,9 +322,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     placardRuntimeRef.current = {
       playback: Boolean(isPlaying && !overviewMode && !completedMode),
       overview: Boolean(overviewMode || completedMode),
-      activeIds: ids
+      activeIds: ids,
+      focus: currentOverlayStateRef.current?.scene?.vehicle || active?.leg?.from || null,
+      selectable: Boolean(destinationSelectionEnabled),
+      selectedDestinationId: selectedDestinationId || null
     };
-  }, [isPlaying, overviewMode, completedMode, active?.leg?.from?.id, active?.leg?.to?.id]);
+    destinationSelectionActiveRef.current = Boolean(destinationSelectionActive);
+  }, [isPlaying, overviewMode, completedMode, active?.leg?.from?.id, active?.leg?.to?.id, destinationSelectionEnabled, destinationSelectionActive, selectedDestinationId]);
 
 
   useEffect(() => {
@@ -422,7 +432,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !globeOverview) return;
+    if (!map || !mapReady || !globeOverview || idleMode) return;
     try {
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
@@ -431,9 +441,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       lastCameraRef.current = null;
       map.stop();
       map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
-      window.setTimeout(() => { resetAnimatingRef.current = false; }, 1575);
+      window.setTimeout(() => { resetAnimatingRef.current = false; }, 140);
     } catch { resetAnimatingRef.current = false; }
-  }, [globeOverview, mapReady]);
+  }, [globeOverview, mapReady, idleMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -450,7 +460,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         manualSpinPauseRef.current = false;
         clearTimeout(manualSpinResumeTimerRef.current);
         map.stop();
-        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 900, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 2200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         // Allow the idle spin to start almost immediately instead of waiting
         // for the whole zoom-out animation to complete.
         window.setTimeout(() => { resetAnimatingRef.current = false; }, 120);
@@ -497,29 +507,31 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    if (trailTuningOpen || isPlaying || introLaunching || (isStarted && !globeOverview)) return;
+    const spinAvailable = !trailTuningOpen && !isPlaying && !introLaunching && (!isStarted || globeOverview || idleMode);
+    if (!spinAvailable) return;
     let raf;
     let last;
     const spin = (ts) => {
       if (last == null) last = ts;
-      const dt = Math.min(48, ts - last);
+      const dt = Math.min(64, ts - last);
       last = ts;
       try {
-        if (!resetAnimatingRef.current && !manualSpinPauseRef.current) {
+        if (!resetAnimatingRef.current && !manualSpinPauseRef.current && !globeSpinPaused && !destinationSelectionActiveRef.current) {
           const c = map.getCenter();
-          map.setCenter([c.lng + dt * 0.0014 * IDLE_SPIN_SPEED, c.lat]);
+          const degreesPerSecond = clampGlobeSpinSpeed(globeSpinSpeed);
+          map.setCenter([c.lng + degreesPerSecond * dt / 1000, c.lat]);
         }
       } catch {}
       raf = requestAnimationFrame(spin);
     };
     raf = requestAnimationFrame(spin);
     return () => cancelAnimationFrame(raf);
-  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, trailTuningOpen]);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, idleMode, trailTuningOpen, globeSpinSpeed, globeSpinPaused]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const idleSpinAvailable = !trailTuningOpen && !isPlaying && !introLaunching && (!isStarted || globeOverview);
+    const idleSpinAvailable = !trailTuningOpen && !isPlaying && !introLaunching && (!isStarted || globeOverview || idleMode);
     if (!idleSpinAvailable) {
       manualSpinPauseRef.current = false;
       clearTimeout(manualSpinResumeTimerRef.current);
@@ -535,26 +547,26 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const resumeAfterIdle = () => {
       clearTimeout(manualSpinResumeTimerRef.current);
       manualSpinResumeTimerRef.current = window.setTimeout(() => {
+        if (destinationSelectionActiveRef.current || relocationGlideRef.current.id || introLaunchRef.current.active) return;
         try {
-          const center = map.getCenter();
+          const current = captureCameraState(map);
+          const target = autoLevelGlobeCamera(current || {});
           resetAnimatingRef.current = true;
           map.easeTo({
-            center: [center.lng, center.lat],
-            bearing: 0,
-            pitch: 0,
-            duration: 700,
+            ...target,
+            duration: AUTO_LEVEL_DURATION_MS,
             essential: true,
-            easing: t => 1 - Math.pow(1 - t, 3)
+            easing: t => t * t * (3 - 2 * t)
           });
           window.setTimeout(() => {
             resetAnimatingRef.current = false;
             manualSpinPauseRef.current = false;
-          }, 760);
+          }, AUTO_LEVEL_DURATION_MS + 80);
         } catch {
           resetAnimatingRef.current = false;
           manualSpinPauseRef.current = false;
         }
-      }, 3000);
+      }, AUTO_LEVEL_DELAY_MS);
     };
 
     map.on('mousedown', pauseSpin);
@@ -580,7 +592,66 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       map.off('pitchend', resumeAfterIdle);
       clearTimeout(manualSpinResumeTimerRef.current);
     };
-  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, trailTuningOpen]);
+  }, [mapReady, isPlaying, introLaunching, isStarted, globeOverview, idleMode, trailTuningOpen]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const handleZoom = event => {
+      const delta = Number(event?.detail?.delta || 0);
+      if (!delta) return;
+      try {
+        map.easeTo({ zoom: Math.max(1.2, Math.min(8.5, map.getZoom() + delta)), duration: 900, essential: true, easing: t => t * (2 - t) });
+      } catch {}
+    };
+    const restoreCamera = event => {
+      const camera = event?.detail?.camera;
+      if (!camera?.center) return;
+      try {
+        resetAnimatingRef.current = true;
+        map.stop();
+        map.easeTo({ ...camera, duration: 2200, essential: true, easing: t => t * t * (3 - 2 * t) });
+        window.setTimeout(() => { resetAnimatingRef.current = false; }, 2280);
+      } catch { resetAnimatingRef.current = false; }
+    };
+    window.addEventListener('globehoppers-globe-zoom', handleZoom);
+    window.addEventListener('globehoppers-restore-camera', restoreCamera);
+    return () => {
+      window.removeEventListener('globehoppers-globe-zoom', handleZoom);
+      window.removeEventListener('globehoppers-restore-camera', restoreCamera);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const wasIdle = idleModePreviousRef.current;
+    idleModePreviousRef.current = Boolean(idleMode);
+    if (idleMode && !wasIdle) {
+      idleCameraRef.current = captureCameraState(map);
+      manualSpinPauseRef.current = true;
+      resetAnimatingRef.current = true;
+      try {
+        const center = map.getCenter();
+        map.stop();
+        map.easeTo({ center: [center.lng, Math.max(-34, Math.min(34, center.lat))], zoom: Math.min(map.getZoom(), 3.25), pitch: 0, bearing: 0, duration: 3200, essential: true, easing: t => t * t * (3 - 2 * t) });
+        window.setTimeout(() => { resetAnimatingRef.current = false; manualSpinPauseRef.current = false; }, 3280);
+      } catch { resetAnimatingRef.current = false; manualSpinPauseRef.current = false; }
+      return;
+    }
+    if (!idleMode && wasIdle && idleExitMode === 'restore' && idleCameraRef.current) {
+      const camera = idleCameraRef.current;
+      idleCameraRef.current = null;
+      manualSpinPauseRef.current = true;
+      resetAnimatingRef.current = true;
+      try {
+        map.stop();
+        map.easeTo({ ...camera, duration: 2600, essential: true, easing: t => t * t * (3 - 2 * t) });
+        window.setTimeout(() => { resetAnimatingRef.current = false; manualSpinPauseRef.current = false; }, 2680);
+      } catch { resetAnimatingRef.current = false; manualSpinPauseRef.current = false; }
+    }
+    if (!idleMode && wasIdle && idleExitMode === 'play') idleCameraRef.current = null;
+  }, [idleMode, idleExitMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -740,8 +811,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const distance = Math.max(0, Number(request.distanceMiles) || milesBetween(request.from || destination, destination));
     const targetZoom = relocationTargetZoom(distance, request.nextMode, cameraMode);
     const overviewZoom = relocationOverviewZoom(distance);
-    const zoomOutDuration = Math.round(clamp(760 + Math.sqrt(Math.max(1, distance)) * 10, 850, 1450));
-    const zoomInDuration = Math.round(clamp(860 + Math.sqrt(Math.max(1, distance)) * 11, 950, 1650));
+    const zoomOutDuration = Math.round(clamp(1500 + Math.sqrt(Math.max(1, distance)) * 14, 1800, 3000));
+    const zoomInDuration = Math.round(clamp(1700 + Math.sqrt(Math.max(1, distance)) * 15, 2000, 3400));
     const totalDuration = zoomOutDuration + zoomInDuration;
     let finished = false;
     let stageCleanup = null;
@@ -908,13 +979,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         setOverlayVisibility(false);
         lastCameraRef.current = null;
         map.stop();
-        map.easeTo({ ...scene.camera, duration: 4200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
+        map.easeTo({ ...scene.camera, duration: 6200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         window.clearTimeout(introLaunchRef.current.timer);
         introLaunchRef.current.timer = window.setTimeout(() => {
           lastCameraRef.current = scene.camera;
           introLaunchRef.current.active = false;
           onIntroLaunchComplete?.();
-        }, 4250);
+        }, 6280);
       }
       return;
     } else if (introLaunchRef.current.active) {
@@ -1100,6 +1171,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const cameraDue = now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0;
       if (cameraDue) {
         let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+        if ((sceneState.legMode === 'plane' || sceneState.legMode === 'move') && sceneState.distance > 1500 && Number(frame.rawProgress || 0) < 0.28) {
+          smoothing = Math.min(smoothing, quality === 'low' ? 0.008 : 0.012);
+        }
         if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS) {
           smoothing = stats.transitionKind === 'continuous'
             ? Math.max(smoothing, 0.046)
@@ -1123,6 +1197,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       }
 
       currentOverlayStateRef.current = { active: renderEntry, scene: sceneState, color };
+      placardRuntimeRef.current.focus = sceneState.vehicle;
       updateOverlay(map, renderEntry, sceneState, color);
       recordPlaybackEvent('overlayUpdates');
       if ((renderEntry.leg.mode === 'plane' || renderEntry.leg.mode === 'move')
@@ -1168,18 +1243,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // v2.22: all top-down PNG vessel icons are authored nose-up. Rotate the icon so
     // the nose points along the current projected route segment. This applies to
     // plane/car/boat/train; the route itself remains north-up.
-    const projectedRotation = projectedScreenHeading(
-      map,
-      leg,
-      sceneState.routeProgress,
-      sceneState.routedGeometries,
-      iconMode === 'plane' ? 0.026 : 0.012
-    );
-    const rawRotation = iconMode === 'plane'
-      ? projectedRotation
-      : Number.isFinite(Number(sceneState.screenHeading))
-        ? Number(sceneState.screenHeading)
-        : projectedRotation;
+    const projectedRotation = projectedHeadingFromScene(map, sceneState);
+    const rawRotation = applyVesselSpriteOffset(projectedRotation, iconMode);
     const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
     const rotation = Number.isFinite(previousRotation)
       ? lerpAngle(previousRotation, rawRotation, iconMode === 'plane' ? 0.32 : 0.48)
@@ -1977,6 +2042,23 @@ function pointAtPlaybackPlan(plan, t) {
   };
 }
 
+
+function pointAtAnchoredPlaybackPlan(plan, t, leg) {
+  const u = Math.max(0, Math.min(1, Number(t) || 0));
+  const endpointWindow = 0.035;
+  if (u <= endpointWindow) {
+    const from = { lon: Number(leg?.from?.lon), lat: Number(leg?.from?.lat) };
+    const routePoint = pointAtPlaybackPlan(plan, endpointWindow);
+    return blendGeo(from, routePoint, smoothstep(u / endpointWindow));
+  }
+  if (u >= 1 - endpointWindow) {
+    const routePoint = pointAtPlaybackPlan(plan, 1 - endpointWindow);
+    const to = { lon: Number(leg?.to?.lon), lat: Number(leg?.to?.lat) };
+    return blendGeo(routePoint, to, smoothstep((u - (1 - endpointWindow)) / endpointWindow));
+  }
+  return pointAtPlaybackPlan(plan, u);
+}
+
 function cameraPointAtPlaybackPlan(plan, t) {
   const camera = plan?.camera;
   const count = Number(plan?.sampleCount || (camera?.length || 0) / 2);
@@ -2010,25 +2092,25 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const routeProgress = takeoffCruiseLandingEase(p);
   const lineProgress = lineProgressBehindVehicle(leg.mode, distance, routeProgress, p);
   const usePlan = playbackPlan?.positions?.length >= 4 && !routeStackingEnabled;
-  const vehicle = usePlan ? pointAtPlaybackPlan(playbackPlan, routeProgress) : pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
-  const future = usePlan ? pointAtPlaybackPlan(playbackPlan, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode))) : pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + lookAhead(distance, p, leg.mode)), routedGeometries, routeStackingEnabled);
-  const routeMid = usePlan ? pointAtPlaybackPlan(playbackPlan, 0.5) : pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
-  const visibleDestination = usePlan ? pointAtPlaybackPlan(playbackPlan, 1) : pointAtVisualRouteProgress(leg, 1, routedGeometries, routeStackingEnabled);
+  const vehicle = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, routeProgress, leg) : pointAtVisualRouteProgress(leg, routeProgress, routedGeometries, routeStackingEnabled);
+  const tangentWindow = Math.max(0.006, Math.min(0.035, lookAhead(distance, p, leg.mode) * 0.52));
+  const behind = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, Math.max(0, routeProgress - tangentWindow), leg) : pointAtVisualRouteProgress(leg, Math.max(0, routeProgress - tangentWindow), routedGeometries, routeStackingEnabled);
+  const future = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, Math.min(1, routeProgress + Math.max(tangentWindow, lookAhead(distance, p, leg.mode))), leg) : pointAtVisualRouteProgress(leg, Math.min(1, routeProgress + Math.max(tangentWindow, lookAhead(distance, p, leg.mode))), routedGeometries, routeStackingEnabled);
+  const routeMid = usePlan ? pointAtAnchoredPlaybackPlan(playbackPlan, 0.5, leg) : pointAtVisualRouteProgress(leg, 0.5, routedGeometries, routeStackingEnabled);
+  const visibleDestination = { lon: Number(leg.to.lon), lat: Number(leg.to.lat) };
   const phase = raw > 1 ? 'settle' : visibleP < departureWarmup ? 'predeparture' : p < 0.18 ? 'takeoff' : p > 0.82 ? 'arrival' : 'cruise';
   const endpointBias = Math.max(0, 1 - Math.min(p, 1 - p) / 0.22);
   const leadBias = cameraLeadBias(leg.mode, distance, phase, p);
   let cinematicFocus = usePlan && playbackPlan?.camera?.length >= 4 ? cameraPointAtPlaybackPlan(playbackPlan, routeProgress) : blendGeo(vehicle, future, leadBias);
 
   if (phase === 'settle') {
-    const nextFrom = nextActive?.leg?.from;
-    const driftRadius = distance > 1500 ? 0.55 : distance > 450 ? 0.28 : 0.12;
-    const quietDrift = {
-      lon: visibleDestination.lon + Math.sin(settleT * Math.PI * 1.15) * driftRadius,
-      lat: visibleDestination.lat + Math.sin(settleT * Math.PI * 0.72) * driftRadius * 0.55
+    // Arrival owns the camera. Hold the destination calmly for the full settle
+    // period instead of drifting toward the next leg or overshooting the city.
+    const driftRadius = distance > 1500 ? 0.0025 : 0.0012;
+    cinematicFocus = {
+      lon: Number(leg.to.lon) + Math.sin(settleT * Math.PI * 0.65) * driftRadius,
+      lat: Number(leg.to.lat) + Math.cos(settleT * Math.PI * 0.55) * driftRadius * 0.45
     };
-    cinematicFocus = nextFrom && nextFrom.id !== leg.to.id
-      ? blendGeo(quietDrift, nextFrom, 0.16 * smoothstep(settleT))
-      : quietDrift;
   }
 
   if (phase === 'predeparture') {
@@ -2045,24 +2127,28 @@ function getScene(active, rawProgress, cameraMode, nextActive, routedGeometries 
   const bearing = 0; // North-up. No route-heading camera rotation.
   const zoom = cameraZoom(cameraMode, distance, endpointBias, p, phase, settleT, leg.mode);
   const pitch = cameraPitch(cameraMode, phase, distance, settleT);
-  const arrived = routeProgress >= 0.995 || phase === 'settle';
+  const arrived = phase === 'settle';
 
   return {
     phase,
     routeProgress,
     lineProgress,
     vehicle,
+    routeBehind: behind,
+    routeAhead: future,
     heading,
     screenHeading: headingToScreenRotation(heading, bearing),
     vehicleScale: vehicleScale(leg.mode, phase, endpointBias, p),
     vehiclePitchDeg: vehiclePitchDeg(leg.mode, phase, p),
-    vehicleVisible: phase !== 'predeparture' && p > 0.006 && (phase !== 'settle' || settleT < 0.96),
+    vehicleVisible: phase !== 'predeparture' && p > 0.006 && phase !== 'settle',
     visibleDestination,
-    pulseActive: arrived,
+    pulseActive: phase === 'settle' && settleT < 0.82,
     arrivalLabelVisible: arrived,
     newArrivalId: arrived ? leg.to.id : null,
     camera: { center: [center.lon, center.lat], zoom, pitch, bearing },
     routedGeometries,
+    distance,
+    legMode: leg.mode,
     frameKey: `${active.trip.id}:${active.legId || active.leg?.legId || active.legIndex}:${Math.round(raw * 1000)}:${cameraMode}`
   };
 }
@@ -2295,6 +2381,19 @@ function updatePersistentLabels(map, visitedLocations, labelsRef, containerRef, 
         .setLngLat([loc.lon, loc.lat])
         .addTo(map);
       try { el.__jlMarker.setOpacity?.('1', '0'); } catch {}
+      el.addEventListener('click', event => {
+        if (!el.__jlSelectable || !el.__jlLocation) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const selected = el.__jlLocation;
+        window.dispatchEvent(new CustomEvent('globehoppers-destination-click', {
+          detail: {
+            locationId: selected.id,
+            locationName: displayNameForLocation(selected),
+            camera: captureCameraState(map)
+          }
+        }));
+      });
       labelsRef.current.set(loc.id, el);
     } else if (el.__jlMarker) {
       el.__jlMarker.setLngLat([loc.lon, loc.lat]);
@@ -2396,6 +2495,7 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
   const h = canvas?.clientHeight || window.innerHeight;
   const zoom = map.getZoom?.() || 1.5;
   const runtime = runtimeRef?.current || {};
+  const visibleGlobeCenter = visualGlobeCenterCoordinate(map, w, h);
   const activeIds = runtime.activeIds || new Set();
   const playback = Boolean(runtime.playback);
   const stateMap = visibilityStateRef?.current;
@@ -2405,7 +2505,7 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const loc = el.__jlLocation;
     if (!loc) continue;
     const pt = map.project([loc.lon, loc.lat]);
-    const angularDistance = angularDistanceFromMapCenter(map, loc.lon, loc.lat);
+    const angularDistance = angularDistanceDeg(visibleGlobeCenter, { lon: loc.lon, lat: loc.lat });
     const activePlacard = activeIds.has(loc.id);
     const now = performance.now();
     const prior = stateMap?.get(loc.id) || { visible: false, hiddenUntil: 0, seenSafeSince: 0 };
@@ -2413,26 +2513,25 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
     const onScreenLoose = pt.x > -320 && pt.x < w + 320 && pt.y > -260 && pt.y < h + 260;
 
     let visible;
-    if (playback && !activePlacard) {
-      const center = map.getCenter?.();
-      const lonDelta = center ? Math.abs(shortestLongitudeDelta(center.lng, loc.lon)) : 0;
-      const latDelta = center ? Math.abs((center.lat || 0) - (loc.lat || 0)) : 0;
-      const safelyNearHemisphere = angularDistance <= 80 && lonDelta <= 98 && latDelta <= 64;
-      const clearlyFarSide = angularDistance >= 92 || lonDelta >= 120 || latDelta >= 78 || !onScreenLoose;
-      if (clearlyFarSide) {
+    const focus = runtime.focus;
+    const focusDistance = focus?.lon != null && focus?.lat != null
+      ? angularDistanceDeg({ lon: Number(focus.lon), lat: Number(focus.lat) }, { lon: loc.lon, lat: loc.lat })
+      : angularDistance;
+    if (playback) {
+      const centerCutoff = activePlacard ? 78 : 70;
+      const focusCutoff = activePlacard ? 74 : 62;
+      const safelyVisible = onScreenLoose && angularDistance <= centerCutoff && focusDistance <= focusCutoff;
+      if (!safelyVisible) {
         visible = false;
-        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 1200);
+        prior.hiddenUntil = Math.max(prior.hiddenUntil || 0, now + 900);
         prior.seenSafeSince = 0;
-      } else if (safelyNearHemisphere && onScreenLoose) {
-        if (!prior.seenSafeSince) prior.seenSafeSince = now;
-        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 120;
       } else {
-        visible = prior.visible;
+        if (!prior.seenSafeSince) prior.seenSafeSince = now;
+        visible = now >= (prior.hiddenUntil || 0) && (now - prior.seenSafeSince) >= 100;
       }
-      if (activePlacard) visible = true;
     } else {
-      const horizonCutoff = hardPlacardHorizonCutoffDeg(zoom);
-      visible = Boolean(onScreenLoose && angularDistance <= horizonCutoff - 1);
+      const horizonCutoff = Math.min(82, hardPlacardHorizonCutoffDeg(zoom));
+      visible = Boolean(onScreenLoose && angularDistance <= horizonCutoff);
     }
 
     prior.visible = visible;
@@ -2440,7 +2539,9 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
 
     el.classList.toggle('is-culled', !visible);
     el.classList.toggle('is-flicker-locked', !visible);
+    const selectedDestination = runtime.selectedDestinationId === loc.id;
     el.classList.toggle('is-active-placard', Boolean(activePlacard));
+    el.classList.toggle('is-selected-destination', Boolean(selectedDestination));
     el.setAttribute('aria-hidden', visible ? 'false' : 'true');
     el.__jlVisible = visible;
     try { el.__jlMarker?.setOpacity?.(visible ? '1' : '0', '0'); } catch {}
@@ -2456,7 +2557,9 @@ function refreshPersistentPinPositions(map, labelsRef, visibilityStateRef = null
       el.style.visibility = 'hidden';
       el.style.display = 'none';
     }
-    el.style.pointerEvents = 'none';
+    el.__jlSelectable = Boolean(runtime.selectable && visible);
+    el.style.pointerEvents = el.__jlSelectable ? 'auto' : 'none';
+    el.style.cursor = el.__jlSelectable ? 'pointer' : 'default';
   }
 
   resolvePersistentLabelCollisions(map, visibleItems);
@@ -2571,13 +2674,26 @@ function shortestLongitudeDelta(a, b) {
   return d;
 }
 
-function angularDistanceFromMapCenter(map, lon, lat) {
+function visualGlobeCenterCoordinate(map, width = 0, height = 0) {
   try {
-    const center = map.getCenter();
-    return angularDistanceDeg({ lon: center.lng, lat: center.lat }, { lon, lat });
+    const canvas = map.getCanvas?.();
+    const w = Number(width) || canvas?.clientWidth || 0;
+    const h = Number(height) || canvas?.clientHeight || 0;
+    // With a pitched globe, MapLibre's camera center can sit below the visible
+    // center of the planet. Resolve this once per placard refresh, not once per
+    // location, so horizon culling remains cheap during playback.
+    const visualCenter = w > 0 && h > 0 ? map.unproject([w / 2, h / 2]) : null;
+    const center = visualCenter && Number.isFinite(visualCenter.lng) && Number.isFinite(visualCenter.lat)
+      ? visualCenter
+      : map.getCenter();
+    return { lon: Number(center.lng) || 0, lat: Number(center.lat) || 0 };
   } catch {
-    return 0;
+    return { lon: 0, lat: 0 };
   }
+}
+
+function angularDistanceFromMapCenter(map, lon, lat) {
+  return angularDistanceDeg(visualGlobeCenterCoordinate(map), { lon, lat });
 }
 
 function milesFromMapCenter(map, lon, lat) {
@@ -2726,6 +2842,21 @@ function headingAlongRoute(leg, t, routedGeometries = {}) {
   return bearingBetween(a, b);
 }
 
+function projectedHeadingFromScene(map, sceneState = {}) {
+  const vehicle = sceneState.vehicle;
+  const behind = sceneState.routeBehind || vehicle;
+  const ahead = sceneState.routeAhead || vehicle;
+  if (!vehicle || !map) return Number(sceneState.screenHeading || sceneState.heading || 0);
+  const pa = map.project([Number(behind.lon), Number(behind.lat)]);
+  const pb = map.project([Number(ahead.lon), Number(ahead.lat)]);
+  const dx = Number(pb.x) - Number(pa.x);
+  const dy = Number(pb.y) - Number(pa.y);
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || Math.hypot(dx, dy) < 0.75) {
+    return Number(sceneState.screenHeading || sceneState.heading || 0);
+  }
+  return Math.atan2(dx, -dy) * 180 / Math.PI;
+}
+
 function projectedScreenHeading(map, leg, t, routedGeometries = {}, sampleWindow = 0.01) {
   const windowSize = Math.max(0.004, Math.min(0.08, Number(sampleWindow) || 0.01));
   const a = pointAtRouteProgress(leg, Math.max(0, t - windowSize), routedGeometries);
@@ -2790,10 +2921,10 @@ function getRoutedGeometry(leg, routedGeometries = {}) {
 }
 
 function getVisualRoutedGeometry(leg, routedGeometries = {}) {
-  if (Array.isArray(leg?.presentationGeometry) && leg.presentationGeometry.length > 1) return leg.presentationGeometry;
+  if (Array.isArray(leg?.presentationGeometry) && leg.presentationGeometry.length > 1) return anchorRouteGeometryToEndpoints(leg.presentationGeometry, leg);
   const raw = getRoutedGeometry(leg, routedGeometries);
   if (!raw?.length || !isSurfaceRouteMode(leg?.mode)) return raw;
-  return buildSurfacePresentationGeometry(raw, leg.mode, { profile: 'playback' });
+  return anchorRouteGeometryToEndpoints(buildSurfacePresentationGeometry(raw, leg.mode, { profile: 'playback' }), leg);
 }
 
 function playbackPlanPresentationGeometry(plan) {
@@ -3087,7 +3218,7 @@ function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = 
     const frozenGeometry = getRoutedGeometry(entry.leg, routedGeometries);
     if (!Array.isArray(frozenGeometry) || frozenGeometry.length < 2) return entry;
     const presentationGeometry = isSurfaceRouteMode(entry.leg.mode)
-      ? playbackPlanPresentationGeometry(playbackPlan) || buildSurfacePresentationGeometry(frozenGeometry, entry.leg.mode, { profile: 'playback' })
+      ? anchorRouteGeometryToEndpoints(playbackPlanPresentationGeometry(playbackPlan) || buildSurfacePresentationGeometry(frozenGeometry, entry.leg.mode, { profile: 'playback' }), entry.leg)
       : null;
     return {
       ...entry,
@@ -3102,7 +3233,7 @@ function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = 
 
 function adaptiveCameraSmoothing(phase, quality = 'high') {
   const qualityScale = quality === 'high' ? 1 : quality === 'medium' ? 0.86 : 0.72;
-  const base = phase === 'settle' ? 0.024 : phase === 'predeparture' ? 0.018 : phase === 'arrival' ? 0.038 : phase === 'takeoff' ? 0.034 : 0.030;
+  const base = phase === 'settle' ? 0.082 : phase === 'predeparture' ? 0.012 : phase === 'arrival' ? 0.034 : phase === 'takeoff' ? 0.028 : 0.028;
   return base * qualityScale;
 }
 
@@ -3193,7 +3324,7 @@ function cameraZoom(mode, distance, endpointBias, p, phase, settleT = 0, legMode
 
   const takeoffPop = p < 0.14 ? smoothstep(1 - p / 0.14) * 0.10 : 0;
   const landingPop = p > 0.84 ? smoothstep((p - 0.84) / 0.16) * 0.48 : 0;
-  const settleLocalPush = phase === 'settle' ? 0.42 * (1 - 0.35 * Math.sin(settleT * Math.PI)) : 0;
+  const settleLocalPush = phase === 'settle' ? 0.34 : 0;
   // v2.30: arrival should feel like a local-region/county view rather than a
   // broad regional view. +0.58 zoom is roughly 50% closer; ease it in near the
   // destination and keep it during the settle drift.
@@ -3214,8 +3345,10 @@ function headingToScreenRotation(heading, mapBearing) { return ((heading - mapBe
 function vehicleScale(mode, phase, endpointBias, progress) {
   const base = mode === 'plane' || mode === 'move' ? 0.72 : 0.66;
   const cinematic = base + (phase === 'cruise' ? 0.08 : 0.16) * smoothstep(endpointBias);
-  const takeoffGrow = smoothstep(Math.max(0, Math.min(1, progress / 0.14)));
-  const landingShrink = smoothstep(Math.max(0, Math.min(1, (1 - progress) / 0.14)));
+  const takeoffGrow = smoothstep(Math.max(0, Math.min(1, progress / 0.11)));
+  // Keep the vessel readable until the final few percent of the route. The old
+  // 14% landing window made vessels look tiny long before they reached the city.
+  const landingShrink = smoothstep(Math.max(0, Math.min(1, (1 - progress) / 0.045)));
   return cinematic * takeoffGrow * landingShrink;
 }
 function vehiclePitchDeg(mode, phase, progress) {

@@ -14,12 +14,12 @@ function check(condition, message) {
   passed += 1;
 }
 
-check(packageJson.version === '7.2.0', 'package version is 7.2.0');
+check(/^7\.(?:2(?:\.\d+)?|[3-9](?:\.\d+)*)$/.test(packageJson.version), 'package version retains or supersedes v7.2.0');
 check(admin.includes("setModal('batch')"), 'Batch Add opens a dedicated modal mode');
 check(admin.includes('Batch Add Hops'), 'Batch Add entry action exists');
 check(admin.includes('Done with Hop'), 'Done with Hop action exists');
-check(admin.includes('Update Staged Hop'), 'staged Hop update action exists');
-check(admin.includes('Save Batch'), 'Save Batch action exists');
+check(admin.includes('Update Current Hop'), 'current staged Hop update action exists');
+check(admin.includes('Save Hop Batch'), 'Save Hop Batch action exists');
 check(admin.includes('Add Another Hop'), 'Add Another Hop action exists');
 check(admin.includes('function BatchHopTable'), 'staged table component exists');
 check(admin.includes('sortBatchRows'), 'batch rows use chronological sorting');
@@ -57,8 +57,8 @@ check(map.includes('map.jumpTo({ center: [lon, lat], zoom: overviewZoom'), 'repo
 check(map.includes('zoomInAtDestination'), 'disconnected transition has zoom-in stage');
 check(map.includes("finish('complete')"), 'playback ownership completes after final stage');
 check(!map.includes('map.flyTo({\n        center: [lon, lat],\n        zoom: targetZoom'), 'old long-distance flyTo relocation is removed');
-check(map.includes("iconMode === 'plane' ? 0.026 : 0.012"), 'aircraft uses a longer projected tangent window');
-check(map.includes("iconMode === 'plane'\n      ? projectedRotation"), 'aircraft uses projected screen-space rotation');
+check(map.includes('projectedHeadingFromScene(map, sceneState)'), 'vessels use the projected rendered-scene tangent');
+check(map.includes('applyVesselSpriteOffset(projectedRotation, iconMode)'), 'mode-specific sprite offsets follow projected screen-space rotation');
 check(map.includes('lerpAngle(previousRotation, rawRotation'), 'vehicle rotation uses shortest-angle smoothing');
 check(map.includes('__jlVehicleRotation'), 'aircraft rotation state persists between frames');
 

@@ -152,3 +152,16 @@ Normal presentation budgets are 220 points for cars, 190 for trains, and 160 for
 ## v7.1.4 bidirectional route reuse
 
 Surface routes are cached by a canonical unordered endpoint pair plus mode and normalized waypoint sequence. A matching return trip reuses the canonical route and reverses its prepared playback plan. This avoids a second provider request and duplicate geometry preparation. Manual directional overrides continue to win. Playback-plan coordinates are transferred to the worker in typed-array buffers.
+
+## v7.3 long-drive segmentation
+
+Public Valhalla endpoints can reject a single driving request when the path exceeds their configured maximum distance (error code 154). GlobeHoppers now treats that response as recoverable:
+
+1. Divide the great-circle endpoint span into bounded routing sections (normally about 650 miles each).
+2. Route each section independently through the same Valhalla endpoint.
+3. If a section still returns error 154, split only that section recursively, up to a bounded depth.
+4. Stitch adjacent geometry without duplicate join coordinates.
+5. Aggregate provider distance, duration, ferry/highway/toll flags, warnings, and endpoint diagnostics.
+6. Cache and persist the stitched route exactly like a normal Valhalla route.
+
+This behavior is specific to long driving routes. It does not convert GlobeHoppers into turn-by-turn navigation and does not alter manual route overrides, reverse-route reuse, train routing, or boat routing.

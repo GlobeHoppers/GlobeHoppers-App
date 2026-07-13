@@ -47,6 +47,25 @@ export function buildSurfacePresentationGeometry(geometry, mode, options = {}) {
   return remember(geometry, cacheKey, output);
 }
 
+
+export function anchorRouteGeometryToEndpoints(geometry, leg = {}) {
+  const clean = sanitizeGeometry(geometry);
+  if (clean.length < 2) return clean;
+  const from = endpointCoordinate(leg?.from);
+  const to = endpointCoordinate(leg?.to);
+  const anchored = clean.map(point => [...point]);
+  if (from) anchored[0] = from;
+  if (to) anchored[anchored.length - 1] = to;
+  return anchored;
+}
+
+function endpointCoordinate(value = {}) {
+  const lon = Number(value?.lon);
+  const lat = Number(value?.lat);
+  if (!Number.isFinite(lon) || !Number.isFinite(lat) || lat < -90 || lat > 90) return null;
+  return [normalizeLongitude(lon), lat];
+}
+
 // Backward-compatible name retained for prior release verification and any
 // third-party imports. v7.1.3 no longer densifies or performs per-turn smoothing.
 export function smoothSurfaceRouteGeometry(geometry, mode, options = {}) {

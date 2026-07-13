@@ -13003,3 +13003,184 @@ svg text {
   .batch-inline-panels { grid-template-columns: 1fr; }
   .studio-modal.studio-modal--batch { width: calc(100vw - 16px) !important; }
 }
+
+/* ========================================================================== */
+/* v7.3.0 Globe interaction, timeline navigation, and Batch Add polish         */
+/* ========================================================================== */
+.timeline-scrubber {
+  min-width: 0;
+  flex: 1 1 520px;
+}
+.timeline-scrubber__header {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px 3px;
+  color: rgba(225, 242, 250, .76);
+  font-size: .69rem;
+}
+.timeline-zoom-controls,
+.globe-playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.timeline-zoom-controls button,
+.globe-playback-controls button {
+  min-height: 25px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: .68rem;
+  line-height: 1;
+}
+.timeline-scroll-viewport {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+}
+.timeline-scroll-viewport.is-zoomed {
+  overflow-x: auto;
+  cursor: grab;
+  scrollbar-gutter: stable;
+  touch-action: pan-x pan-y;
+}
+.timeline-scroll-viewport.is-zoomed:active { cursor: grabbing; }
+.timeline-scroll-content {
+  min-width: 100%;
+  position: relative;
+}
+.timeline-marker--cluster {
+  display: grid;
+  place-items: center;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  font-size: .62rem;
+  font-weight: 800;
+  color: #04121a;
+  background: var(--marker-background) !important;
+  box-shadow: 0 0 0 2px rgba(3, 17, 27, .8), 0 0 12px var(--marker-color);
+}
+.timeline-marker.is-destination-match {
+  z-index: 19 !important;
+  transform: translate(-50%, calc(-1 * (var(--tl-active-lift, 34px) + 22px))) scale(1.12) !important;
+  filter: drop-shadow(0 0 8px var(--marker-color));
+}
+.timeline-marker__match-pill {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 13px);
+  min-width: 112px;
+  max-width: 190px;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 1px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--marker-color) 68%, transparent);
+  border-radius: 10px;
+  color: #effcff;
+  background: rgba(3, 13, 23, .94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .42), 0 0 14px color-mix(in srgb, var(--marker-color) 32%, transparent);
+  pointer-events: none;
+  white-space: normal;
+}
+.timeline-marker__match-pill::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: 13px;
+  background: var(--marker-color);
+}
+.timeline-marker__match-pill strong { font-size: .68rem; line-height: 1.1; }
+.timeline-marker__match-pill small { font-size: .58rem; color: rgba(220, 239, 248, .72); }
+.globe-playback-controls {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid rgba(100, 213, 237, .18);
+  border-radius: 999px;
+  background: rgba(2, 12, 22, .72);
+  color: rgba(226, 245, 252, .8);
+  font-size: .66rem;
+}
+.destination-trip-queue {
+  position: absolute;
+  z-index: 18;
+  top: 78px;
+  right: 22px;
+  width: min(330px, calc(100vw - 30px));
+  max-height: calc(100vh - 190px);
+  padding: 16px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border-radius: 20px;
+}
+.destination-trip-queue__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.destination-trip-queue__head h3 { margin: 2px 0 0; }
+.destination-trip-queue__head button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+}
+.destination-trip-queue__hint {
+  margin: 8px 0 12px;
+  color: rgba(215, 235, 244, .72);
+  font-size: .77rem;
+  line-height: 1.35;
+}
+.destination-trip-queue__list { display: grid; gap: 8px; }
+.destination-trip-queue__card {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 11px 12px;
+  text-align: left;
+  border-color: color-mix(in srgb, var(--queue-color) 54%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--queue-color) 9%, rgba(5, 16, 27, .94)), rgba(5, 16, 27, .94));
+}
+.destination-trip-queue__card small,
+.destination-trip-queue__card em { color: rgba(213, 233, 243, .7); font-size: .67rem; }
+.destination-trip-queue__card strong { color: #f5fdff; font-size: .91rem; }
+.destination-trip-queue__card span { color: rgba(223, 241, 248, .82); font-size: .73rem; }
+.jl-map-pin.is-selected-destination .jl-map-pin-inner {
+  outline: 2px solid rgba(255, 255, 255, .92);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin-color, #00e5ff) 35%, transparent), 0 0 22px var(--pin-color, #00e5ff) !important;
+}
+.batch-hop-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.batch-hop-actions .batch-save-button { box-shadow: 0 0 18px rgba(89, 247, 152, .16); }
+@media (max-width: 980px) {
+  .controls { gap: 7px; }
+  .timeline-scrubber { flex-basis: 100%; order: 4; }
+  .globe-playback-controls { order: 3; margin-left: auto; }
+  .timeline-marker__match-pill { min-width: 96px; max-width: 140px; }
+  .destination-trip-queue { top: 68px; right: 10px; }
+  .batch-hop-actions { width: 100%; justify-content: stretch; }
+  .batch-hop-actions button { flex: 1 1 180px; }
+}
+@media (max-width: 620px) {
+  .timeline-scrubber__header { align-items: flex-start; flex-direction: column; }
+  .timeline-zoom-controls { width: 100%; justify-content: flex-end; }
+  .timeline-zoom-controls button { flex: 1 1 auto; }
+  .globe-playback-controls { width: 100%; justify-content: center; border-radius: 14px; }
+  .destination-trip-queue { left: 10px; right: 10px; width: auto; }
+}

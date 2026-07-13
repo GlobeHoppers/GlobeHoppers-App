@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, progress, onSeekProgress, onMarkerJump, onMarkerEdit, speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, globeControlsVisible = false, globeSpinSpeed = 0.55, onGlobeSpinSpeedChange = () => {}, globeSpinPaused = false, onToggleGlobeSpin = () => {}, onGlobeZoom = () => {}, progress, onSeekProgress, onMarkerJump, onMarkerEdit, destinationMatchIds = [], speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -12,6 +12,12 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const transitionTimerRef = useRef(null);
   const playClickCountRef = useRef(0);
   const playClickTimerRef = useRef(null);
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const timelineViewportRef = useRef(null);
+  const timelineDragRef = useRef(null);
+  const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
+  const displayMarkers = useMemo(() => clusterTimelineMarkers(tripMarkers, timelineZoom, destinationMatchSet), [tripMarkers, timelineZoom, destinationMatchSet]);
+  const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
 
   useEffect(() => {
     if (!advancedOpen) return;
@@ -60,6 +66,52 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     (isPlaying ? onPause : onPlay)?.();
   };
 
+
+  const changeTimelineZoom = (nextZoom, focusProgress = activeMarker?.progress ?? progress ?? 0) => {
+    const viewport = timelineViewportRef.current;
+    const previousZoom = timelineZoom;
+    const clamped = Math.max(1, Math.min(8, Number(nextZoom) || 1));
+    if (clamped === previousZoom) return;
+    const viewportWidth = viewport?.clientWidth || 1;
+    const focusX = Math.max(0, Math.min(1, focusProgress)) * viewportWidth * previousZoom - (viewport?.scrollLeft || 0);
+    setTimelineZoom(clamped);
+    requestAnimationFrame(() => {
+      if (!viewport) return;
+      viewport.scrollLeft = Math.max(0, Math.max(0, focusProgress) * viewportWidth * clamped - focusX);
+    });
+  };
+
+  const recenterTimeline = () => {
+    const viewport = timelineViewportRef.current;
+    if (!viewport) return;
+    const target = activeMarker?.progress ?? progress ?? 0;
+    const contentWidth = viewport.clientWidth * timelineZoom;
+    viewport.scrollTo({ left: Math.max(0, target * contentWidth - viewport.clientWidth / 2), behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (!isPlaying || timelineZoom <= 1) return;
+    recenterTimeline();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMarkerId]);
+
+  const beginTimelinePan = event => {
+    if (timelineZoom <= 1 || event.target?.closest?.('button, input')) return;
+    const viewport = timelineViewportRef.current;
+    if (!viewport) return;
+    timelineDragRef.current = { pointerId: event.pointerId, x: event.clientX, scrollLeft: viewport.scrollLeft };
+    viewport.setPointerCapture?.(event.pointerId);
+  };
+  const moveTimelinePan = event => {
+    const drag = timelineDragRef.current;
+    const viewport = timelineViewportRef.current;
+    if (!drag || !viewport || drag.pointerId !== event.pointerId) return;
+    viewport.scrollLeft = drag.scrollLeft - (event.clientX - drag.x);
+  };
+  const endTimelinePan = event => {
+    if (timelineDragRef.current?.pointerId === event.pointerId) timelineDragRef.current = null;
+  };
+
   const timelineStyle = {
     '--tl-inactive-head': `${Number(timelineTuning.inactiveHeadSize ?? 14)}px`,
     '--tl-inactive-stem': `${Number(timelineTuning.inactiveStemLength ?? 8)}px`,
@@ -74,7 +126,6 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     '--tl-overshoot': `${Number(timelineTuning.animationOvershoot ?? 1.12)}`
   };
 
-  const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
   const tooltipMarker = hoverMarker || activeMarker;
   const playbackActionLabel = isRelocating ? 'Moving…' : timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume' : 'Play'));
   const playbackActionAriaLabel = isRelocating
@@ -85,60 +136,108 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
 
   return <div className="controls glass" style={timelineStyle}>
     <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
-    <label className="timeline-scrubber">Timeline
-      <div className="timeline-scrubber-stack">
-        <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>
-          <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
-          <div className="timeline-marker-layer" aria-hidden="true">
-            {tripMarkers.map(marker => {
-              const isCurrent = activeMarkerId === marker.id;
-              const isEntering = enteringMarkerId === marker.id;
-              const isLeaving = leavingMarkerId === marker.id;
-              const isHovered = hoverMarker?.id === marker.id;
-              return <button
-                key={marker.id}
-                type="button"
-                className={[
-                  'timeline-marker',
-                  isHovered || isCurrent ? 'is-active' : '',
-                  isCurrent ? 'is-current' : '',
-                  isEntering ? 'is-entering' : '',
-                  isLeaving ? 'is-leaving' : ''
-                ].filter(Boolean).join(' ')}
-                style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff', '--marker-background': marker.markerBackground || marker.color || '#00e5ff' }}
-                aria-label={`${marker.title} · ${marker.date}`}
-                aria-current={isCurrent ? 'true' : undefined}
-                onMouseEnter={() => setHoverMarker(marker)}
-                onMouseLeave={() => setHoverMarker(null)}
-                onFocus={() => setHoverMarker(marker)}
-                onBlur={() => setHoverMarker(null)}
-                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerEdit?.(marker); }}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
-              />;
-            })}
-            {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
-              <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
-            </span>}
-          </div>
-          <input
-            aria-label="Travel timeline"
-            type="range"
-            min="0"
-            max="1000"
-            step="1"
-            value={pct}
-            onMouseEnter={() => setHoverMarker(null)}
-            onMouseMove={() => setHoverMarker(null)}
-            onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
-          />
-        </div>
-        <div className="timeline-year-scale" aria-hidden="true">
-          {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
-            <b>{segment.year}</b>
-          </span>)}
+    <div className="timeline-scrubber">
+      <div className="timeline-scrubber__header">
+        <span>Timeline</span>
+        <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
+          <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
+          <button type="button" onClick={() => changeTimelineZoom(1, 0)} disabled={timelineZoom <= 1.001}>Fit</button>
+          <button type="button" onClick={() => changeTimelineZoom(timelineZoom * 1.5)} disabled={timelineZoom >= 7.999} aria-label="Zoom timeline in">+</button>
+          <button type="button" onClick={recenterTimeline} disabled={timelineZoom <= 1.001}>Recenter</button>
         </div>
       </div>
-    </label>
+      <div
+        ref={timelineViewportRef}
+        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''}`}
+        onPointerDown={beginTimelinePan}
+        onPointerMove={moveTimelinePan}
+        onPointerUp={endTimelinePan}
+        onPointerCancel={endTimelinePan}
+        onWheel={(event) => {
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            changeTimelineZoom(timelineZoom * (event.deltaY < 0 ? 1.18 : 0.85));
+          } else if (timelineZoom > 1 && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            event.preventDefault();
+            timelineViewportRef.current.scrollLeft += event.deltaY;
+          }
+        }}
+      >
+        <div className="timeline-scroll-content" style={{ width: `${timelineZoom * 100}%` }}>
+          <div className="timeline-scrubber-stack">
+            <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>
+              <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
+              <div className="timeline-marker-layer">
+                {displayMarkers.map(item => {
+                  if (item.type === 'cluster') return <button
+                    key={item.id}
+                    type="button"
+                    className="timeline-marker timeline-marker--cluster"
+                    style={{ '--marker-left': `${item.progress * 100}%`, '--marker-color': item.color || '#00e5ff', '--marker-background': item.color || '#00e5ff' }}
+                    aria-label={`${item.count} Hops in this period. Zoom in to choose one.`}
+                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); changeTimelineZoom(Math.max(2.5, timelineZoom * 2.2), item.progress); }}
+                  ><span>{item.count}</span></button>;
+                  const marker = item.marker;
+                  const isCurrent = activeMarkerId === marker.id;
+                  const isEntering = enteringMarkerId === marker.id;
+                  const isLeaving = leavingMarkerId === marker.id;
+                  const isHovered = hoverMarker?.id === marker.id;
+                  const isDestinationMatch = destinationMatchSet.has(marker.id);
+                  return <button
+                    key={marker.id}
+                    type="button"
+                    className={[
+                      'timeline-marker',
+                      isHovered || isCurrent ? 'is-active' : '',
+                      isCurrent ? 'is-current' : '',
+                      isEntering ? 'is-entering' : '',
+                      isLeaving ? 'is-leaving' : '',
+                      isDestinationMatch ? 'is-destination-match' : ''
+                    ].filter(Boolean).join(' ')}
+                    style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff', '--marker-background': marker.markerBackground || marker.color || '#00e5ff' }}
+                    aria-label={`${marker.title} · ${marker.date}`}
+                    aria-current={isCurrent ? 'true' : undefined}
+                    onMouseEnter={() => setHoverMarker(marker)}
+                    onMouseLeave={() => setHoverMarker(null)}
+                    onFocus={() => setHoverMarker(marker)}
+                    onBlur={() => setHoverMarker(null)}
+                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerEdit?.(marker); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
+                  >{isDestinationMatch && <span className="timeline-marker__match-pill"><strong>{marker.title}</strong><small>{marker.date}</small></span>}</button>;
+                })}
+                {tooltipMarker && <span className={`timeline-marker__tooltip is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`} style={{ '--marker-left': `${tooltipMarker.progress * 100}%`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}>
+                  <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
+                </span>}
+              </div>
+              <input
+                aria-label="Travel timeline"
+                type="range"
+                min="0"
+                max="1000"
+                step="1"
+                value={pct}
+                onMouseEnter={() => setHoverMarker(null)}
+                onMouseMove={() => setHoverMarker(null)}
+                onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
+              />
+            </div>
+            <div className="timeline-year-scale" aria-hidden="true">
+              {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
+                <b>{segment.year}</b>
+              </span>)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
+      <button type="button" onClick={() => onGlobeZoom(-0.5)} aria-label="Zoom globe out">−</button>
+      <button type="button" onClick={() => onGlobeZoom(0.5)} aria-label="Zoom globe in">+</button>
+      <button type="button" onClick={() => onGlobeSpinSpeedChange(globeSpinSpeed - 0.15)} aria-label="Slow globe spin">Spin −</button>
+      <span>{Number(globeSpinSpeed).toFixed(2)}°/s</span>
+      <button type="button" onClick={() => onGlobeSpinSpeedChange(globeSpinSpeed + 0.15)} aria-label="Speed up globe spin">Spin +</button>
+      <button type="button" onClick={onToggleGlobeSpin}>{globeSpinPaused ? 'Resume Spin' : 'Pause Spin'}</button>
+    </div>}
     <div className="controls-advanced-wrap" ref={advancedRef}>
       <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => setAdvancedOpen(v => !v)}>⋯</button>
       {advancedOpen && <div id="globehoppers-advanced-controls" className="controls-advanced glass" role="dialog" aria-label="Advanced playback controls">
@@ -215,6 +314,30 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       </div>}
     </div>
   </div>;
+}
+
+
+function clusterTimelineMarkers(markers = [], zoom = 1, destinationMatchSet = new Set()) {
+  if (zoom > 1.12 || markers.length < 55 || destinationMatchSet.size) return markers.map(marker => ({ type: 'marker', marker }));
+  const threshold = 0.012;
+  const groups = [];
+  let current = [];
+  for (const marker of markers) {
+    if (!current.length || marker.progress - current[current.length - 1].progress <= threshold) current.push(marker);
+    else { groups.push(current); current = [marker]; }
+  }
+  if (current.length) groups.push(current);
+  return groups.flatMap((group, index) => {
+    if (group.length < 3) return group.map(marker => ({ type: 'marker', marker }));
+    return [{
+      type: 'cluster',
+      id: `cluster-${index}-${group[0].id}`,
+      count: group.length,
+      progress: group.reduce((sum, marker) => sum + marker.progress, 0) / group.length,
+      color: group[Math.floor(group.length / 2)]?.color || '#00e5ff',
+      markers: group
+    }];
+  });
 }
 
 function RepoSaveGroup({ title, items = [] }) {

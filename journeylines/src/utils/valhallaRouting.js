@@ -135,40 +135,194 @@ export async function requestValhallaDrivingRoute(leg, options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   if (typeof fetchImpl !== 'function') throw new Error('This browser cannot make Valhalla route requests.');
   const timeoutMs = clampTimeout(options.timeoutMs);
-  const payload = buildValhallaRoutePayload(leg);
   const errors = [];
 
   for (const endpoint of endpoints) {
-    const controller = new AbortController();
-    const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const params = new URLSearchParams({ json: JSON.stringify(payload) });
-      const headers = { Accept: 'application/json' };
-      if (options.sendClientHeader && options.clientId) headers['X-Client-Id'] = String(options.clientId).slice(0, 100);
-      const response = await fetchImpl(`${endpoint}/route?${params.toString()}`, {
-        method: 'GET',
-        headers,
-        signal: controller.signal,
-        cache: 'no-store',
-        referrerPolicy: 'strict-origin-when-cross-origin'
+      return await requestValhallaAtEndpoint(leg, endpoint, {
+        ...options,
+        fetchImpl,
+        timeoutMs,
+        allowSegmentation: options.allowSegmentation !== false
       });
-      const text = await response.text();
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${text.slice(0, 220) || response.statusText}`);
-      let parsed;
-      try { parsed = JSON.parse(text); } catch { throw new Error('Valhalla returned unreadable JSON.'); }
-      const result = parseValhallaRouteResponse(parsed, leg);
-      return { ...result, endpoint };
     } catch (error) {
-      const message = error?.name === 'AbortError'
-        ? `timed out after ${Math.round(timeoutMs / 1000)} seconds`
-        : (error?.message || String(error));
-      errors.push(`${endpoint}: ${message}`);
-    } finally {
-      globalThis.clearTimeout(timer);
+      errors.push(`${endpoint}: ${error?.message || String(error)}`);
     }
   }
 
   throw new Error(`Valhalla routing failed. ${errors.join(' | ')}`);
+}
+
+async function requestValhallaAtEndpoint(leg, endpoint, options = {}) {
+  try {
+    return await requestSingleValhallaLeg(leg, endpoint, options);
+  } catch (error) {
+    if (!options.allowSegmentation || !isValhallaMaxDistanceError(error)) throw error;
+    return requestSegmentedValhallaRoute(leg, endpoint, options);
+  }
+}
+
+async function requestSingleValhallaLeg(leg, endpoint, options = {}) {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), options.timeoutMs || DEFAULT_VALHALLA_TIMEOUT_MS);
+  try {
+    const payload = buildValhallaRoutePayload(leg);
+    const params = new URLSearchParams({ json: JSON.stringify(payload) });
+    const headers = { Accept: 'application/json' };
+    if (options.sendClientHeader && options.clientId) headers['X-Client-Id'] = String(options.clientId).slice(0, 100);
+    const response = await options.fetchImpl(`${endpoint}/route?${params.toString()}`, {
+      method: 'GET',
+      headers,
+      signal: controller.signal,
+      cache: 'no-store',
+      referrerPolicy: 'strict-origin-when-cross-origin'
+    });
+    const text = await response.text();
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}: ${text.slice(0, 500) || response.statusText}`);
+      error.status = response.status;
+      error.responseText = text;
+      try {
+        const parsedError = JSON.parse(text);
+        error.valhallaCode = Number(parsedError?.error_code || parsedError?.error?.code || 0) || null;
+      } catch {}
+      throw error;
+    }
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { throw new Error('Valhalla returned unreadable JSON.'); }
+    const result = parseValhallaRouteResponse(parsed, leg);
+    return { ...result, endpoint, segmented: false, segmentCount: 1 };
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error(`timed out after ${Math.round((options.timeoutMs || DEFAULT_VALHALLA_TIMEOUT_MS) / 1000)} seconds`);
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
+async function requestSegmentedValhallaRoute(leg, endpoint, options = {}) {
+  const from = validateEndpoint(leg?.from, 'origin');
+  const to = validateEndpoint(leg?.to, 'destination');
+  const directMiles = haversineMiles([from.lon, from.lat], [to.lon, to.lat]);
+  const targetSegmentMiles = Math.max(350, Math.min(700, Number(options.segmentMiles) || 650));
+  const segmentCount = Math.max(2, Math.min(12, Math.ceil(directMiles / targetSegmentMiles)));
+  const breakpoints = [];
+  for (let index = 0; index <= segmentCount; index += 1) {
+    const fraction = index / segmentCount;
+    breakpoints.push(interpolateGreatCircle(from, to, fraction));
+  }
+
+  const geometry = [];
+  const warnings = [`Long drive was divided into ${segmentCount} routing sections because the provider limits individual route distance.`];
+  let distanceMiles = 0;
+  let durationSeconds = 0;
+  let maxEndpointGapMiles = 0;
+  let hasFerry = false;
+  let hasHighway = false;
+  let hasToll = false;
+
+  for (let index = 0; index < segmentCount; index += 1) {
+    const segmentLeg = {
+      ...leg,
+      id: `${leg?.id || leg?.legId || 'route'}-segment-${index + 1}`,
+      legId: `${leg?.legId || leg?.id || 'route'}-segment-${index + 1}`,
+      from: { ...leg?.from, ...breakpoints[index], name: index === 0 ? leg?.from?.name : `Routing waypoint ${index}` },
+      to: { ...leg?.to, ...breakpoints[index + 1], name: index === segmentCount - 1 ? leg?.to?.name : `Routing waypoint ${index + 1}` }
+    };
+    const segmentResults = await requestValhallaSegmentResilient(segmentLeg, endpoint, { ...options, allowSegmentation: false }, 0);
+    for (const result of segmentResults) {
+      for (const point of result.geometry || []) {
+        const previous = geometry[geometry.length - 1];
+        if (!previous || Math.abs(previous[0] - point[0]) > 1e-8 || Math.abs(previous[1] - point[1]) > 1e-8) geometry.push(point);
+      }
+      distanceMiles += Number(result.distanceMiles || 0);
+      durationSeconds += Number(result.durationSeconds || 0);
+      maxEndpointGapMiles = Math.max(maxEndpointGapMiles, Number(result.validation?.maxEndpointGapMiles || 0));
+      hasFerry ||= Boolean(result.validation?.hasFerry);
+      hasHighway ||= Boolean(result.validation?.hasHighway);
+      hasToll ||= Boolean(result.validation?.hasToll);
+      warnings.push(...(result.warnings || []));
+    }
+  }
+
+  const clean = sanitizeRouteGeometry(geometry);
+  if (!clean?.length) throw new Error('Segmented Valhalla routing returned no usable geometry.');
+  return {
+    geometry: clean,
+    validation: {
+      valhallaDistanceMiles: distanceMiles,
+      valhallaDurationSeconds: durationSeconds,
+      startEndpointGapMiles: haversineMiles([from.lon, from.lat], clean[0]),
+      endEndpointGapMiles: haversineMiles([to.lon, to.lat], clean[clean.length - 1]),
+      maxEndpointGapMiles,
+      hasFerry,
+      hasHighway,
+      hasToll,
+      valhallaWarnings: [...new Set(warnings)]
+    },
+    distanceMiles,
+    durationSeconds,
+    warnings: [...new Set(warnings)],
+    endpoint,
+    segmented: true,
+    segmentCount
+  };
+}
+
+
+async function requestValhallaSegmentResilient(leg, endpoint, options, depth = 0) {
+  try {
+    return [await requestSingleValhallaLeg(leg, endpoint, options)];
+  } catch (error) {
+    if (!isValhallaMaxDistanceError(error) || depth >= 3) throw error;
+    const midpoint = interpolateGreatCircle(validateEndpoint(leg.from, 'segment origin'), validateEndpoint(leg.to, 'segment destination'), 0.5);
+    const baseId = String(leg?.legId || leg?.id || 'route-segment');
+    const left = {
+      ...leg,
+      id: `${baseId}-a${depth + 1}`,
+      legId: `${baseId}-a${depth + 1}`,
+      to: { ...leg.to, ...midpoint, name: `Routing waypoint ${depth + 1}A` }
+    };
+    const right = {
+      ...leg,
+      id: `${baseId}-b${depth + 1}`,
+      legId: `${baseId}-b${depth + 1}`,
+      from: { ...leg.from, ...midpoint, name: `Routing waypoint ${depth + 1}B` }
+    };
+    const first = await requestValhallaSegmentResilient(left, endpoint, options, depth + 1);
+    const second = await requestValhallaSegmentResilient(right, endpoint, options, depth + 1);
+    return [...first, ...second];
+  }
+}
+
+export function isValhallaMaxDistanceError(error) {
+  const message = String(error?.responseText || error?.message || error || '').toLowerCase();
+  return Number(error?.valhallaCode) === 154
+    || message.includes('error_code":154')
+    || message.includes('path distance exceeds the max distance limit')
+    || message.includes('max distance limit');
+}
+
+function interpolateGreatCircle(from, to, fraction) {
+  const t = Math.max(0, Math.min(1, Number(fraction) || 0));
+  const lat1 = toRadians(from.lat);
+  const lon1 = toRadians(from.lon);
+  const lat2 = toRadians(to.lat);
+  const lon2 = toRadians(to.lon);
+  const delta = 2 * Math.asin(Math.sqrt(
+    Math.sin((lat2 - lat1) / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2
+  ));
+  if (!Number.isFinite(delta) || delta < 1e-9) return { lat: from.lat, lon: from.lon };
+  const a = Math.sin((1 - t) * delta) / Math.sin(delta);
+  const b = Math.sin(t * delta) / Math.sin(delta);
+  const x = a * Math.cos(lat1) * Math.cos(lon1) + b * Math.cos(lat2) * Math.cos(lon2);
+  const y = a * Math.cos(lat1) * Math.sin(lon1) + b * Math.cos(lat2) * Math.sin(lon2);
+  const z = a * Math.sin(lat1) + b * Math.sin(lat2);
+  return {
+    lat: Math.atan2(z, Math.sqrt(x * x + y * y)) * 180 / Math.PI,
+    lon: Math.atan2(y, x) * 180 / Math.PI
+  };
 }
 
 function validateEndpoint(endpoint = {}, label = 'endpoint') {
