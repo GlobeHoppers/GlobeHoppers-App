@@ -25,6 +25,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const controlsRef = useRef(null);
   const timelineViewportRef = useRef(null);
   const floatingTooltipRef = useRef(null);
+  const markerNodesRef = useRef(new Map());
   const timelineDragRef = useRef(null);
   const [floatingTooltipPosition, setFloatingTooltipPosition] = useState(null);
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
@@ -223,25 +224,31 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   useEffect(() => {
     const controls = controlsRef.current;
     const viewport = timelineViewportRef.current;
-    if (!controls || !viewport || !tooltipMarker) {
+    const markerNode = tooltipMarker ? markerNodesRef.current.get(tooltipMarker.id) : null;
+    if (!controls || !viewport || !tooltipMarker || !markerNode) {
       setFloatingTooltipPosition(null);
       return;
     }
     let frame = 0;
+    let followupFrame = 0;
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const controlsRect = controls.getBoundingClientRect();
-        const viewportRect = viewport.getBoundingClientRect();
-        const contentWidth = Math.max(viewportRect.width, viewport.scrollWidth || viewportRect.width);
-        const screenX = viewportRect.left + Number(tooltipMarker.progress || 0) * contentWidth - viewport.scrollLeft;
-        const tooltipWidth = Math.max(96, floatingTooltipRef.current?.getBoundingClientRect?.().width || 150);
-        const halfWidth = tooltipWidth / 2 + 6;
-        const localX = screenX - controlsRect.left;
-        setFloatingTooltipPosition({
-          left: Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, localX)),
-          markerLeft: Math.max(8, Math.min(controlsRect.width - 8, localX))
-        });
+        const markerRect = markerNode.getBoundingClientRect();
+        const tooltipRect = floatingTooltipRef.current?.getBoundingClientRect?.();
+        const tooltipWidth = Math.max(104, tooltipRect?.width || 154);
+        const tooltipHeight = Math.max(28, tooltipRect?.height || 34);
+        const markerLeft = markerRect.left + markerRect.width / 2 - controlsRect.left;
+        const markerTop = markerRect.top + markerRect.height * 0.30 - controlsRect.top;
+        const tooltipLeft = Math.max(6, Math.min(controlsRect.width - tooltipWidth - 6, markerLeft - tooltipWidth / 2));
+        const tooltipTop = markerTop - tooltipHeight - 13;
+        const arrowLeft = Math.max(12, Math.min(tooltipWidth - 12, markerLeft - tooltipLeft));
+        setFloatingTooltipPosition({ markerLeft, markerTop, tooltipLeft, tooltipTop, arrowLeft });
+        if (!tooltipRect) {
+          cancelAnimationFrame(followupFrame);
+          followupFrame = requestAnimationFrame(update);
+        }
       });
     };
     update();
@@ -250,13 +257,15 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
     observer?.observe(controls);
     observer?.observe(viewport);
+    observer?.observe(markerNode);
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(followupFrame);
       observer?.disconnect();
       viewport.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [tooltipMarker, timelineZoom]);
+  }, [tooltipMarker?.id, timelineZoom, displayMarkers.length]);
   const playbackActionLabel = isRelocating ? 'Moving…' : timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume' : 'Play'));
   const playbackActionAriaLabel = isRelocating
     ? 'Moving the camera to the next Hop. Playback will resume automatically.'
@@ -266,7 +275,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
 
   return <div ref={controlsRef} className="controls glass" style={timelineStyle}>
     <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
-    <div className="timeline-scrubber">
+    <div className="timeline-scrubber gh-timeline-v7510">
       <div className="timeline-scrubber__header timeline-scrubber__header--controls-only">
         <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
@@ -277,7 +286,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       </div>
       <div
         ref={timelineViewportRef}
-        className={`timeline-scroll-viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${visibleMonthTicks.length ? 'has-months' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
+        className={`gh-timeline-v7510__viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
         onPointerDown={beginTimelinePan}
         onPointerMove={moveTimelinePan}
         onPointerUp={endTimelinePan}
@@ -292,89 +301,86 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
           }
         }}
       >
-        <div className="timeline-scroll-content" style={{ width: `${timelineZoom * 100}%` }}>
-          <div className="timeline-scrubber-stack">
-            <div className="progress progress--scrubbable" onMouseMove={(e) => { if (e.target === e.currentTarget || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN') setHoverMarker(null); }} onMouseLeave={() => setHoverMarker(null)}>
-              <span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} />
-              <div className="timeline-marker-layer">
-                {displayMarkers.map(item => {
-                  if (item.type === 'cluster') return <button
-                    key={item.id}
-                    type="button"
-                    className="timeline-marker timeline-marker--cluster"
-                    style={{ '--marker-left': `${item.progress * 100}%`, '--marker-color': item.color || '#00e5ff', '--marker-background': item.color || '#00e5ff' }}
-                    aria-label={`${item.count} Hops in this period. Zoom in to choose one.`}
-                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); changeTimelineZoom(Math.max(2.5, timelineZoom * 2.2), item.progress); }}
-                  ><span>{item.count}</span></button>;
-                  const marker = item.marker;
-                  const isCurrent = activeMarkerId === marker.id;
-                  const isEntering = enteringMarkerId === marker.id;
-                  const isLeaving = leavingMarkerId === marker.id;
-                  const isHovered = hoverMarker?.id === marker.id;
-                  const isDestinationMatch = destinationMatchSet.has(marker.id);
-                  return <button
-                    key={marker.id}
-                    type="button"
-                    className={[
-                      'timeline-marker',
-                      isHovered || isCurrent ? 'is-active' : '',
-                      isCurrent ? 'is-current' : '',
-                      isEntering ? 'is-entering' : '',
-                      isLeaving ? 'is-leaving' : '',
-                      isDestinationMatch ? 'is-destination-match' : ''
-                    ].filter(Boolean).join(' ')}
-                    style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff', '--marker-background': marker.markerBackground || marker.color || '#00e5ff' }}
-                    aria-label={`${marker.title} · ${marker.date}`}
-                    aria-current={isCurrent ? 'true' : undefined}
-                    onMouseEnter={() => setHoverMarker(marker)}
-                    onMouseLeave={() => setHoverMarker(null)}
-                    onFocus={() => setHoverMarker(marker)}
-                    onBlur={() => setHoverMarker(null)}
-                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerEdit?.(marker); }}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
-                  ></button>;
-                })}
-              </div>
-              <input
-                aria-label="Travel timeline"
-                type="range"
-                min="0"
-                max="1000"
-                step="1"
-                value={pct}
-                onMouseEnter={() => setHoverMarker(null)}
-                onMouseMove={() => setHoverMarker(null)}
-                onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
-              />
+        <div className="gh-timeline-v7510__content" style={{ width: `${timelineZoom * 100}%` }}>
+          <div className="gh-timeline-v7510__rail">
+            <div className="gh-timeline-v7510__track" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(1, progress || 0)) * 100}%` }} /></div>
+            <input
+              className="gh-timeline-v7510__range"
+              aria-label="Travel timeline"
+              type="range"
+              min="0"
+              max="1000"
+              step="1"
+              value={pct}
+              onMouseEnter={() => setHoverMarker(null)}
+              onMouseMove={() => setHoverMarker(null)}
+              onChange={e => onSeekProgress?.(Number(e.target.value) / 1000)}
+            />
+            <div className="gh-timeline-v7510__pins">
+              {displayMarkers.map(item => {
+                if (item.type === 'cluster') return <button
+                  key={item.id}
+                  ref={node => { if (node) markerNodesRef.current.set(item.id, node); else markerNodesRef.current.delete(item.id); }}
+                  type="button"
+                  className="gh-timeline-v7510__pin is-cluster"
+                  style={{ '--marker-left': `${item.progress * 100}%`, '--marker-color': item.color || '#00e5ff', '--marker-background': item.color || '#00e5ff' }}
+                  aria-label={`${item.count} Hops in this period. Zoom in to choose one.`}
+                  onClick={(event) => { event.preventDefault(); event.stopPropagation(); changeTimelineZoom(Math.max(2.5, timelineZoom * 2.2), item.progress); }}
+                ><span className="gh-timeline-v7510__stem" /><span className="gh-timeline-v7510__head">{item.count}</span></button>;
+                const marker = item.marker;
+                const isCurrent = activeMarkerId === marker.id;
+                const isEntering = enteringMarkerId === marker.id;
+                const isLeaving = leavingMarkerId === marker.id;
+                const isHovered = hoverMarker?.id === marker.id;
+                const isDestinationMatch = destinationMatchSet.has(marker.id);
+                return <button
+                  key={marker.id}
+                  ref={node => { if (node) markerNodesRef.current.set(marker.id, node); else markerNodesRef.current.delete(marker.id); }}
+                  type="button"
+                  className={[
+                    'gh-timeline-v7510__pin',
+                    isCurrent ? 'is-current' : '',
+                    isEntering ? 'is-entering' : '',
+                    isLeaving ? 'is-leaving' : '',
+                    isHovered ? 'is-hovered' : '',
+                    isDestinationMatch ? 'is-destination-match' : '',
+                    isCurrent || isHovered ? 'is-overlayed' : ''
+                  ].filter(Boolean).join(' ')}
+                  style={{ '--marker-left': `${marker.progress * 100}%`, '--marker-color': marker.color || '#00e5ff', '--marker-background': marker.markerBackground || marker.color || '#00e5ff' }}
+                  aria-label={`${marker.title} · ${marker.date}`}
+                  aria-current={isCurrent ? 'true' : undefined}
+                  onMouseEnter={() => setHoverMarker(marker)}
+                  onMouseLeave={() => setHoverMarker(null)}
+                  onFocus={() => setHoverMarker(marker)}
+                  onBlur={() => setHoverMarker(null)}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerEdit?.(marker); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkerJump ? onMarkerJump(marker) : onSeekProgress?.(marker.progress); }}
+                ><span className="gh-timeline-v7510__stem" /><span className="gh-timeline-v7510__head" /></button>;
+              })}
             </div>
-            <div className="timeline-year-scale" aria-hidden="true">
-              {yearSegments.map(segment => <span key={segment.year} className="timeline-year-scale__segment" style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}>
-                <b>{segment.year}</b>
-              </span>)}
-            </div>
-            {visibleMonthTicks.length > 0 && <div className="timeline-month-scale" aria-hidden="true">
-              {visibleMonthTicks.map(tick => <span key={tick.id} className="timeline-month-scale__tick" style={{ left: `${tick.progress * 100}%` }}>
-                <i></i><b>{tick.displayLabel || tick.label}</b>
-              </span>)}
+            {visibleMonthTicks.length > 0 && <div className="gh-timeline-v7510__months" aria-hidden="true">
+              {visibleMonthTicks.map(tick => <span key={tick.id} style={{ left: `${tick.progress * 100}%` }}>{tick.displayLabel || tick.label}</span>)}
             </div>}
+            <div className="gh-timeline-v7510__years" aria-hidden="true">
+              {yearSegments.map(segment => <span key={segment.year} style={{ left: `${segment.start * 100}%`, width: `${Math.max(0, segment.end - segment.start) * 100}%` }}><b>{segment.year}</b></span>)}
+            </div>
           </div>
         </div>
       </div>
     </div>
-    {tooltipMarker && floatingTooltipPosition && <>
+    {tooltipMarker && floatingTooltipPosition && <div className="gh-timeline-v7510__overlay" aria-hidden="true">
       <span
-        className={`timeline-floating-marker ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
-        style={{ left: `${floatingTooltipPosition.markerLeft}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
-        aria-hidden="true"
-      />
+        className={`gh-timeline-v7510__active-pin ${tooltipMarker.id === activeMarkerId ? 'is-current' : 'is-hovered'}`}
+        style={{ left: `${floatingTooltipPosition.markerLeft}px`, top: `${floatingTooltipPosition.markerTop}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
+      ><i /></span>
       <span
         ref={floatingTooltipRef}
-        className={`timeline-marker__tooltip timeline-marker__tooltip--floating is-visible ${hoverMarker ? 'is-hovered' : 'is-current'} ${tooltipMarker.id === activeMarkerId ? 'is-current' : ''}`}
-        style={{ left: `${floatingTooltipPosition.left}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
+        className={`gh-timeline-v7510__tooltip ${hoverMarker ? 'is-hovered' : 'is-current'}`}
+        style={{ left: `${floatingTooltipPosition.tooltipLeft}px`, top: `${floatingTooltipPosition.tooltipTop}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff', '--tooltip-arrow-left': `${floatingTooltipPosition.arrowLeft}px` }}
       >
-        <strong className="timeline-marker__tooltip-title">{tooltipMarker.title}</strong><small className="timeline-marker__tooltip-date">{tooltipMarker.date}</small>
+        <strong>{tooltipMarker.title}</strong><small>{tooltipMarker.date}</small>
       </span>
-    </>}
+    </div>}
     {globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
       <button type="button" onClick={() => onGlobeZoom(-0.5)} aria-label="Zoom globe out">−</button>
       <button type="button" onClick={() => onGlobeZoom(0.5)} aria-label="Zoom globe in">+</button>

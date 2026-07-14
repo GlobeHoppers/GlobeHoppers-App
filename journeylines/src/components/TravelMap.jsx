@@ -206,7 +206,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const manualSpinPauseRef = useRef(false);
   const manualSpinResumeTimerRef = useRef(null);
   const manualSpinGestureRef = useRef({ camera: null, zoomChanged: false });
-  const manualGestureRef = useRef({ pointerDown: false, lastWheelAt: 0, wheelTimer: null });
+  const manualGestureRef = useRef({ pointerDown: false, active: false, sequence: 0, lastWheelAt: 0, wheelTimer: null });
   const playbackCameraReturnRef = useRef(createPlaybackReturnState());
   const latestDesiredCameraRef = useRef(null);
   const idleCameraRef = useRef(null);
@@ -578,31 +578,46 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       playbackCameraReturnRef.current = createPlaybackReturnState();
     };
     const schedulePlaybackReturn = () => {
-      manualGestureRef.current.pointerDown = false;
+      const gesture = manualGestureRef.current;
+      gesture.pointerDown = false;
+      // MapLibre emits dragend/zoomend/rotateend for programmatic jumpTo/easeTo
+      // calls as well as real user gestures. Only a gesture session that was
+      // explicitly latched from pointer/touch/wheel input may start reacquisition.
+      // This prevents every playback camera frame from scheduling another return
+      // and eliminates the repeated accelerate/brake camera motion.
+      if (!gesture.active) return;
+      gesture.active = false;
+      const sequence = gesture.sequence;
       if (!isPlaying) return;
       clearTimeout(playbackCameraReturnRef.current.timer);
       playbackCameraReturnRef.current.timer = window.setTimeout(() => {
-        if (!isPlaying || manualGestureRef.current.pointerDown || relocationGlideRef.current.id || introLaunchRef.current.active) return;
+        const currentGesture = manualGestureRef.current;
+        if (!isPlaying
+          || currentGesture.pointerDown
+          || currentGesture.active
+          || currentGesture.sequence !== sequence
+          || relocationGlideRef.current.id
+          || introLaunchRef.current.active) return;
         const from = captureCameraState(map);
         if (!from || !latestDesiredCameraRef.current) {
           userCameraOverrideRef.current = false;
           return;
         }
         const target = { ...latestDesiredCameraRef.current, center: [...latestDesiredCameraRef.current.center] };
-        const safeZoom = Math.min(Number(from.zoom), Number(target.zoom));
         playbackCameraReturnRef.current = {
+          ...createPlaybackReturnState(),
           active: true,
-          stage: 'reacquire',
+          stage: 'orient',
           stageStart: performance.now(),
-          stageDuration: 1500,
           from,
-          stageFrom: from,
+          current: { ...from, center: [...from.center] },
           target,
-          safeZoom,
+          safeZoom: Math.min(Number(from.zoom), Number(target.zoom)),
+          lastUpdate: performance.now(),
           settledFrames: 0,
           timer: null
         };
-      }, 500);
+      }, 420);
     };
     const latchManualCamera = (event = null) => {
       if (relocationGlideRef.current.id || introLaunchRef.current.active) return false;
@@ -616,6 +631,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       manualSpinPauseRef.current = true;
       clearTimeout(manualSpinResumeTimerRef.current);
       cancelPlaybackReturn();
+      if (!manualGestureRef.current.active) {
+        manualGestureRef.current.sequence += 1;
+        manualGestureRef.current.active = true;
+      }
       userCameraOverrideRef.current = true;
       if (!isPlaying) lastCameraRef.current = null;
       return true;
@@ -908,6 +927,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       clearOverviewLockTimers();
       clearTimeout(playbackCameraReturnRef.current.timer);
       playbackCameraReturnRef.current = createPlaybackReturnState();
+      manualGestureRef.current.pointerDown = false;
+      manualGestureRef.current.active = false;
+      manualGestureRef.current.lastWheelAt = 0;
+      clearTimeout(manualGestureRef.current.wheelTimer);
       userCameraOverrideRef.current = false;
       manualSpinPauseRef.current = false;
       idleCameraRef.current = null;
@@ -1434,8 +1457,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         // camera would tug the desired target every frame and cause visible jitter.
         if (!returnState.active) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
         latestDesiredCameraRef.current = camera;
-        if (returnState.active && returnState.stageFrom) {
-          const returnCamera = stagedPlaybackReturnCamera(returnState, camera, now);
+        if (returnState.active && returnState.current) {
+          const returnCamera = updatePlaybackReturnCamera(returnState, camera, now);
           if (returnCamera && cameraChangedEnough(captureCameraState(map), returnCamera)) {
             map.jumpTo({ ...returnCamera, essential: true });
           }
@@ -3697,56 +3720,68 @@ function createPlaybackReturnState() {
     active: false,
     stage: 'idle',
     stageStart: 0,
-    stageDuration: 0,
     from: null,
-    stageFrom: null,
+    current: null,
     target: null,
     safeZoom: INTRO_GLOBE_ZOOM,
+    lastUpdate: 0,
+    settledFrames: 0,
     timer: null
   };
 }
 
-function stagedPlaybackReturnCamera(state, latestTarget, now) {
-  if (!state?.active || !state.from || !latestTarget) return null;
-  const elapsed = Math.max(0, Number(now) - Number(state.stageStart || now));
-  const duration = Math.max(600, Number(state.stageDuration || 1500));
-  const t = clamp(elapsed / duration, 0, 1);
-  const orientT = smoothStep(clamp(t / 0.72, 0, 1));
-  const zoomT = smoothStep(clamp((t - 0.48) / 0.52, 0, 1));
-  const startCamera = state.from;
+function updatePlaybackReturnCamera(state, latestTarget, now) {
+  if (!state?.active || !latestTarget) return null;
+  const current = state.current || state.from || latestTarget;
+  const previousTime = Number(state.lastUpdate || now);
+  const dt = clamp(Number(now) - previousTime, 8, 64);
+  state.lastUpdate = Number(now);
+
+  const centerError = Math.hypot(
+    shortestLonDelta(Number(latestTarget.center?.[0]) - Number(current.center?.[0])),
+    Number(latestTarget.center?.[1]) - Number(current.center?.[1])
+  );
+  const bearingError = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(current.bearing || 0)));
+  const pitchError = Math.abs(Number(latestTarget.pitch || 0) - Number(current.pitch || 0));
+  const orientationReady = centerError < 2.2 && bearingError < 4 && pitchError < 4;
+
+  // Exponential damping gives the same visual response at every frame rate and
+  // follows the live moving vessel without restarting a time-based animation.
+  const orientAlpha = 1 - Math.exp(-dt / (orientationReady ? 190 : 285));
+  const zoomAlpha = 1 - Math.exp(-dt / (orientationReady ? 300 : 220));
   const safeZoom = Number.isFinite(Number(state.safeZoom))
     ? Number(state.safeZoom)
-    : Math.min(Number(startCamera.zoom), Number(latestTarget.zoom));
+    : Math.min(Number(current.zoom), Number(latestTarget.zoom));
+  const desiredZoom = orientationReady ? Number(latestTarget.zoom) : safeZoom;
 
-  // One owner, one continuous path: first rotate/translate at a globe-safe zoom,
-  // then blend zoom only after most orientation error is gone. The live target
-  // remains authoritative, so the vessel keeps moving while the camera returns.
-  const orientedCamera = smoothCamera(startCamera, {
-    center: [...latestTarget.center],
-    zoom: safeZoom,
-    pitch: Number(latestTarget.pitch),
-    bearing: Number(latestTarget.bearing)
-  }, orientT);
   const camera = {
-    ...orientedCamera,
-    center: [...orientedCamera.center],
-    zoom: safeZoom + (Number(latestTarget.zoom) - safeZoom) * zoomT
+    center: [
+      lerpAngle(Number(current.center?.[0]), Number(latestTarget.center?.[0]), orientAlpha),
+      lerp(Number(current.center?.[1]), Number(latestTarget.center?.[1]), orientAlpha)
+    ],
+    zoom: lerp(Number(current.zoom), desiredZoom, zoomAlpha),
+    pitch: lerp(Number(current.pitch || 0), Number(latestTarget.pitch || 0), orientAlpha),
+    bearing: lerpAngle(Number(current.bearing || 0), Number(latestTarget.bearing || 0), orientAlpha)
   };
 
+  state.stage = orientationReady ? 'zoom' : 'orient';
   state.target = { ...latestTarget, center: [...latestTarget.center] };
-  state.stageFrom = camera;
-  if (t >= 1) {
-    const centerError = Math.hypot(
-      shortestLonDelta(Number(latestTarget.center?.[0]) - Number(camera.center?.[0])),
-      Number(latestTarget.center?.[1]) - Number(camera.center?.[1])
-    );
-    const zoomError = Math.abs(Number(latestTarget.zoom) - Number(camera.zoom));
-    const bearingError = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(camera.bearing || 0)));
-    const pitchError = Math.abs(Number(latestTarget.pitch || 0) - Number(camera.pitch || 0));
-    const settled = centerError < 0.12 && zoomError < 0.05 && bearingError < 1.25 && pitchError < 1.25;
-    state.settledFrames = settled ? Number(state.settledFrames || 0) + 1 : 0;
-    if (state.settledFrames >= 3 || elapsed >= duration + 500) state.active = false;
-  }
+  state.current = { ...camera, center: [...camera.center] };
+
+  const finalCenterError = Math.hypot(
+    shortestLonDelta(Number(latestTarget.center?.[0]) - Number(camera.center?.[0])),
+    Number(latestTarget.center?.[1]) - Number(camera.center?.[1])
+  );
+  const finalZoomError = Math.abs(Number(latestTarget.zoom) - Number(camera.zoom));
+  const finalBearingError = Math.abs(shortestLonDelta(Number(latestTarget.bearing || 0) - Number(camera.bearing || 0)));
+  const finalPitchError = Math.abs(Number(latestTarget.pitch || 0) - Number(camera.pitch || 0));
+  const settled = orientationReady
+    && finalCenterError < 0.08
+    && finalZoomError < 0.035
+    && finalBearingError < 0.8
+    && finalPitchError < 0.8;
+  state.settledFrames = settled ? Number(state.settledFrames || 0) + 1 : 0;
+  if (state.settledFrames >= 4 || Number(now) - Number(state.stageStart || now) > 3600) state.active = false;
   return camera;
 }
 

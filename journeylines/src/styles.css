@@ -14667,3 +14667,334 @@ svg text {
 .hop-result-card__details {
   padding-left: 8px !important;
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.10 — isolated fixed-geometry timeline                     */
+/* ========================================================================== */
+
+/* This timeline intentionally uses a new namespace. Historic timeline rules
+   cannot resize, flip, mask, or reposition these elements. Zoom changes only
+   the horizontal content width; every vertical measurement remains fixed. */
+.controls {
+  overflow: visible !important;
+  min-height: 48px !important;
+  padding: 4px 8px !important;
+  gap: 8px !important;
+}
+.gh-timeline-v7510 {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 7px !important;
+  flex: 1 1 320px !important;
+  min-width: 220px !important;
+  height: 42px !important;
+  overflow: visible !important;
+}
+.gh-timeline-v7510 .timeline-scrubber__header {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+.gh-timeline-v7510 .timeline-zoom-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.gh-timeline-v7510 .timeline-zoom-controls button {
+  min-width: 26px !important;
+  width: auto !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  padding: 0 7px !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+}
+.gh-timeline-v7510__viewport {
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
+  cursor: default;
+}
+.gh-timeline-v7510__viewport.is-zoomed { cursor: grab; }
+.gh-timeline-v7510__viewport.is-zoomed:active { cursor: grabbing; }
+.gh-timeline-v7510__viewport::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+.gh-timeline-v7510__content {
+  position: relative !important;
+  min-width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.gh-timeline-v7510__rail {
+  position: relative !important;
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  transform: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.gh-timeline-v7510__track {
+  position: absolute !important;
+  z-index: 1 !important;
+  left: 2px !important;
+  right: 2px !important;
+  top: 19px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: rgba(120, 156, 180, .26) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.055) !important;
+  overflow: hidden !important;
+}
+.gh-timeline-v7510__track > span {
+  display: block !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, rgba(0,229,255,.72), rgba(0,229,255,.38)) !important;
+  box-shadow: 0 0 8px rgba(0,229,255,.28) !important;
+}
+.gh-timeline-v7510__range {
+  position: absolute !important;
+  z-index: 2 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 10px !important;
+  width: 100% !important;
+  height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+}
+.gh-timeline-v7510__pins {
+  position: absolute !important;
+  z-index: 4 !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 23px !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+.gh-timeline-v7510__pin {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: var(--marker-left) !important;
+  top: 0 !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  max-height: 23px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: translateX(-50%) !important;
+  overflow: visible !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+.gh-timeline-v7510__head {
+  position: absolute !important;
+  z-index: 2 !important;
+  left: 50% !important;
+  top: 1px !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  transform: translateX(-50%) !important;
+  background: var(--marker-background) !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color) 70%, white) !important;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--marker-color) 52%, transparent) !important;
+  transition: none !important;
+}
+.gh-timeline-v7510__stem {
+  position: absolute !important;
+  z-index: 1 !important;
+  left: 50% !important;
+  top: 10px !important;
+  width: 1px !important;
+  height: 10px !important;
+  transform: translateX(-50%) !important;
+  background: color-mix(in srgb, var(--marker-color) 62%, rgba(215,235,246,.45)) !important;
+  transition: none !important;
+}
+.gh-timeline-v7510__pin.is-overlayed .gh-timeline-v7510__head,
+.gh-timeline-v7510__pin.is-overlayed .gh-timeline-v7510__stem {
+  opacity: 0 !important;
+}
+.gh-timeline-v7510__pin.is-destination-match .gh-timeline-v7510__head {
+  box-shadow: 0 0 0 3px rgba(255,255,255,.22), 0 0 9px var(--marker-color) !important;
+}
+.gh-timeline-v7510__pin.is-cluster .gh-timeline-v7510__head {
+  display: grid !important;
+  place-items: center !important;
+  width: 13px !important;
+  height: 13px !important;
+  top: 0 !important;
+  font-size: .42rem !important;
+  font-weight: 900 !important;
+  color: #03111a !important;
+}
+.gh-timeline-v7510__months,
+.gh-timeline-v7510__years {
+  position: absolute !important;
+  z-index: 3 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  transform: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+  pointer-events: none !important;
+}
+.gh-timeline-v7510__months {
+  top: 23px !important;
+  height: 8px !important;
+}
+.gh-timeline-v7510__months > span {
+  position: absolute !important;
+  top: 0 !important;
+  transform: translateX(-50%) !important;
+  color: rgba(220,235,245,.72) !important;
+  font-size: .43rem !important;
+  font-weight: 680 !important;
+  line-height: 8px !important;
+  white-space: nowrap !important;
+}
+.gh-timeline-v7510__years {
+  top: 32px !important;
+  height: 10px !important;
+}
+.gh-timeline-v7510__years > span {
+  position: absolute !important;
+  top: 0 !important;
+  height: 10px !important;
+  overflow: visible !important;
+}
+.gh-timeline-v7510__years b {
+  position: absolute !important;
+  left: 3px !important;
+  top: 0 !important;
+  color: rgba(214,229,239,.68) !important;
+  font-size: .47rem !important;
+  font-weight: 720 !important;
+  line-height: 9px !important;
+  white-space: nowrap !important;
+  transform: none !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+.gh-timeline-v7510__overlay {
+  position: absolute !important;
+  z-index: 2147483000 !important;
+  inset: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+.gh-timeline-v7510__active-pin {
+  position: absolute !important;
+  z-index: 2 !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  transform: translate(-50%, -62%) !important;
+  background: var(--marker-background) !important;
+  border: 2px solid color-mix(in srgb, var(--marker-color) 76%, white) !important;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--marker-color) 20%, transparent), 0 0 12px var(--marker-color) !important;
+}
+.gh-timeline-v7510__active-pin > i {
+  position: absolute !important;
+  left: 50% !important;
+  top: 100% !important;
+  width: 1px !important;
+  height: 12px !important;
+  transform: translateX(-50%) !important;
+  background: var(--marker-color) !important;
+}
+.gh-timeline-v7510__tooltip {
+  position: absolute !important;
+  z-index: 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: max-content !important;
+  max-width: min(188px, calc(100vw - 20px)) !important;
+  min-height: 24px !important;
+  padding: 5px 8px !important;
+  border: 1px solid color-mix(in srgb, var(--marker-color) 72%, rgba(255,255,255,.2)) !important;
+  border-radius: 999px !important;
+  background: rgba(4,16,27,.94) !important;
+  color: #eef8ff !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.36), 0 0 10px color-mix(in srgb, var(--marker-color) 20%, transparent) !important;
+  white-space: nowrap !important;
+}
+.gh-timeline-v7510__tooltip::after {
+  content: '' !important;
+  position: absolute !important;
+  left: var(--tooltip-arrow-left) !important;
+  bottom: -5px !important;
+  width: 8px !important;
+  height: 8px !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  background: rgba(4,16,27,.94) !important;
+  border-right: 1px solid color-mix(in srgb, var(--marker-color) 72%, rgba(255,255,255,.2)) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--marker-color) 72%, rgba(255,255,255,.2)) !important;
+}
+.gh-timeline-v7510__tooltip strong,
+.gh-timeline-v7510__tooltip small {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.gh-timeline-v7510__tooltip strong { font-size: .55rem !important; font-weight: 820 !important; }
+.gh-timeline-v7510__tooltip small { font-size: .46rem !important; color: rgba(220,235,245,.72) !important; }
+
+@media (max-width: 700px) {
+  .controls { left: 8px !important; right: 8px !important; bottom: 8px !important; }
+  .gh-timeline-v7510 { min-width: 150px !important; gap: 4px !important; }
+  .gh-timeline-v7510 .timeline-zoom-controls button { min-width: 23px !important; height: 24px !important; padding: 0 5px !important; font-size: .65rem !important; }
+}
+
+/* Keep endpoint pins fully inside the scroll content without altering their
+   timeline progress or vertical geometry. */
+.gh-timeline-v7510__pin {
+  left: clamp(7px, var(--marker-left), calc(100% - 7px)) !important;
+}
