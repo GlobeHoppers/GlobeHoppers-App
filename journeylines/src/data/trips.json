@@ -6177,7 +6177,8 @@
     "sortKey": "2026-10-99-2026-10-99-147",
     "label": "Minneapolis",
     "travelers": [
-      "bonnie"
+      "bonnie",
+      "joey"
     ],
     "guestHoppers": [],
     "mode": "drive",
@@ -6209,10 +6210,10 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": {
-      "version": "7.0",
+      "version": "7.1",
       "signature": "[{\"id\":\"leg-d794ea71026d\",\"mode\":\"drive\",\"from\":\"oklahoma-city-ok@-97.51643@35.46756\",\"to\":\"minneapolis-mn@-93.26384@44.97997\"},{\"id\":\"leg-7fadf4372810\",\"mode\":\"drive\",\"from\":\"minneapolis-mn@-93.26384@44.97997\",\"to\":\"oklahoma-city-ok@-97.51643@35.46756\"}]",
-      "approved": true,
-      "approvedAt": "2026-07-12T23:25:23.618Z",
+      "automatic": true,
+      "checkedAt": "2026-07-12T23:25:23.618Z",
       "legs": [
         {
           "legId": "leg-d794ea71026d",
