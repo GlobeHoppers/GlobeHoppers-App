@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import HopResultCards from './HopResultCards.jsx';
 
@@ -250,14 +250,20 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
 
   const tooltipMarker = hoverMarker || activeMarker;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const controls = controlsRef.current;
     const viewport = timelineViewportRef.current;
     const markerNode = tooltipMarker ? markerNodesRef.current.get(tooltipMarker.id) : null;
-    if (!controls || !viewport || !tooltipMarker || !markerNode) {
+    const trackNode = viewport?.querySelector?.('.gh-timeline-v7510__track');
+    if (!controls || !viewport || !tooltipMarker || !markerNode || !trackNode) {
       setFloatingTooltipPosition(null);
       return;
     }
+
+    // The active marker overlay is anchored to the timeline track itself, not
+    // to the hidden source pin's changing hover box. This gives a newly active
+    // pin the exact same raised geometry it has after pointer hover and avoids
+    // the one-frame low position that previously occurred after a timeline jump.
     let frame = 0;
     let followupFrame = 0;
     const update = () => {
@@ -265,16 +271,20 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       frame = requestAnimationFrame(() => {
         const controlsRect = controls.getBoundingClientRect();
         const markerRect = markerNode.getBoundingClientRect();
+        const trackRect = trackNode.getBoundingClientRect();
         const tooltipRect = floatingTooltipRef.current?.getBoundingClientRect?.();
+        const isCurrentMarker = tooltipMarker.id === activeMarkerId;
+        const stemLength = isCurrentMarker ? 24 : 12;
+        const headSize = isCurrentMarker ? 20 : 18;
         const tooltipWidth = Math.max(104, tooltipRect?.width || 154);
         const tooltipHeight = Math.max(28, tooltipRect?.height || 34);
         const markerLeft = markerRect.left + markerRect.width / 2 - controlsRect.left;
-        const activeStemExtension = tooltipMarker.id === activeMarkerId ? 12 : 0;
-        const markerTop = markerRect.top + markerRect.height * 0.30 - controlsRect.top - activeStemExtension;
+        const markerBaseY = trackRect.top + trackRect.height / 2 - controlsRect.top;
+        const headCenterY = markerBaseY - stemLength;
         const tooltipLeft = Math.max(6, Math.min(controlsRect.width - tooltipWidth - 6, markerLeft - tooltipWidth / 2));
-        const tooltipTop = markerTop - tooltipHeight - 13;
+        const tooltipTop = headCenterY - headSize / 2 - tooltipHeight - 9;
         const arrowLeft = Math.max(12, Math.min(tooltipWidth - 12, markerLeft - tooltipLeft));
-        setFloatingTooltipPosition({ markerLeft, markerTop, tooltipLeft, tooltipTop, arrowLeft });
+        setFloatingTooltipPosition({ markerLeft, markerBaseY, tooltipLeft, tooltipTop, arrowLeft, stemLength, headSize });
         if (!tooltipRect) {
           cancelAnimationFrame(followupFrame);
           followupFrame = requestAnimationFrame(update);
@@ -288,6 +298,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     observer?.observe(controls);
     observer?.observe(viewport);
     observer?.observe(markerNode);
+    observer?.observe(trackNode);
     return () => {
       cancelAnimationFrame(frame);
       cancelAnimationFrame(followupFrame);
@@ -295,7 +306,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       viewport.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [tooltipMarker?.id, timelineZoom, displayMarkers.length]);
+  }, [tooltipMarker?.id, hoverMarker?.id, activeMarkerId, timelineZoom, timelineAnimating, displayMarkers.length]);
   const playbackActionLabel = isRelocating ? 'Moving…' : timelineComplete ? 'Complete' : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume' : 'Play'));
   const playbackActionAriaLabel = isRelocating
     ? 'Moving the camera to the next Hop. Playback will resume automatically.'
@@ -401,8 +412,15 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     {tooltipMarker && floatingTooltipPosition && <div className="gh-timeline-v7510__overlay" aria-hidden="true">
       <span
         className={`gh-timeline-v7510__active-pin ${tooltipMarker.id === activeMarkerId ? 'is-current' : 'is-hovered'}`}
-        style={{ left: `${floatingTooltipPosition.markerLeft}px`, top: `${floatingTooltipPosition.markerTop}px`, '--marker-color': tooltipMarker.color || '#00e5ff', '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff' }}
-      ><i /></span>
+        style={{
+          left: `${floatingTooltipPosition.markerLeft}px`,
+          top: `${floatingTooltipPosition.markerBaseY}px`,
+          '--marker-color': tooltipMarker.color || '#00e5ff',
+          '--marker-background': tooltipMarker.markerBackground || tooltipMarker.color || '#00e5ff',
+          '--gh-overlay-stem': `${floatingTooltipPosition.stemLength}px`,
+          '--gh-overlay-head': `${floatingTooltipPosition.headSize}px`
+        }}
+      ><i /><b /></span>
       <span
         ref={floatingTooltipRef}
         className={`gh-timeline-v7510__tooltip ${hoverMarker ? 'is-hovered' : 'is-current'}`}

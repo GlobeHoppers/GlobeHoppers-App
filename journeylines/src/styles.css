@@ -15116,3 +15116,99 @@ svg text {
   .hop-result-card__modes { margin-top: 4px !important; gap: 2px !important; }
   .hop-result-card__mode { padding: 2px 4px !important; font-size: .46rem !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.13 — deterministic active pin and compact result stacks   */
+/* ========================================================================== */
+
+/* Anchor the floating marker at the fixed timeline-track baseline. The stem
+   and head are independent children, so becoming active starts in the fully
+   raised position instead of inheriting the source pin's temporary hover box. */
+.gh-timeline-v7510__active-pin {
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  animation: none !important;
+  overflow: visible !important;
+}
+.gh-timeline-v7510__active-pin > i {
+  position: absolute !important;
+  z-index: 1 !important;
+  left: 0 !important;
+  top: calc(-1 * var(--gh-overlay-stem, 24px)) !important;
+  width: 1.5px !important;
+  height: var(--gh-overlay-stem, 24px) !important;
+  transform: translateX(-50%) !important;
+  background: color-mix(in srgb, var(--marker-color) 80%, white) !important;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--marker-color) 60%, transparent) !important;
+}
+.gh-timeline-v7510__active-pin > b {
+  position: absolute !important;
+  z-index: 2 !important;
+  left: 0 !important;
+  top: calc(-1 * var(--gh-overlay-stem, 24px)) !important;
+  width: var(--gh-overlay-head, 20px) !important;
+  height: var(--gh-overlay-head, 20px) !important;
+  border: 2px solid rgba(255,255,255,.98) !important;
+  border-radius: 50% !important;
+  background: var(--marker-background) !important;
+  box-shadow:
+    0 0 0 1px rgba(1,10,17,.75),
+    0 0 0 6px color-mix(in srgb, var(--marker-color) 22%, transparent),
+    0 0 15px color-mix(in srgb, var(--marker-color) 86%, transparent) !important;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: 50% 50% !important;
+  animation: gh-v7513-active-head-pop 280ms cubic-bezier(.2,.9,.24,1.18) both;
+}
+@keyframes gh-v7513-active-head-pop {
+  0% { scale: .72; opacity: .45; }
+  72% { scale: 1.12; opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+
+/* A short result set must not stretch its auto grid rows to fill the entire
+   destination rail. Four results now use the same minimum card height and
+   spacing as a long, scrollable stack. */
+.destination-trip-queue__list {
+  align-content: start !important;
+}
+.destination-trip-queue__list > .hop-result-cards,
+.timeline-search-panel__body > .hop-result-cards {
+  align-self: start !important;
+  align-content: start !important;
+  grid-auto-rows: max-content !important;
+  height: max-content !important;
+  min-height: 0 !important;
+}
+.destination-trip-queue__card.hop-result-card {
+  align-self: start !important;
+  height: auto !important;
+}
+
+/* Make the primary globe action more legible without changing the adjacent
+   fullscreen and playback button sizes. */
+.topbar-globe-button {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  font-size: 1.38rem !important;
+}
+
+@media (max-width: 700px) {
+  .topbar-globe-button {
+    width: 43px !important;
+    min-width: 43px !important;
+    height: 43px !important;
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-timeline-v7510__active-pin > b { animation-duration: 1ms !important; }
+}
