@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "7.5.11",
+  "version": "7.5.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,7 +22,8 @@
     "verify:v7.5.2": "node scripts/verify-v7.5.2.mjs .",
     "verify:v7.5.4": "node scripts/verify-v7.5.4.mjs .",
     "verify:v7.5.10": "node scripts/verify-v7.5.10.mjs .",
-    "verify:v7.5.11": "node scripts/verify-v7.5.11.mjs ."
+    "verify:v7.5.11": "node scripts/verify-v7.5.11.mjs .",
+    "verify:v7.5.12": "node scripts/verify-v7.5.12.mjs ."
   },
   "dependencies": {
     "@vitejs/plugin-react": "6.0.3",

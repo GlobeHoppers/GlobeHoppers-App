@@ -1620,18 +1620,22 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
   }
 
+  const effectiveGlobeDisplayMode = globeOverview && !idleMode && !isPlaying && !introLaunching
+    ? globeDisplayMode
+    : 'both';
+
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
-    const hideRoutes = globeDisplayMode === 'locations';
-    const hideLocations = globeDisplayMode === 'routes';
+    const hideRoutes = effectiveGlobeDisplayMode === 'locations';
+    const hideLocations = effectiveGlobeDisplayMode === 'routes';
     const routeLayers = ['completed-routes-glow-wide','completed-routes-glow','completed-routes','active-route-glow-wide','active-route-glow','active-route'];
     const locationLayers = ['visited-points-glow','visited-points-halo','visited-points'];
     for (const id of routeLayers) { try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hideRoutes ? 'none' : 'visible'); } catch {} }
     for (const id of locationLayers) { try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', hideLocations ? 'none' : 'visible'); } catch {} }
-  }, [mapReady, globeDisplayMode]);
+  }, [mapReady, effectiveGlobeDisplayMode]);
 
-  return <div className={`maplibre-shell terrain-mode space-mode globe-display-${globeDisplayMode} ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (!e.target?.closest?.('.jl-map-pin, .destination-trip-queue, .timeline-search-panel, button, input, textarea, select')) onMapClick?.(); }}>
+  return <div className={`maplibre-shell terrain-mode space-mode globe-display-${effectiveGlobeDisplayMode} ${isPlaying ? 'playback-active is-playing' : ''} ${placeBackgroundsEnabled === false ? 'placards-no-bg' : ''}`} onPointerDown={(e) => { if (!e.target?.closest?.('.jl-map-pin, .destination-trip-queue, .timeline-search-panel, button, input, textarea, select')) onMapClick?.(); }}>
     <div className="zoom-readout" aria-label="Current map zoom">Zoom {Number(zoomReadout || 0).toFixed(2)}<span>Initial {INTRO_GLOBE_ZOOM.toFixed(2)} · Spin {IDLE_SPIN_GLOBE_ZOOM.toFixed(2)}</span></div>
     <div className="jl-space-field" aria-hidden="true"><span className="star-layer star-layer-a" /><span className="star-layer star-layer-b" /><span className="star-layer star-layer-c" /></div>
     <div className="maplibre-map" ref={containerRef} />

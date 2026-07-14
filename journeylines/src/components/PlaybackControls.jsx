@@ -78,7 +78,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
     const terms = query.split(/\s+/).filter(Boolean);
     return (searchRows || []).filter(row => {
       const haystack = normalizeSearchText([
-        row.title, row.date, row.year, row.route, row.traveler, row.mode, row.notes,
+        row.title, row.date, row.year, row.route, row.traveler, row.mode, ...(row.legModes || []), row.notes,
         row.trip?.occasion, row.trip?.label, row.trip?.displayDate
       ].filter(Boolean).join(' '));
       return terms.every(term => haystack.includes(term));
@@ -269,7 +269,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         const tooltipWidth = Math.max(104, tooltipRect?.width || 154);
         const tooltipHeight = Math.max(28, tooltipRect?.height || 34);
         const markerLeft = markerRect.left + markerRect.width / 2 - controlsRect.left;
-        const markerTop = markerRect.top + markerRect.height * 0.30 - controlsRect.top;
+        const activeStemExtension = tooltipMarker.id === activeMarkerId ? 12 : 0;
+        const markerTop = markerRect.top + markerRect.height * 0.30 - controlsRect.top - activeStemExtension;
         const tooltipLeft = Math.max(6, Math.min(controlsRect.width - tooltipWidth - 6, markerLeft - tooltipWidth / 2));
         const tooltipTop = markerTop - tooltipHeight - 13;
         const arrowLeft = Math.max(12, Math.min(tooltipWidth - 12, markerLeft - tooltipLeft));

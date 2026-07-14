@@ -1880,6 +1880,7 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
       title: trip.label || to?.name || 'Trip',
       date: trip.displayDate || String(trip.year || ''),
       mode: trip.mode || tripLegs[0]?.leg?.mode || 'plane',
+      legModes: collectTripTransportModes(trip, tripLegs),
       traveler: traveler?.name || 'Travel',
       color: traveler?.color || '#00e5ff',
       borderColors: timelineBorderColorsForTrip(trip, hopperData),
@@ -1898,6 +1899,31 @@ function buildTripTimeline(trips, legs, locById, hopperData) {
   });
 }
 
+
+function normalizeTransportModeId(value = '') {
+  const mode = String(value || '').trim().toLowerCase();
+  if (mode === 'drive' || mode === 'driving' || mode === 'car' || mode === 'road') return 'drive';
+  if (mode === 'train' || mode === 'rail') return 'train';
+  if (mode === 'boat' || mode === 'ship' || mode === 'ferry' || mode === 'marine') return 'boat';
+  if (mode === 'plane' || mode === 'air' || mode === 'flight' || mode === 'move') return 'plane';
+  return mode || 'plane';
+}
+
+function collectTripTransportModes(trip, tripLegs = []) {
+  const ordered = [];
+  const seen = new Set();
+  const candidates = tripLegs.length
+    ? tripLegs.map(entry => entry?.leg?.mode)
+    : [trip?.mode];
+  for (const candidate of candidates) {
+    const mode = normalizeTransportModeId(candidate);
+    if (!mode || seen.has(mode)) continue;
+    seen.add(mode);
+    ordered.push(mode);
+  }
+  if (!ordered.length) ordered.push(normalizeTransportModeId(trip?.mode));
+  return ordered;
+}
 
 function buildTimelineMarkers(rows = [], totalLegs = 0) {
   const denom = Math.max(1, totalLegs - 1);

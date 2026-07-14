@@ -15073,3 +15073,46 @@ svg text {
     animation-duration: 1ms !important;
   }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.12 — result transport context and globe-mode isolation    */
+/* ========================================================================== */
+
+/* Transportation belongs with the trip identity. Compact badges communicate
+   every distinct leg type without competing with the route/date column. */
+.hop-result-card__modes {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 3px !important;
+  width: 100% !important;
+  margin-top: 5px !important;
+}
+.hop-result-card__mode {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  padding: 2px 5px !important;
+  border: 1px solid rgba(202,231,242,.16) !important;
+  border-radius: 999px !important;
+  background: rgba(2,16,27,.42) !important;
+  color: rgba(224,240,247,.78) !important;
+  font-size: .49rem !important;
+  font-weight: 720 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.hop-result-card__mode > span { font-size: .56rem !important; line-height: 1 !important; }
+
+/* The active head rises by one existing stem length while its stem doubles,
+   preserving the exact base attachment to the timeline. The callout position
+   is derived from the raised head, so the pill remains attached above it. */
+.gh-timeline-v7510__active-pin.is-current > i {
+  height: 24px !important;
+}
+
+@media (max-width: 700px) {
+  .hop-result-card__modes { margin-top: 4px !important; gap: 2px !important; }
+  .hop-result-card__mode { padding: 2px 4px !important; font-size: .46rem !important; }
+}
