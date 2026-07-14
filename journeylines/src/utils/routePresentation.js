@@ -1,6 +1,13 @@
+import coastClearanceData from '../data/coastClearance.json' with { type: 'json' };
+
 const SURFACE_MODES = new Set(['drive', 'car', 'train', 'boat']);
 const geometryCache = new WeakMap();
 const MAX_CACHE_VARIANTS_PER_GEOMETRY = 6;
+const COAST_GRID_DEGREES = 2;
+const COAST_CLEARANCE_MILES = 15;
+const COAST_INDEX = buildCoastSegmentIndex(coastClearanceData?.coast || []);
+const LAND_INDEX = buildLandRingIndex(coastClearanceData?.landRings || []);
+const WATER_GRAPH = buildWaterGraph(coastClearanceData?.waterGraphNodes || [], coastClearanceData?.waterGraphEdges || []);
 
 /**
  * Builds the lightweight geometry used for surface playback and trail rendering.
@@ -25,31 +32,55 @@ export function buildSurfacePresentationGeometry(geometry, mode, options = {}) {
   }
 
   const clean = sanitizeGeometry(geometry);
-  if (clean.length < 3 || !isSurfaceRouteMode(mode)) return remember(geometry, cacheKey, clean);
+  if (clean.length < 2 || !isSurfaceRouteMode(mode)) return remember(geometry, cacheKey, clean);
 
-  const cumulative = cumulativeMiles(clean);
+  // A long marine fallback is often stored as only its two port endpoints. A
+  // straight chord between coastal cities can run across land, so create stable
+  // intermediate anchors before applying the same coastal-clearance pipeline as
+  // detailed provider routes. This is presentation geometry only; source data
+  // and exact endpoints remain unchanged.
+  const source = normalizedMode === 'boat' && clean.length === 2
+    ? densifyMarineFallback(clean[0], clean[1])
+    : clean;
+  if (source.length < 3) return remember(geometry, cacheKey, clean);
+
+  const cumulative = cumulativeMiles(source);
   const totalMiles = cumulative[cumulative.length - 1] || 0;
   const budget = presentationPointBudget(totalMiles, normalizedMode, profile, requestedPoints);
 
-  if (clean.length <= 3) return remember(geometry, cacheKey, clean);
+  if (source.length <= 3) return remember(geometry, cacheKey, source);
 
   const minimumTolerance = minimumSimplificationTolerance(normalizedMode, totalMiles, profile);
   const maximumTolerance = maximumSimplificationTolerance(normalizedMode, totalMiles, profile);
-  const workingIndexes = prethinIndexes(clean, cumulative, 6000);
-  const working = workingIndexes.map(index => clean[index]);
+  const workingIndexes = prethinIndexes(source, cumulative, 6000);
+  const working = workingIndexes.map(index => source[index]);
   let selected = simplifyTowardBudget(working, budget, minimumTolerance, maximumTolerance)
     .map(index => workingIndexes[index]);
-  selected = enforceRouteCorridor(clean, selected, cumulative, normalizedMode, totalMiles);
-  selected = refineSharpPresentationCorners(clean, selected, cumulative, normalizedMode, totalMiles);
+  selected = enforceRouteCorridor(source, selected, cumulative, normalizedMode, totalMiles);
+  selected = refineSharpPresentationCorners(source, selected, cumulative, normalizedMode, totalMiles);
 
-  const output = selected.map(index => [...clean[index]]);
+  const output = selected.map(index => [...source[index]]);
   output[0] = [...clean[0]];
   output[output.length - 1] = [...clean[clean.length - 1]];
+
+  // Remove route-native micro-deflections before rounding corners. This keeps
+  // cars on the provider corridor while presenting long roads as deliberate
+  // straights connected by gentle curves instead of a chain of tiny bends.
+  const reduced = collapseMinorPresentationDeflections(output, normalizedMode, totalMiles);
+  const offshore = normalizedMode === 'boat'
+    ? applyBoatCoastalClearance(reduced, totalMiles)
+    : reduced;
 
   // Playback should suggest the real road/rail/marine route without forcing the
   // vessel through every provider micro-turn. A light corner-cutting pass creates
   // stable, cinematic curves once up front; no route shaping occurs per frame.
-  const softened = softenPresentationCorners(output, normalizedMode);
+  let softened = softenPresentationCorners(offshore, normalizedMode);
+  if (normalizedMode === 'boat') {
+    // Corner rounding may not cut across land. When a rounded point leaves the
+    // water corridor, keep the already simplified offshore route instead.
+    if (softened.slice(1, -1).some(isPointOnLand)) softened = offshore.map(point => [...point]);
+    softened = applyBoatCoastalClearance(softened, totalMiles);
+  }
   softened[0] = [...clean[0]];
   softened[softened.length - 1] = [...clean[clean.length - 1]];
   return remember(geometry, cacheKey, softened);
@@ -150,10 +181,10 @@ export function presentationPointBudget(totalMiles, mode, profile = 'playback', 
   const normalizedMode = normalizeMode(mode);
   const miles = Math.max(0, Number(totalMiles) || 0);
   const profileScale = profile === 'overview' ? 0.45 : profile === 'regional' ? 0.70 : 1;
-  const base = normalizedMode === 'boat' ? 4 : normalizedMode === 'train' ? 30 : 24;
-  const distanceFactor = normalizedMode === 'boat' ? 0.46 : normalizedMode === 'train' ? 4.0 : 3.25;
-  const maximum = normalizedMode === 'boat' ? 22 : normalizedMode === 'train' ? 150 : 118;
-  const minimum = normalizedMode === 'boat' ? 10 : 24;
+  const base = normalizedMode === 'boat' ? 4 : normalizedMode === 'train' ? 18 : 8;
+  const distanceFactor = normalizedMode === 'boat' ? 0.30 : normalizedMode === 'train' ? 2.0 : 0.85;
+  const maximum = normalizedMode === 'boat' ? 18 : normalizedMode === 'train' ? 96 : 48;
+  const minimum = normalizedMode === 'boat' ? 8 : normalizedMode === 'train' ? 18 : 12;
   return clamp(Math.round((base + Math.sqrt(miles) * distanceFactor) * profileScale), minimum, maximum);
 }
 
@@ -223,8 +254,9 @@ function appendSafeSpan(points, cumulative, start, end, mode, totalMiles, output
   // Marine presentation is intentionally less literal than road/rail. Broad
   // route-native chords keep boats offshore instead of tracing every cove,
   // while the corridor guard still prevents implausible long shortcuts.
-  const stretchLimit = mode === 'boat' ? 5.25 : mode === 'train' ? 1.38 : 1.48;
-  const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit;
+  const stretchLimit = mode === 'boat' ? 6.25 : mode === 'train' ? 1.48 : 1.80;
+  const waterSafe = mode !== 'boat' || !segmentCrossesLand(points[start], points[end], 45);
+  const safe = directMiles <= maxSegmentMiles && stretchRatio <= stretchLimit && waterSafe;
 
   if (safe) {
     output.push(end);
@@ -243,12 +275,12 @@ function refineSharpPresentationCorners(points, selectedIndexes, cumulative, mod
   if (!Array.isArray(selectedIndexes) || selectedIndexes.length < 3) return selectedIndexes || [];
   const selected = [...new Set(selectedIndexes)].sort((a, b) => a - b);
   const additions = new Set(selected);
-  const turnThreshold = mode === 'boat' ? 62 : mode === 'train' ? 32 : 38;
+  const turnThreshold = mode === 'boat' ? 74 : mode === 'train' ? 40 : 55;
   const targetMiles = mode === 'boat'
     ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 1.65, 14, 64)
     : mode === 'train'
       ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.52, 2.5, 15)
-      : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.34, 1.5, 9);
+      : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.48, 3.5, 16);
 
   for (let position = 1; position < selected.length - 1; position += 1) {
     const previous = selected[position - 1];
@@ -356,15 +388,15 @@ function cumulativeMidpointIndex(cumulative, start, end) {
 
 function maximumPresentationSegmentMiles(mode, totalMiles) {
   const routeScale = Math.sqrt(Math.max(1, totalMiles));
-  if (mode === 'boat') return clamp(routeScale * 18.5, 210, 850);
-  if (mode === 'train') return clamp(routeScale * 4.0, 36, 145);
-  return clamp(routeScale * 4.2, 34, 155);
+  if (mode === 'boat') return clamp(routeScale * 22, 260, 1000);
+  if (mode === 'train') return clamp(routeScale * 5.0, 48, 190);
+  return clamp(routeScale * 6.0, 55, 230);
 }
 
 function softenPresentationCorners(points, mode) {
   if (!Array.isArray(points) || points.length < 3) return points || [];
-  const iterations = mode === 'boat' ? 3 : 1;
-  const amount = mode === 'boat' ? 0.34 : mode === 'train' ? 0.15 : 0.22;
+  const iterations = mode === 'boat' ? 3 : mode === 'car' ? 2 : 1;
+  const amount = mode === 'boat' ? 0.34 : mode === 'train' ? 0.15 : 0.20;
   let current = points.map(point => [...point]);
   for (let iteration = 0; iteration < iterations; iteration += 1) {
     const next = [[...current[0]]];
@@ -389,14 +421,368 @@ function softenPresentationCorners(points, mode) {
 
 function minimumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 2.2 : profile === 'regional' ? 1.5 : 1;
-  const base = mode === 'boat' ? 1.35 : mode === 'train' ? 0.16 : 0.20;
+  const base = mode === 'boat' ? 1.8 : mode === 'train' ? 0.24 : 0.72;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 18, 0.8, 2.4);
 }
 
 function maximumSimplificationTolerance(mode, totalMiles, profile) {
   const profileScale = profile === 'overview' ? 1.8 : profile === 'regional' ? 1.3 : 1;
-  const base = mode === 'boat' ? 30.0 : mode === 'train' ? 4.2 : 5.5;
+  const base = mode === 'boat' ? 36.0 : mode === 'train' ? 5.8 : 12.0;
   return base * profileScale * clamp(Math.sqrt(Math.max(1, totalMiles)) / 28, 0.65, 2.4);
+}
+
+
+
+function densifyMarineFallback(start, end) {
+  const graphRoute = marineGraphFallback(start, end);
+  if (graphRoute?.length > 2) return graphRoute;
+
+  // Last-resort cinematic arc. The graph normally handles coast-to-coast and
+  // channel navigation; this branch exists only for isolated islands that have
+  // no nearby water-network node.
+  const totalMiles = Math.max(0, haversineMiles(start, end));
+  const count = clamp(Math.round(totalMiles / 55), 14, 40);
+  const referenceLat = (Number(start[1]) + Number(end[1])) / 2;
+  const lonMiles = 69.172 * Math.max(0.08, Math.cos(toRadians(referenceLat)));
+  const dx = shortestLongitudeDelta(Number(end[0]) - Number(start[0])) * lonMiles;
+  const dy = (Number(end[1]) - Number(start[1])) * 69.0;
+  const length = Math.max(1e-9, Math.hypot(dx, dy));
+  const normal = [-dy / length, dx / length];
+  const offsets = [35, 70, 125, 210, 340, 480];
+  let best = null;
+  for (const sign of [1, -1]) {
+    for (const offsetMiles of offsets) {
+      const candidate = [];
+      for (let index = 0; index <= count; index += 1) {
+        const t = index / count;
+        const base = [interpolateLongitude(start[0], end[0], t), Number(start[1]) + (Number(end[1]) - Number(start[1])) * t];
+        const offset = offsetMiles * (Math.sin(Math.PI * t) ** 0.82) * sign;
+        const localLonMiles = 69.172 * Math.max(0.08, Math.cos(toRadians(base[1])));
+        candidate.push([normalizeLongitude(base[0] + normal[0] * offset / localLonMiles), clamp(base[1] + normal[1] * offset / 69.0, -89.9, 89.9)]);
+      }
+      candidate[0] = [...start];
+      candidate[candidate.length - 1] = [...end];
+      const score = scoreMarineFallbackCandidate(candidate, offsetMiles);
+      if (!best || score < best.score) best = { score, points: candidate };
+    }
+  }
+  return best?.points || [[...start], [...end]];
+}
+
+function buildWaterGraph(nodes, edges) {
+  const points = (Array.isArray(nodes) ? nodes : []).map(point => [Number(point[0]), Number(point[1])]);
+  const adjacency = points.map(() => []);
+  for (const edge of Array.isArray(edges) ? edges : []) {
+    const from = Number(edge?.[0]);
+    const to = Number(edge?.[1]);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || !points[from] || !points[to]) continue;
+    adjacency[from].push({ to, miles: haversineMiles(points[from], points[to]) });
+  }
+  return { points, adjacency };
+}
+
+function marineGraphFallback(start, end) {
+  const nodes = WATER_GRAPH.points;
+  if (!nodes.length) return null;
+  const directMiles = haversineMiles(start, end);
+  const attachRadius = clamp(directMiles * 0.42, 180, 720);
+  const starts = [];
+  const ends = new Map();
+  for (let index = 0; index < nodes.length; index += 1) {
+    const startMiles = haversineMiles(start, nodes[index]);
+    const endMiles = haversineMiles(end, nodes[index]);
+    if (startMiles <= attachRadius) starts.push({ index, miles: startMiles + segmentLandSampleCount(start, nodes[index], 35) * 150 });
+    if (endMiles <= attachRadius) ends.set(index, endMiles + segmentLandSampleCount(nodes[index], end, 35) * 150);
+  }
+  if (!starts.length || !ends.size) return null;
+
+  const distances = new Array(nodes.length).fill(Infinity);
+  const previous = new Array(nodes.length).fill(-1);
+  const visited = new Set();
+  for (const entry of starts) distances[entry.index] = entry.miles;
+  let bestEnd = -1;
+  let bestTotal = Infinity;
+
+  while (visited.size < nodes.length) {
+    let current = -1;
+    let currentDistance = Infinity;
+    for (let index = 0; index < distances.length; index += 1) {
+      if (!visited.has(index) && distances[index] < currentDistance) {
+        current = index;
+        currentDistance = distances[index];
+      }
+    }
+    if (current < 0 || currentDistance >= bestTotal) break;
+    visited.add(current);
+    if (ends.has(current)) {
+      const total = currentDistance + ends.get(current);
+      if (total < bestTotal) { bestTotal = total; bestEnd = current; }
+    }
+    for (const edge of WATER_GRAPH.adjacency[current] || []) {
+      const nextDistance = currentDistance + edge.miles;
+      if (nextDistance < distances[edge.to]) {
+        distances[edge.to] = nextDistance;
+        previous[edge.to] = current;
+      }
+    }
+  }
+  if (bestEnd < 0 || bestTotal > directMiles * 3.2 + 300) return null;
+  const path = [];
+  for (let cursor = bestEnd; cursor >= 0; cursor = previous[cursor]) {
+    path.push(nodes[cursor]);
+    if (starts.some(entry => entry.index === cursor)) break;
+  }
+  path.reverse();
+  return [[...start], ...path.map(point => [...point]), [...end]];
+}
+
+function scoreMarineFallbackCandidate(points, offsetMiles) {
+  let score = Number(offsetMiles) * 0.12;
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const point = points[index];
+    if (isPointOnLand(point)) {
+      score += 100000;
+      continue;
+    }
+    const nearest = nearestCoastCandidates(point, 45)[0];
+    if (nearest?.distanceMiles < COAST_CLEARANCE_MILES) {
+      const shortfall = COAST_CLEARANCE_MILES - nearest.distanceMiles;
+      score += shortfall * shortfall * 4;
+    }
+  }
+  return score;
+}
+
+function buildLandRingIndex(features) {
+  const index = new Map();
+  let ringId = 0;
+  for (const feature of Array.isArray(features) ? features : []) {
+    const points = Array.isArray(feature?.p) ? feature.p : [];
+    if (points.length < 3) continue;
+    const bounds = Array.isArray(feature?.b) && feature.b.length >= 4
+      ? feature.b.map(Number)
+      : points.reduce((result, point) => [
+          Math.min(result[0], Number(point[0])),
+          Math.min(result[1], Number(point[1])),
+          Math.max(result[2], Number(point[0])),
+          Math.max(result[3], Number(point[1]))
+        ], [Infinity, Infinity, -Infinity, -Infinity]);
+    const ring = { id: ringId += 1, points, bounds };
+    const minX = Math.floor(bounds[0] / COAST_GRID_DEGREES);
+    const maxX = Math.floor(bounds[2] / COAST_GRID_DEGREES);
+    const minY = Math.floor(bounds[1] / COAST_GRID_DEGREES);
+    const maxY = Math.floor(bounds[3] / COAST_GRID_DEGREES);
+    for (let x = minX; x <= maxX; x += 1) {
+      for (let y = minY; y <= maxY; y += 1) {
+        const key = `${x}:${y}`;
+        const bucket = index.get(key) || [];
+        bucket.push(ring);
+        index.set(key, bucket);
+      }
+    }
+  }
+  return index;
+}
+
+function isPointOnLand(point) {
+  if (!LAND_INDEX.size) return false;
+  const lon = Number(point[0]);
+  const lat = Number(point[1]);
+  const rings = LAND_INDEX.get(`${Math.floor(lon / COAST_GRID_DEGREES)}:${Math.floor(lat / COAST_GRID_DEGREES)}`) || [];
+  for (const ring of rings) {
+    const [minLon, minLat, maxLon, maxLat] = ring.bounds;
+    if (lon < minLon || lon > maxLon || lat < minLat || lat > maxLat) continue;
+    if (pointInRing(point, ring.points)) return true;
+  }
+  return false;
+}
+
+function pointInRing(point, ring) {
+  const x = Number(point[0]);
+  const y = Number(point[1]);
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const xi = Number(ring[i][0]);
+    const yi = Number(ring[i][1]);
+    const xj = Number(ring[j][0]);
+    const yj = Number(ring[j][1]);
+    const crosses = ((yi > y) !== (yj > y))
+      && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+
+function segmentLandSampleCount(start, end, spacingMiles = 55) {
+  const distance = haversineMiles(start, end);
+  const samples = clamp(Math.ceil(distance / Math.max(15, spacingMiles)), 2, 48);
+  let count = 0;
+  for (let index = 1; index < samples; index += 1) {
+    const t = index / samples;
+    const point = [interpolateLongitude(start[0], end[0], t), Number(start[1]) + (Number(end[1]) - Number(start[1])) * t];
+    if (isPointOnLand(point)) count += 1;
+  }
+  return count;
+}
+
+function segmentCrossesLand(start, end, spacingMiles = 55) {
+  return segmentLandSampleCount(start, end, spacingMiles) > 0;
+}
+
+function collapseMinorPresentationDeflections(points, mode, totalMiles) {
+  if (!Array.isArray(points) || points.length < 4) return points || [];
+  const normalizedMode = normalizeMode(mode);
+  const deviationLimit = normalizedMode === 'boat'
+    ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.55, 10, 30)
+    : normalizedMode === 'train'
+      ? clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.16, 1.8, 6)
+      : clamp(Math.sqrt(Math.max(1, totalMiles)) * 0.18, 2.4, 7.5);
+  const turnLimit = normalizedMode === 'boat' ? 82 : normalizedMode === 'train' ? 46 : 58;
+  let current = points.map(point => [...point]);
+
+  for (let pass = 0; pass < 3 && current.length > 3; pass += 1) {
+    const next = [[...current[0]]];
+    for (let index = 1; index < current.length - 1; index += 1) {
+      const a = next[next.length - 1];
+      const b = current[index];
+      const c = current[index + 1];
+      const deviation = pointToSegmentMiles(b, a, c);
+      const turn = presentationTurnDegrees(a, b, c);
+      const direct = Math.max(0.0001, haversineMiles(a, c));
+      const along = haversineMiles(a, b) + haversineMiles(b, c);
+      const stretch = along / direct;
+      const shortBump = Math.min(haversineMiles(a, b), haversineMiles(b, c)) < deviationLimit * 1.4;
+      const removable = deviation <= deviationLimit
+        && stretch <= (normalizedMode === 'boat' ? 1.18 : 1.12)
+        && (turn <= turnLimit || shortBump);
+      if (!removable) next.push([...b]);
+    }
+    next.push([...current[current.length - 1]]);
+    if (next.length === current.length) break;
+    current = next;
+  }
+  return current;
+}
+
+function applyBoatCoastalClearance(points, totalMiles) {
+  if (!Array.isArray(points) || points.length < 3 || !COAST_INDEX.size) return points || [];
+  const cumulative = cumulativeMiles(points);
+  const total = cumulative[cumulative.length - 1] || Number(totalMiles) || 0;
+  const adjusted = points.map(point => [...point]);
+
+  for (let index = 1; index < adjusted.length - 1; index += 1) {
+    const point = adjusted[index];
+    const endpointDistance = Math.min(cumulative[index] || 0, Math.max(0, total - (cumulative[index] || 0)));
+    // Ports and approaches are allowed to meet the coast. Once the vessel is in
+    // open water, ramp to the requested 15-mile visual clearance.
+    const ramp = smoothstep(clamp((endpointDistance - 8) / 28, 0, 1));
+    if (ramp <= 0.001) continue;
+    if (isPointOnLand(point)) continue;
+    const nearest = nearestCoastCandidates(point, 58);
+    if (!nearest.length) continue;
+    const first = nearest[0];
+    if (!Number.isFinite(first.distanceMiles) || first.distanceMiles >= COAST_CLEARANCE_MILES * ramp) continue;
+
+    let desired = COAST_CLEARANCE_MILES * ramp;
+    const second = nearest.find(candidate => candidate.segmentId !== first.segmentId && candidate.distanceMiles <= 30);
+    if (second) {
+      const dot = first.direction[0] * second.direction[0] + first.direction[1] * second.direction[1];
+      // Opposing shorelines indicate a channel or strait. Use the available
+      // channel width rather than pushing the route onto the opposite bank.
+      if (dot < -0.28) desired = Math.min(desired, Math.max(2.5, (first.distanceMiles + second.distanceMiles) * 0.40));
+    }
+    const pushMiles = desired - first.distanceMiles;
+    if (pushMiles <= 0.05) continue;
+    const direction = first.direction;
+    const latMiles = 69.0;
+    const lonMiles = 69.172 * Math.max(0.08, Math.cos(toRadians(point[1])));
+    adjusted[index] = [
+      normalizeLongitude(point[0] + direction[0] * pushMiles / lonMiles),
+      clamp(point[1] + direction[1] * pushMiles / latMiles, -89.9, 89.9)
+    ];
+  }
+  adjusted[0] = [...points[0]];
+  adjusted[adjusted.length - 1] = [...points[points.length - 1]];
+  return adjusted;
+}
+
+function buildCoastSegmentIndex(features) {
+  const index = new Map();
+  let segmentId = 0;
+  for (const feature of Array.isArray(features) ? features : []) {
+    const points = Array.isArray(feature?.p) ? feature.p : [];
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      if (!Array.isArray(a) || !Array.isArray(b)) continue;
+      const segment = { id: segmentId += 1, a, b };
+      const minLon = Math.min(Number(a[0]), Number(b[0]));
+      const maxLon = Math.max(Number(a[0]), Number(b[0]));
+      const minLat = Math.min(Number(a[1]), Number(b[1]));
+      const maxLat = Math.max(Number(a[1]), Number(b[1]));
+      const minX = Math.floor(minLon / COAST_GRID_DEGREES);
+      const maxX = Math.floor(maxLon / COAST_GRID_DEGREES);
+      const minY = Math.floor(minLat / COAST_GRID_DEGREES);
+      const maxY = Math.floor(maxLat / COAST_GRID_DEGREES);
+      for (let x = minX; x <= maxX; x += 1) {
+        for (let y = minY; y <= maxY; y += 1) {
+          const key = `${x}:${y}`;
+          const bucket = index.get(key) || [];
+          bucket.push(segment);
+          index.set(key, bucket);
+        }
+      }
+    }
+  }
+  return index;
+}
+
+function nearestCoastCandidates(point, radiusMiles = 42) {
+  const lat = Number(point[1]);
+  const lon = Number(point[0]);
+  const latRadius = radiusMiles / 69.0;
+  const lonRadius = radiusMiles / (69.172 * Math.max(0.08, Math.cos(toRadians(lat))));
+  const minX = Math.floor((lon - lonRadius) / COAST_GRID_DEGREES);
+  const maxX = Math.floor((lon + lonRadius) / COAST_GRID_DEGREES);
+  const minY = Math.floor((lat - latRadius) / COAST_GRID_DEGREES);
+  const maxY = Math.floor((lat + latRadius) / COAST_GRID_DEGREES);
+  const seen = new Set();
+  const candidates = [];
+  for (let x = minX; x <= maxX; x += 1) {
+    for (let y = minY; y <= maxY; y += 1) {
+      for (const segment of COAST_INDEX.get(`${x}:${y}`) || []) {
+        if (seen.has(segment.id)) continue;
+        seen.add(segment.id);
+        const nearest = nearestPointOnSegmentMiles(point, segment.a, segment.b);
+        if (nearest.distanceMiles > radiusMiles) continue;
+        candidates.push({ ...nearest, segmentId: segment.id });
+      }
+    }
+  }
+  candidates.sort((a, b) => a.distanceMiles - b.distanceMiles);
+  return candidates.slice(0, 8);
+}
+
+function nearestPointOnSegmentMiles(point, start, end) {
+  const referenceLat = Number(point[1]);
+  const lonMiles = 69.172 * Math.max(0.08, Math.cos(toRadians(referenceLat)));
+  const ax = shortestLongitudeDelta(Number(start[0]) - Number(point[0])) * lonMiles;
+  const ay = (Number(start[1]) - Number(point[1])) * 69.0;
+  const bx = shortestLongitudeDelta(Number(end[0]) - Number(point[0])) * lonMiles;
+  const by = (Number(end[1]) - Number(point[1])) * 69.0;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared <= 1e-12 ? 0 : clamp(-(ax * dx + ay * dy) / lengthSquared, 0, 1);
+  const nx = ax + dx * t;
+  const ny = ay + dy * t;
+  const distanceMiles = Math.hypot(nx, ny);
+  const inverse = distanceMiles > 1e-8 ? 1 / distanceMiles : 0;
+  return {
+    distanceMiles,
+    direction: inverse ? [-nx * inverse, -ny * inverse] : [0, 0]
+  };
 }
 
 function cumulativeMiles(points) {
@@ -478,6 +864,11 @@ function normalizeLongitude(value) {
 
 function toRadians(value) {
   return Number(value) * Math.PI / 180;
+}
+
+function smoothstep(value) {
+  const t = clamp(value, 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 function clamp(value, min, max) {

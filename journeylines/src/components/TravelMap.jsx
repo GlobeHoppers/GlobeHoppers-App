@@ -1050,7 +1050,29 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     map.stop();
 
     const distance = Math.max(0, Number(request.distanceMiles) || milesBetween(request.from || destination, destination));
-    const targetZoom = relocationTargetZoom(distance, request.nextMode, cameraMode);
+    const nextIndex = Math.max(0, Math.min(Number(request.nextIndex) || 0, Math.max(0, legs.length - 1)));
+    const nextEntry = legs[nextIndex] || null;
+    const nextScene = nextEntry
+      ? getScene(
+          nextEntry,
+          0,
+          cameraMode,
+          legs[Math.min(nextIndex + 1, Math.max(0, legs.length - 1))] || null,
+          routedGeometriesRef.current,
+          Boolean(latestFrameContextRef.current?.routeStackingEnabled)
+        )
+      : null;
+    // Relocation must end on the exact camera used by the first frame of the next
+    // leg. A generic mode zoom was close, but the playback controller corrected
+    // it on the following frame and produced a visible cut.
+    const targetCamera = nextScene?.camera || {
+      center: [lon, lat],
+      zoom: relocationTargetZoom(distance, request.nextMode, cameraMode),
+      pitch: 52,
+      bearing: 0
+    };
+    const targetZoom = Number(targetCamera.zoom);
+    const targetCenter = Array.isArray(targetCamera.center) ? targetCamera.center : [lon, lat];
     const overviewZoom = relocationOverviewZoom(distance);
     const zoomOutDuration = Math.round(clamp(1500 + Math.sqrt(Math.max(1, distance)) * 14, 1800, 3000));
     const repositionDuration = Math.round(clamp(1800 + Math.sqrt(Math.max(1, distance)) * 17, 2300, 4300));
@@ -1072,14 +1094,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       relocationGlideRef.current = { id: null, timer: null, finish: null };
       resetAnimatingRef.current = false;
       manualSpinPauseRef.current = false;
-      const settledCenter = map.getCenter?.();
-      lastCameraRef.current = {
-        center: Number.isFinite(settledCenter?.lng) && Number.isFinite(settledCenter?.lat) ? [settledCenter.lng, settledCenter.lat] : [lon, lat],
-        zoom: Number(map.getZoom?.() || targetZoom),
-        bearing: Number(map.getBearing?.() || 0),
-        pitch: Number(map.getPitch?.() || 0)
-      };
-      onRelocationComplete?.(request.id, { status, duration: totalDuration });
+      lastCameraRef.current = { ...targetCamera, center: [...targetCenter] };
+      latestDesiredCameraRef.current = { ...targetCamera, center: [...targetCenter] };
+      // Hand ownership to playback only after the final zoom has visibly settled.
+      window.requestAnimationFrame(() => onRelocationComplete?.(request.id, { status, duration: totalDuration }));
     };
 
     const runEaseStage = (options, timeoutMs, next) => {
@@ -1091,16 +1109,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         clearStage();
         next?.();
       };
-      const handleMoveEnd = () => completeStage();
-      map.once?.('moveend', handleMoveEnd);
-      stageCleanup = () => map.off?.('moveend', handleMoveEnd);
-      relocationGlideRef.current.timer = window.setTimeout(completeStage, timeoutMs + 500);
+      // Do not use moveend to advance this sequence. MapLibre can emit a stale
+      // moveend from map.stop() or the preceding ease, which used to skip the
+      // final zoom and make the next leg cut to its starting camera.
+      relocationGlideRef.current.timer = window.setTimeout(completeStage, timeoutMs + 70);
       map.easeTo({ ...options, duration: timeoutMs, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
     };
 
     const zoomInAtDestination = () => {
       if (finished || relocationGlideRef.current.id !== request.id) return;
-      runEaseStage({ center: [lon, lat], zoom: targetZoom, pitch: 52, bearing: 0 }, zoomInDuration, () => finish('complete'));
+      runEaseStage({ ...targetCamera, center: targetCenter, zoom: targetZoom }, zoomInDuration, () => finish('complete'));
     };
     const glideAtOverview = () => {
       if (finished || relocationGlideRef.current.id !== request.id) return;
@@ -1370,14 +1388,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           ? { ...lastCameraRef.current, center: [...lastCameraRef.current.center] }
           : null;
         // A disconnected leg has already completed its dedicated relocation glide.
-        // Never seed playback from a stale overview/idle camera after that glide.
+        // Handoff from the camera that is actually on screen, then ease into the
+        // first live route frame. Replacing it with a recomputed p=0 camera caused
+        // the visible cut immediately after an otherwise smooth relocation.
         const connectedTransition = previousEntry && legsConnect(previousEntry?.leg, activeEntry?.leg);
+        const renderedCamera = previousEntry ? captureCameraState(map) : null;
         stats.transitionStartCamera = connectedTransition && capturedTransitionCamera
           ? { ...capturedTransitionCamera, zoom: Math.max(Number(capturedTransitionCamera.zoom || 0), Number(transitionScene.camera.zoom || 0)) }
-          : { ...transitionScene.camera, center: [...transitionScene.camera.center] };
+          : renderedCamera
+            ? { ...renderedCamera, center: [...renderedCamera.center] }
+            : { ...transitionScene.camera, center: [...transitionScene.camera.center] };
         if (!connectedTransition) {
-          lastCameraRef.current = { ...transitionScene.camera, center: [...transitionScene.camera.center] };
-          latestDesiredCameraRef.current = { ...transitionScene.camera, center: [...transitionScene.camera.center] };
+          lastCameraRef.current = { ...stats.transitionStartCamera, center: [...stats.transitionStartCamera.center] };
+          latestDesiredCameraRef.current = { ...stats.transitionStartCamera, center: [...stats.transitionStartCamera.center] };
         }
         stats.transitionKind = connectedTransition ? 'continuous' : previousEntry ? 'relocation' : 'initial';
         stats.transitionStartedAt = now;
@@ -1532,8 +1555,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const projectedRotation = tangentRotation;
     const rawRotation = applyVesselSpriteOffset(projectedRotation, iconMode);
     const previousRotation = Number(vehicleRef.current.__jlVehicleRotation);
-    const rotationBlend = iconMode === 'plane' ? 0.34 : iconMode === 'car' ? 0.30 : iconMode === 'train' ? 0.26 : 0.22;
-    const rotation = Number.isFinite(previousRotation)
+    // Cars now consume the pre-smoothed route tangent directly. Heading filters
+    // used to hide route noise by lagging behind every turn, which made vehicles
+    // feel loose and over-corrected. Shape the route once, then point the car at it.
+    const rotationBlend = iconMode === 'car' ? 1 : iconMode === 'plane' ? 0.34 : iconMode === 'train' ? 0.48 : 0.42;
+    const rotation = Number.isFinite(previousRotation) && rotationBlend < 1
       ? lerpAngle(previousRotation, rawRotation, rotationBlend)
       : rawRotation;
     vehicleRef.current.__jlVehicleRotation = rotation;

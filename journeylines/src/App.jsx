@@ -287,6 +287,7 @@ export default function App() {
   const [idleExitMode, setIdleExitMode] = useState('none');
   const [idleActivityNonce, setIdleActivityNonce] = useState(0);
   const [destinationSelection, setDestinationSelection] = useState(null);
+  const [destinationSelectionClosing, setDestinationSelectionClosing] = useState(false);
   const [jumpFade, setJumpFade] = useState(false);
   const addTripNoun = 'Hop';
   const [hopperEditorOpen, setHopperEditorOpen] = useState(false);
@@ -323,6 +324,7 @@ export default function App() {
   const idleTimerRef = useRef(null);
   const idleSnapshotRef = useRef(null);
   const destinationSelectionRef = useRef(null);
+  const destinationSelectionCloseTimerRef = useRef(null);
   const SETTLE_MS = settings.arrivalSettleMs || 4000;
 
   // Committed trip/location/hopper data comes from deployed repo JSON.
@@ -581,24 +583,39 @@ export default function App() {
   }, [isPlaying, activeIndex, legProgress, legs, speed]);
 
 
+  const animateDestinationSelectionClose = useCallback((selection, afterClose) => {
+    if (!selection) {
+      afterClose?.();
+      return;
+    }
+    window.clearTimeout(destinationSelectionCloseTimerRef.current);
+    setDestinationSelectionClosing(true);
+    destinationSelectionCloseTimerRef.current = window.setTimeout(() => {
+      setDestinationSelectionClosing(false);
+      setDestinationSelection(null);
+      afterClose?.();
+    }, 210);
+  }, []);
+
   const cancelDestinationSelection = useCallback((reason = 'cancel') => {
     const selection = destinationSelectionRef.current;
     if (!selection) return;
     destinationSelectionRef.current = null;
-    setDestinationSelection(null);
-    const snapshot = selection.snapshot || {};
-    setStarted(Boolean(snapshot.started));
-    setActiveIndex(Number.isFinite(snapshot.activeIndex) ? snapshot.activeIndex : activeIndexRef.current);
-    setLegProgress(Number.isFinite(snapshot.legProgress) ? snapshot.legProgress : 0);
-    setGlobeOverview(Boolean(snapshot.globeOverview));
-    setCameraMode(snapshot.cameraMode || 'follow');
-    setShowHero(Boolean(snapshot.showHero));
-    setGlobeSpinPaused(Boolean(snapshot.globeSpinPaused));
-    setIsPlaying(Boolean(snapshot.isPlaying));
-    if (snapshot.camera) {
-      window.dispatchEvent(new CustomEvent('globehoppers-restore-camera', { detail: { camera: snapshot.camera, reason } }));
-    }
-  }, []);
+    animateDestinationSelectionClose(selection, () => {
+      const snapshot = selection.snapshot || {};
+      setStarted(Boolean(snapshot.started));
+      setActiveIndex(Number.isFinite(snapshot.activeIndex) ? snapshot.activeIndex : activeIndexRef.current);
+      setLegProgress(Number.isFinite(snapshot.legProgress) ? snapshot.legProgress : 0);
+      setGlobeOverview(Boolean(snapshot.globeOverview));
+      setCameraMode(snapshot.cameraMode || 'follow');
+      setShowHero(Boolean(snapshot.showHero));
+      setGlobeSpinPaused(Boolean(snapshot.globeSpinPaused));
+      setIsPlaying(Boolean(snapshot.isPlaying));
+      if (snapshot.camera) {
+        window.dispatchEvent(new CustomEvent('globehoppers-restore-camera', { detail: { camera: snapshot.camera, reason } }));
+      }
+    });
+  }, [animateDestinationSelectionClose]);
 
   useEffect(() => {
     const handleDestinationClick = event => {
@@ -630,6 +647,8 @@ export default function App() {
           camera: event?.detail?.camera || null
         }
       };
+      window.clearTimeout(destinationSelectionCloseTimerRef.current);
+      setDestinationSelectionClosing(false);
       destinationSelectionRef.current = selection;
       setDestinationSelection(selection);
       setIsPlaying(false);
@@ -641,13 +660,16 @@ export default function App() {
 
   useEffect(() => {
     const closeDestinationForSearch = () => {
-      if (!destinationSelectionRef.current) return;
+      const selection = destinationSelectionRef.current;
+      if (!selection) return;
       destinationSelectionRef.current = null;
-      setDestinationSelection(null);
+      animateDestinationSelectionClose(selection);
     };
     window.addEventListener('globehoppers-search-opened', closeDestinationForSearch);
     return () => window.removeEventListener('globehoppers-search-opened', closeDestinationForSearch);
-  }, []);
+  }, [animateDestinationSelectionClose]);
+
+  useEffect(() => () => window.clearTimeout(destinationSelectionCloseTimerRef.current), []);
 
   useEffect(() => {
     if (!destinationSelection) return;
@@ -1186,9 +1208,16 @@ export default function App() {
         <button className="secondary big" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>Explore the Globe</button>
       </div>
     </section>}
-    {destinationSelection && <DestinationTripQueue selection={destinationSelection} onSelect={(row) => { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(Boolean(destinationSelection.snapshot?.globeSpinPaused)); jumpToLeg(row.firstIndex || 0, 0, true); }} onCancel={() => cancelDestinationSelection('queue-cancel')} />}
+    {destinationSelection && <DestinationTripQueue closing={destinationSelectionClosing} selection={destinationSelection} onSelect={(row) => {
+      const selection = destinationSelectionRef.current || destinationSelection;
+      destinationSelectionRef.current = null;
+      animateDestinationSelectionClose(selection, () => {
+        setGlobeSpinPaused(Boolean(selection.snapshot?.globeSpinPaused));
+        jumpToLeg(row.firstIndex || 0, 0, true);
+      });
+    }} onCancel={() => cancelDestinationSelection('queue-cancel')} />}
     <TripCard trip={current?.trip} expanded={expanded} traveler={traveler} isPlaying={isPlaying} rows={tripCardRows} onJumpToTrip={(index) => jumpToLeg(index, 0, true)} onOpenTrips={() => { setAdmin(false); setTripDrawerOpen(true); }} />
-    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} isRelocating={isRelocating} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} globeControlsVisible={!isPlaying && (!started || globeOverview || idleMode)} globeSpinSpeed={globeSpinSpeed} onGlobeSpinSpeedChange={(value) => setGlobeSpinSpeed(clampGlobeSpinSpeed(value))} globeSpinPaused={globeSpinPaused} onToggleGlobeSpin={() => setGlobeSpinPaused(value => !value)} onGlobeZoom={(delta) => window.dispatchEvent(new CustomEvent('globehoppers-globe-zoom', { detail: { delta } }))} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => { if (destinationSelectionRef.current) { const selection = destinationSelectionRef.current; const match = selection.matches.find(row => row.id === marker.id); if (match) { destinationSelectionRef.current = null; setDestinationSelection(null); setGlobeSpinPaused(Boolean(selection.snapshot?.globeSpinPaused)); jumpToLeg(match.firstIndex || 0, 0, true); return; } } jumpToLeg(marker.firstIndex || 0, 0, true); }} onMarkerEdit={editTimelineMarker} destinationMatchIds={destinationSelection?.matches?.map(row => row.id) || []} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
+    <PlaybackControls isPlaying={isPlaying} hasPlaybackStarted={hasPlaybackStarted} timelineComplete={timelineComplete} isRelocating={isRelocating} onPlay={play} onPause={pause} onReset={restartJourney} onViewGlobe={viewGlobe} globeControlsVisible={!isPlaying && (!started || globeOverview || idleMode)} globeSpinSpeed={globeSpinSpeed} onGlobeSpinSpeedChange={(value) => setGlobeSpinSpeed(clampGlobeSpinSpeed(value))} globeSpinPaused={globeSpinPaused} onToggleGlobeSpin={() => setGlobeSpinPaused(value => !value)} onGlobeZoom={(delta) => window.dispatchEvent(new CustomEvent('globehoppers-globe-zoom', { detail: { delta } }))} progress={progress} onSeekProgress={seekTimeline} onMarkerJump={(marker) => { if (destinationSelectionRef.current) { const selection = destinationSelectionRef.current; const match = selection.matches.find(row => row.id === marker.id); if (match) { destinationSelectionRef.current = null; animateDestinationSelectionClose(selection, () => { setGlobeSpinPaused(Boolean(selection.snapshot?.globeSpinPaused)); jumpToLeg(match.firstIndex || 0, 0, true); }); return; } } jumpToLeg(marker.firstIndex || 0, 0, true); }} onMarkerEdit={editTimelineMarker} destinationMatchIds={destinationSelection?.matches?.map(row => row.id) || []} speed={speed} setSpeed={setSpeed} filter={filter} setFilter={(value) => {
       freezePlaybackClock();
       setIsPlaying(false);
       setFilter(value);
@@ -1213,8 +1242,8 @@ export default function App() {
 
 
 
-function DestinationTripQueue({ selection, onSelect, onCancel }) {
-  return <aside className="destination-trip-queue" role="dialog" aria-label={`Trips to ${selection.locationName}`}>
+function DestinationTripQueue({ selection, closing = false, onSelect, onCancel }) {
+  return <aside className={`destination-trip-queue ${closing ? 'is-closing' : 'is-opening'}`} role="dialog" aria-label={`Trips to ${selection.locationName}`}>
     <div className="destination-trip-queue__head">
       <div><p className="eyebrow">Choose a Hop</p><h3>{selection.locationName}</h3></div>
       <button type="button" aria-label="Cancel destination selection" onClick={onCancel}>×</button>

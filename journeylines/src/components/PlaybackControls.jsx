@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import HopResultCards from './HopResultCards.jsx';
 
@@ -6,6 +6,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchClosing, setSearchClosing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [hoverMarker, setHoverMarker] = useState(null);
@@ -14,6 +15,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const advancedRef = useRef(null);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
+  const searchVisibleRef = useRef(false);
+  const searchCloseTimerRef = useRef(null);
   const advancedToggleRef = useRef(null);
   const previousActiveIdRef = useRef(activeMarkerId);
   const transitionTimerRef = useRef(null);
@@ -28,6 +31,30 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   const markerNodesRef = useRef(new Map());
   const timelineDragRef = useRef(null);
   const [floatingTooltipPosition, setFloatingTooltipPosition] = useState(null);
+  const openSearchPanel = useCallback(() => {
+    window.clearTimeout(searchCloseTimerRef.current);
+    searchVisibleRef.current = true;
+    setSearchClosing(false);
+    setSearchOpen(true);
+    window.dispatchEvent(new CustomEvent('globehoppers-search-opened'));
+  }, []);
+  const closeSearchPanel = useCallback((afterClose = null, clearText = true) => {
+    if (!searchVisibleRef.current) {
+      if (clearText) setSearchText('');
+      afterClose?.();
+      return;
+    }
+    window.clearTimeout(searchCloseTimerRef.current);
+    setSearchClosing(true);
+    searchCloseTimerRef.current = window.setTimeout(() => {
+      searchVisibleRef.current = false;
+      setSearchOpen(false);
+      setSearchClosing(false);
+      if (clearText) setSearchText('');
+      afterClose?.();
+    }, 190);
+  }, []);
+
   const destinationMatchSet = useMemo(() => new Set(destinationMatchIds || []), [destinationMatchIds]);
   const displayMarkers = useMemo(() => clusterTimelineMarkers(tripMarkers, timelineZoom, destinationMatchSet), [tripMarkers, timelineZoom, destinationMatchSet]);
   const activeMarker = tripMarkers.find(marker => marker.id === activeMarkerId) || null;
@@ -64,16 +91,16 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
   }, [searchText]);
 
   useEffect(() => {
-    if (!searchOpen) return;
+    if (!searchOpen || searchClosing) return;
     setAdvancedOpen(false);
     window.requestAnimationFrame(() => searchInputRef.current?.focus());
     const closeOutside = event => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) setSearchOpen(false);
+      if (searchRef.current && !searchRef.current.contains(event.target)) closeSearchPanel();
     };
     const closeOnEscape = event => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
-      setSearchOpen(false);
+      closeSearchPanel();
     };
     window.addEventListener('pointerdown', closeOutside);
     window.addEventListener('keydown', closeOnEscape);
@@ -81,13 +108,15 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       window.removeEventListener('pointerdown', closeOutside);
       window.removeEventListener('keydown', closeOnEscape);
     };
-  }, [searchOpen]);
+  }, [searchOpen, searchClosing, closeSearchPanel]);
 
   useEffect(() => {
-    const closeSearch = () => { setSearchOpen(false); setSearchText(''); };
+    const closeSearch = () => closeSearchPanel();
     window.addEventListener('globehoppers-close-search', closeSearch);
     return () => window.removeEventListener('globehoppers-close-search', closeSearch);
-  }, []);
+  }, [closeSearchPanel]);
+
+  useEffect(() => () => window.clearTimeout(searchCloseTimerRef.current), []);
 
   useEffect(() => {
     const handleSpacebar = (event) => {
@@ -390,8 +419,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       <button type="button" onClick={onToggleGlobeSpin}>{globeSpinPaused ? 'Resume Spin' : 'Pause Spin'}</button>
     </div>}
     <div className="controls-search-wrap" ref={searchRef}>
-      <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen} onClick={() => setSearchOpen(value => { const next = !value; if (next) window.dispatchEvent(new CustomEvent('globehoppers-search-opened')); return next; })}><Search size={17} strokeWidth={2.2} /></button>
-      {searchOpen && <div className="timeline-search-panel glass" role="dialog" aria-label="Search Hops">
+      <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen && !searchClosing} onClick={() => { if (searchVisibleRef.current) closeSearchPanel(); else openSearchPanel(); }}><Search size={17} strokeWidth={2.2} /></button>
+      {(searchOpen || searchClosing) && <div className={`timeline-search-panel glass ${searchClosing ? 'is-closing' : 'is-opening'}`} role="dialog" aria-label="Search Hops">
         <div className="timeline-search-panel__head">
           <Search size={16} aria-hidden="true" />
           <input ref={searchInputRef} value={searchText} onChange={event => setSearchText(event.target.value)} placeholder="Search Hops…" aria-label="Search Hops" autoComplete="off" />
@@ -400,12 +429,12 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         <div className="timeline-search-panel__body">
           {searchText.trim().length < 2
             ? <div className="timeline-search-message">Type at least 2 characters.</div>
-            : <HopResultCards rows={searchResults} emptyMessage="No matching Hops." onSelect={row => { setSearchOpen(false); setSearchText(''); onMarkerJump?.(row); }} />}
+            : <HopResultCards rows={searchResults} emptyMessage="No matching Hops." onSelect={row => closeSearchPanel(() => onMarkerJump?.(row))} />}
         </div>
       </div>}
     </div>
     <div className="controls-advanced-wrap" ref={advancedRef}>
-      <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => { setSearchOpen(false); setAdvancedOpen(v => !v); }}>⋯</button>
+      <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => { closeSearchPanel(null, true); setAdvancedOpen(v => !v); }}>⋯</button>
       {advancedOpen && <div id="globehoppers-advanced-controls" className="controls-advanced glass" role="dialog" aria-label="Advanced playback controls">
         <button type="button" onClick={() => { setAdvancedOpen(false); onReset?.(); }}>Restart Journey</button>
   <button type="button" onClick={() => { setAdvancedOpen(false); onViewGlobe?.(); }}>View Globe</button>
