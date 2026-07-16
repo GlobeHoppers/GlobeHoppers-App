@@ -3204,5 +3204,94 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "dnup4p",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-06-99-2026-06-99-049",
+    "label": "Rosarito June 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-5bb62a47bd9e",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "rosarito-mx",
+    "route": [
+      {
+        "pointId": "point-38521b22c9f3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-53c457eaba21",
+        "legId": "leg-e12abf69a444",
+        "locationId": "rosarito-mx",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-5cd478e7e496",
+        "legId": "leg-2dbb8bb907ad",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-e12abf69a444\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"rosarito-mx@-117.06180@32.36610\"},{\"id\":\"leg-2dbb8bb907ad\",\"mode\":\"drive\",\"from\":\"rosarito-mx@-117.06180@32.36610\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:16:30.967Z",
+      "legs": [
+        {
+          "legId": "leg-e12abf69a444",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 24.84,
+          "routeMiles": 36.6,
+          "estimatedMinutes": 56,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 879,
+          "reviewedAt": "2026-07-16T21:16:30.314Z"
+        },
+        {
+          "legId": "leg-2dbb8bb907ad",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 24.84,
+          "routeMiles": 37.36,
+          "estimatedMinutes": 64,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 899,
+          "reviewedAt": "2026-07-16T21:16:30.344Z"
+        }
+      ]
+    }
   }
 ]
