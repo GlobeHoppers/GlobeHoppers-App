@@ -8617,5 +8617,101 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "pwaqx1",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-12-99-2024-12-99-149",
+    "label": "Atlanta + Fort Lauderdale December 2024",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-8259c3616c87",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ea2d5fdbf61c",
+        "legId": "leg-fd18fa9f1da6",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9a308e0368ec",
+        "legId": "leg-047d3fcf02c7",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-646809ac7e81",
+        "legId": "leg-b7695afac3a9",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "4fd0km",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-01-99-2026-01-99-150",
+    "label": "Atlanta January 2026",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": false,
+    "returnMode": "",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-b5ea386baf2c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-31835c5330cc",
+        "legId": "leg-5bc82cd36ec6",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
