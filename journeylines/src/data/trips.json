@@ -1,1348 +1,11 @@
 [
   {
-    "id": "2021-068-cape-canaveral",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-001",
-    "label": "Cape Canaveral",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "cape-canaveral-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1mf7qme"
-      },
-      {
-        "locationId": "cape-canaveral-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1pcmfi8",
-        "legId": "leg-1p0fyg3"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1cin8r8",
-        "legId": "leg-0fe77so"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2021-066-fort-lauderdale",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-002",
-    "label": "Fort Lauderdale",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "fort-lauderdale-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1vlfww4"
-      },
-      {
-        "locationId": "fort-lauderdale-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0606w7i",
-        "legId": "leg-1t9qq87"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1pfvyly",
-        "legId": "leg-13us938"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2021-071-fort-lauderdale",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-003",
-    "label": "Fort Lauderdale",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "fort-lauderdale-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1ocs3iw"
-      },
-      {
-        "locationId": "fort-lauderdale-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1k7uykq",
-        "legId": "leg-0ipknij"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1vxxf1m",
-        "legId": "leg-1ieu66w"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2021-065-honolulu",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-004",
-    "label": "Honolulu",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "honolulu-hi",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0jbgfzs"
-      },
-      {
-        "locationId": "honolulu-hi",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0o6vft2",
-        "legId": "leg-10ewbwl"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-18nswp6",
-        "legId": "leg-1s20e9q"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2021-072-las-vegas",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-005",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0c2s535"
-      },
-      {
-        "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1457ne7",
-        "legId": "leg-1b0bjw0"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1mddjd7",
-        "legId": "leg-1l3corz"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2021-069-san-francisco",
-    "year": 2021,
-    "month": null,
-    "day": null,
-    "displayDate": "2021",
-    "sortKey": "2021-13-99-2021-13-99-006",
-    "label": "San Francisco",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "san-francisco-ca",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-10hq4mj"
-      },
-      {
-        "locationId": "san-francisco-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0fnicbr",
-        "legId": "leg-0nkbyg8"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0xys7oh",
-        "legId": "leg-0p84htz"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-077-alaska",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-007",
-    "label": "Alaska",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "anchorage-ak",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0jf0job"
-      },
-      {
-        "locationId": "anchorage-ak",
-        "modeFromPrevious": "plane",
-        "pointId": "point-08suaf8",
-        "legId": "leg-0n6ssaz"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0hpj64x",
-        "legId": "leg-0qqevnu"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-078-buffalo",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-008",
-    "label": "Buffalo",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "buffalo-ny",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-163v2vq"
-      },
-      {
-        "locationId": "buffalo-ny",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0powp43",
-        "legId": "leg-0rzi0tu"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1f44gmc",
-        "legId": "leg-1nauxlf"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-073-cape-canaveral",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-009",
-    "label": "Cape Canaveral",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "cape-canaveral-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0iwl5vr"
-      },
-      {
-        "locationId": "cape-canaveral-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1r0qwab",
-        "legId": "leg-1k0vzde"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-05hdbbx",
-        "legId": "leg-0ilbr69"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-079-cape-canaveral",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-010",
-    "label": "Cape Canaveral",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "cape-canaveral-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-01py4kp"
-      },
-      {
-        "locationId": "cape-canaveral-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1ecpuhl",
-        "legId": "leg-0frrpw0"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1wdc5pv",
-        "legId": "leg-1i1y0rf"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-076-catalina",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-011",
-    "label": "Catalina",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "drive",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "catalina-ca",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0s7fxt8"
-      },
-      {
-        "locationId": "catalina-ca",
-        "modeFromPrevious": "drive",
-        "pointId": "point-04ulvh8",
-        "legId": "leg-1ot09x9"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "drive",
-        "pointId": "point-00q9iu6",
-        "legId": "leg-1o5wzjy"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-080-fort-lauderdale",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-012",
-    "label": "Fort Lauderdale",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "fort-lauderdale-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-104brkr"
-      },
-      {
-        "locationId": "fort-lauderdale-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1mo1yqd",
-        "legId": "leg-0yg1pfe"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0efbgr5",
-        "legId": "leg-1nc63g1"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-074-honolulu",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-013",
-    "label": "Honolulu",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "honolulu-hi",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1ittm3r"
-      },
-      {
-        "locationId": "honolulu-hi",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0i0gpm7",
-        "legId": "leg-0dhse2e"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1qnwpq5",
-        "legId": "leg-0vw79op"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2022-075-las-vegas",
-    "year": 2022,
-    "month": null,
-    "day": null,
-    "displayDate": "2022",
-    "sortKey": "2022-13-99-2022-13-99-014",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-00xy5yx"
-      },
-      {
-        "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1gh1nev",
-        "legId": "leg-11wcaxk"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-058nugz",
-        "legId": "leg-1l9db7b"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-090-atlanta",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-015",
-    "label": "Atlanta",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "atlanta-ga",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0x89str"
-      },
-      {
-        "locationId": "atlanta-ga",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0j7bjgl",
-        "legId": "leg-0pkwtiq"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-01h5bz9",
-        "legId": "leg-0he3lh9"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-088-austin",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-016",
-    "label": "Austin",
-    "travelers": [
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "austin-tx",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0kzl8dn"
-      },
-      {
-        "locationId": "austin-tx",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0s1qlb8",
-        "legId": "leg-17e7i1p"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1jduun5",
-        "legId": "leg-047134s"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-089-barcelona",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-017",
-    "label": "Barcelona",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "barcelona-es",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1fog06z"
-      },
-      {
-        "locationId": "barcelona-es",
-        "modeFromPrevious": "plane",
-        "pointId": "point-155kmkv",
-        "legId": "leg-1fqch5k"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0sxo2ep",
-        "legId": "leg-0y3t21b"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-093-cancun",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-018",
-    "label": "Cancun",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "cancun-mx",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1uimam5"
-      },
-      {
-        "locationId": "cancun-mx",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1l3yamd",
-        "legId": "leg-0ieuy9s"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1moj6zr",
-        "legId": "leg-0dqb7wr"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-081-cape-canaveral",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-019",
-    "label": "Cape Canaveral",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "cape-canaveral-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0l8m0h9"
-      },
-      {
-        "locationId": "cape-canaveral-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-07kgv6d",
-        "legId": "leg-0m42bus"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-01b9imv",
-        "legId": "leg-0ih54f3"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-092-fort-lauderdale",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-020",
-    "label": "Fort Lauderdale",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "fort-lauderdale-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-09soptj"
-      },
-      {
-        "locationId": "fort-lauderdale-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1yf8vwp",
-        "legId": "leg-0yyvmau"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-02gxzwt",
-        "legId": "leg-0ytn8jx"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-082-italy-switzerland-and-evian",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-021",
-    "label": "Italy, Switzerland, and Evian",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "mixed",
-    "roundTrip": false,
-    "fromLocationId": null,
-    "toLocationId": "geneva-ch",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0lh948q"
-      },
-      {
-        "locationId": "rome-it",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1fvouav",
-        "legId": "leg-1468ehc"
-      },
-      {
-        "locationId": "florence-it",
-        "modeFromPrevious": "train",
-        "pointId": "point-1sisr8d",
-        "legId": "leg-06ywcka"
-      },
-      {
-        "locationId": "venice-it",
-        "modeFromPrevious": "train",
-        "pointId": "point-1qrzc7u",
-        "legId": "leg-1lili06"
-      },
-      {
-        "locationId": "geneva-ch",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0xxo2dl",
-        "legId": "leg-0a41b89"
-      },
-      {
-        "locationId": "interlaken-ch",
-        "modeFromPrevious": "drive",
-        "pointId": "point-0s3mqxx",
-        "legId": "leg-0iff809"
-      },
-      {
-        "locationId": "evian-fr",
-        "modeFromPrevious": "drive",
-        "pointId": "point-10gnwy5",
-        "legId": "leg-1rr38vk"
-      },
-      {
-        "locationId": "geneva-ch",
-        "modeFromPrevious": "drive",
-        "pointId": "point-086ctp8",
-        "legId": "leg-1urmrd4"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0k9py6q",
-        "legId": "leg-0d0qqn4"
-      }
-    ],
-    "notes": "Los Angeles to Rome, Florence, Venice, Geneva, Swiss Alps, Evian, back to Geneva, then home.",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-084-las-vegas",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-022",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0bm6788"
-      },
-      {
-        "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1c9sdjy",
-        "legId": "leg-1n7vps7"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0wp859m",
-        "legId": "leg-1m33bho"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-086-las-vegas",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-023",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0kd2b66"
-      },
-      {
-        "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1h5u9cc",
-        "legId": "leg-1gh2lr9"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1brzjj0",
-        "legId": "leg-13z6mau"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-083-miami",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-024",
-    "label": "Miami",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "miami-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1su89lr"
-      },
-      {
-        "locationId": "miami-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0ztpzan",
-        "legId": "leg-1gf1248"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0wqzp1x",
-        "legId": "leg-0dl0gkz"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-091-orlando",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-025",
-    "label": "Orlando",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "orlando-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-03amrz4"
-      },
-      {
-        "locationId": "orlando-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0vx21i2",
-        "legId": "leg-00v5gtv"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1gm9nv6",
-        "legId": "leg-03boe3k"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-087-starbase",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-026",
-    "label": "Starbase",
-    "travelers": [
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "starbase-tx",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0xd0wub"
-      },
-      {
-        "locationId": "starbase-tx",
-        "modeFromPrevious": "plane",
-        "pointId": "point-122g8gl",
-        "legId": "leg-11qlhsk"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-069wttl",
-        "legId": "leg-1lxihc7"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2023-085-tampa",
-    "year": 2023,
-    "month": null,
-    "day": null,
-    "displayDate": "2023",
-    "sortKey": "2023-13-99-2023-13-99-027",
-    "label": "Tampa",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "tampa-fl",
-    "route": [
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0me2ka7"
-      },
-      {
-        "locationId": "tampa-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1gz2pml",
-        "legId": "leg-10blfye"
-      },
-      {
-        "locationId": "los-angeles-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1po25et",
-        "legId": "leg-15k4irx"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-094-indianapolis",
-    "year": 2024,
-    "month": 2,
-    "day": null,
-    "displayDate": "February 2024",
-    "sortKey": "2024-02-99-2024-02-99-028",
-    "label": "Indianapolis",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "indianapolis-in",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-0gh45r9"
-      },
-      {
-        "locationId": "indianapolis-in",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1ldawi1",
-        "legId": "leg-12y3g19"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-07g87tj",
-        "legId": "leg-1owmtl8"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-095-greenville",
-    "year": 2024,
-    "month": 4,
-    "day": null,
-    "displayDate": "April 2024",
-    "sortKey": "2024-04-99-2024-04-99-029",
-    "label": "Greenville",
-    "travelers": [
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "greenville-sc",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1nt8ifa"
-      },
-      {
-        "locationId": "greenville-sc",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0r2t7g5",
-        "legId": "leg-0y2brb7"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-17movd8",
-        "legId": "leg-0m09ooo"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-096-west-palm-beach",
-    "year": 2024,
-    "month": 6,
-    "day": null,
-    "displayDate": "June 2024",
-    "sortKey": "2024-06-99-2024-06-99-030",
-    "label": "West Palm Beach",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "west-palm-beach-fl",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-00v44jw"
-      },
-      {
-        "locationId": "west-palm-beach-fl",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1srsal6",
-        "legId": "leg-0aguru4"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1vs8tja",
-        "legId": "leg-1on0l2b"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-099-baltimore",
-    "year": 2024,
-    "month": 7,
-    "day": null,
-    "displayDate": "July 2024",
-    "sortKey": "2024-07-99-2024-07-99-031",
-    "label": "Baltimore",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "baltimore-md",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1wcr20c"
-      },
-      {
-        "locationId": "baltimore-md",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1yoj54a",
-        "legId": "leg-1qe66ss"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1bu4sti",
-        "legId": "leg-1uw4rsz"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-097-las-vegas",
-    "year": 2024,
-    "month": 7,
-    "day": null,
-    "displayDate": "July 2024",
-    "sortKey": "2024-07-99-2024-07-99-032",
-    "label": "Las Vegas",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "las-vegas-nv",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1w22pq8"
-      },
-      {
-        "locationId": "las-vegas-nv",
-        "modeFromPrevious": "plane",
-        "pointId": "point-02q2v19",
-        "legId": "leg-0efyma3"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-1v5knzu",
-        "legId": "leg-0xktkse"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
-    "id": "2024-098-washington-dc",
-    "year": 2024,
-    "month": 7,
-    "day": null,
-    "displayDate": "July 2024",
-    "sortKey": "2024-07-99-2024-07-99-033",
-    "label": "Washington DC",
-    "travelers": [
-      "joey"
-    ],
-    "mode": "plane",
-    "roundTrip": true,
-    "fromLocationId": null,
-    "toLocationId": "washington-dc",
-    "route": [
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null,
-        "pointId": "point-1wy9uoy"
-      },
-      {
-        "locationId": "washington-dc",
-        "modeFromPrevious": "plane",
-        "pointId": "point-13sbp07",
-        "legId": "leg-1c2dxs9"
-      },
-      {
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane",
-        "pointId": "point-0n7yt2g",
-        "legId": "leg-0nrz1e6"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayEndDate": "",
-    "routeModelVersion": 2
-  },
-  {
     "id": "2024-101-toronto",
     "year": 2024,
     "month": 8,
     "day": null,
     "displayDate": "August 2024",
-    "sortKey": "2024-08-99-2024-08-99-034",
+    "sortKey": "2024-08-99-2024-08-99-001",
     "label": "Toronto",
     "travelers": [
       "joey",
@@ -1385,7 +48,7 @@
     "month": 8,
     "day": null,
     "displayDate": "August 2024",
-    "sortKey": "2024-08-99-2024-08-99-035",
+    "sortKey": "2024-08-99-2024-08-99-002",
     "label": "West Palm Beach",
     "travelers": [
       "joey",
@@ -1428,7 +91,7 @@
     "month": 9,
     "day": null,
     "displayDate": "September 2024",
-    "sortKey": "2024-09-99-2024-09-99-036",
+    "sortKey": "2024-09-99-2024-09-99-003",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -1471,7 +134,7 @@
     "month": 9,
     "day": null,
     "displayDate": "September 2024",
-    "sortKey": "2024-09-99-2024-09-99-037",
+    "sortKey": "2024-09-99-2024-09-99-004",
     "label": "Montreal",
     "travelers": [
       "joey"
@@ -1513,7 +176,7 @@
     "month": 10,
     "day": null,
     "displayDate": "October 2024",
-    "sortKey": "2024-10-99-2024-10-99-038",
+    "sortKey": "2024-10-99-2024-10-99-005",
     "label": "Seattle, Vancouver, and Philadelphia",
     "travelers": [
       "joey",
@@ -1574,7 +237,7 @@
     "month": 11,
     "day": null,
     "displayDate": "November 2024",
-    "sortKey": "2024-11-99-2024-11-99-039",
+    "sortKey": "2024-11-99-2024-11-99-006",
     "label": "Maui",
     "travelers": [
       "joey",
@@ -1622,7 +285,7 @@
     "month": 11,
     "day": null,
     "displayDate": "November 2024",
-    "sortKey": "2024-11-99-2024-11-99-040",
+    "sortKey": "2024-11-99-2024-11-99-007",
     "label": "San Jose",
     "travelers": [
       "joey"
@@ -1664,7 +327,7 @@
     "month": 12,
     "day": null,
     "displayDate": "December 2024",
-    "sortKey": "2024-12-99-2024-12-99-041",
+    "sortKey": "2024-12-99-2024-12-99-008",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -1707,7 +370,7 @@
     "month": 12,
     "day": null,
     "displayDate": "December 2024",
-    "sortKey": "2024-12-99-2024-12-99-042",
+    "sortKey": "2024-12-99-2024-12-99-009",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -1750,7 +413,7 @@
     "month": 1,
     "day": null,
     "displayDate": "January 2025",
-    "sortKey": "2025-01-99-2025-01-99-043",
+    "sortKey": "2025-01-99-2025-01-99-010",
     "label": "Atlanta and Washington DC split return",
     "travelers": [
       "joey",
@@ -1799,7 +462,7 @@
     "month": 1,
     "day": null,
     "displayDate": "January 2025",
-    "sortKey": "2025-01-99-2025-01-99-044",
+    "sortKey": "2025-01-99-2025-01-99-011",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -1841,7 +504,7 @@
     "month": 2,
     "day": null,
     "displayDate": "February 2025",
-    "sortKey": "2025-02-99-2025-02-99-045",
+    "sortKey": "2025-02-99-2025-02-99-012",
     "label": "Chicago and St. Louis",
     "travelers": [
       "joey",
@@ -1892,7 +555,7 @@
     "month": 3,
     "day": null,
     "displayDate": "March 2025",
-    "sortKey": "2025-03-99-2025-03-99-046",
+    "sortKey": "2025-03-99-2025-03-99-013",
     "label": "Seoul and Tokyo",
     "travelers": [
       "joey",
@@ -1945,7 +608,7 @@
     "month": 4,
     "day": null,
     "displayDate": "April 2025",
-    "sortKey": "2025-04-99-2025-04-99-047",
+    "sortKey": "2025-04-99-2025-04-99-014",
     "label": "Miami",
     "travelers": [
       "joey"
@@ -1987,7 +650,7 @@
     "month": 4,
     "day": null,
     "displayDate": "April 2025",
-    "sortKey": "2025-04-99-2025-04-99-048",
+    "sortKey": "2025-04-99-2025-04-99-015",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2029,7 +692,7 @@
     "month": 5,
     "day": null,
     "displayDate": "May 2025",
-    "sortKey": "2025-05-99-2025-05-99-049",
+    "sortKey": "2025-05-99-2025-05-99-016",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey"
@@ -2071,7 +734,7 @@
     "month": 5,
     "day": null,
     "displayDate": "May 2025",
-    "sortKey": "2025-05-99-2025-05-99-050",
+    "sortKey": "2025-05-99-2025-05-99-017",
     "label": "Houston",
     "travelers": [
       "joey"
@@ -2113,7 +776,7 @@
     "month": 6,
     "day": null,
     "displayDate": "June 2025",
-    "sortKey": "2025-06-99-2025-06-99-051",
+    "sortKey": "2025-06-99-2025-06-99-018",
     "label": "Scottsdale",
     "travelers": [
       "joey"
@@ -2155,7 +818,7 @@
     "month": 7,
     "day": null,
     "displayDate": "July 2025",
-    "sortKey": "2025-07-99-2025-07-99-052",
+    "sortKey": "2025-07-99-2025-07-99-019",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -2198,7 +861,7 @@
     "month": 7,
     "day": null,
     "displayDate": "July 2025",
-    "sortKey": "2025-07-99-2025-07-99-053",
+    "sortKey": "2025-07-99-2025-07-99-020",
     "label": "Seattle",
     "travelers": [
       "joey"
@@ -2240,7 +903,7 @@
     "month": 9,
     "day": null,
     "displayDate": "September 2025",
-    "sortKey": "2025-09-99-2025-09-99-054",
+    "sortKey": "2025-09-99-2025-09-99-021",
     "label": "Las Vegas",
     "travelers": [
       "joey"
@@ -2282,7 +945,7 @@
     "month": 9,
     "day": null,
     "displayDate": "September 2025",
-    "sortKey": "2025-09-99-2025-09-99-055",
+    "sortKey": "2025-09-99-2025-09-99-022",
     "label": "Montreal",
     "travelers": [
       "joey"
@@ -2324,7 +987,7 @@
     "month": 10,
     "day": null,
     "displayDate": "October 2025",
-    "sortKey": "2025-10-99-2025-10-99-056",
+    "sortKey": "2025-10-99-2025-10-99-023",
     "label": "Grand Forks",
     "travelers": [
       "joey"
@@ -2366,7 +1029,7 @@
     "month": 10,
     "day": null,
     "displayDate": "October 2025",
-    "sortKey": "2025-10-99-2025-10-99-057",
+    "sortKey": "2025-10-99-2025-10-99-024",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2408,7 +1071,7 @@
     "month": 12,
     "day": null,
     "displayDate": "December 2025",
-    "sortKey": "2025-12-99-2025-12-99-058",
+    "sortKey": "2025-12-99-2025-12-99-025",
     "label": "Atlanta",
     "travelers": [
       "joey",
@@ -2451,7 +1114,7 @@
     "month": 12,
     "day": null,
     "displayDate": "December 2025",
-    "sortKey": "2025-12-99-2025-12-99-059",
+    "sortKey": "2025-12-99-2025-12-99-026",
     "label": "Fort Lauderdale",
     "travelers": [
       "joey",
@@ -2494,7 +1157,7 @@
     "month": 1,
     "day": 15,
     "displayDate": "January 15, 2026",
-    "sortKey": "2026-01-15-2026-01-15-060",
+    "sortKey": "2026-01-15-2026-01-15-027",
     "label": "Washington DC",
     "travelers": [
       "joey"
@@ -2536,7 +1199,7 @@
     "month": 2,
     "day": 14,
     "displayDate": "February 14, 2026",
-    "sortKey": "2026-02-14-2026-02-14-061",
+    "sortKey": "2026-02-14-2026-02-14-028",
     "label": "Chicago",
     "travelers": [
       "joey",
@@ -2575,7 +1238,7 @@
     "month": 2,
     "day": 21,
     "displayDate": "February 21, 2026",
-    "sortKey": "2026-02-21-2026-02-21-062",
+    "sortKey": "2026-02-21-2026-02-21-029",
     "label": "Charlotte",
     "travelers": [
       "joey",
@@ -2614,7 +1277,7 @@
     "month": 3,
     "day": 7,
     "displayDate": "March 7, 2026",
-    "sortKey": "2026-03-07-2026-03-07-063",
+    "sortKey": "2026-03-07-2026-03-07-030",
     "label": "San Francisco",
     "travelers": [
       "joey"
@@ -2652,7 +1315,7 @@
     "month": 4,
     "day": 8,
     "displayDate": "April 8, 2026",
-    "sortKey": "2026-04-08-2026-04-08-064",
+    "sortKey": "2026-04-08-2026-04-08-031",
     "label": "London and Amsterdam",
     "travelers": [
       "bonnie"
@@ -2704,7 +1367,7 @@
     "month": 4,
     "day": 26,
     "displayDate": "April 26, 2026",
-    "sortKey": "2026-04-26-2026-04-26-065",
+    "sortKey": "2026-04-26-2026-04-26-032",
     "label": "Syracuse and Lakeland",
     "travelers": [
       "joey"
@@ -2748,7 +1411,7 @@
     "month": 5,
     "day": 6,
     "displayDate": "May 6, 2026",
-    "sortKey": "2026-05-06-2026-05-06-066",
+    "sortKey": "2026-05-06-2026-05-06-033",
     "label": "Detroit",
     "travelers": [
       "joey"
@@ -2786,7 +1449,7 @@
     "month": 6,
     "day": 7,
     "displayDate": "June 7, 2026",
-    "sortKey": "2026-06-07-2026-06-07-067",
+    "sortKey": "2026-06-07-2026-06-07-034",
     "label": "Boston",
     "travelers": [
       "joey",
@@ -2825,7 +1488,7 @@
     "month": 6,
     "day": 17,
     "displayDate": "June 17, 2026",
-    "sortKey": "2026-06-17-2026-06-17-068",
+    "sortKey": "2026-06-17-2026-06-17-035",
     "label": "Dominican Republic",
     "travelers": [
       "joey"
@@ -2863,7 +1526,7 @@
     "month": 7,
     "day": 2,
     "displayDate": "July 2, 2026",
-    "sortKey": "2026-07-02-2026-07-02-069",
+    "sortKey": "2026-07-02-2026-07-02-036",
     "label": "Cabo",
     "travelers": [
       "joey",
@@ -2906,7 +1569,7 @@
     "endDay": null,
     "displayDate": "August 2026",
     "displayEndDate": "",
-    "sortKey": "2026-08-99-2026-08-99-070",
+    "sortKey": "2026-08-99-2026-08-99-037",
     "label": "Boston",
     "travelers": [
       "joey",
@@ -2951,7 +1614,7 @@
     "endDay": null,
     "displayDate": "August 2026",
     "displayEndDate": "",
-    "sortKey": "2026-08-99-2026-08-99-071",
+    "sortKey": "2026-08-99-2026-08-99-038",
     "label": "Kentucky",
     "travelers": [
       "joey",
@@ -3006,7 +1669,7 @@
     "endDay": null,
     "displayDate": "August 2026",
     "displayEndDate": "",
-    "sortKey": "2026-08-99-2026-08-99-072",
+    "sortKey": "2026-08-99-2026-08-99-039",
     "label": "London",
     "travelers": [
       "joey",
@@ -3052,7 +1715,7 @@
     "endDay": null,
     "displayDate": "August 2026",
     "displayEndDate": "",
-    "sortKey": "2026-08-99-2026-08-99-073",
+    "sortKey": "2026-08-99-2026-08-99-040",
     "label": "Los Angeles",
     "travelers": [
       "joey"
@@ -3099,7 +1762,7 @@
     "endDay": null,
     "displayDate": "August 2026",
     "displayEndDate": "",
-    "sortKey": "2026-08-99-2026-08-99-074",
+    "sortKey": "2026-08-99-2026-08-99-041",
     "label": "Maui",
     "travelers": [
       "bonnie"
@@ -3184,7 +1847,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-075",
+    "sortKey": "2026-09-99-2026-09-99-042",
     "label": "Albuquerque",
     "travelers": [
       "joey"
@@ -3231,7 +1894,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-076",
+    "sortKey": "2026-09-99-2026-09-99-043",
     "label": "d",
     "travelers": [
       "bonnie"
@@ -3316,7 +1979,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-077",
+    "sortKey": "2026-09-99-2026-09-99-044",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -3370,7 +2033,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-078",
+    "sortKey": "2026-09-99-2026-09-99-045",
     "label": "Tokyo",
     "travelers": [
       "joey",
@@ -3419,7 +2082,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-079",
+    "sortKey": "2026-10-99-2026-10-99-046",
     "label": "Las Vegas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -3501,7 +2164,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-080",
+    "sortKey": "2026-10-99-2026-10-99-047",
     "label": "Minneapolis",
     "travelers": [
       "bonnie",
@@ -3587,7 +2250,7 @@
     "endDay": null,
     "displayDate": "October 2026",
     "displayEndDate": "",
-    "sortKey": "2026-10-99-2026-10-99-081",
+    "sortKey": "2026-10-99-2026-10-99-048",
     "label": "Vancouver",
     "travelers": [
       "joey"
@@ -3633,7 +2296,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-082",
+    "sortKey": "2026-11-99-2026-11-99-049",
     "label": "Athens",
     "travelers": [
       "bonnie"
@@ -3679,7 +2342,7 @@
     "endDay": null,
     "displayDate": "November 2026",
     "displayEndDate": "",
-    "sortKey": "2026-11-99-2026-11-99-083",
+    "sortKey": "2026-11-99-2026-11-99-050",
     "label": "Cabo San Lucas",
     "travelers": [
       "joey"
@@ -3725,7 +2388,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-084",
+    "sortKey": "2026-12-99-2026-12-99-051",
     "label": "Bahamas",
     "travelers": [
       "joey"
@@ -3771,7 +2434,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-085",
+    "sortKey": "2026-12-99-2026-12-99-052",
     "label": "Cabo San Lucas",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -3817,7 +2480,7 @@
     "endDay": null,
     "displayDate": "December 2026",
     "displayEndDate": "",
-    "sortKey": "2026-12-99-2026-12-99-086",
+    "sortKey": "2026-12-99-2026-12-99-053",
     "label": "Phoenix",
     "travelers": [
       "joey"
@@ -3864,7 +2527,7 @@
     "endDay": null,
     "displayDate": "January 2027",
     "displayEndDate": "",
-    "sortKey": "2027-01-99-2027-01-99-087",
+    "sortKey": "2027-01-99-2027-01-99-054",
     "label": "Boston",
     "travelers": [
       "bonnie"
@@ -3911,7 +2574,7 @@
     "endDay": null,
     "displayDate": "January 2027",
     "displayEndDate": "",
-    "sortKey": "2027-01-99-2027-01-99-088",
+    "sortKey": "2027-01-99-2027-01-99-055",
     "label": "Chiclayo",
     "travelers": [
       "hopper-mrcyz5l4",
@@ -4000,7 +2663,7 @@
     "endDay": null,
     "displayDate": "January 2027",
     "displayEndDate": "",
-    "sortKey": "2027-01-99-2027-01-99-089",
+    "sortKey": "2027-01-99-2027-01-99-056",
     "label": "Las Vegas",
     "travelers": [
       "joey",
@@ -4048,7 +2711,7 @@
     "endDay": null,
     "displayDate": "February 2027",
     "displayEndDate": "",
-    "sortKey": "2027-02-99-2027-02-99-090",
+    "sortKey": "2027-02-99-2027-02-99-057",
     "label": "Minneapolis",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -4095,7 +2758,7 @@
     "endDay": null,
     "displayDate": "June 2027",
     "displayEndDate": "",
-    "sortKey": "2027-06-99-2027-06-99-091",
+    "sortKey": "2027-06-99-2027-06-99-058",
     "label": "Dallas June 2027",
     "travelers": [
       "hopper-mrcyz5l4"
@@ -4142,7 +2805,7 @@
     "endDay": null,
     "displayDate": "July 2027",
     "displayEndDate": "",
-    "sortKey": "2027-07-99-2027-07-99-092",
+    "sortKey": "2027-07-99-2027-07-99-059",
     "label": "Boston July 2027",
     "travelers": [
       "joey"
