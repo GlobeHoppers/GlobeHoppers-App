@@ -5163,7 +5163,7 @@
     }
   },
   {
-    "id": "ow0j64",
+    "id": "zirs14",
     "routeModelVersion": 2,
     "year": 2020,
     "month": 2,
@@ -5174,6 +5174,54 @@
     "displayDate": "February 2020",
     "displayEndDate": "",
     "sortKey": "2020-02-99-2020-02-99-086",
+    "label": "Melbourne February 2020",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "melbourne-fl",
+    "route": [
+      {
+        "pointId": "point-128eb214a4f3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-846be9b412be",
+        "legId": "leg-14f01f4e19b6",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5a6136951f01",
+        "legId": "leg-5988e5e85080",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "ow0j64",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-02-99-2020-02-99-087",
     "label": "Miami February 2020",
     "travelers": [
       "joey"
