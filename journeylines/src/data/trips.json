@@ -3489,6 +3489,100 @@
     "routeReview": null
   },
   {
+    "id": "xq5ydf",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-08-99-2018-08-99-055",
+    "label": "Kansas City August 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "kansas-city-mo",
+    "route": [
+      {
+        "pointId": "point-4b30fc9a2725",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-df273d868779",
+        "legId": "leg-b3d600ddd73a",
+        "locationId": "kansas-city-mo",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-77ad2ab39c9e",
+        "legId": "leg-4ae12593cdd0",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "c756bi",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-08-99-2018-08-99-056",
+    "label": "Washington DC August 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-aaddd93441e5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a1e3a3a7e743",
+        "legId": "leg-dec944998e2b",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6fa6e7e1e4c0",
+        "legId": "leg-90563ccd91cb",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "dnup4p",
     "routeModelVersion": 2,
     "year": 2026,
@@ -3499,7 +3593,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-055",
+    "sortKey": "2026-06-99-2026-06-99-057",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"
