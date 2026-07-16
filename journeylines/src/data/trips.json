@@ -8868,5 +8868,99 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "dadt87",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-04-99-2025-04-99-154",
+    "label": "Miami April 2025",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-908c4728035c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-85596024e808",
+        "legId": "leg-00a085265e3f",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e5e011e6515e",
+        "legId": "leg-00ecaaf053ce",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "auyhe2",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-04-99-2025-04-99-155",
+    "label": "Washington DC April 2025",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-6a1d83e8a2af",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-1c2a2735f11c",
+        "legId": "leg-03fc74a3520d",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-f960966e0b5e",
+        "legId": "leg-76666b9f9c5b",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
