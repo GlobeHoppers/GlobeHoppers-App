@@ -1046,5 +1046,18 @@
     "geonameId": 5879400,
     "population": 291826,
     "timezone": "America/Anchorage"
+  },
+  {
+    "id": "rome-ny",
+    "name": "Rome",
+    "region": "NY",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 43.21285,
+    "lon": -75.45573,
+    "geonameId": 5134295,
+    "population": 33725,
+    "timezone": "America/New_York"
   }
 ]
