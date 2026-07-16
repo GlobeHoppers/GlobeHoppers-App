@@ -8814,5 +8814,59 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "5jbhc0",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-03-99-2025-03-99-153",
+    "label": "Seoul + Tokyo March 2025",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "seoul-kr",
+    "route": [
+      {
+        "pointId": "point-dcfacda1fb32",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e659b77cbd24",
+        "legId": "leg-1390d4e2d70c",
+        "locationId": "seoul-kr",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cf0a15dda737",
+        "legId": "leg-cd48aa736691",
+        "locationId": "tokyo-jp",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-78db7ca749d2",
+        "legId": "leg-6a72af880695",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
