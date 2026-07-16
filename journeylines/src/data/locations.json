@@ -1059,5 +1059,18 @@
     "geonameId": 5134295,
     "population": 33725,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "waco-tx",
+    "name": "Waco",
+    "region": "TX",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 31.54933,
+    "lon": -97.14667,
+    "geonameId": 4739526,
+    "population": 124805,
+    "timezone": "America/Chicago"
   }
 ]
