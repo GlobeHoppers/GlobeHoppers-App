@@ -3963,6 +3963,53 @@
     "routeReview": null
   },
   {
+    "id": "mx9zge",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-11-99-2018-11-99-064",
+    "label": "Tokyo December 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "tokyo-jp",
+    "route": [
+      {
+        "pointId": "point-0b1965654d60",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-63a7e38a2303",
+        "legId": "leg-e620c98baa47",
+        "locationId": "tokyo-jp",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cd7141b76c12",
+        "legId": "leg-48a505ee3ba7",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "juwvjt",
     "routeModelVersion": 2,
     "year": 2018,
@@ -3973,7 +4020,7 @@
     "endDay": null,
     "displayDate": "December 2018",
     "displayEndDate": "",
-    "sortKey": "2018-12-99-2018-12-99-064",
+    "sortKey": "2018-12-99-2018-12-99-065",
     "label": "Fort Lauderdale December 2018",
     "travelers": [
       "joey",
@@ -4021,7 +4068,7 @@
     "endDay": null,
     "displayDate": "December 2018",
     "displayEndDate": "",
-    "sortKey": "2018-12-99-2018-12-99-065",
+    "sortKey": "2018-12-99-2018-12-99-066",
     "label": "Las Vegas December 2018",
     "travelers": [
       "joey",
@@ -4069,7 +4116,7 @@
     "endDay": null,
     "displayDate": "December 2018",
     "displayEndDate": "",
-    "sortKey": "2018-12-99-2018-12-99-066",
+    "sortKey": "2018-12-99-2018-12-99-067",
     "label": "Philadelphia December 2018",
     "travelers": [
       "joey",
@@ -4103,101 +4150,6 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "ribbon",
-    "trailColorMode": "members",
-    "routeReview": null
-  },
-  {
-    "id": "m16pgq",
-    "routeModelVersion": 2,
-    "year": 2018,
-    "month": 12,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "December 2018",
-    "displayEndDate": "",
-    "sortKey": "2018-12-99-2018-12-99-067",
-    "label": "Philadelphia December 2018",
-    "travelers": [
-      "joey",
-      "bonnie"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "philadelphia-pa",
-    "route": [
-      {
-        "pointId": "point-4304c57ad5e6",
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null
-      },
-      {
-        "pointId": "point-dc3953d91314",
-        "legId": "leg-b32fe6feedf3",
-        "locationId": "philadelphia-pa",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "pointId": "point-10baa24fb954",
-        "legId": "leg-eb1026377968",
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "ribbon",
-    "trailColorMode": "members",
-    "routeReview": null
-  },
-  {
-    "id": "mx9zge",
-    "routeModelVersion": 2,
-    "year": 2018,
-    "month": 12,
-    "day": null,
-    "endYear": null,
-    "endMonth": null,
-    "endDay": null,
-    "displayDate": "December 2018",
-    "displayEndDate": "",
-    "sortKey": "2018-12-99-2018-12-99-068",
-    "label": "Tokyo December 2018",
-    "travelers": [
-      "joey"
-    ],
-    "guestHoppers": [],
-    "mode": "plane",
-    "roundTrip": true,
-    "returnMode": "plane",
-    "fromLocationId": null,
-    "toLocationId": "tokyo-jp",
-    "route": [
-      {
-        "pointId": "point-0b1965654d60",
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": null
-      },
-      {
-        "pointId": "point-63a7e38a2303",
-        "legId": "leg-e620c98baa47",
-        "locationId": "tokyo-jp",
-        "modeFromPrevious": "plane"
-      },
-      {
-        "pointId": "point-cd7141b76c12",
-        "legId": "leg-48a505ee3ba7",
-        "locationId": "san-diego-ca",
-        "modeFromPrevious": "plane"
-      }
-    ],
-    "notes": "",
-    "occasion": "",
-    "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
   }
