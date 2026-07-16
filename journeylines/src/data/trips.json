@@ -5311,5 +5311,88 @@
     "trailStyle": "stripe",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "eign5z",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-09-99-2020-09-99-089",
+    "label": "Palm Springs September 2020",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "palm-springs-ca",
+    "route": [
+      {
+        "pointId": "point-cc992ffa67b3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-cd74c9854e05",
+        "legId": "leg-f17f546388d2",
+        "locationId": "palm-springs-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-9bb27ab373e9",
+        "legId": "leg-266c5f17b8fc",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-f17f546388d2\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"palm-springs-ca@-116.54530@33.83030\"},{\"id\":\"leg-266c5f17b8fc\",\"mode\":\"drive\",\"from\":\"palm-springs-ca@-116.54530@33.83030\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:40:18.157Z",
+      "legs": [
+        {
+          "legId": "leg-f17f546388d2",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 84.83,
+          "routeMiles": 139.12,
+          "estimatedMinutes": 144,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1972,
+          "reviewedAt": "2026-07-16T21:40:17.225Z"
+        },
+        {
+          "legId": "leg-266c5f17b8fc",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 84.83,
+          "routeMiles": 130.57,
+          "estimatedMinutes": 143,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2355,
+          "reviewedAt": "2026-07-16T21:40:17.345Z"
+        }
+      ]
+    }
   }
 ]
