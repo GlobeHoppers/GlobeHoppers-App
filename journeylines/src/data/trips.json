@@ -5535,5 +5535,142 @@
         }
       ]
     }
+  },
+  {
+    "id": "kfy512",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-10-99-2020-10-99-092",
+    "label": "Las Vegas October 2020",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-9d8b5006a954",
+        "name": "Asim",
+        "colorName": "green",
+        "color": "#44f48a"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-2083cbca9ea8",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-9bc860eeca18",
+        "legId": "leg-397808dd9a5e",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-2c3ba30df88e",
+        "legId": "leg-048e51184c40",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "zdokjf",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-11-99-2020-11-99-093",
+    "label": "Las Vegas November 2020",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-1693a82ce3ca",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f3e3f09b18b9",
+        "legId": "leg-6bf5af7dea7f",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-0845288aa405",
+        "legId": "leg-88ba40ed3260",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-6bf5af7dea7f\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"las-vegas-nv@-115.13910@36.17160\"},{\"id\":\"leg-88ba40ed3260\",\"mode\":\"drive\",\"from\":\"las-vegas-nv@-115.13910@36.17160\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:42:41.519Z",
+      "legs": [
+        {
+          "legId": "leg-6bf5af7dea7f",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T21:42:41.517Z"
+        },
+        {
+          "legId": "leg-88ba40ed3260",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T21:42:41.519Z"
+        }
+      ]
+    }
   }
 ]
