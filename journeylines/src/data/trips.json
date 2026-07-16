@@ -3731,7 +3731,7 @@
     "routeReview": null
   },
   {
-    "id": "5kxusq",
+    "id": "0ur0vx",
     "routeModelVersion": 2,
     "year": 2018,
     "month": 11,
@@ -3742,6 +3742,53 @@
     "displayDate": "November 2018",
     "displayEndDate": "",
     "sortKey": "2018-11-99-2018-11-99-060",
+    "label": "Blacksburg November 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "blacksburg-va",
+    "route": [
+      {
+        "pointId": "point-43c4be0473bf",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-745744649fc0",
+        "legId": "leg-2a0175b7ef0a",
+        "locationId": "blacksburg-va",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-06145cb0ce3e",
+        "legId": "leg-7bb72a7849a3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "5kxusq",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-11-99-2018-11-99-061",
     "label": "Seattle November 2018",
     "travelers": [
       "joey",
@@ -3789,7 +3836,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-061",
+    "sortKey": "2026-06-99-2026-06-99-062",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"

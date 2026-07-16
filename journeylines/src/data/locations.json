@@ -942,5 +942,18 @@
     "geonameId": 4393217,
     "population": 459787,
     "timezone": "America/Chicago"
+  },
+  {
+    "id": "blacksburg-va",
+    "name": "Blacksburg",
+    "region": "VA",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 37.22957,
+    "lon": -80.41394,
+    "geonameId": 4747845,
+    "population": 42620,
+    "timezone": "America/New_York"
   }
 ]
