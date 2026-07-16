@@ -2810,5 +2810,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "pwq7rt",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-12-99-2017-12-99-042",
+    "label": "Santa Fe December 2017",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "santa-fe-nm",
+    "route": [
+      {
+        "pointId": "point-e12a7f42f84d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-63ba9cf6449a",
+        "legId": "leg-b0eefb076674",
+        "locationId": "santa-fe-nm",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-4faa82995ba4",
+        "legId": "leg-9d8ecb42923d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]

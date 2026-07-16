@@ -877,5 +877,18 @@
     "geonameId": 3489854,
     "population": 937700,
     "timezone": "America/Jamaica"
+  },
+  {
+    "id": "santa-fe-nm",
+    "name": "Santa Fe",
+    "region": "NM",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 35.68698,
+    "lon": -105.9378,
+    "geonameId": 5490263,
+    "population": 67947,
+    "timezone": "America/Denver"
   }
 ]
