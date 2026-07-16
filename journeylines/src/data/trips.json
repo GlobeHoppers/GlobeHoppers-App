@@ -5072,5 +5072,141 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "7ma4we",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-01-99-2020-01-99-085",
+    "label": "Mammoth January 2020",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-a4a043e78ed0",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "mammoth-ca",
+    "route": [
+      {
+        "pointId": "point-76f77107ed07",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-050c3320ca0b",
+        "legId": "leg-7f02d93ee9ca",
+        "locationId": "mammoth-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-131aff99bebd",
+        "legId": "leg-7f8908a8a0da",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-7f02d93ee9ca\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"mammoth-ca@-118.97210@37.64850\"},{\"id\":\"leg-7f8908a8a0da\",\"mode\":\"drive\",\"from\":\"mammoth-ca@-118.97210@37.64850\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:38:16.241Z",
+      "legs": [
+        {
+          "legId": "leg-7f02d93ee9ca",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 355.81,
+          "routeMiles": 396.09,
+          "estimatedMinutes": 411,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 5215,
+          "reviewedAt": "2026-07-16T21:38:15.354Z"
+        },
+        {
+          "legId": "leg-7f8908a8a0da",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 355.81,
+          "routeMiles": 396.34,
+          "estimatedMinutes": 410,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 5034,
+          "reviewedAt": "2026-07-16T21:38:15.142Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "ow0j64",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-02-99-2020-02-99-086",
+    "label": "Miami February 2020",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-8a17c3b2b12c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-b638282290f6",
+        "legId": "leg-a95f16addf85",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-82390ee32d8f",
+        "legId": "leg-90e0218c5206",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
