@@ -8962,5 +8962,52 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "wgjb75",
+    "routeModelVersion": 2,
+    "year": 2025,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2025",
+    "displayEndDate": "",
+    "sortKey": "2025-05-99-2025-05-99-156",
+    "label": "Fort Lauderdale May 2025",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-141e64c10223",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-37281e3b9da2",
+        "legId": "leg-f9a06532bad4",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cf6b3b34189a",
+        "legId": "leg-42b4df5d2626",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
