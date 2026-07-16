@@ -7790,5 +7790,65 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "gcpsd4",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-12-99-2023-12-99-133",
+    "label": "Orlando + Atlanta + Fort Lauderdale December 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "orlando-fl",
+    "route": [
+      {
+        "pointId": "point-fe68f39a97a6",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-8db252f43dc2",
+        "legId": "leg-fa6f9f056339",
+        "locationId": "orlando-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9fb11d0fbcd6",
+        "legId": "leg-7321c12a5e80",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-7e1a23e40662",
+        "legId": "leg-7884039a898c",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cf4a993f67f5",
+        "legId": "leg-2c08ce8ed25b",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
