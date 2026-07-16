@@ -5025,5 +5025,52 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "806j4y",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-01-99-2020-01-99-084",
+    "label": "Kansas City January 2020",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "kansas-city-mo",
+    "route": [
+      {
+        "pointId": "point-ab8458cd35d6",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-5b8811fd19b9",
+        "legId": "leg-ca42cde590af",
+        "locationId": "kansas-city-mo",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-39e82646e0d2",
+        "legId": "leg-099eb5b56a97",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
