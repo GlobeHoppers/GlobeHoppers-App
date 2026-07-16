@@ -1351,5 +1351,53 @@
         }
       ]
     }
+  },
+  {
+    "id": "xxdzol",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-08-99-2015-08-99-020",
+    "label": "Knoxville August 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "knoxville-tn",
+    "route": [
+      {
+        "pointId": "point-ea5036609b29",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-67c8978cd0d2",
+        "legId": "leg-62281ce6f363",
+        "locationId": "knoxville-tn",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-52ea98fc03fd",
+        "legId": "leg-7915ac05204f",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
