@@ -5441,5 +5441,99 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "x9wz8q",
+    "routeModelVersion": 2,
+    "year": 2020,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2020",
+    "displayEndDate": "",
+    "sortKey": "2020-10-99-2020-10-99-091",
+    "label": "Cocoa + Fort Lauderdale + Cocoa October 2020",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-3ae54d7623c2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-08aa794adfd8",
+        "legId": "leg-2ec42172e48d",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-728702726972",
+        "legId": "leg-acc4c3630f52",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-065e10b843b1",
+        "legId": "leg-f26901e8d861",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-efcb97cb260b",
+        "legId": "leg-20c435dae421",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-acc4c3630f52\",\"mode\":\"drive\",\"from\":\"cocoa-fl@-80.74200@28.38612\",\"to\":\"fort-lauderdale-fl@-80.13730@26.12240\"},{\"id\":\"leg-f26901e8d861\",\"mode\":\"drive\",\"from\":\"fort-lauderdale-fl@-80.13730@26.12240\",\"to\":\"cocoa-fl@-80.74200@28.38612\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:41:53.176Z",
+      "legs": [
+        {
+          "legId": "leg-acc4c3630f52",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 160.76,
+          "routeMiles": 186.42,
+          "estimatedMinutes": 177,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2174,
+          "reviewedAt": "2026-07-16T21:41:53.175Z"
+        },
+        {
+          "legId": "leg-f26901e8d861",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 160.76,
+          "routeMiles": 186.42,
+          "estimatedMinutes": 177,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2174,
+          "reviewedAt": "2026-07-16T21:41:53.176Z"
+        }
+      ]
+    }
   }
 ]

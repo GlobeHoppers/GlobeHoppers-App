@@ -1007,5 +1007,18 @@
     "geonameId": 4568127,
     "population": 418140,
     "timezone": "America/Puerto_Rico"
+  },
+  {
+    "id": "cocoa-fl",
+    "name": "Cocoa",
+    "region": "FL",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 28.38612,
+    "lon": -80.742,
+    "geonameId": 4151440,
+    "population": 17140,
+    "timezone": "America/New_York"
   }
 ]
