@@ -6195,5 +6195,53 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "fq2qmy",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-03-99-2022-03-99-104",
+    "label": "Cocoa March 2022",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-a43aa44f5531",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-88094d6708a7",
+        "legId": "leg-12c6565c9d6d",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-6ffd7fd609aa",
+        "legId": "leg-cd13e9b400fa",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
