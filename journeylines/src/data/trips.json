@@ -7311,7 +7311,7 @@
     "routeReview": null
   },
   {
-    "id": "djt458",
+    "id": "n1nudd",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 5,
@@ -7322,6 +7322,53 @@
     "displayDate": "May 2023",
     "displayEndDate": "",
     "sortKey": "2023-05-99-2023-05-99-123",
+    "label": "Austin May 2023",
+    "travelers": [
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "austin-tx",
+    "route": [
+      {
+        "pointId": "point-e74cb0cbfee3",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-711ad5dac492",
+        "legId": "leg-6537548016e2",
+        "locationId": "austin-tx",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e6fc71a2ce2c",
+        "legId": "leg-31535064fdb7",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "djt458",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-05-99-2023-05-99-124",
     "label": "Denver May 2023",
     "travelers": [
       "joey"
