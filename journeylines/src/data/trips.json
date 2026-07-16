@@ -4354,5 +4354,53 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "365u0d",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-04-99-2019-04-99-072",
+    "label": "Chicago April 2019",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "chicago-il",
+    "route": [
+      {
+        "pointId": "point-ac9b067cfcfa",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-2ca6a1858e43",
+        "legId": "leg-107f4b843a2a",
+        "locationId": "chicago-il",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5e6db4c19f91",
+        "legId": "leg-54b5d17c336d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
