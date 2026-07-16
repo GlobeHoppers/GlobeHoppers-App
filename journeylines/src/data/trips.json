@@ -2374,8 +2374,7 @@
     "sortKey": "2017-03-99-2017-03-99-035",
     "label": "San Francisco March 2017",
     "travelers": [
-      "joey",
-      "bonnie"
+      "joey"
     ],
     "guestHoppers": [],
     "mode": "plane",
@@ -2490,5 +2489,148 @@
         }
       ]
     }
+  },
+  {
+    "id": "1axqcv",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-06-99-2017-06-99-037",
+    "label": "Knoxville June 2017",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "knoxville-tn",
+    "route": [
+      {
+        "pointId": "point-225b4aa259df",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-50eed55c1ad7",
+        "legId": "leg-de349ebad0a5",
+        "locationId": "knoxville-tn",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-95201b569894",
+        "legId": "leg-e0c2e1f21325",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "1sdhc6",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-06-99-2017-06-99-038",
+    "label": "Miami June 2017",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-ff211f7a0315",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a6a582f2212d",
+        "legId": "leg-ef82272f4793",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8747127d3899",
+        "legId": "leg-995cab414bfe",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "xk0o05",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-08-99-2017-08-99-039",
+    "label": "Washington DC August 2017",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-f9001de09644",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-0ccadc8010ef",
+        "legId": "leg-7918272a66d2",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-dc525d179252",
+        "legId": "leg-dcbbb82e1b4f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
