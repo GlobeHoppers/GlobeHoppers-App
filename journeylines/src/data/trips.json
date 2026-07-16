@@ -1507,5 +1507,53 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "e4eh0b",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-12-99-2015-12-99-023",
+    "label": "Atlanta December 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-3d6d66bee886",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-355016cc0e69",
+        "legId": "leg-822b75e16685",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-3a36b3cc1e53",
+        "legId": "leg-adcb360bd62d",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
