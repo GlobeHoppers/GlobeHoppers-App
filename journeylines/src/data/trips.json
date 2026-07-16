@@ -1,1 +1,482 @@
-[]
+[
+  {
+    "id": "k32oci",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 1,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "January 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-01-99-2012-01-99-001",
+    "label": "New Orleans January 2012",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "new-orleans-la",
+    "route": [
+      {
+        "pointId": "point-b38ff866dfc4",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e68896733f27",
+        "legId": "leg-6fa10e4b86c6",
+        "locationId": "new-orleans-la",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-3680def3dc09",
+        "legId": "leg-1adad6643aba",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "puogfw",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-04-99-2012-04-99-002",
+    "label": "Miami + Nassau + Miami April 2012",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-89203a835b3c",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ab414c6e5d27",
+        "legId": "leg-2b1ed3890a6f",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-0dcfe1610efb",
+        "legId": "leg-62f4c7e844c7",
+        "locationId": "nassau-23",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-58f9edb96f5d",
+        "legId": "leg-49e3bd85da54",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-43d9171357bd",
+        "legId": "leg-c8f9537960c9",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-2b1ed3890a6f\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-62f4c7e844c7\",\"mode\":\"boat\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"nassau-23@-77.34306@25.05823\"},{\"id\":\"leg-49e3bd85da54\",\"mode\":\"boat\",\"from\":\"nassau-23@-77.34306@25.05823\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-c8f9537960c9\",\"mode\":\"drive\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T18:54:21.518Z",
+      "legs": [
+        {
+          "legId": "leg-2b1ed3890a6f",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T18:54:21.516Z"
+        },
+        {
+          "legId": "leg-62f4c7e844c7",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T18:54:21.516Z"
+        },
+        {
+          "legId": "leg-49e3bd85da54",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T18:54:21.516Z"
+        },
+        {
+          "legId": "leg-c8f9537960c9",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T18:54:21.518Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "k3m37j",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-05-99-2012-05-99-003",
+    "label": "Atlanta + Louisville + Atlanta May 2012",
+    "travelers": [
+      "bonnie",
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-e6893bd6e657",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-04570bd704f9",
+        "legId": "leg-9971fcfac22e",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-2e1ff5ffc19a",
+        "legId": "leg-d4a8284c96bc",
+        "locationId": "louisville-ky-2",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-f5e9a327840c",
+        "legId": "leg-e3d5600689ba",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-248baca56748",
+        "legId": "leg-29e1e897353d",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-d4a8284c96bc\",\"mode\":\"drive\",\"from\":\"atlanta-ga@-84.38800@33.74900\",\"to\":\"louisville-ky-2@-85.75941@38.25424\"},{\"id\":\"leg-e3d5600689ba\",\"mode\":\"drive\",\"from\":\"louisville-ky-2@-85.75941@38.25424\",\"to\":\"atlanta-ga@-84.38800@33.74900\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T18:55:58.499Z",
+      "legs": [
+        {
+          "legId": "leg-d4a8284c96bc",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 320.57,
+          "routeMiles": 421.25,
+          "estimatedMinutes": 386,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 6096,
+          "reviewedAt": "2026-07-16T18:55:58.497Z"
+        },
+        {
+          "legId": "leg-e3d5600689ba",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 320.57,
+          "routeMiles": 421.25,
+          "estimatedMinutes": 386,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 6096,
+          "reviewedAt": "2026-07-16T18:55:58.499Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "5bsiu9",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-05-99-2012-05-99-004",
+    "label": "Key West May 2012",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "key-west-fl",
+    "route": [
+      {
+        "pointId": "point-55419e83f954",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4a2d0b6a60c5",
+        "legId": "leg-532ee19acb41",
+        "locationId": "key-west-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-075d00fa14f0",
+        "legId": "leg-ae845de431b8",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-532ee19acb41\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"key-west-fl@-81.78000@24.55510\"},{\"id\":\"leg-ae845de431b8\",\"mode\":\"drive\",\"from\":\"key-west-fl@-81.78000@24.55510\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T18:55:11.710Z",
+      "legs": [
+        {
+          "legId": "leg-532ee19acb41",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 254.36,
+          "routeMiles": 337.01,
+          "estimatedMinutes": 339,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 5078,
+          "reviewedAt": "2026-07-16T18:55:11.628Z"
+        },
+        {
+          "legId": "leg-ae845de431b8",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 254.36,
+          "routeMiles": 338.1,
+          "estimatedMinutes": 339,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 5053,
+          "reviewedAt": "2026-07-16T18:55:11.441Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "nb429o",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-06-99-2012-06-99-005",
+    "label": "Los Angeles June 2012",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "los-angeles-ca",
+    "route": [
+      {
+        "pointId": "point-275971d3bfc4",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-262c503ebd08",
+        "legId": "leg-c589d8b09818",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-84e656265756",
+        "legId": "leg-0e8a7a9d75d9",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "t0r0b4",
+    "routeModelVersion": 2,
+    "year": 2012,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2012",
+    "displayEndDate": "",
+    "sortKey": "2012-10-99-2012-10-99-006",
+    "label": "Deerfield Beach October 2012",
+    "travelers": [
+      "bonnie",
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "deerfield-beach-fl",
+    "route": [
+      {
+        "pointId": "point-a593bbd3d7e6",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-578ebc6423f8",
+        "legId": "leg-697d5b4073e8",
+        "locationId": "deerfield-beach-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-16654a0e803d",
+        "legId": "leg-00168f1c323f",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-697d5b4073e8\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"deerfield-beach-fl@-80.09977@26.31841\"},{\"id\":\"leg-00168f1c323f\",\"mode\":\"drive\",\"from\":\"deerfield-beach-fl@-80.09977@26.31841\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T18:57:15.761Z",
+      "legs": [
+        {
+          "legId": "leg-697d5b4073e8",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 125.9,
+          "routeMiles": 143.39,
+          "estimatedMinutes": 140,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1975,
+          "reviewedAt": "2026-07-16T18:57:15.749Z"
+        },
+        {
+          "legId": "leg-00168f1c323f",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 125.9,
+          "routeMiles": 142.89,
+          "estimatedMinutes": 139,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1971,
+          "reviewedAt": "2026-07-16T18:57:15.598Z"
+        }
+      ]
+    }
+  }
+]
