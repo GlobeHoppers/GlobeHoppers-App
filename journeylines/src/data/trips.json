@@ -5862,5 +5862,100 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "ruzime",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-08-99-2021-08-99-098",
+    "label": "San Francisco + Oakland + San Francisco August 2021",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-ca",
+    "route": [
+      {
+        "pointId": "point-0f1e2d1da14e",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-10539c17e9b6",
+        "legId": "leg-844683aee1fc",
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9716545a450b",
+        "legId": "leg-4a93c2d805fe",
+        "locationId": "oakland-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-ca4469b1b32b",
+        "legId": "leg-dde5f48b9239",
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-de84dd57b258",
+        "legId": "leg-12d55fb14d8a",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-4a93c2d805fe\",\"mode\":\"drive\",\"from\":\"san-francisco-ca@-122.41940@37.77490\",\"to\":\"oakland-ca@-122.27120@37.80440\"},{\"id\":\"leg-dde5f48b9239\",\"mode\":\"drive\",\"from\":\"oakland-ca@-122.27120@37.80440\",\"to\":\"san-francisco-ca@-122.41940@37.77490\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T22:42:16.033Z",
+      "legs": [
+        {
+          "legId": "leg-4a93c2d805fe",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 8.34,
+          "routeMiles": 12.6,
+          "estimatedMinutes": 16,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 618,
+          "reviewedAt": "2026-07-16T22:42:16.033Z"
+        },
+        {
+          "legId": "leg-dde5f48b9239",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 8.34,
+          "routeMiles": 12.6,
+          "estimatedMinutes": 16,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 618,
+          "reviewedAt": "2026-07-16T22:42:16.033Z"
+        }
+      ]
+    }
   }
 ]
