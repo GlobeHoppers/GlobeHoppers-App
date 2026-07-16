@@ -1885,6 +1885,145 @@
     "routeReview": null
   },
   {
+    "id": "sad8hg",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-09-99-2016-09-99-028",
+    "label": "Miami + Nassau + Miami September 2016",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-ed5f949e5f1d",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-054470d9f285",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-662597e9b384",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-9b44190a7a86",
+        "legId": "leg-a5034b798f47",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-45226b11e0e7",
+        "legId": "leg-e233fecee72b",
+        "locationId": "nassau-23",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-97971b19b393",
+        "legId": "leg-ab081c910ae0",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-1a32ad6e0ec2",
+        "legId": "leg-66d9432c3734",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-a5034b798f47\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-e233fecee72b\",\"mode\":\"boat\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"nassau-23@-77.34306@25.05823\"},{\"id\":\"leg-ab081c910ae0\",\"mode\":\"boat\",\"from\":\"nassau-23@-77.34306@25.05823\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-66d9432c3734\",\"mode\":\"drive\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:21:16.729Z",
+      "legs": [
+        {
+          "legId": "leg-a5034b798f47",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:21:16.728Z"
+        },
+        {
+          "legId": "leg-e233fecee72b",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T19:21:16.728Z"
+        },
+        {
+          "legId": "leg-ab081c910ae0",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 184.31,
+          "routeMiles": 193.99,
+          "estimatedMinutes": 578,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 3,
+          "reviewedAt": "2026-07-16T19:21:16.728Z"
+        },
+        {
+          "legId": "leg-66d9432c3734",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:21:16.729Z"
+        }
+      ]
+    }
+  },
+  {
     "id": "8r98ei",
     "routeModelVersion": 2,
     "year": 2026,
@@ -1895,7 +2034,7 @@
     "endDay": null,
     "displayDate": "September 2026",
     "displayEndDate": "",
-    "sortKey": "2026-09-99-2026-09-99-028",
+    "sortKey": "2026-09-99-2026-09-99-029",
     "label": "Miami September 2026",
     "travelers": [
       "joey",
