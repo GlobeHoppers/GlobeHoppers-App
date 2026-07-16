@@ -1096,5 +1096,18 @@
     "geonameId": 5393180,
     "population": 99553,
     "timezone": "America/Los_Angeles"
+  },
+  {
+    "id": "indianapolis-in-2",
+    "name": "Indianapolis",
+    "region": "IN",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 39.76838,
+    "lon": -86.15804,
+    "geonameId": 4259418,
+    "population": 829718,
+    "timezone": "America/Indiana/Indianapolis"
   }
 ]
