@@ -1255,5 +1255,101 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "s2dojb",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-05-99-2015-05-99-019",
+    "label": "Augusta May 2015",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-a5911f9694f0",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-eb43402cc282",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "augusta-ga",
+    "route": [
+      {
+        "pointId": "point-58d1c7a6093d",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-d2cc704a6f36",
+        "legId": "leg-b2ca7c811a35",
+        "locationId": "augusta-ga",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-ede9d5188dcc",
+        "legId": "leg-02428cc2a728",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-b2ca7c811a35\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"augusta-ga@-82.01050@33.47350\"},{\"id\":\"leg-02428cc2a728\",\"mode\":\"drive\",\"from\":\"augusta-ga@-82.01050@33.47350\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:10:41.859Z",
+      "legs": [
+        {
+          "legId": "leg-b2ca7c811a35",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 381.58,
+          "routeMiles": 433.28,
+          "estimatedMinutes": 409,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 3923,
+          "reviewedAt": "2026-07-16T19:10:41.435Z"
+        },
+        {
+          "legId": "leg-02428cc2a728",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 381.58,
+          "routeMiles": 435.34,
+          "estimatedMinutes": 410,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 3721,
+          "reviewedAt": "2026-07-16T19:10:41.411Z"
+        }
+      ]
+    }
   }
 ]
