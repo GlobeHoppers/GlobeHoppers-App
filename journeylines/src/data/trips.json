@@ -6099,5 +6099,101 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "1jcz56",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-12-99-2021-12-99-102",
+    "label": "Fort Lauderdale December 2021",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-b3ab72712634",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-5f6781d77947",
+        "legId": "leg-db24e3c547ed",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-71511bd7923c",
+        "legId": "leg-9034c87a7b8f",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "srrcs3",
+    "routeModelVersion": 2,
+    "year": 2021,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2021",
+    "displayEndDate": "",
+    "sortKey": "2021-12-99-2021-12-99-103",
+    "label": "Las Vegas December 2021",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-d3a57a41ec7c",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ee77f5928d00",
+        "legId": "leg-2d6cdd0bae1b",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8999418497cc",
+        "legId": "leg-b57a5f89c7e0",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
