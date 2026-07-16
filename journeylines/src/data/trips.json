@@ -739,5 +739,100 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "1edy6t",
+    "routeModelVersion": 2,
+    "year": 2013,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2013",
+    "displayEndDate": "",
+    "sortKey": "2013-10-99-2013-10-99-010",
+    "label": "Las Vegas October 2013",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-674c825ff45f",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-881b5e6545de",
+        "legId": "leg-d4b4138fdb88",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-79cb1f3fb0d5",
+        "legId": "leg-4c95ca5de001",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "sn2fmo",
+    "routeModelVersion": 2,
+    "year": 2014,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2014",
+    "displayEndDate": "",
+    "sortKey": "2014-04-99-2014-04-99-011",
+    "label": "New York April 2014",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "new-york-ny",
+    "route": [
+      {
+        "pointId": "point-685485bb2615",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f29c33f547f5",
+        "legId": "leg-328781e5f8aa",
+        "locationId": "new-york-ny",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-eecf256b0599",
+        "legId": "leg-f4a32c94af3b",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
