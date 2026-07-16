@@ -7403,5 +7403,101 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "926ao0",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-05-99-2023-05-99-125",
+    "label": "Miami May 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-12d2bd1ea8c0",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-eee5f190af4d",
+        "legId": "leg-395ebf1809a3",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-1327ab72ad55",
+        "legId": "leg-d10a717c37ae",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "c46wk2",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-06-99-2023-06-99-126",
+    "label": "Tampa June 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "tampa-fl",
+    "route": [
+      {
+        "pointId": "point-f062da9d431c",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-3271c4d5c2ee",
+        "legId": "leg-4d519c7d1a5a",
+        "locationId": "tampa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-bc5934e96157",
+        "legId": "leg-6d5fe0c90343",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
