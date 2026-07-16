@@ -4449,5 +4449,52 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "q8ievm",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 6,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "June 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-06-99-2019-06-99-074",
+    "label": "Baltimore June 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "baltimore-md",
+    "route": [
+      {
+        "pointId": "point-1a834ff9d227",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-25b1836f4ed5",
+        "legId": "leg-92321348b963",
+        "locationId": "baltimore-md",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-a3064a100c41",
+        "legId": "leg-b3198d1b16c5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
