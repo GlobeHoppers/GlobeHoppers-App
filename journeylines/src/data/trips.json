@@ -8182,5 +8182,101 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "bae65j",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-08-99-2024-08-99-141",
+    "label": "Toronto August 2024",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "toronto-ca",
+    "route": [
+      {
+        "pointId": "point-10081aa47c90",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-610c4c26e201",
+        "legId": "leg-b0110bd55242",
+        "locationId": "toronto-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-a2555aac330a",
+        "legId": "leg-674cf66dda79",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "ru9v7o",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-08-99-2024-08-99-142",
+    "label": "West Palm Beach August 2024",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "west-palm-beach-fl",
+    "route": [
+      {
+        "pointId": "point-a7e879da0932",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4b884dfcf363",
+        "legId": "leg-051bb7483da2",
+        "locationId": "west-palm-beach-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-d1907b387a7a",
+        "legId": "leg-cb2148f8f90c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
