@@ -1788,5 +1788,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "qp0fkg",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-08-99-2016-08-99-026",
+    "label": "San Diego August 2016",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-diego-ca",
+    "route": [
+      {
+        "pointId": "point-8f818521080d",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-7dd669f40d13",
+        "legId": "leg-6882beba63b7",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-c50e191487af",
+        "legId": "leg-a267ed482154",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]

@@ -1,6 +1,6 @@
 {
   "version": "7.1",
-  "updatedAt": "2026-07-16T19:18:54.829Z",
+  "updatedAt": "2026-07-16T19:19:18.243Z",
   "source": "globe-hoppers-website",
   "cacheVersion": "multimodal-v7.1",
   "routingVersion": "multimodal-v7.1",
@@ -55,7 +55,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.815Z"
+      "updatedAt": "2026-07-16T19:19:18.233Z"
     },
     "k32oci::leg-1adad6643aba": {
       "id": "k32oci::leg-1adad6643aba",
@@ -106,7 +106,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.815Z"
+      "updatedAt": "2026-07-16T19:19:18.233Z"
     },
     "puogfw::leg-2b1ed3890a6f": {
       "id": "puogfw::leg-2b1ed3890a6f",
@@ -7702,27 +7702,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747512,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.817Z"
+      "updatedAt": "2026-07-16T19:19:18.234Z"
     },
     "puogfw::leg-62f4c7e844c7": {
       "id": "puogfw::leg-62f4c7e844c7",
@@ -7770,29 +7757,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 3,
-      "routeMiles": 193.9925859656929,
-      "estimatedMinutes": 578,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 193.9925859656929,
-        "directMiles": 184.30732789998254,
-        "startEndpointGapMiles": 32.60589555694346,
-        "endEndpointGapMiles": 6.562126865698907,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.817Z"
+      "updatedAt": "2026-07-16T19:19:18.234Z"
     },
     "puogfw::leg-49e3bd85da54": {
       "id": "puogfw::leg-49e3bd85da54",
@@ -7840,29 +7812,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 3,
-      "routeMiles": 193.9925859656929,
-      "estimatedMinutes": 578,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 193.9925859656929,
-        "directMiles": 184.30732789998254,
-        "startEndpointGapMiles": 32.60589555694346,
-        "endEndpointGapMiles": 6.562126865698907,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.817Z"
+      "updatedAt": "2026-07-16T19:19:18.234Z"
     },
     "puogfw::leg-c8f9537960c9": {
       "id": "puogfw::leg-c8f9537960c9",
@@ -15458,27 +15415,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747515,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.817Z"
+      "updatedAt": "2026-07-16T19:19:18.234Z"
     },
     "k3m37j::leg-9971fcfac22e": {
       "id": "k3m37j::leg-9971fcfac22e",
@@ -15529,7 +15473,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.817Z"
+      "updatedAt": "2026-07-16T19:19:18.235Z"
     },
     "k3m37j::leg-d4a8284c96bc": {
       "id": "k3m37j::leg-d4a8284c96bc",
@@ -39685,27 +39629,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 6030,
-      "routeMiles": 419.95852031354923,
-      "estimatedMinutes": 384,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 420.4256,
-        "valhallaDurationSeconds": 23036.005,
-        "startEndpointGapMiles": 0.009699300452573636,
-        "endEndpointGapMiles": 0.029934162327947864,
-        "maxEndpointGapMiles": 0.029934162327947864,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.818Z"
+      "updatedAt": "2026-07-16T19:19:18.236Z"
     },
     "k3m37j::leg-e3d5600689ba": {
       "id": "k3m37j::leg-e3d5600689ba",
@@ -63861,27 +63792,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 6030,
-      "routeMiles": 419.95852031354895,
-      "estimatedMinutes": 384,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 420.4256,
-        "valhallaDurationSeconds": 23036.005,
-        "startEndpointGapMiles": 0.009699300452573636,
-        "endEndpointGapMiles": 0.029934162327947864,
-        "maxEndpointGapMiles": 0.029934162327947864,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.819Z"
+      "updatedAt": "2026-07-16T19:19:18.237Z"
     },
     "k3m37j::leg-29e1e897353d": {
       "id": "k3m37j::leg-29e1e897353d",
@@ -63932,7 +63850,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.820Z"
+      "updatedAt": "2026-07-16T19:19:18.237Z"
     },
     "5bsiu9::leg-532ee19acb41": {
       "id": "5bsiu9::leg-532ee19acb41",
@@ -84280,27 +84198,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 5078,
-      "routeMiles": 337.01251723980636,
-      "estimatedMinutes": 339,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 337.3871,
-        "valhallaDurationSeconds": 20352.748,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0013359185090460175,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.821Z"
+      "updatedAt": "2026-07-16T19:19:18.237Z"
     },
     "5bsiu9::leg-ae845de431b8": {
       "id": "5bsiu9::leg-ae845de431b8",
@@ -104648,27 +104553,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 5078,
-      "routeMiles": 337.01251723980585,
-      "estimatedMinutes": 339,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 337.3871,
-        "valhallaDurationSeconds": 20352.748,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0013359185090460175,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.822Z"
+      "updatedAt": "2026-07-16T19:19:18.238Z"
     },
     "nb429o::leg-c589d8b09818": {
       "id": "nb429o::leg-c589d8b09818",
@@ -104719,7 +104611,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.822Z"
+      "updatedAt": "2026-07-16T19:19:18.238Z"
     },
     "nb429o::leg-0e8a7a9d75d9": {
       "id": "nb429o::leg-0e8a7a9d75d9",
@@ -104770,7 +104662,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.822Z"
+      "updatedAt": "2026-07-16T19:19:18.238Z"
     },
     "t0r0b4::leg-697d5b4073e8": {
       "id": "t0r0b4::leg-697d5b4073e8",
@@ -112706,27 +112598,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1975,
-      "routeMiles": 143.3924398587609,
-      "estimatedMinutes": 140,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 143.558,
-        "valhallaDurationSeconds": 8377.112,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0027886052230836895,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.823Z"
+      "updatedAt": "2026-07-16T19:19:18.238Z"
     },
     "t0r0b4::leg-00168f1c323f": {
       "id": "t0r0b4::leg-00168f1c323f",
@@ -120662,27 +120541,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1975,
-      "routeMiles": 143.39243985876038,
-      "estimatedMinutes": 140,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 143.558,
-        "valhallaDurationSeconds": 8377.112,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0027886052230836895,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.823Z"
+      "updatedAt": "2026-07-16T19:19:18.238Z"
     },
     "rjylx5::leg-fe4ce5553c03": {
       "id": "rjylx5::leg-fe4ce5553c03",
@@ -128278,27 +128144,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747512,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.824Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "rjylx5::leg-f29798431ba2": {
       "id": "rjylx5::leg-f29798431ba2",
@@ -128346,29 +128199,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 3,
-      "routeMiles": 193.9925859656929,
-      "estimatedMinutes": 578,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 193.9925859656929,
-        "directMiles": 184.30732789998254,
-        "startEndpointGapMiles": 32.60589555694346,
-        "endEndpointGapMiles": 6.562126865698907,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.824Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "rjylx5::leg-41937fd8a9e0": {
       "id": "rjylx5::leg-41937fd8a9e0",
@@ -128416,29 +128254,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 3,
-      "routeMiles": 193.9925859656929,
-      "estimatedMinutes": 578,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 193.9925859656929,
-        "directMiles": 184.30732789998254,
-        "startEndpointGapMiles": 32.60589555694346,
-        "endEndpointGapMiles": 6.562126865698907,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.824Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "rjylx5::leg-b79d0cb61874": {
       "id": "rjylx5::leg-b79d0cb61874",
@@ -136034,27 +135857,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747515,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "a9rk7t::leg-6970094c8ca1": {
       "id": "a9rk7t::leg-6970094c8ca1",
@@ -136182,29 +135992,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 23,
-      "routeMiles": 407.7774611846547,
-      "estimatedMinutes": 1189,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 407.7774611846546,
-        "directMiles": 290.4920142256827,
-        "startEndpointGapMiles": 6.562126865698907,
-        "endEndpointGapMiles": 11.361422976144883,
-        "maxEndpointGapMiles": 11.361422976144883,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "a9rk7t::leg-e053f7d2342f": {
       "id": "a9rk7t::leg-e053f7d2342f",
@@ -136332,29 +136127,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 23,
-      "routeMiles": 407.7774611846546,
-      "estimatedMinutes": 1189,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 407.7774611846546,
-        "directMiles": 290.4920142256827,
-        "startEndpointGapMiles": 6.562126865698907,
-        "endEndpointGapMiles": 11.361422976144883,
-        "maxEndpointGapMiles": 11.361422976144883,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "8pe4wt::leg-0d33496aa42c": {
       "id": "8pe4wt::leg-0d33496aa42c",
@@ -136405,7 +136185,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "8pe4wt::leg-d3e4d87a719a": {
       "id": "8pe4wt::leg-d3e4d87a719a",
@@ -136456,7 +136236,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "1edy6t::leg-d4b4138fdb88": {
       "id": "1edy6t::leg-d4b4138fdb88",
@@ -136507,7 +136287,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "1edy6t::leg-4c95ca5de001": {
       "id": "1edy6t::leg-4c95ca5de001",
@@ -136558,7 +136338,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "sn2fmo::leg-328781e5f8aa": {
       "id": "sn2fmo::leg-328781e5f8aa",
@@ -136609,7 +136389,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "sn2fmo::leg-f4a32c94af3b": {
       "id": "sn2fmo::leg-f4a32c94af3b",
@@ -136660,7 +136440,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.825Z"
+      "updatedAt": "2026-07-16T19:19:18.239Z"
     },
     "dcr014::leg-1fcdcdd87209": {
       "id": "dcr014::leg-1fcdcdd87209",
@@ -153904,27 +153684,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 4302,
-      "routeMiles": 482.4125548871842,
-      "estimatedMinutes": 444,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 482.9516,
-        "valhallaDurationSeconds": 26657.367,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.01038867740362786,
-        "maxEndpointGapMiles": 0.01038867740362786,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.826Z"
+      "updatedAt": "2026-07-16T19:19:18.240Z"
     },
     "dcr014::leg-b9cdf720d196": {
       "id": "dcr014::leg-b9cdf720d196",
@@ -171168,27 +170935,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 4302,
-      "routeMiles": 482.41255488718446,
-      "estimatedMinutes": 444,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 482.9516,
-        "valhallaDurationSeconds": 26657.367,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.01038867740362786,
-        "maxEndpointGapMiles": 0.01038867740362786,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "id170w::leg-ae5d028cc0ef": {
       "id": "id170w::leg-ae5d028cc0ef",
@@ -171239,7 +170993,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "id170w::leg-ae3655ef6a1a": {
       "id": "id170w::leg-ae3655ef6a1a",
@@ -171290,7 +171044,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "hnym39::leg-f9eca83c04a3": {
       "id": "hnym39::leg-f9eca83c04a3",
@@ -171418,29 +171172,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 23,
-      "routeMiles": 407.7774611846547,
-      "estimatedMinutes": 1189,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 407.7774611846546,
-        "directMiles": 290.4920142256827,
-        "startEndpointGapMiles": 6.562126865698907,
-        "endEndpointGapMiles": 11.361422976144883,
-        "maxEndpointGapMiles": 11.361422976144883,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "hnym39::leg-6cdbff04f7c5": {
       "id": "hnym39::leg-6cdbff04f7c5",
@@ -171568,29 +171307,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 23,
-      "routeMiles": 407.7774611846546,
-      "estimatedMinutes": 1189,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 407.7774611846546,
-        "directMiles": 290.4920142256827,
-        "startEndpointGapMiles": 6.562126865698907,
-        "endEndpointGapMiles": 11.361422976144883,
-        "maxEndpointGapMiles": 11.361422976144883,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "qp3jg5::leg-0f8712b4502f": {
       "id": "qp3jg5::leg-0f8712b4502f",
@@ -171641,7 +171365,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "qp3jg5::leg-227b9fcc61c1": {
       "id": "qp3jg5::leg-227b9fcc61c1",
@@ -171692,7 +171416,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "n4cu5t::leg-bcb9ce4e2b89": {
       "id": "n4cu5t::leg-bcb9ce4e2b89",
@@ -171743,7 +171467,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "n4cu5t::leg-e378af3650c8": {
       "id": "n4cu5t::leg-e378af3650c8",
@@ -171794,7 +171518,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "em923q::leg-6488bccf3420": {
       "id": "em923q::leg-6488bccf3420",
@@ -171845,7 +171569,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "em923q::leg-9aea7ccb2aa2": {
       "id": "em923q::leg-9aea7ccb2aa2",
@@ -171896,7 +171620,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "n9p3l2::leg-ba723423adea": {
       "id": "n9p3l2::leg-ba723423adea",
@@ -171915,7 +171639,7 @@
       "routeStackOffset": 0,
       "routeStackBaseOffset": 0,
       "routeStackDirectionSign": 1,
-      "routeStackCount": 1,
+      "routeStackCount": 2,
       "routeStackIndex": 0,
       "coordinates": {
         "from": [
@@ -171947,7 +171671,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "n9p3l2::leg-11201223b5fb": {
       "id": "n9p3l2::leg-11201223b5fb",
@@ -171966,7 +171690,7 @@
       "routeStackOffset": 0,
       "routeStackBaseOffset": 0,
       "routeStackDirectionSign": -1,
-      "routeStackCount": 1,
+      "routeStackCount": 2,
       "routeStackIndex": 0,
       "coordinates": {
         "from": [
@@ -171998,7 +171722,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.827Z"
+      "updatedAt": "2026-07-16T19:19:18.241Z"
     },
     "s2dojb::leg-b2ca7c811a35": {
       "id": "s2dojb::leg-b2ca7c811a35",
@@ -187726,27 +187450,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 3923,
-      "routeMiles": 433.28476417287953,
-      "estimatedMinutes": 409,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 433.764,
-        "valhallaDurationSeconds": 24536.048,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0029524832403081485,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "s2dojb::leg-02428cc2a728": {
       "id": "s2dojb::leg-02428cc2a728",
@@ -203474,27 +203185,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 3923,
-      "routeMiles": 433.28476417287914,
-      "estimatedMinutes": 409,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 433.764,
-        "valhallaDurationSeconds": 24536.048,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.0029524832403081485,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "xxdzol::leg-62281ce6f363": {
       "id": "xxdzol::leg-62281ce6f363",
@@ -203545,7 +203243,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "xxdzol::leg-7915ac05204f": {
       "id": "xxdzol::leg-7915ac05204f",
@@ -203596,7 +203294,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "jo2l8f::leg-9da8d613685f": {
       "id": "jo2l8f::leg-9da8d613685f",
@@ -203647,7 +203345,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "jo2l8f::leg-d2f03b0f9984": {
       "id": "jo2l8f::leg-d2f03b0f9984",
@@ -203698,7 +203396,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "k0n2cz::leg-a9872c9b590f": {
       "id": "k0n2cz::leg-a9872c9b590f",
@@ -203749,7 +203447,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "k0n2cz::leg-a63e98993193": {
       "id": "k0n2cz::leg-a63e98993193",
@@ -203800,7 +203498,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "e4eh0b::leg-822b75e16685": {
       "id": "e4eh0b::leg-822b75e16685",
@@ -203851,7 +203549,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "e4eh0b::leg-adcb360bd62d": {
       "id": "e4eh0b::leg-adcb360bd62d",
@@ -203902,7 +203600,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.828Z"
+      "updatedAt": "2026-07-16T19:19:18.242Z"
     },
     "w6iwwu::leg-7e1df8e6cd9b": {
       "id": "w6iwwu::leg-7e1df8e6cd9b",
@@ -211498,27 +211196,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747512,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "w6iwwu::leg-6e0a1d8b7687": {
       "id": "w6iwwu::leg-6e0a1d8b7687",
@@ -211750,29 +211435,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 49,
-      "routeMiles": 808.3725250862724,
-      "estimatedMinutes": 2334,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 808.3725250862724,
-        "directMiles": 578.9496090531744,
-        "startEndpointGapMiles": 32.60589555694346,
-        "endEndpointGapMiles": 10.119707643705203,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "w6iwwu::leg-923704f33e8d": {
       "id": "w6iwwu::leg-923704f33e8d",
@@ -212316,31 +211986,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 127,
-      "routeMiles": 1494.2944324825805,
-      "estimatedMinutes": 4293,
-      "routeConfidence": "medium",
-      "routeWarnings": [
-        "Generated route is unusually indirect. GlobeHoppers saved it as approximate; add a waypoint if you want to reshape it."
-      ],
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
+      "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 1494.2944324825805,
-        "directMiles": 312.83963138553986,
-        "startEndpointGapMiles": 10.119707643705203,
-        "endEndpointGapMiles": 11.776056169093307,
-        "maxEndpointGapMiles": 11.776056169093307,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "w6iwwu::leg-6cd6b402fc2d": {
       "id": "w6iwwu::leg-6cd6b402fc2d",
@@ -212716,29 +212369,14 @@
       "geometrySource": "natural-earth-water-graph",
       "geometryDetail": "water-graph",
       "geometryPointCount": 85,
-      "routeMiles": 912.9506349548755,
-      "estimatedMinutes": 2632,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "routeMiles": 912.9506349548755,
-        "directMiles": 453.6986693767634,
-        "startEndpointGapMiles": 11.776056169093307,
-        "endEndpointGapMiles": 32.60589555694346,
-        "maxEndpointGapMiles": 32.60589555694346,
-        "landCrossings": 0,
-        "surfaceWaterRatio": 0,
-        "stationaryFallback": false,
-        "networkStartGapMiles": 0,
-        "networkEndGapMiles": 0,
-        "graphVisited": 0,
-        "usedFallback": false,
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "w6iwwu::leg-a526df33d787": {
       "id": "w6iwwu::leg-a526df33d787",
@@ -220334,27 +219972,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 1890,
-      "routeMiles": 177.90916659747515,
-      "estimatedMinutes": 172,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 178.1088,
-        "valhallaDurationSeconds": 10326.13,
-        "startEndpointGapMiles": 0.0009673078658099078,
-        "endEndpointGapMiles": 0.005427063697467474,
-        "maxEndpointGapMiles": 0.005427063697467474,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": true,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "01qq92::leg-1df9717e6509": {
       "id": "01qq92::leg-1df9717e6509",
@@ -228994,27 +228619,14 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 2151,
-      "routeMiles": 246.56346608669685,
-      "estimatedMinutes": 232,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 246.8389,
-        "valhallaDurationSeconds": 13908.71,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.12710180263187557,
-        "maxEndpointGapMiles": 0.12710180263187557,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": true
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     },
     "01qq92::leg-9460c4cd5a57": {
       "id": "01qq92::leg-9460c4cd5a57",
@@ -237654,27 +237266,116 @@
       "geometrySource": "valhalla-osm",
       "geometryDetail": "valhalla:https://valhalla1.openstreetmap.de",
       "geometryPointCount": 2151,
-      "routeMiles": 246.5634660866977,
-      "estimatedMinutes": 232,
-      "routeConfidence": "high",
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
       "routeWarnings": [],
       "routeErrors": [],
-      "routeValidation": {
-        "valhallaDistanceMiles": 246.8389,
-        "valhallaDurationSeconds": 13908.71,
-        "startEndpointGapMiles": 0.005427063697467474,
-        "endEndpointGapMiles": 0.12710180263187557,
-        "maxEndpointGapMiles": 0.12710180263187557,
-        "hasFerry": false,
-        "hasHighway": true,
-        "hasToll": false,
-        "valhallaWarnings": [],
-        "valhallaEndpoint": "https://valhalla1.openstreetmap.de",
-        "canonicalBidirectionalRoute": true,
-        "reversedRouteReuse": false
-      },
+      "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:18:54.829Z"
+      "updatedAt": "2026-07-16T19:19:18.243Z"
+    },
+    "qp0fkg::leg-6882beba63b7": {
+      "id": "qp0fkg::leg-6882beba63b7",
+      "tripId": "qp0fkg",
+      "legId": "leg-6882beba63b7",
+      "legIndex": 0,
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "san-diego-ca",
+      "fromName": "Melbourne",
+      "toName": "San Diego",
+      "mode": "plane",
+      "miles": 2190.911511151654,
+      "routeCacheKey": "multimodal-v7.1:leg-6882beba63b7:melbourne-fl@-80.60810,28.08360->san-diego-ca@-117.16110,32.71570:plane",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-6882beba63b7-reverse:san-diego-ca@-117.16110,32.71570->melbourne-fl@-80.60810,28.08360:plane",
+      "endpointPairKey": "melbourne-fl↔san-diego-ca",
+      "routeStackOffset": -3.1,
+      "routeStackBaseOffset": -3.1,
+      "routeStackDirectionSign": 1,
+      "routeStackCount": 2,
+      "routeStackIndex": 1,
+      "coordinates": {
+        "from": [
+          -80.6081,
+          28.0836
+        ],
+        "to": [
+          -117.1611,
+          32.7157
+        ]
+      },
+      "geometry": [
+        [
+          -80.6081,
+          28.0836
+        ],
+        [
+          -117.1611,
+          32.7157
+        ]
+      ],
+      "geometrySource": "simpleFallback",
+      "geometryDetail": "straight-line",
+      "geometryPointCount": 2,
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": null,
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:19:18.243Z"
+    },
+    "qp0fkg::leg-a267ed482154": {
+      "id": "qp0fkg::leg-a267ed482154",
+      "tripId": "qp0fkg",
+      "legId": "leg-a267ed482154",
+      "legIndex": 1,
+      "fromLocationId": "san-diego-ca",
+      "toLocationId": "melbourne-fl",
+      "fromName": "San Diego",
+      "toName": "Melbourne",
+      "mode": "plane",
+      "miles": 2190.911511151654,
+      "routeCacheKey": "multimodal-v7.1:leg-a267ed482154:san-diego-ca@-117.16110,32.71570->melbourne-fl@-80.60810,28.08360:plane",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-a267ed482154-reverse:melbourne-fl@-80.60810,28.08360->san-diego-ca@-117.16110,32.71570:plane",
+      "endpointPairKey": "melbourne-fl↔san-diego-ca",
+      "routeStackOffset": 3.1,
+      "routeStackBaseOffset": -3.1,
+      "routeStackDirectionSign": -1,
+      "routeStackCount": 2,
+      "routeStackIndex": 1,
+      "coordinates": {
+        "from": [
+          -117.1611,
+          32.7157
+        ],
+        "to": [
+          -80.6081,
+          28.0836
+        ]
+      },
+      "geometry": [
+        [
+          -117.1611,
+          32.7157
+        ],
+        [
+          -80.6081,
+          28.0836
+        ]
+      ],
+      "geometrySource": "simpleFallback",
+      "geometryDetail": "straight-line",
+      "geometryPointCount": 2,
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": null,
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:19:18.243Z"
     }
   }
 }
