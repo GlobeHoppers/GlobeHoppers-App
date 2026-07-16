@@ -1555,5 +1555,155 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "w6iwwu",
+    "routeModelVersion": 2,
+    "year": 2016,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2016",
+    "displayEndDate": "",
+    "sortKey": "2016-02-99-2016-02-99-024",
+    "label": "Miami + Kingston + Cayman Islands + Miami February 2016",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-513c355a6ca3",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e23100c2628c",
+        "legId": "leg-7e1df8e6cd9b",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-0a09b6f18c96",
+        "legId": "leg-6e0a1d8b7687",
+        "locationId": "kingston-17",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-11238d931dcc",
+        "legId": "leg-923704f33e8d",
+        "locationId": "george-town-ky",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-c530da2c9c7a",
+        "legId": "leg-6cd6b402fc2d",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "boat"
+      },
+      {
+        "pointId": "point-5dbc0e80de4a",
+        "legId": "leg-a526df33d787",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-7e1df8e6cd9b\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-6e0a1d8b7687\",\"mode\":\"boat\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"kingston-17@-76.79358@17.99702\"},{\"id\":\"leg-923704f33e8d\",\"mode\":\"boat\",\"from\":\"kingston-17@-76.79358@17.99702\",\"to\":\"george-town-ky@-81.37440@19.28660\"},{\"id\":\"leg-6cd6b402fc2d\",\"mode\":\"boat\",\"from\":\"george-town-ky@-81.37440@19.28660\",\"to\":\"miami-fl@-80.19180@25.76170\"},{\"id\":\"leg-a526df33d787\",\"mode\":\"drive\",\"from\":\"miami-fl@-80.19180@25.76170\",\"to\":\"melbourne-fl@-80.60810@28.08360\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T19:16:28.578Z",
+      "legs": [
+        {
+          "legId": "leg-7e1df8e6cd9b",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:16:21.561Z"
+        },
+        {
+          "legId": "leg-6e0a1d8b7687",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 578.95,
+          "routeMiles": 808.37,
+          "estimatedMinutes": 2334,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 49,
+          "reviewedAt": "2026-07-16T19:16:21.561Z"
+        },
+        {
+          "legId": "leg-923704f33e8d",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 312.84,
+          "routeMiles": 1494.29,
+          "estimatedMinutes": 4293,
+          "confidence": "medium",
+          "warnings": [
+            "Generated route is unusually indirect. GlobeHoppers saved it as approximate; add a waypoint if you want to reshape it.",
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 127,
+          "reviewedAt": "2026-07-16T19:16:21.563Z"
+        },
+        {
+          "legId": "leg-6cd6b402fc2d",
+          "mode": "boat",
+          "source": "natural-earth-water-graph",
+          "provider": "GlobeHoppers multimodal worker",
+          "directMiles": 453.7,
+          "routeMiles": 912.95,
+          "estimatedMinutes": 2632,
+          "confidence": "medium",
+          "warnings": [
+            "This water leg uses city coordinates. Choose saved port or marina locations for more precise dock-to-dock routing."
+          ],
+          "errors": [],
+          "geometryPointCount": 85,
+          "reviewedAt": "2026-07-16T19:16:28.578Z"
+        },
+        {
+          "legId": "leg-a526df33d787",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 162.46,
+          "routeMiles": 177.91,
+          "estimatedMinutes": 172,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 1890,
+          "reviewedAt": "2026-07-16T19:16:21.564Z"
+        }
+      ]
+    }
   }
 ]

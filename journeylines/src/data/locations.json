@@ -864,5 +864,18 @@
     "geonameId": 5359777,
     "population": 212375,
     "timezone": "America/Los_Angeles"
+  },
+  {
+    "id": "kingston-17",
+    "name": "Kingston",
+    "region": "17",
+    "country": "Jamaica",
+    "countryCode": "JM",
+    "continent": "",
+    "lat": 17.99702,
+    "lon": -76.79358,
+    "geonameId": 3489854,
+    "population": 937700,
+    "timezone": "America/Jamaica"
   }
 ]
