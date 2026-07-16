@@ -4206,5 +4206,106 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "odhtd6",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-02-99-2019-02-99-069",
+    "label": "Miami February 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-13728c2275a0",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ff3bc718da98",
+        "legId": "leg-6294cbe17448",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e2b7223f6797",
+        "legId": "leg-2d2e7794dc87",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "ka4l3y",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-03-99-2019-03-99-070",
+    "label": "Honolulu March 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-9e0d3c9ea998",
+        "name": "D.C.",
+        "colorName": "cyan",
+        "color": "#00e5ff"
+      }
+    ],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "honolulu-hi",
+    "route": [
+      {
+        "pointId": "point-0d484cf2fd6f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-5ef446703a07",
+        "legId": "leg-f90b3378adf7",
+        "locationId": "honolulu-hi",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-407bc7b48b6c",
+        "legId": "leg-d0b6d70df7f3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
