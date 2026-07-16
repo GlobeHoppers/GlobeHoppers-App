@@ -2632,5 +2632,100 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "hv3m1g",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-09-99-2017-09-99-040",
+    "label": "Las Vegas September 2017",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [
+      {
+        "id": "guest-11f1cb14d0aa",
+        "name": "Tomiwa",
+        "colorName": "blue",
+        "color": "#2f80ff"
+      },
+      {
+        "id": "guest-1f11a717573d",
+        "name": "Bernard",
+        "colorName": "red",
+        "color": "#ff3b30"
+      }
+    ],
+    "mode": "drive",
+    "roundTrip": true,
+    "returnMode": "drive",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-322f4b2557a0",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-7f6c70bb488f",
+        "legId": "leg-390724be49d6",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-2a1861128437",
+        "legId": "leg-0cc831a9dee2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "drive"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "stripe",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-390724be49d6\",\"mode\":\"drive\",\"from\":\"san-diego-ca@-117.16110@32.71570\",\"to\":\"las-vegas-nv@-115.13910@36.17160\"},{\"id\":\"leg-0cc831a9dee2\",\"mode\":\"drive\",\"from\":\"las-vegas-nv@-115.13910@36.17160\",\"to\":\"san-diego-ca@-117.16110@32.71570\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:12:15.777Z",
+      "legs": [
+        {
+          "legId": "leg-390724be49d6",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T21:12:15.775Z"
+        },
+        {
+          "legId": "leg-0cc831a9dee2",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 265.1,
+          "routeMiles": 332.08,
+          "estimatedMinutes": 324,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2980,
+          "reviewedAt": "2026-07-16T21:12:15.777Z"
+        }
+      ]
+    }
   }
 ]
