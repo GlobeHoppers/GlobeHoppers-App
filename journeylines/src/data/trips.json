@@ -8042,7 +8042,7 @@
     "routeReview": null
   },
   {
-    "id": "bi38jv",
+    "id": "b5xbwv",
     "routeModelVersion": 2,
     "year": 2024,
     "month": 7,
@@ -8053,6 +8053,53 @@
     "displayDate": "July 2024",
     "displayEndDate": "",
     "sortKey": "2024-07-99-2024-07-99-138",
+    "label": "Baltimore July 2024",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "baltimore-md",
+    "route": [
+      {
+        "pointId": "point-aa43857df5f5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-37a162d44999",
+        "legId": "leg-894ccd18c3dc",
+        "locationId": "baltimore-md",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-ab880779a5d4",
+        "legId": "leg-6045fc84a80a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "bi38jv",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-07-99-2024-07-99-139",
     "label": "Las Vegas July 2024",
     "travelers": [
       "joey",
@@ -8079,6 +8126,53 @@
       {
         "pointId": "point-96f0c42ff53e",
         "legId": "leg-603d756f69b5",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "rc9cn9",
+    "routeModelVersion": 2,
+    "year": 2024,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2024",
+    "displayEndDate": "",
+    "sortKey": "2024-07-99-2024-07-99-140",
+    "label": "Washington DC July 2024",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-3a83b57306c9",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-9586d17678c9",
+        "legId": "leg-d8d7e923b8cb",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-18d1fdeccee1",
+        "legId": "leg-d82c960dec3e",
         "locationId": "san-diego-ca",
         "modeFromPrevious": "plane"
       }
