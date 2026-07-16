@@ -3874,7 +3874,7 @@
     "routeReview": null
   },
   {
-    "id": "mx9zge",
+    "id": "juwvjt",
     "routeModelVersion": 2,
     "year": 2018,
     "month": 12,
@@ -3885,6 +3885,150 @@
     "displayDate": "December 2018",
     "displayEndDate": "",
     "sortKey": "2018-12-99-2018-12-99-063",
+    "label": "Fort Lauderdale December 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-02c9788905e7",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-45b154289258",
+        "legId": "leg-6742542ce7aa",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-f28fca40c20c",
+        "legId": "leg-dad1842c9484",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "fh8vhe",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-12-99-2018-12-99-064",
+    "label": "Las Vegas December 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-e2925f1b11a8",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-b7cbaf2248eb",
+        "legId": "leg-9dfac2b23a28",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-66f8428377d5",
+        "legId": "leg-479550fa615a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "h58jv0",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-12-99-2018-12-99-065",
+    "label": "Philadelphia December 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "philadelphia-pa",
+    "route": [
+      {
+        "pointId": "point-db96e177b577",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4ec4b82d0584",
+        "legId": "leg-6431a0d192ce",
+        "locationId": "philadelphia-pa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-27a2145f0c2e",
+        "legId": "leg-0156272748e3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "mx9zge",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-12-99-2018-12-99-066",
     "label": "Tokyo December 2018",
     "travelers": [
       "joey"
@@ -3931,7 +4075,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-064",
+    "sortKey": "2026-06-99-2026-06-99-067",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"
