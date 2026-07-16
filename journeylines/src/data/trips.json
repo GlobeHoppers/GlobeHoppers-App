@@ -7215,5 +7215,52 @@
         }
       ]
     }
+  },
+  {
+    "id": "0pf4l7",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-04-99-2023-04-99-121",
+    "label": "Washington DC April 2023",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-904bb4c46e0e",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-afa83959aa15",
+        "legId": "leg-b2b0ad3a02c1",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-527c0c635d1f",
+        "legId": "leg-4ee9447cb2af",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
