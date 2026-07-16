@@ -6435,5 +6435,52 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "m4e6iw",
+    "routeModelVersion": 2,
+    "year": 2026,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2026",
+    "displayEndDate": "",
+    "sortKey": "2026-07-99-2026-07-99-109",
+    "label": "Rome July 2026",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "rome-ny",
+    "route": [
+      {
+        "pointId": "point-790e5b33f8f2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-5d41a3a47c38",
+        "legId": "leg-ba7e23d9ec41",
+        "locationId": "rome-ny",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-5c665a73333b",
+        "legId": "leg-12e27eb1f4c9",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
