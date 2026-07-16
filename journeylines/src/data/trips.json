@@ -1064,5 +1064,53 @@
         }
       ]
     }
+  },
+  {
+    "id": "qp3jg5",
+    "routeModelVersion": 2,
+    "year": 2014,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2014",
+    "displayEndDate": "",
+    "sortKey": "2014-11-99-2014-11-99-015",
+    "label": "Castries November 2014",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "castries-03",
+    "route": [
+      {
+        "pointId": "point-75d8bd87c324",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ad425a077113",
+        "legId": "leg-0f8712b4502f",
+        "locationId": "castries-03",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-eba8e5707b77",
+        "legId": "leg-227b9fcc61c1",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]

@@ -838,5 +838,18 @@
     "geonameId": 4153071,
     "population": 75018,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "castries-03",
+    "name": "Castries",
+    "region": "03",
+    "country": "St. Lucia",
+    "countryCode": "LC",
+    "continent": "",
+    "lat": 13.9957,
+    "lon": -61.00614,
+    "geonameId": 3576812,
+    "population": 20000,
+    "timezone": "America/St_Lucia"
   }
 ]
