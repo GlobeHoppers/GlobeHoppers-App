@@ -1112,5 +1112,52 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "n4cu5t",
+    "routeModelVersion": 2,
+    "year": 2015,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2015",
+    "displayEndDate": "",
+    "sortKey": "2015-02-99-2015-02-99-016",
+    "label": "Irvine February 2015",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "irvine-ca",
+    "route": [
+      {
+        "pointId": "point-366b2d21c3b0",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-6d7e5ac15c94",
+        "legId": "leg-bcb9ce4e2b89",
+        "locationId": "irvine-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-ca045e6c7f69",
+        "legId": "leg-e378af3650c8",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
