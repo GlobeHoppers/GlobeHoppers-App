@@ -4402,5 +4402,52 @@
     "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "wcpr4g",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 4,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "April 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-04-99-2019-04-99-073",
+    "label": "Seattle April 2019",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
+    "route": [
+      {
+        "pointId": "point-b47fa659a4bc",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-ac4e1068ab74",
+        "legId": "leg-a6159e15a98f",
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e14dfd87f1a1",
+        "legId": "leg-f0013057cd25",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
