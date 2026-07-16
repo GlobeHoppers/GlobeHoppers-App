@@ -1020,5 +1020,18 @@
     "geonameId": 4151440,
     "population": 17140,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "long-beach-ca",
+    "name": "Long Beach",
+    "region": "CA",
+    "country": "United States",
+    "countryCode": "US",
+    "continent": "",
+    "lat": 33.76696,
+    "lon": -118.18923,
+    "geonameId": 5367929,
+    "population": 462257,
+    "timezone": "America/Los_Angeles"
   }
 ]
