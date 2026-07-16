@@ -3631,6 +3631,154 @@
     "routeReview": null
   },
   {
+    "id": "6a5bv3",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-10-99-2018-10-99-058",
+    "label": "Las Vegas + Washington DC October 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-c5e9ec5dc87e",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-f80abfc17b29",
+        "legId": "leg-961a155aa615",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-35b6bb214a12",
+        "legId": "leg-4a82f5822149",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-8cac083f7e0d",
+        "legId": "leg-3aa66cf3cbdf",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "5kkx8p",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 10,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "October 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-10-99-2018-10-99-059",
+    "label": "Washington DC October 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "washington-dc",
+    "route": [
+      {
+        "pointId": "point-c99bdf0aee8b",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-8579374b21e7",
+        "legId": "leg-08d68b8e8e6e",
+        "locationId": "washington-dc",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-ece46c0eb51b",
+        "legId": "leg-d626f55f9593",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "5kxusq",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-11-99-2018-11-99-060",
+    "label": "Seattle November 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "seattle-wa",
+    "route": [
+      {
+        "pointId": "point-1d09fbab0fd2",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-808f6498ba58",
+        "legId": "leg-36878387ba96",
+        "locationId": "seattle-wa",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-bf392e266abd",
+        "legId": "leg-e5b112aad4c3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "dnup4p",
     "routeModelVersion": 2,
     "year": 2026,
@@ -3641,7 +3789,7 @@
     "endDay": null,
     "displayDate": "June 2026",
     "displayEndDate": "",
-    "sortKey": "2026-06-99-2026-06-99-058",
+    "sortKey": "2026-06-99-2026-06-99-061",
     "label": "Rosarito June 2026",
     "travelers": [
       "joey"
