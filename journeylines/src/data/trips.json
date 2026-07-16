@@ -3007,5 +3007,53 @@
     "trailStyle": "stripe",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "o8lx5c",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-02-99-2018-02-99-045",
+    "label": "San Francisco February 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-ca",
+    "route": [
+      {
+        "pointId": "point-620c9eca388f",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-34b2c41e53a4",
+        "legId": "leg-90214777f8f5",
+        "locationId": "san-francisco-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-d09b69af2bb5",
+        "legId": "leg-dbb97d84467d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
