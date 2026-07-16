@@ -7554,7 +7554,7 @@
     "routeReview": null
   },
   {
-    "id": "jkcojw",
+    "id": "as9kuh",
     "routeModelVersion": 2,
     "year": 2023,
     "month": 7,
@@ -7565,6 +7565,54 @@
     "displayDate": "July 2023",
     "displayEndDate": "",
     "sortKey": "2023-07-99-2023-07-99-128",
+    "label": "Las Vegas July 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-3d1d889c7ebd",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-4e744718391e",
+        "legId": "leg-50930ffa0927",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-669b269f776a",
+        "legId": "leg-3970e120af2d",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "jkcojw",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-07-99-2023-07-99-129",
     "label": "Washington DC July 2023",
     "travelers": [
       "joey"
@@ -7597,6 +7645,54 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "tfupg0",
+    "routeModelVersion": 2,
+    "year": 2023,
+    "month": 9,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "September 2023",
+    "displayEndDate": "",
+    "sortKey": "2023-09-99-2023-09-99-130",
+    "label": "Las Vegas September 2023",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "las-vegas-nv",
+    "route": [
+      {
+        "pointId": "point-0a74d88d7171",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-dad944bf61a4",
+        "legId": "leg-3d79e68e7cf2",
+        "locationId": "las-vegas-nv",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-780c9a548572",
+        "legId": "leg-d18cb92f16ac",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
   }
