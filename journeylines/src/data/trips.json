@@ -3009,7 +3009,7 @@
     "routeReview": null
   },
   {
-    "id": "o8lx5c",
+    "id": "k1o3am",
     "routeModelVersion": 2,
     "year": 2018,
     "month": 2,
@@ -3020,6 +3020,54 @@
     "displayDate": "February 2018",
     "displayEndDate": "",
     "sortKey": "2018-02-99-2018-02-99-045",
+    "label": "Miami February 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "miami-fl",
+    "route": [
+      {
+        "pointId": "point-1849ed428f58",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-8a69207c115e",
+        "legId": "leg-ab5f800f5bd3",
+        "locationId": "miami-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cb63bf887868",
+        "legId": "leg-6b18ac38b141",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "o8lx5c",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 2,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "February 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-02-99-2018-02-99-046",
     "label": "San Francisco February 2018",
     "travelers": [
       "joey",
@@ -3046,6 +3094,107 @@
       {
         "pointId": "point-d09b69af2bb5",
         "legId": "leg-dbb97d84467d",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "w1t9me",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 3,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "March 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-03-99-2018-03-99-047",
+    "label": "Baltimore + Los Angeles March 2018",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "baltimore-md",
+    "route": [
+      {
+        "pointId": "point-37f8040d7c4c",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-e80f43f5d84d",
+        "legId": "leg-58d2775a22cb",
+        "locationId": "baltimore-md",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-f9b082c8038e",
+        "legId": "leg-2354c18ca224",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-180eed391b3a",
+        "legId": "leg-881d85269988",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "undcsu",
+    "routeModelVersion": 2,
+    "year": 2018,
+    "month": 5,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "May 2018",
+    "displayEndDate": "",
+    "sortKey": "2018-05-99-2018-05-99-048",
+    "label": "San Francisco May 2018",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "san-francisco-08",
+    "route": [
+      {
+        "pointId": "point-dca246b3d100",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-20601adb404e",
+        "legId": "leg-0ef9ad983710",
+        "locationId": "san-francisco-08",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-0a6227a5c92b",
+        "legId": "leg-d32af91c5a27",
         "locationId": "san-diego-ca",
         "modeFromPrevious": "plane"
       }
