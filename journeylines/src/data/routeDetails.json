@@ -1,6 +1,6 @@
 {
   "version": "7.1",
-  "updatedAt": "2026-07-16T19:09:00.816Z",
+  "updatedAt": "2026-07-16T19:09:13.078Z",
   "source": "globe-hoppers-website",
   "cacheVersion": "multimodal-v7.1",
   "routingVersion": "multimodal-v7.1",
@@ -55,7 +55,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.804Z"
+      "updatedAt": "2026-07-16T19:09:13.069Z"
     },
     "k32oci::leg-1adad6643aba": {
       "id": "k32oci::leg-1adad6643aba",
@@ -106,7 +106,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.804Z"
+      "updatedAt": "2026-07-16T19:09:13.069Z"
     },
     "puogfw::leg-2b1ed3890a6f": {
       "id": "puogfw::leg-2b1ed3890a6f",
@@ -7709,7 +7709,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.805Z"
+      "updatedAt": "2026-07-16T19:09:13.070Z"
     },
     "puogfw::leg-62f4c7e844c7": {
       "id": "puogfw::leg-62f4c7e844c7",
@@ -7764,7 +7764,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.805Z"
+      "updatedAt": "2026-07-16T19:09:13.070Z"
     },
     "puogfw::leg-49e3bd85da54": {
       "id": "puogfw::leg-49e3bd85da54",
@@ -7819,7 +7819,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.805Z"
+      "updatedAt": "2026-07-16T19:09:13.070Z"
     },
     "puogfw::leg-c8f9537960c9": {
       "id": "puogfw::leg-c8f9537960c9",
@@ -15422,7 +15422,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.805Z"
+      "updatedAt": "2026-07-16T19:09:13.071Z"
     },
     "k3m37j::leg-9971fcfac22e": {
       "id": "k3m37j::leg-9971fcfac22e",
@@ -15473,7 +15473,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.805Z"
+      "updatedAt": "2026-07-16T19:09:13.071Z"
     },
     "k3m37j::leg-d4a8284c96bc": {
       "id": "k3m37j::leg-d4a8284c96bc",
@@ -39636,7 +39636,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.807Z"
+      "updatedAt": "2026-07-16T19:09:13.072Z"
     },
     "k3m37j::leg-e3d5600689ba": {
       "id": "k3m37j::leg-e3d5600689ba",
@@ -63799,7 +63799,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.808Z"
+      "updatedAt": "2026-07-16T19:09:13.073Z"
     },
     "k3m37j::leg-29e1e897353d": {
       "id": "k3m37j::leg-29e1e897353d",
@@ -63850,7 +63850,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.808Z"
+      "updatedAt": "2026-07-16T19:09:13.073Z"
     },
     "5bsiu9::leg-532ee19acb41": {
       "id": "5bsiu9::leg-532ee19acb41",
@@ -84205,7 +84205,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.809Z"
+      "updatedAt": "2026-07-16T19:09:13.074Z"
     },
     "5bsiu9::leg-ae845de431b8": {
       "id": "5bsiu9::leg-ae845de431b8",
@@ -104560,7 +104560,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.810Z"
+      "updatedAt": "2026-07-16T19:09:13.074Z"
     },
     "nb429o::leg-c589d8b09818": {
       "id": "nb429o::leg-c589d8b09818",
@@ -104611,7 +104611,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.810Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "nb429o::leg-0e8a7a9d75d9": {
       "id": "nb429o::leg-0e8a7a9d75d9",
@@ -104662,7 +104662,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.810Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "t0r0b4::leg-697d5b4073e8": {
       "id": "t0r0b4::leg-697d5b4073e8",
@@ -112605,7 +112605,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.811Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "t0r0b4::leg-00168f1c323f": {
       "id": "t0r0b4::leg-00168f1c323f",
@@ -120548,7 +120548,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.811Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "rjylx5::leg-fe4ce5553c03": {
       "id": "rjylx5::leg-fe4ce5553c03",
@@ -128151,7 +128151,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "rjylx5::leg-f29798431ba2": {
       "id": "rjylx5::leg-f29798431ba2",
@@ -128206,7 +128206,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "rjylx5::leg-41937fd8a9e0": {
       "id": "rjylx5::leg-41937fd8a9e0",
@@ -128261,7 +128261,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "rjylx5::leg-b79d0cb61874": {
       "id": "rjylx5::leg-b79d0cb61874",
@@ -135864,7 +135864,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "a9rk7t::leg-6970094c8ca1": {
       "id": "a9rk7t::leg-6970094c8ca1",
@@ -135999,7 +135999,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "a9rk7t::leg-e053f7d2342f": {
       "id": "a9rk7t::leg-e053f7d2342f",
@@ -136134,7 +136134,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "8pe4wt::leg-0d33496aa42c": {
       "id": "8pe4wt::leg-0d33496aa42c",
@@ -136185,7 +136185,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "8pe4wt::leg-d3e4d87a719a": {
       "id": "8pe4wt::leg-d3e4d87a719a",
@@ -136236,7 +136236,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "1edy6t::leg-d4b4138fdb88": {
       "id": "1edy6t::leg-d4b4138fdb88",
@@ -136287,7 +136287,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "1edy6t::leg-4c95ca5de001": {
       "id": "1edy6t::leg-4c95ca5de001",
@@ -136338,7 +136338,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.075Z"
     },
     "sn2fmo::leg-328781e5f8aa": {
       "id": "sn2fmo::leg-328781e5f8aa",
@@ -136389,7 +136389,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.076Z"
     },
     "sn2fmo::leg-f4a32c94af3b": {
       "id": "sn2fmo::leg-f4a32c94af3b",
@@ -136440,7 +136440,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.812Z"
+      "updatedAt": "2026-07-16T19:09:13.076Z"
     },
     "dcr014::leg-1fcdcdd87209": {
       "id": "dcr014::leg-1fcdcdd87209",
@@ -153691,7 +153691,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.814Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "dcr014::leg-b9cdf720d196": {
       "id": "dcr014::leg-b9cdf720d196",
@@ -170942,7 +170942,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "id170w::leg-ae5d028cc0ef": {
       "id": "id170w::leg-ae5d028cc0ef",
@@ -170993,7 +170993,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "id170w::leg-ae3655ef6a1a": {
       "id": "id170w::leg-ae3655ef6a1a",
@@ -171044,7 +171044,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "hnym39::leg-f9eca83c04a3": {
       "id": "hnym39::leg-f9eca83c04a3",
@@ -171179,7 +171179,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "hnym39::leg-6cdbff04f7c5": {
       "id": "hnym39::leg-6cdbff04f7c5",
@@ -171314,7 +171314,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "qp3jg5::leg-0f8712b4502f": {
       "id": "qp3jg5::leg-0f8712b4502f",
@@ -171365,7 +171365,7 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.077Z"
     },
     "qp3jg5::leg-227b9fcc61c1": {
       "id": "qp3jg5::leg-227b9fcc61c1",
@@ -171416,7 +171416,109 @@
       "routeErrors": [],
       "routeValidation": null,
       "routingVersion": "multimodal-v7.1",
-      "updatedAt": "2026-07-16T19:09:00.816Z"
+      "updatedAt": "2026-07-16T19:09:13.078Z"
+    },
+    "n4cu5t::leg-bcb9ce4e2b89": {
+      "id": "n4cu5t::leg-bcb9ce4e2b89",
+      "tripId": "n4cu5t",
+      "legId": "leg-bcb9ce4e2b89",
+      "legIndex": 0,
+      "fromLocationId": "melbourne-fl",
+      "toLocationId": "irvine-ca",
+      "fromName": "Melbourne",
+      "toName": "Irvine",
+      "mode": "plane",
+      "miles": 2228.232951012248,
+      "routeCacheKey": "multimodal-v7.1:leg-bcb9ce4e2b89:melbourne-fl@-80.60810,28.08360->irvine-ca@-117.82311,33.66946:plane",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-bcb9ce4e2b89-reverse:irvine-ca@-117.82311,33.66946->melbourne-fl@-80.60810,28.08360:plane",
+      "endpointPairKey": "irvine-ca↔melbourne-fl",
+      "routeStackOffset": 0,
+      "routeStackBaseOffset": 0,
+      "routeStackDirectionSign": -1,
+      "routeStackCount": 1,
+      "routeStackIndex": 0,
+      "coordinates": {
+        "from": [
+          -80.6081,
+          28.0836
+        ],
+        "to": [
+          -117.82311,
+          33.66946
+        ]
+      },
+      "geometry": [
+        [
+          -80.6081,
+          28.0836
+        ],
+        [
+          -117.82311,
+          33.66946
+        ]
+      ],
+      "geometrySource": "simpleFallback",
+      "geometryDetail": "straight-line",
+      "geometryPointCount": 2,
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": null,
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:09:13.078Z"
+    },
+    "n4cu5t::leg-e378af3650c8": {
+      "id": "n4cu5t::leg-e378af3650c8",
+      "tripId": "n4cu5t",
+      "legId": "leg-e378af3650c8",
+      "legIndex": 1,
+      "fromLocationId": "irvine-ca",
+      "toLocationId": "melbourne-fl",
+      "fromName": "Irvine",
+      "toName": "Melbourne",
+      "mode": "plane",
+      "miles": 2228.232951012248,
+      "routeCacheKey": "multimodal-v7.1:leg-e378af3650c8:irvine-ca@-117.82311,33.66946->melbourne-fl@-80.60810,28.08360:plane",
+      "reverseRouteCacheKey": "multimodal-v7.1:leg-e378af3650c8-reverse:melbourne-fl@-80.60810,28.08360->irvine-ca@-117.82311,33.66946:plane",
+      "endpointPairKey": "irvine-ca↔melbourne-fl",
+      "routeStackOffset": 0,
+      "routeStackBaseOffset": 0,
+      "routeStackDirectionSign": 1,
+      "routeStackCount": 1,
+      "routeStackIndex": 0,
+      "coordinates": {
+        "from": [
+          -117.82311,
+          33.66946
+        ],
+        "to": [
+          -80.6081,
+          28.0836
+        ]
+      },
+      "geometry": [
+        [
+          -117.82311,
+          33.66946
+        ],
+        [
+          -80.6081,
+          28.0836
+        ]
+      ],
+      "geometrySource": "simpleFallback",
+      "geometryDetail": "straight-line",
+      "geometryPointCount": 2,
+      "routeMiles": 0,
+      "estimatedMinutes": 0,
+      "routeConfidence": null,
+      "routeWarnings": [],
+      "routeErrors": [],
+      "routeValidation": null,
+      "routingVersion": "multimodal-v7.1",
+      "updatedAt": "2026-07-16T19:09:13.078Z"
     }
   }
 }
