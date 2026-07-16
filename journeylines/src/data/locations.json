@@ -994,5 +994,18 @@
     "geonameId": 4487042,
     "population": 403892,
     "timezone": "America/New_York"
+  },
+  {
+    "id": "san-juan-127",
+    "name": "San Juan",
+    "region": "127",
+    "country": "Puerto Rico",
+    "countryCode": "PR",
+    "continent": "",
+    "lat": 18.46633,
+    "lon": -66.10572,
+    "geonameId": 4568127,
+    "population": 418140,
+    "timezone": "America/Puerto_Rico"
   }
 ]

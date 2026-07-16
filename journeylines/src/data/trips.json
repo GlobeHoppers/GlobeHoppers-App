@@ -4872,7 +4872,7 @@
     "routeReview": null
   },
   {
-    "id": "ijhp7a",
+    "id": "qeulg1",
     "routeModelVersion": 2,
     "year": 2019,
     "month": 11,
@@ -4883,6 +4883,54 @@
     "displayDate": "November 2019",
     "displayEndDate": "",
     "sortKey": "2019-11-99-2019-11-99-081",
+    "label": "Atlanta November 2019",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-29d928cec5ae",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-caa7c8f82ad0",
+        "legId": "leg-5f89dde42423",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-0f3294e1ca83",
+        "legId": "leg-36db48fbe102",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "ijhp7a",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-11-99-2019-11-99-082",
     "label": "Raleigh November 2019",
     "travelers": [
       "joey"
@@ -4915,6 +4963,66 @@
     "notes": "",
     "occasion": "",
     "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "ke0yq6",
+    "routeModelVersion": 2,
+    "year": 2019,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2019",
+    "displayEndDate": "",
+    "sortKey": "2019-12-99-2019-12-99-083",
+    "label": "Fort Lauderdale + San Juan + Fort Lauderdale December 2019",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-336697330e12",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-df5a1d228872",
+        "legId": "leg-781a1dad8b63",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-75f6ca2d9388",
+        "legId": "leg-d49d8d0196e1",
+        "locationId": "san-juan-127",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-910bb8b7e95a",
+        "legId": "leg-a457f74261a2",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-9a1311d799d3",
+        "legId": "leg-f80dbeaed84a",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
     "trailColorMode": "members",
     "routeReview": null
   }
