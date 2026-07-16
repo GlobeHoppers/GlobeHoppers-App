@@ -6389,7 +6389,7 @@
     "routeReview": null
   },
   {
-    "id": "864k6l",
+    "id": "j6kwbk",
     "routeModelVersion": 2,
     "year": 2022,
     "month": 7,
@@ -6400,6 +6400,53 @@
     "displayDate": "July 2022",
     "displayEndDate": "",
     "sortKey": "2022-07-99-2022-07-99-108",
+    "label": "Cocoa July 2022",
+    "travelers": [
+      "joey"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-324e08e110e1",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-486631668adf",
+        "legId": "leg-e4c43019cf9c",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e2bbc4c274f9",
+        "legId": "leg-e0c46f06a08c",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "solid",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
+    "id": "864k6l",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 7,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "July 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-07-99-2022-07-99-109",
     "label": "Las Vegas July 2022",
     "travelers": [
       "joey",
@@ -6437,6 +6484,54 @@
     "routeReview": null
   },
   {
+    "id": "yh7sl5",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 8,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "August 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-08-99-2022-08-99-110",
+    "label": "Cocoa August 2022",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "cocoa-fl",
+    "route": [
+      {
+        "pointId": "point-91f20e7db90c",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-dbda50a7e44d",
+        "legId": "leg-0cc0d0e0af21",
+        "locationId": "cocoa-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-cd8af6591e63",
+        "legId": "leg-d41c24c87b63",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
+  },
+  {
     "id": "m4e6iw",
     "routeModelVersion": 2,
     "year": 2026,
@@ -6447,7 +6542,7 @@
     "endDay": null,
     "displayDate": "July 2026",
     "displayEndDate": "",
-    "sortKey": "2026-07-99-2026-07-99-109",
+    "sortKey": "2026-07-99-2026-07-99-111",
     "label": "Rome July 2026",
     "travelers": [
       "joey"
