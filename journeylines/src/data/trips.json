@@ -2812,7 +2812,7 @@
     }
   },
   {
-    "id": "pwq7rt",
+    "id": "glx5y3",
     "routeModelVersion": 2,
     "year": 2017,
     "month": 12,
@@ -2823,6 +2823,101 @@
     "displayDate": "December 2017",
     "displayEndDate": "",
     "sortKey": "2017-12-99-2017-12-99-042",
+    "label": "Fort Lauderdale + Melbourne + Fort Lauderdale December 2017",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "fort-lauderdale-fl",
+    "route": [
+      {
+        "pointId": "point-9e58b9fedcb3",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-a32679f6fa5b",
+        "legId": "leg-a989178d439c",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-d73315476e53",
+        "legId": "leg-87b35270a1a5",
+        "locationId": "melbourne-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-5823ff174ac1",
+        "legId": "leg-70b922fd655c",
+        "locationId": "fort-lauderdale-fl",
+        "modeFromPrevious": "drive"
+      },
+      {
+        "pointId": "point-14c2bc29b840",
+        "legId": "leg-3b12334294c8",
+        "locationId": "san-diego-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": {
+      "version": "7.1",
+      "signature": "[{\"id\":\"leg-87b35270a1a5\",\"mode\":\"drive\",\"from\":\"fort-lauderdale-fl@-80.13730@26.12240\",\"to\":\"melbourne-fl@-80.60810@28.08360\"},{\"id\":\"leg-70b922fd655c\",\"mode\":\"drive\",\"from\":\"melbourne-fl@-80.60810@28.08360\",\"to\":\"fort-lauderdale-fl@-80.13730@26.12240\"}]",
+      "automatic": true,
+      "checkedAt": "2026-07-16T21:13:48.141Z",
+      "legs": [
+        {
+          "legId": "leg-87b35270a1a5",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 138.56,
+          "routeMiles": 158.68,
+          "estimatedMinutes": 157,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2393,
+          "reviewedAt": "2026-07-16T21:13:48.139Z"
+        },
+        {
+          "legId": "leg-70b922fd655c",
+          "mode": "drive",
+          "source": "valhalla-osm",
+          "provider": "Valhalla / OpenStreetMap",
+          "directMiles": 138.56,
+          "routeMiles": 158.68,
+          "estimatedMinutes": 157,
+          "confidence": "high",
+          "warnings": [],
+          "errors": [],
+          "geometryPointCount": 2393,
+          "reviewedAt": "2026-07-16T21:13:48.141Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "pwq7rt",
+    "routeModelVersion": 2,
+    "year": 2017,
+    "month": 12,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "December 2017",
+    "displayEndDate": "",
+    "sortKey": "2017-12-99-2017-12-99-043",
     "label": "Santa Fe December 2017",
     "travelers": [
       "joey"
