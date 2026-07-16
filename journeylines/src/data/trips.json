@@ -6718,5 +6718,53 @@
     "trailStyle": "solid",
     "trailColorMode": "members",
     "routeReview": null
+  },
+  {
+    "id": "yazg3i",
+    "routeModelVersion": 2,
+    "year": 2022,
+    "month": 11,
+    "day": null,
+    "endYear": null,
+    "endMonth": null,
+    "endDay": null,
+    "displayDate": "November 2022",
+    "displayEndDate": "",
+    "sortKey": "2022-11-99-2022-11-99-115",
+    "label": "Atlanta November 2022",
+    "travelers": [
+      "joey",
+      "bonnie"
+    ],
+    "guestHoppers": [],
+    "mode": "plane",
+    "roundTrip": true,
+    "returnMode": "plane",
+    "fromLocationId": null,
+    "toLocationId": "atlanta-ga",
+    "route": [
+      {
+        "pointId": "point-76307d2eaf8c",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": null
+      },
+      {
+        "pointId": "point-65e86f1078ee",
+        "legId": "leg-35296fb1db67",
+        "locationId": "atlanta-ga",
+        "modeFromPrevious": "plane"
+      },
+      {
+        "pointId": "point-e6773e2ba73e",
+        "legId": "leg-2fac0ce9be3e",
+        "locationId": "los-angeles-ca",
+        "modeFromPrevious": "plane"
+      }
+    ],
+    "notes": "",
+    "occasion": "",
+    "trailStyle": "ribbon",
+    "trailColorMode": "members",
+    "routeReview": null
   }
 ]
