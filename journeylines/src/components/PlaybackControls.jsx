@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Search } from 'lucide-react';
 import HopResultCards from './HopResultCards.jsx';
 
-export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, globeControlsVisible = false, globeSpinSpeed = 0.55, onGlobeSpinSpeedChange = () => {}, globeSpinPaused = false, onToggleGlobeSpin = () => {}, onGlobeZoom = () => {}, progress, onSeekProgress, onMarkerJump, onMarkerEdit, destinationMatchIds = [], speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], monthTicks = [], timelineYearSpan = 1, searchRows = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
+export default function PlaybackControls({ screensaverMode = false, isPlaying, hasPlaybackStarted = false, timelineComplete = false, isRelocating = false, onPlay, onPause, onReset, onViewGlobe, globeControlsVisible = false, globeSpinSpeed = 0.55, onGlobeSpinSpeedChange = () => {}, globeSpinPaused = false, onToggleGlobeSpin = () => {}, onGlobeZoom = () => {}, progress, onSeekProgress, onMarkerJump, onMarkerEdit, destinationMatchIds = [], speed, setSpeed, filter, setFilter, projection, setProjection, cameraMode, setCameraMode, showTrails, setShowTrails, routeStackingEnabled = false, setRouteStackingEnabled = () => {}, placeBackgroundsEnabled = true, setPlaceBackgroundsEnabled = () => {}, theme, setTheme, onToggleTripDrawer, onToggleTimelineUtility, timelineTuning = {}, tripMarkers = [], activeMarkerId = null, yearSegments = [], monthTicks = [], timelineYearSpan = 1, searchRows = [], routeDetailsStatus = null, routingStatus = null, onRetryRouting = null, tripsDataStatus = null, hopperIntegrity = null, repoSaveStatus = null, onRetryRepoSave = null, routeDetailsMessage = '', routeDetailsBusy = false, onRebuildRouteDetails = null }) {
   const pct = Math.round(Math.max(0, Math.min(1, progress || 0)) * 1000);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -314,17 +314,17 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       ? 'Timeline complete. Use Restart Journey to begin again.'
       : (isPlaying ? 'Pause travel timeline' : (hasPlaybackStarted ? 'Resume travel timeline' : 'Play travel timeline'));
 
-  return <div ref={controlsRef} className="controls glass" style={timelineStyle}>
-    <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>
-    <div className="timeline-scrubber gh-timeline-v7510">
-      <div className="timeline-scrubber__header timeline-scrubber__header--controls-only">
+  return <div ref={controlsRef} className={`controls glass ${screensaverMode ? 'controls--screensaver' : ''}`} style={timelineStyle}>
+    {!screensaverMode && <button type="button" className="controls-play-pill" disabled={isRelocating} onClick={handlePlayPauseClick} aria-pressed={isPlaying} aria-disabled={timelineComplete || isRelocating} aria-label={playbackActionAriaLabel} title={isRelocating ? 'Moving to the next Hop' : timelineComplete ? 'Timeline complete — use Restart Journey' : undefined}>{playbackActionLabel}</button>}
+    <div className={`timeline-scrubber gh-timeline-v7510 ${screensaverMode ? 'gh-timeline-v7510--screensaver' : ''}`}>
+      {!screensaverMode && <div className="timeline-scrubber__header timeline-scrubber__header--controls-only">
         <div className="timeline-zoom-controls" aria-label="Timeline zoom controls">
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom / 1.5)} disabled={timelineZoom <= 1.001} aria-label="Zoom timeline out">−</button>
           <button type="button" onClick={() => changeTimelineZoom(1, 0.5)} disabled={timelineZoom <= 1.001}>Fit</button>
           <button type="button" onClick={() => changeTimelineZoom(timelineZoom * 1.5)} disabled={timelineZoom >= 15.999} aria-label="Zoom timeline in">+</button>
           <button type="button" onClick={recenterTimeline} disabled={timelineZoom <= 1.001}>Recenter</button>
         </div>
-      </div>
+      </div>}
       <div
         ref={timelineViewportRef}
         className={`gh-timeline-v7510__viewport ${timelineZoom > 1 ? 'is-zoomed' : ''} ${timelineAnimating ? 'is-animating' : ''}`}
@@ -429,7 +429,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
         <strong>{tooltipMarker.title}</strong><small>{tooltipMarker.date}</small>
       </span>
     </div>}
-    {globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
+    {!screensaverMode && globeControlsVisible && <div className="globe-playback-controls" aria-label="Globe controls">
       <button type="button" onClick={() => onGlobeZoom(-0.5)} aria-label="Zoom globe out">−</button>
       <button type="button" onClick={() => onGlobeZoom(0.5)} aria-label="Zoom globe in">+</button>
       <button type="button" onClick={() => onGlobeSpinSpeedChange(globeSpinSpeed - 0.15)} aria-label="Slow globe spin">Spin −</button>
@@ -437,7 +437,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
       <button type="button" onClick={() => onGlobeSpinSpeedChange(globeSpinSpeed + 0.15)} aria-label="Speed up globe spin">Spin +</button>
       <button type="button" onClick={onToggleGlobeSpin}>{globeSpinPaused ? 'Resume Spin' : 'Pause Spin'}</button>
     </div>}
-    <div className="controls-search-wrap" ref={searchRef}>
+    {!screensaverMode && <div className="controls-search-wrap" ref={searchRef}>
       <button type="button" className="controls-search-toggle" aria-label="Search Hops" aria-expanded={searchOpen && !searchClosing} onClick={() => { if (searchVisibleRef.current) closeSearchPanel(); else openSearchPanel(); }}><Search size={17} strokeWidth={2.2} /></button>
       {(searchOpen || searchClosing) && <div className={`timeline-search-panel glass ${searchClosing ? 'is-closing' : 'is-opening'}`} role="dialog" aria-label="Search Hops">
         <div className="timeline-search-panel__head">
@@ -451,8 +451,8 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
             : <HopResultCards rows={searchResults} emptyMessage="No matching Hops." onSelect={row => closeSearchPanel(() => onMarkerJump?.(row))} />}
         </div>
       </div>}
-    </div>
-    <div className="controls-advanced-wrap" ref={advancedRef}>
+    </div>}
+    {!screensaverMode && <div className="controls-advanced-wrap" ref={advancedRef}>
       <button ref={advancedToggleRef} type="button" className="controls-advanced-toggle" aria-label="Advanced controls" aria-expanded={advancedOpen} aria-haspopup="dialog" aria-controls="globehoppers-advanced-controls" onClick={() => { closeSearchPanel(null, true); setAdvancedOpen(v => !v); }}>⋯</button>
       {advancedOpen && <div id="globehoppers-advanced-controls" className="controls-advanced glass" role="dialog" aria-label="Advanced playback controls">
         <button type="button" onClick={() => { setAdvancedOpen(false); onReset?.(); }}>Restart Journey</button>
@@ -526,7 +526,7 @@ export default function PlaybackControls({ isPlaying, hasPlaybackStarted = false
           </button>
         </div>
       </div>}
-    </div>
+    </div>}
   </div>;
 }
 

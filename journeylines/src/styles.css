@@ -15212,3 +15212,91 @@ svg text {
 @media (prefers-reduced-motion: reduce) {
   .gh-timeline-v7510__active-pin > b { animation-duration: 1ms !important; }
 }
+
+/* ========================================================================== */
+/* GlobeHoppers v7.5.15 — presentation-only Screensaver Mode                  */
+/* ========================================================================== */
+
+/* Screensaver Mode is a deliberately reduced presentation surface. The map,
+   current/queued Hop cards, and the timeline remain; authoring, navigation,
+   diagnostics, and playback controls are removed from the visual hierarchy. */
+.app.is-screensaver .topbar,
+.app.is-screensaver .about,
+.app.is-screensaver .hero,
+.app.is-screensaver .destination-trip-queue,
+.app.is-screensaver .trail-tuning,
+.app.is-screensaver .timeline-tuning,
+.app.is-screensaver .trip-timeline-drawer,
+.app.is-screensaver .hopper-editor-panel,
+.app.is-screensaver .studio-shell,
+.app.is-screensaver .studio-modal-backdrop,
+.app.is-screensaver .studio-loading-overlay,
+.app.is-screensaver .zoom-readout,
+.app.is-screensaver .maplibregl-control-container {
+  display: none !important;
+}
+
+/* Do not inherit the low-opacity/translated playback treatment used by the
+   interactive controls. The screensaver timeline is always fully legible. */
+.app.is-screensaver .controls--screensaver,
+.app.is-screensaver.is-playing .controls--screensaver {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 3px 10px 4px !important;
+  gap: 0 !important;
+  flex-wrap: nowrap !important;
+  border-radius: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  opacity: 1 !important;
+  transform: none !important;
+  background: linear-gradient(180deg, rgba(3,13,23,.76), rgba(3,13,23,.94)) !important;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+.app.is-screensaver .controls--screensaver .gh-timeline-v7510--screensaver {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  flex: 1 1 100% !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.app.is-screensaver .controls--screensaver .gh-timeline-v7510__viewport,
+.app.is-screensaver .controls--screensaver .gh-timeline-v7510__content,
+.app.is-screensaver .controls--screensaver .gh-timeline-v7510__rail {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* The queue remains useful context in a passive presentation, but it can use
+   the space vacated by the hidden top navigation. */
+.app.is-screensaver .trip-card-stack {
+  top: 18px !important;
+  right: 18px !important;
+}
+
+@media (max-width: 700px) {
+  .app.is-screensaver .controls--screensaver,
+  .app.is-screensaver.is-playing .controls--screensaver {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    padding-inline: 5px !important;
+  }
+  .app.is-screensaver .trip-card-stack {
+    top: 10px !important;
+    left: auto !important;
+    right: 10px !important;
+    width: min(330px, calc(100vw - 20px)) !important;
+  }
+}
