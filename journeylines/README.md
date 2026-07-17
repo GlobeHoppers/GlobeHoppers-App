@@ -1,12 +1,20 @@
 # GlobeHoppers
 
-Current release: **v7.5.2**
+Current release: **v7.5.14**
 
-GlobeHoppers is an animated, editable travel-history globe. v7.5.2 stabilizes playback camera ownership, broadens marine presentation, fixes date-line trail wrapping, keeps the timeline rail at a constant height, improves shared result cards and marker hit targets, strengthens close-zoom label scaling, and applies conservative far-side culling.
+GlobeHoppers is an animated, editable travel-history globe. v7.5.14 adds an unattended URL-driven Screensaver Mode that continuously alternates between the full travel-history playback and a ten-minute spinning Globe View.
 
 # GlobeHoppers
 
 **All your hops, skips & jumps.**
+
+## v7.5.14: Screensaver Mode
+
+Open the deployed app with `?screensaver=1` to start unattended playback automatically. For the current GitHub Pages deployment, use:
+
+`https://jonathanjoelneptune.github.io/JourneyLines/?screensaver=1`
+
+Screensaver Mode plays the complete timeline, switches to a spinning Globe View with both routes and locations for ten minutes, then restarts the timeline from the beginning. The cycle repeats until the page is closed or reloaded without the screensaver parameter. Browser security rules do not allow a page to enter operating-system or browser fullscreen automatically; the existing Fullscreen button remains available.
 
 GlobeHoppers is a living travel-history map that replays trips across a cinematic globe, with alternate flat projections, traveler-specific colors, custom vehicle icons, route trails, and editable trip data stored in the repository.
 

@@ -106,6 +106,26 @@ const DEFAULT_TIMELINE_TUNING = {
 
 const PARAMETER_STORAGE_SIGNATURE_KEY = 'globehoppers.parametersSignature';
 const GLOBEHOPPERS_V63 = true;
+const SCREENSAVER_GLOBE_DURATION_MS = 10 * 60 * 1000;
+
+function readScreensaverConfiguration() {
+  if (typeof window === 'undefined') return { enabled: false, globeDurationMs: SCREENSAVER_GLOBE_DURATION_MS };
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const requested = String(params.get('screensaver') || params.get('mode') || '').trim().toLowerCase();
+    const hash = String(window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
+    const pathMode = /\/screensaver\/?$/i.test(window.location.pathname || '');
+    const enabledValues = new Set(['1', 'true', 'yes', 'on', 'screensaver', 'playmode', 'play']);
+    const enabled = enabledValues.has(requested) || hash === 'screensaver' || hash === 'playmode' || pathMode;
+    const requestedMinutes = Number(params.get('globeMinutes'));
+    const globeDurationMs = Number.isFinite(requestedMinutes) && requestedMinutes > 0
+      ? Math.max(0.1, Math.min(1440, requestedMinutes)) * 60 * 1000
+      : SCREENSAVER_GLOBE_DURATION_MS;
+    return { enabled, globeDurationMs };
+  } catch {
+    return { enabled: false, globeDurationMs: SCREENSAVER_GLOBE_DURATION_MS };
+  }
+}
 
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
@@ -254,6 +274,9 @@ function syncParameterLocalsFromRepoOnce() {
 export default function App() {
   syncParameterLocalsFromRepoOnce();
   clearStaleTripCaches();
+  const [screensaverConfig] = useState(() => readScreensaverConfiguration());
+  const screensaverEnabled = screensaverConfig.enabled;
+  const [screensaverPhase, setScreensaverPhase] = useState(() => screensaverConfig.enabled ? 'boot' : 'off');
   const [trips, setTrips] = useState(() => normalizeTripsForV61(baseTrips, homeBases));
   const [locations, setLocations] = useState(() => baseLocations);
   const [hopperData, setHopperData] = useState(() => baseHoppers);
@@ -278,7 +301,7 @@ export default function App() {
   const [introLaunching, setIntroLaunching] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('globehoppers.theme') || 'bold-dark');
   const [timelineView, setTimelineView] = useState(() => localStorage.getItem('globehoppers.timelineView') || 'expanded');
-  const [showHero, setShowHero] = useState(true);
+  const [showHero, setShowHero] = useState(() => !screensaverConfig.enabled);
   const [globeOverview, setGlobeOverview] = useState(false);
   const [globeDisplayMode, setGlobeDisplayMode] = useState('both');
   const [globeSpinSpeed, setGlobeSpinSpeed] = useState(() => clampGlobeSpinSpeed(localStorage.getItem('globehoppers.globeSpinSpeed.v7.3') || DEFAULT_GLOBE_SPIN_SPEED));
@@ -322,6 +345,8 @@ export default function App() {
   const relocationTransitionRef = useRef(null);
   const relocationSequenceRef = useRef(0);
   const idleTimerRef = useRef(null);
+  const screensaverGlobeTimerRef = useRef(null);
+  const screensaverBootedRef = useRef(false);
   const idleSnapshotRef = useRef(null);
   const destinationSelectionRef = useRef(null);
   const destinationSelectionCloseTimerRef = useRef(null);
@@ -724,10 +749,11 @@ export default function App() {
 
   useEffect(() => {
     window.clearTimeout(idleTimerRef.current);
+    if (screensaverEnabled) return;
     if (!shouldEnterIdleMode({ isPlaying, isRelocating: Boolean(relocationTransition), adminOpen: admin || hopperEditorOpen, destinationSelectionActive: Boolean(destinationSelection) })) return;
     idleTimerRef.current = window.setTimeout(enterIdleMode, 30000);
     return () => window.clearTimeout(idleTimerRef.current);
-  }, [isPlaying, relocationTransition, admin, hopperEditorOpen, destinationSelection, started, activeIndex, legProgress, idleActivityNonce, enterIdleMode]);
+  }, [screensaverEnabled, isPlaying, relocationTransition, admin, hopperEditorOpen, destinationSelection, started, activeIndex, legProgress, idleActivityNonce, enterIdleMode]);
 
   useEffect(() => {
     const activity = event => {
@@ -1167,7 +1193,106 @@ export default function App() {
   }
 
   const progress = legs.length ? Math.min(1, (Math.min(activeIndex, legs.length - 1) + Math.min(1, legProgress)) / legs.length) : 1;
+  const startScreensaverTimelineCycle = useCallback(() => {
+    const currentLegs = legsRef.current || [];
+    if (!screensaverEnabled || !currentLegs.length) return;
+    window.clearTimeout(screensaverGlobeTimerRef.current);
+    screensaverGlobeTimerRef.current = null;
+    window.dispatchEvent(new CustomEvent('globehoppers-close-search'));
+    destinationSelectionRef.current = null;
+    setDestinationSelection(null);
+    setDestinationSelectionClosing(false);
+    setHopperEditorOpen(false);
+    setJumpFade(false);
+    relocationTransitionRef.current = null;
+    setRelocationTransition(null);
+    for (const timer of jumpTimersRef.current) window.clearTimeout(timer);
+    jumpTimersRef.current = [];
+    playbackEngine.stop(0);
+    resumeAfterStudioRef.current = false;
+    resumeAfterTabHiddenRef.current = false;
+    idleSnapshotRef.current = null;
+    setIdleMode(false);
+    setIdleExitMode('none');
+    setAdmin(false);
+    setStudioModalOnly(false);
+    setTripDrawerOpen(false);
+    setTrailTuningOpen(false);
+    setTimelineTuningOpen(false);
+    setProjection('globe');
+    setGlobeDisplayMode('both');
+    setGlobeOverview(false);
+    setGlobeSpinPaused(false);
+    setCameraMode('follow');
+    setShowHero(false);
+    setActiveIndex(0);
+    setLegProgress(0);
+    activePlaybackRef.current = { ...legIdentityForEntry(currentLegs[0], 0, 0), generation: playbackGenerationRef.current };
+    tRef.current = { last: null, elapsed: 0 };
+    setStarted(true);
+    setIsPlaying(false);
+    setScreensaverPhase('timeline');
+    setIntroLaunching(true);
+  }, [screensaverEnabled]);
+
+  const enterScreensaverGlobePhase = useCallback(() => {
+    if (!screensaverEnabled) return;
+    playbackEngine.pause();
+    window.dispatchEvent(new CustomEvent('globehoppers-close-search'));
+    destinationSelectionRef.current = null;
+    setDestinationSelection(null);
+    setDestinationSelectionClosing(false);
+    setHopperEditorOpen(false);
+    setJumpFade(false);
+    setIsPlaying(false);
+    setIntroLaunching(false);
+    setIdleMode(false);
+    setIdleExitMode('none');
+    setProjection('globe');
+    setGlobeDisplayMode('both');
+    setCameraMode('global');
+    setGlobeOverview(true);
+    setGlobeSpinPaused(false);
+    setShowHero(false);
+    setScreensaverPhase('globe');
+    window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview'));
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('globehoppers-force-globe-overview')), 24);
+  }, [screensaverEnabled]);
+
+  useEffect(() => {
+    if (!screensaverEnabled || !legs.length || screensaverBootedRef.current) return;
+    screensaverBootedRef.current = true;
+    const timer = window.setTimeout(startScreensaverTimelineCycle, 120);
+    return () => window.clearTimeout(timer);
+  }, [screensaverEnabled, legs.length, startScreensaverTimelineCycle]);
+
   const timelineComplete = started && legs.length > 0 && activeIndex >= legs.length - 1 && Number(legProgress || 0) >= 0.999999;
+
+  useEffect(() => {
+    if (!screensaverEnabled || screensaverPhase !== 'timeline' || !timelineComplete) return;
+    enterScreensaverGlobePhase();
+  }, [screensaverEnabled, screensaverPhase, timelineComplete, enterScreensaverGlobePhase]);
+
+  useEffect(() => {
+    if (!screensaverEnabled || screensaverPhase !== 'timeline' || timelineComplete || introLaunching || relocationTransition || admin || document.hidden || isPlaying) return;
+    const timer = window.setTimeout(() => setIsPlaying(true), 120);
+    return () => window.clearTimeout(timer);
+  }, [screensaverEnabled, screensaverPhase, timelineComplete, introLaunching, relocationTransition, admin, isPlaying]);
+
+  useEffect(() => {
+    window.clearTimeout(screensaverGlobeTimerRef.current);
+    screensaverGlobeTimerRef.current = null;
+    if (!screensaverEnabled || screensaverPhase !== 'globe') return undefined;
+    screensaverGlobeTimerRef.current = window.setTimeout(startScreensaverTimelineCycle, screensaverConfig.globeDurationMs);
+    return () => {
+      window.clearTimeout(screensaverGlobeTimerRef.current);
+      screensaverGlobeTimerRef.current = null;
+    };
+  }, [screensaverEnabled, screensaverPhase, screensaverConfig.globeDurationMs, startScreensaverTimelineCycle]);
+
+  useEffect(() => () => {
+    window.clearTimeout(screensaverGlobeTimerRef.current);
+  }, []);
   const hasPlaybackStarted = started && !introLaunching && activeIndex >= 0 && activeIndex < legs.length && !timelineComplete;
   const isRelocating = Boolean(relocationTransition);
   const topbarPlaybackTitle = isRelocating
@@ -1176,7 +1301,7 @@ export default function App() {
       ? 'Timeline Complete — Use Restart Journey'
       : (isPlaying ? 'Pause' : (hasPlaybackStarted ? 'Resume Travel History' : 'Play Travel History'));
 
-  return <main className={`app ${isPlaying ? 'is-playing' : ''} ${isRelocating ? 'is-relocating' : ''}`} data-theme={theme}>
+  return <main className={`app ${isPlaying ? 'is-playing' : ''} ${isRelocating ? 'is-relocating' : ''} ${screensaverEnabled ? 'is-screensaver' : ''}`} data-theme={theme} data-screensaver-phase={screensaverPhase}>
     <header className="topbar">
       <button className="brand" onClick={titleClick} title="GlobeHoppers">GlobeHoppers</button>
       <div className="tagline">All your hops, skips & jumps.</div>
