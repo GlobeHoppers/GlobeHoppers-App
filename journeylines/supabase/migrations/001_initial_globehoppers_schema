@@ -1,0 +1,329 @@
+begin;
+
+-- =========================================================
+-- Shared updated_at trigger
+-- =========================================================
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+-- =========================================================
+-- Profiles
+-- One public application profile per Supabase Auth user.
+-- =========================================================
+
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  avatar_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.profiles is
+  'Application profiles linked one-to-one with Supabase Auth users.';
+
+-- =========================================================
+-- Travel maps
+-- Each user may eventually own more than one map.
+-- =========================================================
+
+create table public.travel_maps (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles(id) on delete restrict,
+  name text not null,
+  description text,
+  slug text,
+  is_public boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint travel_maps_name_not_blank
+    check (length(trim(name)) > 0),
+
+  constraint travel_maps_slug_format
+    check (
+      slug is null
+      or slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+    )
+);
+
+create unique index travel_maps_slug_unique
+  on public.travel_maps(slug)
+  where slug is not null;
+
+create index travel_maps_owner_id_idx
+  on public.travel_maps(owner_id);
+
+-- =========================================================
+-- Map members
+-- Allows maps to be shared with other authenticated users.
+-- The owner remains identified by travel_maps.owner_id.
+-- =========================================================
+
+create table public.map_members (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references public.travel_maps(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  role text not null default 'viewer',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint map_members_role_valid
+    check (role in ('owner', 'editor', 'viewer')),
+
+  constraint map_members_unique_membership
+    unique (map_id, user_id)
+);
+
+create index map_members_user_id_idx
+  on public.map_members(user_id);
+
+create index map_members_map_id_idx
+  on public.map_members(map_id);
+
+-- =========================================================
+-- Hoppers
+-- A traveler/person displayed on a specific travel map.
+-- =========================================================
+
+create table public.hoppers (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references public.travel_maps(id) on delete cascade,
+  name text not null,
+  color text,
+  avatar_url text,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint hoppers_name_not_blank
+    check (length(trim(name)) > 0),
+
+  constraint hoppers_sort_order_nonnegative
+    check (sort_order >= 0)
+);
+
+create index hoppers_map_id_idx
+  on public.hoppers(map_id);
+
+-- =========================================================
+-- Locations
+-- Reusable geographic locations.
+-- These are not globally owned trips; they are reference data.
+-- =========================================================
+
+create table public.locations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  region text,
+  country text,
+  continent text,
+  latitude double precision not null,
+  longitude double precision not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint locations_name_not_blank
+    check (length(trim(name)) > 0),
+
+  constraint locations_latitude_valid
+    check (latitude between -90 and 90),
+
+  constraint locations_longitude_valid
+    check (longitude between -180 and 180)
+);
+
+create index locations_name_idx
+  on public.locations(name);
+
+create index locations_country_idx
+  on public.locations(country);
+
+-- =========================================================
+-- Trips
+-- Every trip belongs directly to one travel map.
+-- =========================================================
+
+create table public.trips (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references public.travel_maps(id) on delete cascade,
+  title text,
+  start_date date,
+  end_date date,
+  notes text,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint trips_date_order_valid
+    check (
+      start_date is null
+      or end_date is null
+      or end_date >= start_date
+    ),
+
+  constraint trips_sort_order_nonnegative
+    check (sort_order >= 0)
+);
+
+create index trips_map_id_idx
+  on public.trips(map_id);
+
+create index trips_dates_idx
+  on public.trips(start_date, end_date);
+
+-- =========================================================
+-- Trip legs
+-- Ordered movements within a trip.
+-- =========================================================
+
+create table public.trip_legs (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  from_location_id uuid references public.locations(id) on delete restrict,
+  to_location_id uuid not null references public.locations(id) on delete restrict,
+  transport_mode text not null default 'flight',
+  leg_order integer not null,
+  departure_date date,
+  arrival_date date,
+  route_label text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint trip_legs_transport_mode_valid
+    check (
+      transport_mode in (
+        'flight',
+        'drive',
+        'train',
+        'boat',
+        'walk',
+        'other'
+      )
+    ),
+
+  constraint trip_legs_order_positive
+    check (leg_order >= 1),
+
+  constraint trip_legs_date_order_valid
+    check (
+      departure_date is null
+      or arrival_date is null
+      or arrival_date >= departure_date
+    ),
+
+  constraint trip_legs_locations_different
+    check (
+      from_location_id is null
+      or from_location_id <> to_location_id
+    ),
+
+  constraint trip_legs_unique_order
+    unique (trip_id, leg_order)
+);
+
+create index trip_legs_trip_id_idx
+  on public.trip_legs(trip_id);
+
+create index trip_legs_from_location_id_idx
+  on public.trip_legs(from_location_id);
+
+create index trip_legs_to_location_id_idx
+  on public.trip_legs(to_location_id);
+
+-- =========================================================
+-- Trip Hoppers
+-- Many-to-many relationship between trips and Hoppers.
+-- =========================================================
+
+create table public.trip_hoppers (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  hopper_id uuid not null references public.hoppers(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint trip_hoppers_unique_assignment
+    unique (trip_id, hopper_id)
+);
+
+create index trip_hoppers_trip_id_idx
+  on public.trip_hoppers(trip_id);
+
+create index trip_hoppers_hopper_id_idx
+  on public.trip_hoppers(hopper_id);
+
+-- =========================================================
+-- User preferences
+-- One preference record per user for now.
+-- =========================================================
+
+create table public.user_preferences (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  theme text not null default 'system',
+  default_map_id uuid references public.travel_maps(id) on delete set null,
+  autoplay_enabled boolean not null default true,
+  reduced_motion boolean not null default false,
+  screensaver_enabled boolean not null default false,
+  settings jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint user_preferences_theme_valid
+    check (theme in ('system', 'light', 'dark'))
+);
+
+create index user_preferences_default_map_id_idx
+  on public.user_preferences(default_map_id);
+
+-- =========================================================
+-- updated_at triggers
+-- =========================================================
+
+create trigger profiles_set_updated_at
+before update on public.profiles
+for each row execute function public.set_updated_at();
+
+create trigger travel_maps_set_updated_at
+before update on public.travel_maps
+for each row execute function public.set_updated_at();
+
+create trigger map_members_set_updated_at
+before update on public.map_members
+for each row execute function public.set_updated_at();
+
+create trigger hoppers_set_updated_at
+before update on public.hoppers
+for each row execute function public.set_updated_at();
+
+create trigger locations_set_updated_at
+before update on public.locations
+for each row execute function public.set_updated_at();
+
+create trigger trips_set_updated_at
+before update on public.trips
+for each row execute function public.set_updated_at();
+
+create trigger trip_legs_set_updated_at
+before update on public.trip_legs
+for each row execute function public.set_updated_at();
+
+create trigger trip_hoppers_set_updated_at
+before update on public.trip_hoppers
+for each row execute function public.set_updated_at();
+
+create trigger user_preferences_set_updated_at
+before update on public.user_preferences
+for each row execute function public.set_updated_at();
+
+commit;
