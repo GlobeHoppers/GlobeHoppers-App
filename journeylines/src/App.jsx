@@ -289,6 +289,7 @@ export default function App() {
   const rlsTestEnabled = import.meta.env.DEV || String(import.meta.env.VITE_ENABLE_RLS_TEST_PANEL || '').toLowerCase() === 'true';
   const cloudTravelEnabled = String(import.meta.env.VITE_ENABLE_CLOUD_TRAVEL_DATA || '').toLowerCase() === 'true';
   const cloudTravelWriteEnabled = String(import.meta.env.VITE_ENABLE_CLOUD_TRAVEL_WRITES || '').toLowerCase() === 'true';
+  const cloudHopperWriteEnabled = cloudTravelWriteEnabled || String(import.meta.env.VITE_ENABLE_CLOUD_HOPPER_WRITES || '').toLowerCase() === 'true';
   const [screensaverConfig] = useState(() => readScreensaverConfiguration());
   const screensaverEnabled = screensaverConfig.enabled;
   const [screensaverPhase, setScreensaverPhase] = useState(() => screensaverConfig.enabled ? 'boot' : 'off');
@@ -297,6 +298,7 @@ export default function App() {
   const [hopperData, setHopperData] = useState(() => cloudTravelEnabled ? { hoppers: [], hopSquads: [], palette: baseHoppers.palette || [] } : baseHoppers);
   const [travelDataState, setTravelDataState] = useState(cloudTravelEnabled ? 'signedOut' : 'legacy');
   const [travelDataError, setTravelDataError] = useState('');
+  const [travelDataReloadNonce, setTravelDataReloadNonce] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(999999);
@@ -451,11 +453,18 @@ export default function App() {
       });
 
     return () => { cancelled = true; };
-  }, [cloudTravelEnabled, auth.user?.id, accountData?.selectedMap?.id, accountBootstrapState]);
+  }, [cloudTravelEnabled, auth.user?.id, accountData?.selectedMap?.id, accountBootstrapState, travelDataReloadNonce]);
 
   function requireCloudWriteAccess(actionLabel) {
     if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
     window.alert(`${actionLabel} is temporarily disabled while GlobeHoppers v8.2 read-only cloud loading is being verified. Your account data is private, but Add/Edit/Delete Hop will be connected in the next work package.`);
+    return false;
+  }
+
+
+  function requireCloudHopperWriteAccess() {
+    if (!cloudTravelEnabled || cloudHopperWriteEnabled) return true;
+    window.alert('Hopper editing is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_HOPPER_WRITES for the v8.2 Work Package 2 Preview.');
     return false;
   }
 
@@ -1419,7 +1428,7 @@ export default function App() {
       <div className="tagline">All your hops, skips & jumps.</div>
       <button className="topbar-pill topbar-add" onClick={addTravelTimelineEntry}>Add Hop</button>
       <button className="topbar-pill topbar-old-timeline" aria-hidden="true" tabIndex={-1} onClick={() => { setAdmin(false); setTripDrawerOpen(v => !v); }}>Old Timeline</button>
-      <button className="topbar-pill topbar-hoppers" onClick={() => { if (!auth.user && cloudTravelEnabled) { setAuthModalMode('signin'); setAuthModalOpen(true); return; } if (!requireCloudWriteAccess('Hopper editing')) return; if (destinationSelectionRef.current) cancelDestinationSelection('hoppers'); setStudioAddRequestId(0); setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
+      <button className="topbar-pill topbar-hoppers" onClick={() => { if (!auth.user && cloudTravelEnabled) { setAuthModalMode('signin'); setAuthModalOpen(true); return; } if (!requireCloudHopperWriteAccess()) return; if (destinationSelectionRef.current) cancelDestinationSelection('hoppers'); setStudioAddRequestId(0); setHopperEditorOpen(true); setAdmin(false); setTripDrawerOpen(false); }}><span className="topbar-hoppers-icon" aria-hidden="true">👤</span><span>Hoppers</span></button>
       <button className="topbar-pill" onClick={editTravelHistory}>GlobeHopper Timeline</button>
       <div className="topbar-globe-menu">
         <button className="topbar-pill topbar-icon-pill topbar-globe-button" title="View Globe" onClick={() => { setGlobeDisplayMode('both'); viewGlobe(); }}>🌐</button>
@@ -1474,7 +1483,7 @@ export default function App() {
     <section className="about glass">
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
-    {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
+    {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} cloudMode={cloudTravelEnabled} cloudWritesEnabled={cloudHopperWriteEnabled} mapId={accountData?.selectedMap?.id || null} onCloudSaved={() => setTravelDataReloadNonce(value => value + 1)} />}
     {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
     <AuthModal open={authModalOpen} initialMode={authModalMode} onClose={() => setAuthModalOpen(false)} />
     {rlsTestEnabled && <SecurityTestPanel open={securityTestOpen} account={accountData} onClose={() => setSecurityTestOpen(false)} />}
@@ -1614,7 +1623,7 @@ function TimelineTuningUtility({ values, onChange, onClose, onReset, onSave }) {
   </aside>;
 }
 
-function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
+function HopperEditorPanel({ hopperData, setHopperData, onClose, cloudMode = false, cloudWritesEnabled = false, mapId = null, onCloudSaved }) {
   const { hoppers, hopSquads, palette } = normalizeHopperData(hopperData);
   const [closing, setClosing] = useState(false);
   const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify({ hoppers, hopSquads, palette })));
@@ -1644,13 +1653,13 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     const label = hopper?.name || 'this Hopper';
     setConfirmRequest({
       title: 'Delete Hopper?',
-      message: `Delete ${label}? This will also remove them from any HopSquads.`,
+      message: `Delete ${label}? This will also remove them from HopSquads and any trip assignments.`,
       confirmLabel: 'Delete Hopper',
       onConfirm: () => setDraft(d => ({ ...d, hoppers: d.hoppers.filter(h => h.id !== id), hopSquads: d.hopSquads.map(s => ({ ...s, hopperIds: (s.hopperIds || []).filter(x => x !== id) })) }))
     });
   }
   function addHopper() {
-    const id = `hopper-${Date.now().toString(36)}`;
+    const id = `new-hopper-${Date.now().toString(36)}`;
     setDraft(d => ({ ...d, hoppers: [...d.hoppers, { id, name: 'New Hopper', colorName: 'blue', color: '#2f80ff' }] }));
   }
   function updateSquad(id, patch) { setDraft(d => ({ ...d, hopSquads: d.hopSquads.map(s => s.id === id ? { ...s, ...patch } : s) })); }
@@ -1687,9 +1696,34 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
   async function save() {
     const clean = {
       ...draft,
-      hoppers: draft.hoppers.map(h => ({ ...h, id: h.id || slugify(h.name), name: h.name || 'Hopper' })),
+      hoppers: draft.hoppers.map(h => ({ ...h, id: h.id || `new-hopper-${Date.now().toString(36)}`, name: String(h.name || '').trim() || 'Hopper' })),
       hopSquads: draft.hopSquads.map(s => ({ ...s, id: s.id || slugify(s.name), name: s.name || 'Hop Squad', hopperIds: s.hopperIds || [] }))
     };
+
+    if (cloudMode) {
+      if (!cloudWritesEnabled) {
+        window.alert('Cloud Hopper writes are disabled for this deployment.');
+        return;
+      }
+      if (!mapId) {
+        window.alert('Your account map is still loading. Please close this panel and try again.');
+        return;
+      }
+      try {
+        setBusy(true);
+        const repository = createTravelRepository({ cloudEnabled: true, mapId });
+        await repository.replaceHoppers(clean.hoppers);
+        await onCloudSaved?.();
+        onClose?.();
+      } catch (err) {
+        console.error('Unable to save cloud Hoppers.', err);
+        window.alert(`Unable to save Hoppers: ${err?.message || err}`);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     setHopperData(clean);
     localStorage.setItem('globehoppers.hoppers', JSON.stringify(clean));
     if (token && repo) {
@@ -1702,6 +1736,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
     }
     onClose?.();
   }
+
   return <section className={`hopper-editor-backdrop hopper-editor-drawer-backdrop ${closing ? 'is-closing' : ''}`} onClick={requestClose}>
     <div className={`hopper-editor glass hopper-editor--compact hopper-editor-drawer ${closing ? 'is-closing' : ''}`} onClick={e => e.stopPropagation()}>
       <header className="hopper-editor__header">
@@ -1721,7 +1756,7 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
             </article>)}
           </div>
         </section>
-        <section>
+        {!cloudMode && <section>
           <div className="hopper-section-title"><h3>HopSquads</h3><button className="primary small" onClick={addSquad}>Add Squad</button></div>
           <div className="hopper-list">
             {draft.hopSquads.map(s => <article className="hopper-card hopper-card--squad" key={s.id} style={{ '--accent': s.color }}>
@@ -1743,9 +1778,10 @@ function HopperEditorPanel({ hopperData, setHopperData, onClose }) {
               </div>
             </article>)}
           </div>
-        </section>
+        </section>}
+        {cloudMode && <p className="hopper-cloud-note">Hoppers save privately to this account. HopSquads remain disabled until they receive their own cloud schema.</p>}
       </div>
-      <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save Hoppers'}</button></footer>
+      <footer className="hopper-editor__footer"><button className="secondary" onClick={requestClose}>Cancel</button><button className="primary" disabled={busy} onClick={save}>{busy ? 'Saving…' : (cloudMode ? 'Save Private Hoppers' : 'Save Hoppers')}</button></footer>
     </div>
     {confirmRequest && <HopperConfirmPopup request={confirmRequest} busy={busy} onCancel={() => setConfirmRequest(null)} onConfirm={() => { const action = confirmRequest.onConfirm; setConfirmRequest(null); action?.(); }} />}
   </section>;
