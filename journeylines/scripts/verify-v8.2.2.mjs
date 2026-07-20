@@ -19,7 +19,7 @@ const checks = [
   [app.includes('requireCloudTripCreateAccess'), 'App create-only write gate missing'],
   [app.includes('onCloudCreateTrip'), 'App cloud create callback missing'],
   [admin.includes('cloudTripCreateEnabled'), 'AdminPanel cloud create flag missing'],
-  [admin.includes('Editing existing cloud trips is not enabled in Work Package 3'), 'Edit-trip guard missing'],
+  [admin.includes('cloudTripCreateEnabled') && admin.includes('onCloudCreateTrip'), 'Create-trip cloud branch missing'],
   [repo.includes("rpc('create_private_trip'"), 'Supabase repository RPC call missing'],
   [sql.includes('security definer'), 'RPC must be security definer'],
   [sql.includes('private.can_edit_map'), 'RPC map permission check missing'],

@@ -212,4 +212,61 @@ export class SupabaseTravelRepository {
     return { tripId: data };
   }
 
+
+  async updateTrip({ tripId, expectedUpdatedAt, trip, locations = [] } = {}) {
+    if (!isUuid(tripId)) throw new Error('A valid trip ID is required for editing.');
+    if (!trip || !Array.isArray(trip.route) || trip.route.length < 2) {
+      throw new Error('A trip with at least one route leg is required.');
+    }
+
+    const locationById = new Map((locations || []).filter(location => location?.id).map(location => [String(location.id), location]));
+    const usedLocationIds = [...new Set(trip.route.map(point => point?.locationId).filter(Boolean).map(String))];
+    const locationPayload = usedLocationIds.map(clientId => {
+      const location = locationById.get(clientId);
+      if (!location) throw new Error(`Location ${clientId} is missing from the current map data.`);
+      const latitude = Number(location.lat ?? location.latitude);
+      const longitude = Number(location.lon ?? location.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error(`${location.name || clientId} does not have valid coordinates.`);
+      return { client_id: clientId, name: String(location.name || clientId), region: location.region || null, country: location.country || null, continent: location.continent || null, latitude, longitude };
+    });
+
+    const modeToDatabase = { plane: 'flight', car: 'drive', drive: 'drive', train: 'train', boat: 'boat', walk: 'walk', other: 'other' };
+    const legs = trip.route.slice(1).map((point, index) => ({
+      from_client_id: String(trip.route[index].locationId),
+      to_client_id: String(point.locationId),
+      transport_mode: modeToDatabase[point.modeFromPrevious] || point.modeFromPrevious || 'flight',
+      leg_order: index + 1,
+      route_label: point.routeLabel || null,
+      notes: point.notes || null,
+      route_geometry: point.routeGeometry || null,
+      route_provider: point.routeProvider || null,
+      route_version: point.routeVersion || null
+    }));
+
+    const toDate = (year, month, day) => (!year || !month) ? null : `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day || 1).padStart(2, '0')}`;
+    const { data, error } = await this.client.rpc('update_private_trip', {
+      p_map_id: this.mapId,
+      p_trip_id: tripId,
+      p_expected_updated_at: expectedUpdatedAt || null,
+      p_trip: {
+        title: trip.label || trip.title || 'Untitled Hop',
+        start_date: toDate(trip.year, trip.month, trip.day),
+        end_date: toDate(trip.endYear, trip.endMonth, trip.endDay),
+        notes: trip.notes || null,
+        sort_order: Number.isFinite(Number(trip.sortOrder)) ? Number(trip.sortOrder) : 0,
+        occasion: trip.occasion || null,
+        trail_style: trip.trailStyle || 'solid',
+        trail_color_mode: trip.trailColorMode || 'members'
+      },
+      p_locations: locationPayload,
+      p_legs: legs,
+      p_hopper_ids: (trip.travelers || []).filter(isUuid)
+    });
+    if (error) {
+      if (String(error.message || '').includes('changed in another session')) error.code = 'TRIP_CONFLICT';
+      throw error;
+    }
+    return { tripId: data };
+  }
+
 }

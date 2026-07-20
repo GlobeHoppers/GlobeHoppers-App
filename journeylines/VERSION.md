@@ -1,3 +1,3 @@
-# GlobeHoppers v8.2.2
+# GlobeHoppers v8.2.3
 
-Work Package 3: secure account-owned Add Hop creation.
+Work Package 4: Secure Edit Hop with transactional leg/Hopper replacement and optimistic concurrency protection.

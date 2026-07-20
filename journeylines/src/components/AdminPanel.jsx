@@ -233,7 +233,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, mapId = null, onCloudCreateTrip = null }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, cloudTripEditEnabled = false, mapId = null, onCloudCreateTrip = null, onCloudUpdateTrip = null }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -1008,22 +1008,29 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       const shouldAutoPlay = !editingId || changeKind === 'route' || changeKind === 'date';
 
       if (cloudMode) {
-        if (editingId) throw new Error('Editing existing cloud trips is not enabled in Work Package 3.');
-        if (!cloudTripCreateEnabled) throw new Error('Cloud Add Hop saving is disabled for this deployment.');
-        if (!mapId) throw new Error('Your private map is still loading. Close Add Hop and try again.');
-        if (typeof onCloudCreateTrip !== 'function') throw new Error('The cloud trip repository is unavailable.');
-
-        const saved = await onCloudCreateTrip({
-          trip: normalizedTrip,
-          locations: nextLocations
-        });
+        if (!mapId) throw new Error('Your private map is still loading. Close the editor and try again.');
+        let saved;
+        if (editingId) {
+          if (!cloudTripEditEnabled) throw new Error('Cloud Edit Hop saving is disabled for this deployment.');
+          if (typeof onCloudUpdateTrip !== 'function') throw new Error('The cloud trip update repository is unavailable.');
+          saved = await onCloudUpdateTrip({
+            tripId: editingId,
+            expectedUpdatedAt: existingTrip?.databaseUpdatedAt || null,
+            trip: normalizedTrip,
+            locations: nextLocations
+          });
+        } else {
+          if (!cloudTripCreateEnabled) throw new Error('Cloud Add Hop saving is disabled for this deployment.');
+          if (typeof onCloudCreateTrip !== 'function') throw new Error('The cloud trip repository is unavailable.');
+          saved = await onCloudCreateTrip({ trip: normalizedTrip, locations: nextLocations });
+        }
         initialDraftSignatureRef.current = draftSignature(draft);
         closeModal(true);
         onTripSaved({
           tripId: saved?.tripId || saved?.id || normalizedTrip.id,
-          action: 'add',
+          action: editingId ? 'edit' : 'add',
           label: normalizedTrip.label,
-          changeKind: 'add',
+          changeKind: editingId ? changeKind : 'add',
           shouldAutoPlay: false
         });
         return;
