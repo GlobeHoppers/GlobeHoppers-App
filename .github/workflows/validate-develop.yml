@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - develop
+
   pull_request:
     branches:
       - main
+
   workflow_dispatch:
 
 permissions:
@@ -18,8 +20,9 @@ defaults:
 
 jobs:
   validate:
+    name: Validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_DEV }}
@@ -31,50 +34,150 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify repository structure
+        shell: bash
         run: |
+          echo "Working directory:"
           pwd
+
+          echo "Repository contents:"
           ls -la
-          test -f package.json
-          test -f package-lock.json
-          test -f vite.config.js || test -f vite.config.ts || test -f vite.config.mjs
+
+          test -f package.json || {
+            echo "::error::journeylines/package.json was not found."
+            exit 1
+          }
+
+          test -f package-lock.json || {
+            echo "::error::journeylines/package-lock.json was not found."
+            exit 1
+          }
+
+          if [ ! -f vite.config.js ] && \
+             [ ! -f vite.config.ts ] && \
+             [ ! -f vite.config.mjs ] && \
+             [ ! -f vite.config.cjs ]; then
+            echo "::error::No Vite configuration file was found."
+            exit 1
+          fi
+
+          echo "Repository structure is valid."
 
       - name: Verify development environment variables
+        shell: bash
         run: |
           if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "::error::VITE_SUPABASE_URL_DEV is missing."
+            echo "::error::GitHub secret VITE_SUPABASE_URL_DEV is missing."
             exit 1
           fi
+
           if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."
+            echo "::error::GitHub secret VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."
             exit 1
           fi
-          echo "Supabase Development environment variables are present."
+
+          case "$VITE_SUPABASE_URL" in
+            https://*.supabase.co)
+              echo "Supabase Development URL format appears valid."
+              ;;
+            *)
+              echo "::warning::VITE_SUPABASE_URL_DEV does not match the usual https://PROJECT.supabase.co format."
+              ;;
+          esac
+
+          echo "Required Development environment variables are present."
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: journeylines/package-lock.json
           registry-url: https://registry.npmjs.org
 
+      - name: Show runtime versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
+          git --version
+
+      - name: Check lockfile for inaccessible registries
+        shell: bash
+        run: |
+          echo "Checking package-lock.json for private or inaccessible registry URLs..."
+
+          if grep -Ein \
+            "applied-caas|openai\.org|artifactory|localhost|127\.0\.0\.1" \
+            package-lock.json; then
+            echo "::error::package-lock.json contains a private or inaccessible registry URL."
+            echo "::error::Regenerate package-lock.json locally using https://registry.npmjs.org/."
+            exit 1
+          fi
+
+          echo "No private registry URLs were found."
+
+      - name: Verify npm registry connectivity
+        shell: bash
+        timeout-minutes: 2
+        run: |
+          npm config set registry https://registry.npmjs.org/
+
+          echo "Configured npm registry:"
+          npm config get registry
+
+          echo "Testing npm registry..."
+          npm ping --registry=https://registry.npmjs.org/
+
+          echo "Testing direct HTTPS access..."
+          curl \
+            --fail \
+            --show-error \
+            --silent \
+            --location \
+            --max-time 30 \
+            https://registry.npmjs.org/react/latest \
+            > /dev/null
+
+          echo "Public npm registry is reachable."
+
       - name: Install dependencies
-        timeout-minutes: 10
+        shell: bash
+        timeout-minutes: 15
         env:
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
-          NPM_CONFIG_FETCH_RETRIES: 4
-          NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 10000
-          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 120000
-        run: npm ci --no-audit --no-fund
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          NPM_CONFIG_FETCH_RETRIES: "3"
+          NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: "10000"
+          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: "60000"
+          NPM_CONFIG_AUDIT: "false"
+          NPM_CONFIG_FUND: "false"
+        run: |
+          npm ci \
+            --no-audit \
+            --no-fund \
+            --loglevel verbose
 
       - name: Run v8.1 authentication verification
+        shell: bash
         run: npm run verify:v8.1
 
       - name: Build GlobeHoppers
+        shell: bash
         run: npm run build
 
       - name: Verify build output
+        shell: bash
         run: |
-          test -d dist
-          test -f dist/index.html
-          echo "Develop validation completed successfully."
+          test -d dist || {
+            echo "::error::The dist directory was not created."
+            exit 1
+          }
+
+          test -f dist/index.html || {
+            echo "::error::dist/index.html was not created."
+            exit 1
+          }
+
+          echo "Build output:"
+          find dist -maxdepth 2 -type f | sort | head -100
+
+          echo "GlobeHoppers develop validation completed successfully."
