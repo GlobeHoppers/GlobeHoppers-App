@@ -1,0 +1,75 @@
+name: Validate GlobeHoppers Develop
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ./journeylines
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL_DEV }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY_DEV }}
+      VITE_ENABLE_RLS_TEST_PANEL: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify repository structure
+        run: |
+          pwd
+          ls -la
+          test -f package.json
+          test -f package-lock.json
+          test -f vite.config.js || test -f vite.config.ts || test -f vite.config.mjs
+
+      - name: Verify development environment variables
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "::error::VITE_SUPABASE_URL_DEV is missing."
+            exit 1
+          fi
+
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY_DEV is missing."
+            exit 1
+          fi
+
+          echo "Supabase Development environment variables are present."
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run v8.1 authentication verification
+        run: npm run verify:v8.1
+
+      - name: Build GlobeHoppers
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          test -d dist
+          test -f dist/index.html
+          echo "Develop validation completed successfully."
