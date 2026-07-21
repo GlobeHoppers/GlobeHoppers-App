@@ -1,3 +1,3 @@
-# GlobeHoppers v8.2.3
+# GlobeHoppers Version
 
-Work Package 4: Secure Edit Hop with transactional leg/Hopper replacement and optimistic concurrency protection.
+**v8.2.4** — Work Package 4 timeline access hotfix.

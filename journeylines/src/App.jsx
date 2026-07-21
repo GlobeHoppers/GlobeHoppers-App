@@ -455,9 +455,9 @@ export default function App() {
     return () => { cancelled = true; };
   }, [cloudTravelEnabled, auth.user?.id, accountData?.selectedMap?.id, accountBootstrapState, travelDataReloadNonce]);
 
-  function requireCloudWriteAccess(actionLabel) {
-    if (!cloudTravelEnabled) return true;
-    window.alert(`${actionLabel} is not enabled in Work Package 4. Add Hop and individual Edit Hop are enabled, while Delete Hop, timeline-wide editing/reordering, and batch creation remain disabled.`);
+  function requireCloudTimelineAccess() {
+    if (!cloudTravelEnabled || cloudTravelWriteEnabled) return true;
+    window.alert('Private timeline access is not enabled for this deployment. Enable VITE_ENABLE_CLOUD_TRAVEL_WRITES for the Work Package 4 Preview.');
     return false;
   }
 
@@ -1059,7 +1059,7 @@ export default function App() {
     setIsPlaying(true);
   }, [legProgress]);
   function editTravelHistory() {
-    if (!requireCloudWriteAccess('GlobeHopper Timeline editing')) return;
+    if (!requireCloudTimelineAccess()) return;
     if (destinationSelectionRef.current) cancelDestinationSelection('open-timeline');
     relocationTransitionRef.current = null;
     setRelocationTransition(null);

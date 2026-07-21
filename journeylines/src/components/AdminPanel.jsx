@@ -1608,12 +1608,12 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
         {viewType === 'card' ? groupTripsByYear(sortedTrips).map(group => <section className="timeline-year-section studio-year-section" key={group.year}>
           <h3>{group.year}</h3>
           <div className="timeline-card-grid studio-card-grid">
-            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+            {group.rows.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={cloudMode ? null : del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
           </div>
-        </section>) : sortedTrips.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
+        </section>) : sortedTrips.map(trip => <StudioTripRow key={trip.id} trip={trip} viewType={viewType} reorderMode={false} dragId={dragId} setDragId={setDragId} dropId={dropId} setDropId={setDropId} moveTrip={moveTrip} locById={locById} onEdit={openEdit} onDelete={cloudMode ? null : del} hopperData={normalizedHoppers} activeTripId={activeTripId} onPlayTrip={onPlayTrip} />)}
       </div>
 
-      <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
+      {!cloudMode && <details className="repo-settings" open={settingsOpen} onToggle={e => setSettingsOpen(e.currentTarget.open)}>
         <summary>Repository Settings</summary>
         <div className="repo-grid">
           <button onClick={download}>Download trips.json</button>
@@ -1622,7 +1622,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           <button onClick={() => commitData().then(() => alert('Travel history committed.')).catch(err => alert(err.message))}>Commit current data</button>
           <button onClick={() => { localStorage.removeItem('journeylines.githubToken'); setToken(''); }}>Clear token</button>
         </div>
-      </details>
+      </details>}
     </aside>
 
     {confirmRequest && <ThemedConfirmPopup
@@ -1643,7 +1643,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       locById={locById}
       onClose={closeModal}
       onSave={modal === 'batch' ? stageCurrentBatchHop : saveTripFromModal}
-      onOpenBatch={openBatchAdd}
+      onOpenBatch={cloudMode ? null : openBatchAdd}
       onSaveBatch={requestSaveBatch}
       onAddAnotherBatchHop={requestNewBatchDraft}
       onEditBatchHop={requestBatchEdit}
@@ -1660,7 +1660,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
       addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers} formError={formError} setFormError={setFormError}
-      onDelete={modal === 'edit' ? deleteTripFromModal : null}
+      onDelete={!cloudMode && modal === 'edit' ? deleteTripFromModal : null}
       homeBases={homeBases}
       cityDb={cityDb}
       cityDbLoaded={cityDbLoaded}
@@ -1982,7 +1982,7 @@ function StudioTripRow({ trip, viewType, reorderMode, dragId, setDragId, dropId,
     <span className="studio-trip-date">{formatTripDate(trip)}</span>
     <span className="studio-trip-main"><strong>{trip.label || trip.toLocationName || trip.toLocationId}</strong><small>{summarizeTrip(trip, locById, hopperData)}</small></span>
     <span className="studio-trip-buttons">
-      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button></>}
+      {reorderMode ? <span className="drag-handle">↕</span> : viewType === 'card' ? null : <><button onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>Edit</button>{onDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(trip.id); }}>Delete</button>}</>}
     </span>
     <StudioTimelineRowBorder colors={borderColors} fallback={accent} />
   </div>;
