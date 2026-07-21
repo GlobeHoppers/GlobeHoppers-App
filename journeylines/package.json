@@ -1,7 +1,7 @@
 {
   "name": "journeylines",
   "private": true,
-  "version": "8.2.5",
+  "version": "8.2.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -33,7 +33,8 @@
     "verify:v8.2.2": "node scripts/verify-v8.2.2.mjs .",
     "verify:v8.2.3": "node scripts/verify-v8.2.3.mjs .",
     "verify:v8.2.4": "node scripts/verify-v8.2.4.mjs",
-    "verify:v8.2.5": "node scripts/verify-v8.2.5.mjs"
+    "verify:v8.2.5": "node scripts/verify-v8.2.5.mjs",
+    "verify:v8.2.6": "node scripts/verify-v8.2.6.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
