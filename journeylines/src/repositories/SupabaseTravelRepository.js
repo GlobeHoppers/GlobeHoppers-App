@@ -269,4 +269,21 @@ export class SupabaseTravelRepository {
     return { tripId: data };
   }
 
+
+  async deleteTrip({ tripId, expectedUpdatedAt } = {}) {
+    if (!isUuid(tripId)) throw new Error('A valid trip ID is required for deletion.');
+    if (!expectedUpdatedAt) throw new Error('The trip revision is missing. Reload the trip before deleting.');
+
+    const { data, error } = await this.client.rpc('delete_private_trip', {
+      p_map_id: this.mapId,
+      p_trip_id: tripId,
+      p_expected_updated_at: expectedUpdatedAt
+    });
+    if (error) {
+      if (String(error.message || '').includes('changed in another session')) error.code = 'TRIP_CONFLICT';
+      throw error;
+    }
+    return { tripId: data };
+  }
+
 }

@@ -10,6 +10,7 @@ import { createRouteReviewSnapshot, formatReviewDuration, isSurfaceTravelMode, r
 
 const CLOUD_SAVE_TIMEOUT_MS = 30000;
 const TRIP_CONFLICT_MESSAGE = 'This trip changed in another session. Reload before saving.';
+const TRIP_DELETE_CONFLICT_MESSAGE = 'This trip changed in another session. Reload before deleting.';
 
 function withCloudSaveTimeout(promise, timeoutMessage) {
   let timeoutId;
@@ -249,7 +250,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, cloudTripEditEnabled = false, mapId = null, onCloudCreateTrip = null, onCloudUpdateTrip = null }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {}, cloudMode = false, cloudTripCreateEnabled = false, cloudTripEditEnabled = false, cloudTripDeleteEnabled = false, mapId = null, onCloudCreateTrip = null, onCloudUpdateTrip = null, onCloudDeleteTrip = null, onCloudReloadTravel = null }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -1096,7 +1097,19 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       // block repeats this defensively so every failure path leaves the editor usable.
       setBusy(false);
       setFormError(message);
-      if (isConflict) window.alert(message);
+      if (isConflict) {
+        setConfirmRequest({
+          title: 'Trip changed',
+          message,
+          confirmLabel: 'Reload trip',
+          confirmClass: 'primary',
+          cancelLabel: 'Keep editing',
+          onConfirm: async () => {
+            closeModal(true);
+            await onCloudReloadTravel?.();
+          }
+        });
+      }
     } finally {
       setBusy(false);
     }
@@ -1104,16 +1117,32 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
 
   async function deleteTripFromModal() {
     if (!editingId) return;
-    const label = draft.label || draft.toLocationText || editingId;
+    const currentTrips = tripsRef.current || trips;
+    const existingTrip = currentTrips.find(item => item.id === editingId);
+    const label = draft.label || draft.toLocationText || existingTrip?.label || editingId;
     setConfirmRequest({
-      title: 'Delete hop?',
-      message: `Delete ${label}? This cannot be undone.`,
-      confirmLabel: 'Delete hop',
+      title: 'Delete Hop?',
+      message: `Delete “${label}”? Its route, legs, and Hopper assignments will be permanently removed.`,
+      confirmLabel: 'Delete Hop',
+      confirmClass: 'danger',
       onConfirm: async () => {
         if (busy) return;
         setBusy(true);
+        setFormError('');
         try {
-          const currentTrips = tripsRef.current || trips;
+          if (cloudMode) {
+            if (!cloudTripDeleteEnabled) throw new Error('Cloud Delete Hop is disabled for this deployment.');
+            if (typeof onCloudDeleteTrip !== 'function') throw new Error('The cloud trip deletion repository is unavailable.');
+            await withCloudSaveTimeout(onCloudDeleteTrip({
+              tripId: editingId,
+              expectedUpdatedAt: existingTrip?.databaseUpdatedAt || null
+            }), 'The trip deletion took too long. Check your connection and try again.');
+            initialDraftSignatureRef.current = draftSignature(draft);
+            closeModal(true);
+            onTripSaved({ tripId: editingId, action: 'delete', label, changeKind: 'delete', shouldAutoPlay: false });
+            return;
+          }
+
           const currentLocations = locationsRef.current || locations;
           const currentScroll = studioListRef.current?.scrollTop ?? null;
           const nextTrips = insertChronologically(currentTrips.filter(t => t.id !== editingId));
@@ -1124,13 +1153,40 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
           closeModal(true);
           saveDataInBackground(nextTrips, currentLocations, `Delete trip: ${label} (${editingId})`, { action: 'delete', tripId: editingId, label });
         } catch (err) {
-          setFormError(err.message || String(err));
+          const rawMessage = err?.message || String(err);
+          const isConflict = err?.code === 'TRIP_CONFLICT' || /changed in another session/i.test(rawMessage);
+          const message = isConflict ? TRIP_DELETE_CONFLICT_MESSAGE : rawMessage;
+          setBusy(false);
+          setFormError(message);
+          if (isConflict) {
+            setConfirmRequest({
+              title: 'Trip changed',
+              message,
+              confirmLabel: 'Reload trip',
+              confirmClass: 'primary',
+              cancelLabel: 'Keep editing',
+              onConfirm: async () => {
+                closeModal(true);
+                await onCloudReloadTravel?.();
+              }
+            });
+          } else {
+            setConfirmRequest({
+              title: 'Delete failed',
+              message,
+              confirmLabel: 'Try again',
+              confirmClass: 'primary',
+              cancelLabel: 'Close',
+              onConfirm: deleteTripFromModal
+            });
+          }
         } finally {
           setBusy(false);
         }
       }
     });
   }
+
 
   function del(id) {
     const trip = trips.find(t => t.id === id);
@@ -1686,7 +1742,7 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
       onSetReturnMode={setReturnMode}
       onSetPreviewLegMode={setPreviewLegMode}
       addTripNoun={addTripNoun} normalizedHoppers={normalizedHoppers} formError={formError} setFormError={setFormError}
-      onDelete={!cloudMode && modal === 'edit' ? deleteTripFromModal : null}
+      onDelete={modal === 'edit' && (!cloudMode || cloudTripDeleteEnabled) ? deleteTripFromModal : null}
       homeBases={homeBases}
       cityDb={cityDb}
       cityDbLoaded={cityDbLoaded}
@@ -1926,7 +1982,7 @@ function ThemedConfirmPopup({ request, busy, onCancel, onConfirm, onDiscard }) {
       <h3 id="studio-confirm-title">{request.title || 'Confirm action'}</h3>
       <p>{request.message}</p>
       <div className="studio-confirm-actions">
-        <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>Cancel</button>
+        <button type="button" className="secondary" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onCancel}>{request.cancelLabel || 'Cancel'}</button>
         {request.discardLabel && request.onDiscard && <button type="button" className="secondary studio-confirm-discard" disabled={busy} onPointerDown={stopConfirmEvent} onClick={onDiscard}>{request.discardLabel}</button>}
         <button type="button" className={confirmClass} disabled={busy} onPointerDown={stopConfirmEvent} onClick={onConfirm}>{busy ? 'Working…' : (request.confirmLabel || 'Confirm')}</button>
       </div>
