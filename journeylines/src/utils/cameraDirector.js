@@ -9,9 +9,11 @@ export function resolveCameraOwner({
   playing = false, intro = false, relocating = false, overview = false,
   idle = false, tuning = false
 } = {}) {
-  if (tuning) return 'tuning';
+  // Completing a pending relocation or intro takes priority over a tuning
+  // overlay; otherwise its camera may stall before signaling completion.
   if (relocating) return 'relocation';
   if (intro) return 'intro';
+  if (tuning) return 'tuning';
   if (idle) return 'idle';
   if (overview) return 'overview';
   return playing ? 'playback' : 'scene';
