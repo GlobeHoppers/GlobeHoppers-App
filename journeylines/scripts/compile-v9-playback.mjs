@@ -76,6 +76,7 @@ for (const entry of entries) {
       from: [Number(entry.leg.from.lon), Number(entry.leg.from.lat)],
       to: [Number(entry.leg.to.lon), Number(entry.leg.to.lat)]
     },
+    geometrySha256: supplied ? createHash('sha256').update(JSON.stringify(supplied)).digest('hex') : null,
     geometrySource: supplied ? (detail.geometrySource || 'saved') : 'generated-fallback',
     plan: compilePlaybackLeg(entry.leg, supplied)
   };
