@@ -70,6 +70,12 @@ for (const entry of entries) {
     miles: entry.leg.miles,
     fromLocationId: entry.leg.from.id,
     toLocationId: entry.leg.to.id,
+    fromPointId: entry.leg.from.pointId || null,
+    toPointId: entry.leg.to.pointId || null,
+    coordinates: {
+      from: [Number(entry.leg.from.lon), Number(entry.leg.from.lat)],
+      to: [Number(entry.leg.to.lon), Number(entry.leg.to.lat)]
+    },
     geometrySource: supplied ? (detail.geometrySource || 'saved') : 'generated-fallback',
     plan: compilePlaybackLeg(entry.leg, supplied)
   };
