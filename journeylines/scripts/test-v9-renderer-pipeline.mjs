@@ -127,5 +127,5 @@ test('30 minute unattended playback schedule has constant-size state', () => {
   assert.ok(stats.trails < 22000, JSON.stringify(stats));
   assert.ok(stats.arcs < 40000, JSON.stringify(stats));
   assert.ok(stats.skipped > 100000, JSON.stringify(stats));
-  assert.equal(Object.keys(stats).length, 9, 'scheduler should not accumulate per-frame records');
+  assert.equal(Object.keys(stats).length, 8, 'scheduler should not accumulate per-frame records');
 });
