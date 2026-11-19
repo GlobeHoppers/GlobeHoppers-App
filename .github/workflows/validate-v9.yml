@@ -1,0 +1,45 @@
+name: Validate GlobeHoppers v9 (No Deploy)
+
+on:
+  push:
+    branches:
+      - refactor/v9-core
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-v9-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: WP0 data integrity and Vite build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: journeylines
+    steps:
+      - name: Checkout v9 branch
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+      - name: Verify frozen travel data and referential integrity
+        run: node scripts/verify-v9-baseline.mjs .
+      - name: Install reproducibly from lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify original v7.5.15 features
+        run: npm run verify:v7.5.15
+      - name: Build Vite viewer without publishing
+        run: npm run build
+      - name: Assert build output exists
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          echo "v9 WP0 build completed; no production deploy"
