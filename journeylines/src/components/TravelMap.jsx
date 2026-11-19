@@ -15,6 +15,7 @@ import { peekRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVessel
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
+import { PlaybackFramePipeline, isV9RendererRequested } from '../utils/playbackFramePipeline.js';
 import { CameraDirector, timeBasedCameraAlpha } from '../utils/cameraDirector.js';
 import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
@@ -25,6 +26,7 @@ import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
 import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '../utils/globeInteraction.js';
 
 const V9_COMPILED_PLAYBACK_ENABLED = isV9CompiledPlaybackRequested();
+const V9_RENDERER_ENABLED = isV9RendererRequested();
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
 const IDLE_SPIN_GLOBE_ZOOM = 4.20;
@@ -229,6 +231,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const compiledPlaybackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
+  const framePipelineRef = useRef(null);
+  if (!framePipelineRef.current) framePipelineRef.current = new PlaybackFramePipeline();
   const frameRenderStatsRef = useRef({
     lastTrail: 0,
     lastPulse: false,
@@ -1449,6 +1453,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       if (Number(metadata.legIndex || 0) !== Number(activeEntry?.legIndex || 0)) return;
       if (Number(frame.generation || metadata.generation || 0) !== Number(context.playbackGeneration || 0)) return;
 
+
+      // Every display frame samples scene state once. Each renderer stage
+      // consumes that same snapshot; React never drives frame positions.
+      const sampleScene = () => {
       const now = Number(frame.timestamp || performance.now());
       const quality = frame.quality || 'high';
       const trailInterval = quality === 'high' ? 84 : quality === 'medium' ? 100 : 125;
@@ -1535,9 +1543,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         plan
       );
       const color = colorForLeg(renderEntry, context.hopperVisuals);
+      return { now, quality, trailInterval, cameraInterval, stats, routeKey, renderEntry, sceneState, color };
+      };
 
+      const renderTrail = (sample, _frame, work) => {
+        const { now, stats, trailInterval, routeKey, renderEntry, sceneState, color } = sample;
+        const draw = () => {
       const trailMoved = stats.lastTrailProgress < 0 || Math.abs(sceneState.lineProgress - stats.lastTrailProgress) >= 1 / 240;
-      if ((trailMoved && now - stats.lastTrail >= trailInterval) || sceneState.lineProgress >= 0.995) {
+      const finalTrailPending = stats.lastTrailProgress < 0.995 && sceneState.lineProgress >= 0.995;
+      const due = V9_RENDERER_ENABLED
+        ? work.trail && (trailMoved || finalTrailPending)
+        : ((trailMoved && now - stats.lastTrail >= trailInterval) || sceneState.lineProgress >= 0.995);
+      if (due) {
         const activeFeatures = syncActiveRoute(map, renderEntry, sceneState.lineProgress, color, routedGeometriesRef.current, context.hopperVisuals, context.trailTuningConfig);
         previousActiveRouteRef.current = {
           key: routeKey,
@@ -1549,14 +1566,24 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         stats.lastTrailProgress = sceneState.lineProgress;
         recordPlaybackEvent('activeTrailUpdates');
       }
+        };
+        if (V9_RENDERER_ENABLED) measurePlaybackEvent('v9TrailFrame', draw);
+        else draw();
+      };
 
+      const renderPulse = sample => {
+        const { stats, renderEntry, sceneState, color } = sample;
       if (sceneState.pulseActive !== stats.lastPulse) {
         syncPulse(map, sceneState.visibleDestination || renderEntry.leg.to, sceneState.pulseActive ? color : 'transparent');
         stats.lastPulse = sceneState.pulseActive;
       }
+      };
 
+      const renderCamera = (sample, _frame, work) => {
+        const { now, stats, cameraInterval, quality, sceneState } = sample;
+        const draw = () => {
       const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
-      const cameraDue = now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0;
+      const cameraDue = V9_RENDERER_ENABLED ? work.camera : (now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0);
       if (cameraDue) {
         let smoothing = adaptiveCameraSmoothing(sceneState.phase);
         if ((sceneState.legMode === 'plane' || sceneState.legMode === 'move') && sceneState.distance > 1500 && Number(frame.rawProgress || 0) < 0.28) {
@@ -1573,7 +1600,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
         const returnState = playbackCameraReturnRef.current;
         const desiredPrevious = returnState.active ? latestDesiredCameraRef.current : lastCameraRef.current;
-        const cameraElapsedMs = stats.lastCamera ? now - stats.lastCamera : cameraInterval;
+        const cameraElapsedMs = stats.lastCamera ? now - stats.lastCamera : (V9_RENDERER_ENABLED ? work.deltaMs : cameraInterval);
         let camera = smoothCamera(desiredPrevious, targetCamera, timeBasedCameraAlpha(smoothing, cameraElapsedMs));
         // During staged reacquisition the live map is intentionally looking away
         // from the vessel. Screen-space constraint math against that temporary
@@ -1600,16 +1627,69 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         stats.lastCamera = now;
         recordPlaybackEvent('cameraUpdates');
       }
+        };
+        if (V9_RENDERER_ENABLED) measurePlaybackEvent('v9CameraFrame', draw);
+        else draw();
+      };
 
+      const renderVehicle = sample => {
+        const { renderEntry, sceneState, color } = sample;
       currentOverlayStateRef.current = { active: renderEntry, scene: sceneState, color };
       placardRuntimeRef.current.focus = sceneState.vehicle;
-      updateOverlay(map, renderEntry, sceneState, color);
-      recordPlaybackEvent('overlayUpdates');
-      if ((renderEntry.leg.mode === 'plane' || renderEntry.leg.mode === 'move')
-        && (quality !== 'low' || Math.floor(now / 66) % 2 === 0)) {
-        updateAirArcOverlay(map, airArcRef.current, renderEntry, sceneState, color);
+      if (V9_RENDERER_ENABLED) {
+        measurePlaybackEvent('v9VehicleFrame', () => updateOverlay(map, renderEntry, sceneState, color));
+      } else {
+        updateOverlay(map, renderEntry, sceneState, color);
       }
-      stats.lastFrame = now;
+      recordPlaybackEvent('overlayUpdates');
+      };
+
+      const renderArc = sample => {
+        const { now, quality, renderEntry, sceneState, color } = sample;
+      if ((renderEntry.leg.mode === 'plane' || renderEntry.leg.mode === 'move')
+        && (V9_RENDERER_ENABLED || quality !== 'low' || Math.floor(now / 66) % 2 === 0)) {
+        if (V9_RENDERER_ENABLED) {
+          measurePlaybackEvent('v9AirArcFrame', () => updateAirArcOverlay(map, airArcRef.current, renderEntry, sceneState, color));
+        } else {
+          updateAirArcOverlay(map, airArcRef.current, renderEntry, sceneState, color);
+        }
+      }
+      };
+
+      // One scheduler controls camera, vehicle and the slower secondary passes.
+      // A route or generation change forces a fresh frame immediately.
+      if (V9_RENDERER_ENABLED) {
+        const options = {
+          routeKey,
+          generation: Number(frame.generation || metadata.generation || 0),
+          quality: frame.quality || 'high',
+          progress: Number(frame.rawProgress || 0)
+        };
+        const work = framePipelineRef.current.scheduler.plan({ ...options, timestamp: frame.timestamp });
+        if (!work.display) return;
+        measurePlaybackEvent('v9RenderFrame', () => {
+          framePipelineRef.current.render(frame, options, {
+            sampleScene,
+            renderTrail,
+            renderPulse,
+            renderCamera,
+            renderVehicle,
+            renderArc
+          }, work);
+        });
+        frameRenderStatsRef.current.lastFrame = Number(frame.timestamp || performance.now());
+      } else {
+        // WP2 renderer comparison path remains byte-for-byte equivalent in
+        // ordering and camera/trail timing to the pre-WP3 render implementation.
+        const sample = sampleScene();
+        const work = { camera: true, vehicle: true, trail: true, arc: true, deltaMs: sample.cameraInterval };
+        renderTrail(sample, frame, work);
+        renderPulse(sample, frame, work);
+        renderCamera(sample, frame, work);
+        renderVehicle(sample, frame, work);
+        renderArc(sample, frame, work);
+        frameRenderStatsRef.current.lastFrame = sample.now;
+      }
     });
   }, [mapReady, trailTuningOpen]);
 
