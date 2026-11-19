@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate:
-    name: WP0–WP2 data, clock, camera and playback build
+    name: WP0–WP3 playback and rendering regression build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -48,6 +48,8 @@ jobs:
         run: node --test scripts/test-v9-playback-transitions.mjs
       - name: Unit-test camera arbitration and time-based smoothing
         run: node --test scripts/test-v9-camera-director.mjs
+      - name: Test WP3 frame scheduler, 60Hz display and subsystems
+        run: node --test scripts/test-v9-renderer-pipeline.mjs
       - name: Compile trips into Vite public assets (v9 preview only)
         run: node scripts/compile-v9-playback.mjs --out public/data/v9-playback
       - name: Verify all compiled trips and playback plans
@@ -60,11 +62,11 @@ jobs:
           test -d dist/assets
           test -f dist/data/v9-playback/manifest.json
           node scripts/verify-v9-playback.mjs dist/data/v9-playback
-          echo "WP0–WP2 engine, camera and compiler validated; no production deploy"
+          echo "WP0–WP3 engine, camera, renderer and compiler validated; no production deploy"
       - name: Upload isolated v9 preview build
         uses: actions/upload-artifact@v4
         with:
-          name: GlobeHoppers-v9-WP2-preview
+          name: GlobeHoppers-v9-WP3-preview
           path: journeylines/dist/
           if-no-files-found: error
           retention-days: 7
