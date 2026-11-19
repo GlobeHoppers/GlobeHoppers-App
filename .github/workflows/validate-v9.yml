@@ -38,14 +38,18 @@ jobs:
         run: npm run verify:v7.5.15
       - name: Unit-test deterministic playback plans and dateline handling
         run: node --test scripts/test-v9-playback.mjs
-      - name: Compile all journeys to temporary playback packages
-        run: node scripts/compile-v9-playback.mjs --out "$RUNNER_TEMP/globehoppers-v9-playback"
+      - name: Test v9 lazy playback loader and stale-data fallback
+        run: node --test scripts/test-v9-playback-library.mjs
+      - name: Compile trips into Vite public assets (v9 preview only)
+        run: node scripts/compile-v9-playback.mjs --out public/data/v9-playback
       - name: Verify all compiled trips and playback plans
-        run: node scripts/verify-v9-playback.mjs "$RUNNER_TEMP/globehoppers-v9-playback"
+        run: node scripts/verify-v9-playback.mjs public/data/v9-playback
       - name: Build original viewer without publishing
         run: npm run build
       - name: Assert original viewer build output exists
         run: |
           test -f dist/index.html
           test -d dist/assets
+          test -f dist/data/v9-playback/manifest.json
+          node scripts/verify-v9-playback.mjs dist/data/v9-playback
           echo "WP0 + WP1 compiler validated; no production deploy"
