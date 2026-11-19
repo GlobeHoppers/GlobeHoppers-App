@@ -2,8 +2,10 @@ const SAMPLE_LIMIT = 180;
 const counters = new Map();
 const durations = new Map();
 const frames = [];
+const renderedFrames = [];
 const longTasks = [];
 let lastFrameAt = 0;
+let lastRenderedAt = 0;
 let observerStarted = false;
 let lastConsoleReport = 0;
 let diagnosticsEnabledCache;
@@ -63,6 +65,24 @@ export function recordPlaybackFrame(timestamp = performance.now(), quality = 'hi
   publishMaybe(now);
 }
 
+/**
+ * Counts actual JS display pipeline updates, not playback clock ticks.
+ * This does NOT measure GPU presented frames. Use Chrome Rendering/
+ * Performance tools for compositor FPS and GPU timing.
+ */
+export function recordRenderedFrame(timestamp = performance.now()) {
+  if (!playbackDiagnosticsEnabled()) return;
+  const now = Number(timestamp);
+  if (!Number.isFinite(now) || now < 0) return;
+  if (lastRenderedAt && now > lastRenderedAt) {
+    renderedFrames.push(now - lastRenderedAt);
+    while (renderedFrames.length > SAMPLE_LIMIT) renderedFrames.shift();
+  }
+  lastRenderedAt = now;
+  increment('renderedFrames');
+  publishMaybe(now);
+}
+
 export function recordPlaybackEvent(name, durationMs = 0, detail = null) {
   if (!playbackDiagnosticsEnabled()) return;
   ensureObserver();
@@ -90,6 +110,7 @@ export function measurePlaybackEvent(name, callback) {
 export function playbackPerformanceSnapshot() {
   const frameValues = frames.map(entry => entry.ms).filter(Number.isFinite);
   const sortedFrames = [...frameValues].sort((a, b) => a - b);
+  const sortedRendered = [...renderedFrames].sort((a, b) => a - b);
   const durationSummary = {};
   for (const [name, values] of durations) {
     const sorted = [...values].sort((a, b) => a - b);
@@ -102,6 +123,13 @@ export function playbackPerformanceSnapshot() {
   }
   return {
     generatedAt: new Date().toISOString(),
+    diagnosticsEnabled: playbackDiagnosticsEnabled(),
+    // These legacy values describe the playback RAF clock, NOT GPU FPS.
+    // Actual MapLibre presentation can be lower than both estimates.
+    renderedFrameCount: renderedFrames.length,
+    averageRenderedFrameMs: average(renderedFrames),
+    p95RenderedFrameMs: percentile(sortedRendered, 0.95),
+    estimatedRenderedFps: renderedFrames.length ? 1000 / Math.max(1, average(renderedFrames)) : 0,
     frameCount: frameValues.length,
     averageFrameMs: average(frameValues),
     p95FrameMs: percentile(sortedFrames, 0.95),
@@ -150,7 +178,9 @@ export function resetPlaybackPerformanceDiagnostics() {
   counters.clear();
   durations.clear();
   frames.length = 0;
+  renderedFrames.length = 0;
   longTasks.length = 0;
   lastFrameAt = 0;
+  lastRenderedAt = 0;
   publish();
 }
