@@ -144,13 +144,25 @@ export class CompiledPlaybackLibrary {
     return bundle;
   }
 
+  async matchesSourceGeometry(record, entry) {
+    const geometry = entry?.leg?.routeGeometry;
+    // If a trip acquired a detailed route after the last compile, rebuild it.
+    if (record.geometrySha256 === null) return !Array.isArray(geometry) || geometry.length < 2;
+    if (typeof record.geometrySha256 !== 'string' || !/^[a-f0-9]{64}$/.test(record.geometrySha256) ||
+        !Array.isArray(geometry) || geometry.length < 2 || !this.subtle) return false;
+    const bytes = new TextEncoder().encode(JSON.stringify(geometry));
+    const hash = new Uint8Array(await this.subtle.digest('SHA-256', bytes));
+    const current = Array.from(hash, value => value.toString(16).padStart(2, '0')).join('');
+    return current === record.geometrySha256;
+  }
+
   async getPlan(entry) {
     const key = compiledPlaybackEntryKey(entry);
     if (!key) return null;
     this.stats.requested++;
     const bundle = await this.loadTrip(entry.trip.id);
     const row = bundle?.legs?.[entry.legIndex];
-    if (!row || !matchesEntry(row, entry)) {
+    if (!row || !matchesEntry(row, entry) || !(await this.matchesSourceGeometry(row, entry))) {
       this.stats.skipped++;
       return null;
     }
