@@ -176,7 +176,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, playbackSeekRequest = null, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, playbackSeekRequest = null, onPlaybackSeekApplied = () => {}, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -1191,11 +1191,19 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const request = playbackSeekRequest;
     const map = mapRef.current;
-    if (!mapReady || !map || !request || Number(request.index) !== Number(activeIndex)) return;
+    if (!mapReady || !map || !request) return;
+    if (Number(request.index) !== Number(activeIndex) ||
+        Math.abs(Number(legProgress) - Number(request.progress)) > 0.04) {
+      onPlaybackSeekApplied(request.nonce);
+      return;
+    }
     if (!cameraDirectorRef.current.allows('scene') && !cameraDirectorRef.current.allows('playback')) return;
     const entry = legs[request.index];
     if (!entry || entry.trip?.id !== request.tripId ||
-        String(entry.legId || entry.leg?.legId || '') !== String(request.legId || '')) return;
+        String(entry.legId || entry.leg?.legId || '') !== String(request.legId || '')) {
+      onPlaybackSeekApplied(request.nonce);
+      return;
+    }
 
     // Explicit navigation is the only intentional instant camera relocation.
     // Jump to the requested progress, not the leg origin (the old behavior).
@@ -1225,10 +1233,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       frameRenderStatsRef.current.transitionKind = 'seek';
       frameRenderStatsRef.current.transitionStartCamera = null;
       frameRenderStatsRef.current.lastCamera = 0;
+      onPlaybackSeekApplied(request.nonce);
     } catch (error) {
       console.warn('[GlobeHoppers] Camera seek target failed', error);
+      onPlaybackSeekApplied(request.nonce);
     }
-  }, [mapReady, playbackSeekRequest?.nonce]);
+  }, [mapReady, playbackSeekRequest?.nonce, isPlaying, introLaunching, globeOverview, relocationTransition?.id]);
 
   useEffect(() => {
     const map = mapRef.current;
