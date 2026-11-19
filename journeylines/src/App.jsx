@@ -515,8 +515,6 @@ export default function App() {
     if (resolvedIndex >= 0) {
       if (resolvedIndex !== activeIndex) {
         const progress = Math.max(0, Math.min(1, Number(identity.progress) || 0));
-        const resolvedLeg = legs[resolvedIndex]?.leg;
-        const dur = legDurationMs(resolvedLeg?.miles || 500, speed, resolvedLeg?.mode);
         setActiveIndex(resolvedIndex);
         setLegProgress(progress);
       }
@@ -894,8 +892,6 @@ export default function App() {
       return;
     }
 
-    const currentLeg = legs[activeIndex]?.leg;
-    const dur = legDurationMs(currentLeg?.miles || 500, speed, currentLeg?.mode);
     if (wasGlobeOverview) {
       setIsPlaying(false);
       setIntroLaunching(true);
