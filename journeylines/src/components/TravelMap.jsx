@@ -503,7 +503,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       map.stop();
       map.easeTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, duration: 1500, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
       scheduleOverviewLock(() => {
-        if (playbackHasCameraPriority()) return;
+        if (playbackHasCameraPriority() || !cameraDirectorRef.current.allows('overview')) return;
         try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
         resetAnimatingRef.current = false;
       }, 1580);
@@ -514,7 +514,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const map = mapRef.current;
     if (!map) return;
     function handleForceGlobeOverview() {
-      if (playbackHasCameraPriority()) return;
+      // A deferred overview event cannot steal the camera after a user seek.
+      if (playbackHasCameraPriority() || !(cameraDirectorRef.current.allows('overview') || cameraDirectorRef.current.allows('idle'))) return;
       try {
         userCameraOverrideRef.current = false;
         resetAnimatingRef.current = true;
@@ -531,7 +532,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         // Preserve ownership until the zoom-out completes, then lock the exact
         // globe overview zoom before idle spin resumes.
         scheduleOverviewLock(() => {
-          if (playbackHasCameraPriority()) return;
+          if (playbackHasCameraPriority() || !(cameraDirectorRef.current.allows('overview') || cameraDirectorRef.current.allows('idle'))) return;
           try { map.jumpTo({ center: INTRO_GLOBE_CENTER, zoom: IDLE_SPIN_GLOBE_ZOOM, pitch: 0, bearing: 0, essential: true }); } catch {}
           resetAnimatingRef.current = false;
         }, 2280);
