@@ -8,6 +8,8 @@ test('cinematic camera authority has one clear owner', () => {
   assert.equal(resolveCameraOwner({ intro: true, playing: true }), 'intro');
   assert.equal(resolveCameraOwner({ relocating: true, playing: true }), 'relocation');
   assert.equal(resolveCameraOwner({ tuning: true, playing: true }), 'tuning');
+  assert.equal(resolveCameraOwner({ relocating: true, tuning: true, playing: true }), 'relocation');
+  assert.equal(resolveCameraOwner({ intro: true, tuning: true }), 'intro');
   assert.equal(resolveCameraOwner({ idle: true, playing: true }), 'idle');
   assert.equal(resolveCameraOwner({ overview: true, playing: true }), 'overview');
 });
