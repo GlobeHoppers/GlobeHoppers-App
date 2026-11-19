@@ -1028,6 +1028,9 @@ export default function App() {
     cancelPendingJumpTimers();
     playbackEngine.pause();
     setIsPlaying(false);
+    // Seeking also cancels any in-flight 6.2 s intro launch. Otherwise its
+    // old completion timer could resume the wrong trip after the user seeks.
+    setIntroLaunching(false);
     relocationTransitionRef.current = null;
     setRelocationTransition(null);
     if (!legs.length) return;
@@ -1048,8 +1051,16 @@ export default function App() {
         index: safeIndex,
         progress: safeProgress
       });
-      // Configuring the destination leg occurs in the [activeIndex, legs, speed]
-      // effect. Seeking the old leg here would race its completion metadata.
+      // A seek within the SAME configured leg must update the clock here:
+      // changing legProgress alone doesn't re-run the leg configuration effect.
+      // For a DIFFERENT leg we let [activeIndex, legs, speed] configure it,
+      // avoiding a seek notification with the previous leg's metadata.
+      const selected = legs[safeIndex];
+      const metadata = playbackEngine.snapshot()?.metadata || {};
+      const sameConfiguredLeg = metadata.tripId === selected?.trip?.id
+        && String(metadata.legId || '') === String(selected?.legId || selected?.leg?.legId || '')
+        && Number(metadata.legIndex || 0) === Number(selected?.legIndex || 0);
+      if (sameConfiguredLeg) playbackEngine.seek(safeProgress);
       setIsPlaying(Boolean(autoPlay));
 
     };
