@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate:
-    name: WP0 data integrity and Vite build
+    name: WP0/WP1 data and playback build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -36,10 +36,14 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify original v7.5.15 features
         run: npm run verify:v7.5.15
-      - name: Build Vite viewer without publishing
+      - name: Compile all journeys to temporary playback packages
+        run: node scripts/compile-v9-playback.mjs --out "$RUNNER_TEMP/globehoppers-v9-playback"
+      - name: Verify all compiled trips and playback plans
+        run: node scripts/verify-v9-playback.mjs "$RUNNER_TEMP/globehoppers-v9-playback"
+      - name: Build original viewer without publishing
         run: npm run build
-      - name: Assert build output exists
+      - name: Assert original viewer build output exists
         run: |
           test -f dist/index.html
           test -d dist/assets
-          echo "v9 WP0 build completed; no production deploy"
+          echo "WP0 + WP1 compiler validated; no production deploy"
