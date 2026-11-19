@@ -6,9 +6,10 @@ import { CompiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlayback
 
 const from = { id: 'san-diego', pointId: 'point-a', lon: -117.161, lat: 32.715 };
 const to = { id: 'las-vegas', pointId: 'point-b', lon: -115.139, lat: 36.17 };
+const routeGeometry = [[from.lon, from.lat], [to.lon, to.lat]];
 const makeEntry = (overrides = {}) => ({
   trip: { id: 'trip-1' }, legIndex: 0, legId: 'leg-1',
-  leg: { from, to, miles: 260, mode: 'plane' }, ...overrides
+  leg: { from, to, miles: 260, mode: 'plane', routeGeometry }, ...overrides
 });
 
 function bundleFixture({ malformedHash = false, tamper = false, delayed = false } = {}) {
@@ -20,6 +21,7 @@ function bundleFixture({ malformedHash = false, tamper = false, delayed = false 
     fromLocationId: from.id, toLocationId: to.id,
     fromPointId: from.pointId, toPointId: to.pointId,
     coordinates: { from: [from.lon, from.lat], to: [to.lon, to.lat] },
+    geometrySha256: createHash('sha256').update(JSON.stringify(routeGeometry)).digest('hex'),
     plan: compiled
   };
   const original = JSON.stringify({ schema: 'globehoppers.trip-playback.v1', tripId: 'trip-1', legs: [row] }) + '\n';
@@ -72,6 +74,7 @@ test('edited endpoint, point ID, mode or distance rejects stale compiled plan', 
     { ...entry, leg: { ...entry.leg, from: { ...from, pointId: 'new-point' } } },
     { ...entry, leg: { ...entry.leg, mode: 'boat' } },
     { ...entry, leg: { ...entry.leg, miles: 300 } },
+    { ...entry, leg: { ...entry.leg, routeGeometry: [[from.lon, from.lat], [-116, 34], [to.lon, to.lat]] } },
     { ...entry, legIndex: 1 },
     { ...entry, trip: { id: 'another-trip' } }
   ]) {
