@@ -1206,6 +1206,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       Boolean(latestFrameContextRef.current?.routeStackingEnabled), plan);
     if (!seekScene?.camera) return;
     try {
+      // A seek invalidates old overview locks and manual-return timers even
+      // when the user chooses to remain paused at the new position.
+      clearOverviewLockTimers();
+      window.clearTimeout(playbackCameraReturnRef.current?.timer);
+      window.clearTimeout(manualSpinResumeTimerRef.current);
       map.stop();
       map.jumpTo({ ...seekScene.camera, essential: true });
       const settled = captureCameraState(map) || seekScene.camera;
