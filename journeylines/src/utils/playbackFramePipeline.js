@@ -117,11 +117,11 @@ export class PlaybackFramePipeline {
     if (!scene) return { ...work, display: false };
     // Trail construction can trigger MapLibre GeoJSON setData, so keep it off
     // the camera/vehicle hot path whenever its slower budget isn't due.
-    if (work.trail) adapter.renderTrail?.(scene, frame);
-    adapter.renderPulse?.(scene, frame);
+    if (work.trail) adapter.renderTrail?.(scene, frame, work);
+    adapter.renderPulse?.(scene, frame, work);
     if (work.camera) adapter.renderCamera?.(scene, frame, work);
-    if (work.vehicle) adapter.renderVehicle?.(scene, frame);
-    if (work.arc) adapter.renderArc?.(scene, frame);
+    if (work.vehicle) adapter.renderVehicle?.(scene, frame, work);
+    if (work.arc) adapter.renderArc?.(scene, frame, work);
     return work;
   }
 }
