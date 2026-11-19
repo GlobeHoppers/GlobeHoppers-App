@@ -16,6 +16,15 @@ export const RENDER_PROFILES = Object.freeze({
 
 const asTime = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
 
+/** Preserve phase across uneven input refresh intervals. Starting the next
+ * deadline from 'now' would turn a requested 45Hz rate into 40Hz on a 120Hz
+ * monitor because 22.22ms rounds to three 8.33ms clock frames.
+ */
+function advanceDeadline(previous, now, period) {
+  const next = previous + period;
+  return next <= now + 1 ? now + period : next;
+}
+
 export function isV9RendererRequested(search = typeof window === 'undefined' ? '' : window.location.search) {
   return new URLSearchParams(search).get('v9Renderer') === '1';
 }
@@ -72,17 +81,17 @@ export class PlaybackRenderScheduler {
       ? Math.max(0, Math.min(250, now - this.lastDisplayAt))
       : profile.displayMs;
     this.lastDisplayAt = now;
-    this.nextDisplayAt = now + profile.displayMs;
+    this.nextDisplayAt = advanceDeadline(this.nextDisplayAt, now, profile.displayMs);
     this.counts.displays++;
 
     const trail = newRoute || suspended || newlyCompleted || now + 1 >= this.nextTrailAt;
     const arc = newRoute || suspended || newlyCompleted || now + 1 >= this.nextArcAt;
     if (trail) {
-      this.nextTrailAt = now + profile.trailMs;
+      this.nextTrailAt = advanceDeadline(this.nextTrailAt, now, profile.trailMs);
       this.counts.trails++;
     }
     if (arc) {
-      this.nextArcAt = now + profile.arcMs;
+      this.nextArcAt = advanceDeadline(this.nextArcAt, now, profile.arcMs);
       this.counts.arcs++;
     }
     return {
