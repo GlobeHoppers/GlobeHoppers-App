@@ -36,6 +36,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Verify original v7.5.15 features
         run: npm run verify:v7.5.15
+      - name: Unit-test deterministic playback plans and dateline handling
+        run: node --test scripts/test-v9-playback.mjs
       - name: Compile all journeys to temporary playback packages
         run: node scripts/compile-v9-playback.mjs --out "$RUNNER_TEMP/globehoppers-v9-playback"
       - name: Verify all compiled trips and playback plans
