@@ -55,3 +55,10 @@ jobs:
           test -f dist/data/v9-playback/manifest.json
           node scripts/verify-v9-playback.mjs dist/data/v9-playback
           echo "WP0 + WP1 compiler validated; no production deploy"
+      - name: Upload isolated v9 preview build
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlobeHoppers-v9-WP1-preview
+          path: journeylines/dist/
+          if-no-files-found: error
+          retention-days: 7
