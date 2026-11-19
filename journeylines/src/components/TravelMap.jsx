@@ -1550,7 +1550,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         const { now, stats, trailInterval, routeKey, renderEntry, sceneState, color } = sample;
         const draw = () => {
       const trailMoved = stats.lastTrailProgress < 0 || Math.abs(sceneState.lineProgress - stats.lastTrailProgress) >= 1 / 240;
-      const finalTrailPending = stats.lastTrailProgress < 0.995 && sceneState.lineProgress >= 0.995;
+      const finalTrailPending = stats.lastTrailProgress < 0.9999 && sceneState.lineProgress >= 0.9999;
       const due = V9_RENDERER_ENABLED
         ? work.trail && (trailMoved || finalTrailPending)
         : ((trailMoved && now - stats.lastTrail >= trailInterval) || sceneState.lineProgress >= 0.995);
