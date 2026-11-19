@@ -38,6 +38,8 @@ jobs:
         run: npm run verify:v7.5.15
       - name: Unit-test deterministic playback plans and dateline handling
         run: node --test scripts/test-v9-playback.mjs
+      - name: Compare v9 trajectories against legacy routing worker
+        run: node scripts/test-v9-worker-parity.mjs
       - name: Test v9 lazy playback loader and stale-data fallback
         run: node --test scripts/test-v9-playback-library.mjs
       - name: Compile trips into Vite public assets (v9 preview only)
