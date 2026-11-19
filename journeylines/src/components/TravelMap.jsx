@@ -15,6 +15,8 @@ import { peekRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVessel
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
+import { CameraDirector, timeBasedCameraAlpha } from '../utils/cameraDirector.js';
+import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
 import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
@@ -174,7 +176,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, playbackSeekRequest = null, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -223,6 +225,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
   const completedRouteRenderRef = useRef({ signature: '' });
   const playbackPlansRef = useRef(new Map());
+  const cameraDirectorRef = useRef(new CameraDirector());
   const compiledPlaybackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
@@ -262,6 +265,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     || latestFrameContextRef.current?.isPlaying
     || latestFrameContextRef.current?.introLaunching
   );
+  // Reconcile synchronously with React props: no effect or old RAF may claim
+  // camera ownership between a timeline transition and its first new render.
+  cameraDirectorRef.current.reconcile({
+    playing: isPlaying,
+    intro: introLaunching,
+    relocating: Boolean(relocationTransition?.id),
+    overview: globeOverview,
+    idle: idleMode,
+    tuning: trailTuningOpen
+  }, playbackGeneration);
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
   useEffect(() => { preloadBaseVesselIcons(); }, []);
@@ -1048,7 +1061,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const map = mapRef.current;
     const request = relocationTransition;
-    if (!mapReady || !map || !request?.id) return;
+    if (!mapReady || !map || !request?.id || !cameraDirectorRef.current.allows('relocation')) return;
 
     const destination = request.to;
     const lon = Number(destination?.lon);
@@ -1114,8 +1127,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       manualSpinPauseRef.current = false;
       lastCameraRef.current = { ...targetCamera, center: [...targetCenter] };
       latestDesiredCameraRef.current = { ...targetCamera, center: [...targetCenter] };
-      // Hand ownership to playback only after the final zoom has visibly settled.
-      window.requestAnimationFrame(() => onRelocationComplete?.(request.id, { status, duration: totalDuration }));
+      // The completion belongs to the owning relocation request, not a later
+      // seek or a new playback generation.
+      if (cameraDirectorRef.current.allows('relocation')) {
+        window.requestAnimationFrame(() => {
+          if (cameraDirectorRef.current.allows('relocation')) onRelocationComplete?.(request.id, { status, duration: totalDuration });
+        });
+      }
     };
 
     const runEaseStage = (options, timeoutMs, next) => {
@@ -1165,6 +1183,43 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       manualSpinPauseRef.current = false;
     };
   }, [mapReady, relocationTransition?.id, cameraMode, onRelocationComplete]);
+
+  useEffect(() => {
+    const request = playbackSeekRequest;
+    const map = mapRef.current;
+    if (!mapReady || !map || !request || !cameraDirectorRef.current) return;
+    if (!cameraDirectorRef.current.allows('scene') && !cameraDirectorRef.current.allows('playback')) return;
+    const entry = legs[request.index];
+    if (!entry || entry.trip?.id !== request.tripId ||
+        String(entry.legId || entry.leg?.legId || '') !== String(request.legId || '')) return;
+
+    // Explicit navigation is the only intentional instant camera relocation.
+    // Jump to the requested progress, not the leg origin (the old behavior).
+    const plannedGeometry = getRoutedGeometry(entry.leg, routedGeometriesRef.current);
+    const plan = (V9_COMPILED_PLAYBACK_ENABLED && compiledPlaybackPlansRef.current.get(compiledPlaybackEntryKey(entry)))
+      || playbackPlansRef.current.get(playbackPlanKey(entry.leg, plannedGeometry)) || null;
+    const next = legs[Math.min(request.index + 1, legs.length - 1)] || null;
+    const seekScene = getScene(entry, request.progress, cameraMode, next, routedGeometriesRef.current,
+      Boolean(latestFrameContextRef.current?.routeStackingEnabled), plan);
+    if (!seekScene?.camera) return;
+    try {
+      map.stop();
+      map.jumpTo({ ...seekScene.camera, essential: true });
+      const settled = captureCameraState(map) || seekScene.camera;
+      lastCameraRef.current = { ...settled, center: [...settled.center] };
+      latestDesiredCameraRef.current = { ...settled, center: [...settled.center] };
+      playbackCameraReturnRef.current = createPlaybackReturnState();
+      userCameraOverrideRef.current = false;
+      forceSceneJumpRef.current = false;
+      frameRenderStatsRef.current.lastRouteKey = '';
+      frameRenderStatsRef.current.lastActiveEntry = null;
+      frameRenderStatsRef.current.transitionKind = 'seek';
+      frameRenderStatsRef.current.transitionStartCamera = null;
+      frameRenderStatsRef.current.lastCamera = 0;
+    } catch (error) {
+      console.warn('[GlobeHoppers] Camera seek target failed', error);
+    }
+  }, [mapReady, playbackSeekRequest?.nonce]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1244,7 +1299,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
     const color = colorForLeg(active, hopperData || travById);
 
-    if (introLaunching) {
+    if (introLaunching && cameraDirectorRef.current.allows('intro')) {
       const launchKey = `${active.trip.id}:${active.legId || active.leg?.legId || active.legIndex}`;
       if (introLaunchRef.current.key !== launchKey || !introLaunchRef.current.active) {
         introLaunchRef.current = { active: true, key: launchKey };
@@ -1257,6 +1312,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         map.easeTo({ ...scene.camera, duration: 6200, essential: true, easing: t => 1 - Math.pow(1 - t, 3) });
         window.clearTimeout(introLaunchRef.current.timer);
         introLaunchRef.current.timer = window.setTimeout(() => {
+          if (!cameraDirectorRef.current.allows('intro')) return;
           lastCameraRef.current = scene.camera;
           introLaunchRef.current.active = false;
           onIntroLaunchComplete?.();
@@ -1311,7 +1367,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // vessel, and active-trail rendering directly at display refresh rate.
     // This React effect still handles route transitions/fades, but does not
     // compete with the frame loop.
-    if (isPlaying) return;
+    if (!cameraDirectorRef.current.allows('scene')) return;
 
     if (now - lastActiveRouteUpdateRef.current > 16 || scene.lineProgress >= 0.995 || prevRoute.key !== activeRouteKey) {
       const activeFeatures = syncActiveRoute(map, active, scene.lineProgress, color, routedGeometries, hopperData || travById, trailTuningConfig);
@@ -1360,7 +1416,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     if (!mapReady) return;
     return playbackEngine.subscribe(frame => {
-      if (!frame?.playing) return;
+      if (!frame?.playing || !cameraDirectorRef.current.allows('playback', frame.generation)) return;
       const map = mapRef.current;
       const context = latestFrameContextRef.current;
       const activeEntry = context?.active;
@@ -1498,7 +1554,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
 
         const returnState = playbackCameraReturnRef.current;
         const desiredPrevious = returnState.active ? latestDesiredCameraRef.current : lastCameraRef.current;
-        let camera = smoothCamera(desiredPrevious, targetCamera, smoothing);
+        const cameraElapsedMs = stats.lastCamera ? now - stats.lastCamera : cameraInterval;
+        let camera = smoothCamera(desiredPrevious, targetCamera, timeBasedCameraAlpha(smoothing, cameraElapsedMs));
         // During staged reacquisition the live map is intentionally looking away
         // from the vessel. Screen-space constraint math against that temporary
         // camera would tug the desired target every frame and cause visible jitter.
@@ -3866,12 +3923,8 @@ function smoothCamera(prev, next, amount) {
   };
 }
 
-function legsConnect(previousLeg, nextLeg, tolerance = 0.12) {
-  if (!previousLeg?.to || !nextLeg?.from) return false;
-  if (previousLeg.to.id && nextLeg.from.id && previousLeg.to.id === nextLeg.from.id) return true;
-  const dx = shortestLonDelta(Number(nextLeg.from.lon) - Number(previousLeg.to.lon));
-  const dy = Number(nextLeg.from.lat) - Number(previousLeg.to.lat);
-  return Math.hypot(dx, dy) <= tolerance;
+function legsConnect(previousLeg, nextLeg) {
+  return playbackLegsConnect(previousLeg, nextLeg);
 }
 
 function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = null) {
@@ -3896,10 +3949,10 @@ function freezeActiveEntryGeometry(entry, routedGeometries = {}, playbackPlan = 
   });
 }
 
-function adaptiveCameraSmoothing(phase, quality = 'high') {
-  const qualityScale = quality === 'high' ? 1 : quality === 'medium' ? 0.86 : 0.72;
-  const base = phase === 'settle' ? 0.082 : phase === 'predeparture' ? 0.012 : phase === 'arrival' ? 0.034 : phase === 'takeoff' ? 0.028 : 0.028;
-  return base * qualityScale;
+function adaptiveCameraSmoothing(phase) {
+  // Elapsed-time damping is handled by timeBasedCameraAlpha; reducing this
+  // again for lower frame rates would create a slower camera on busy devices.
+  return phase === 'settle' ? 0.082 : phase === 'predeparture' ? 0.012 : phase === 'arrival' ? 0.034 : phase === 'takeoff' ? 0.028 : 0.028;
 }
 
 function constrainCameraToVessel(map, camera, vehicle, quality = 'high') {
