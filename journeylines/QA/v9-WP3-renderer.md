@@ -74,6 +74,41 @@ console.log(report.schedule);
 - Exercise screensaver, tab-hidden/resume, idle behavior, and a sustained 30-minute browser run.
 - Compare behavior on 60 Hz and high-refresh displays if possible.
 
+## Browser diagnostics correction (November 19)
+
+The first WP3 user test returned an active schedule (`ticks=7136`, `displays=6956`) but empty performance arrays. This means diagnostics **were not recording**. It does not mean 0 FPS. In the earlier implementation, a URL flag or separate localStorage setting could silently disable measurement while the frame scheduler continued normally.
+
+The revised `window.__GLOBEHOPPERS_RENDERER__` API now reports `diagnosticsStatus`:
+
+- `disabled`: the recorder is off, no measured FPS can be inferred
+- `awaiting-rendered-frames`: enabled but no JS render stages sampled yet
+- `collecting`: both clock and display pipeline can be measured
+
+**Enable recording from the browser Console without page reload:**
+
+```js
+window.__GLOBEHOPPERS_RENDERER__.enableMetrics()
+```
+
+Play the timeline for 30 seconds, then run:
+
+```js
+const s = window.__GLOBEHOPPERS_RENDERER__.snapshot();
+console.table({
+  status: s.diagnosticsStatus,
+  playbackClockHz: s.performance.estimatedFps,
+  jsDisplayHz: s.performance.estimatedRenderedFps,
+  p95DisplayMs: s.performance.p95RenderedFrameMs,
+  p95RenderWorkMs: s.performance.durations.v9RenderFrame?.p95Ms,
+  p95TrailWorkMs: s.performance.durations.v9TrailFrame?.p95Ms
+});
+console.log(s.schedule);
+```
+
+`estimatedFps` is the clock's RAF rate; `estimatedRenderedFps` is the number of actual **JavaScript pipeline display updates**, not the number of frames the GPU successfully presented. Repeated map calls, browser compositing, and WebGL error recovery can reduce visible FPS below both measures. Use DevTools Performance for GPU/compositor interpretation.
+
+The first user also observed a Chromium/MapLibre WebGL warning about a READ-usage buffer's shadow copy, along with the WebGL message limit. This same warning is recorded upstream in maplibre-gl-js issue #7872 and Chromium issues #558254911 / #573671133. It is **not evidence, by itself**, that the WP3 renderer caused a regression. Compare the WP2 and WP3 tabs with the same scene/Chrome version; if errors persist, inspect the *first* WebGL error after a clean reload rather than the final "too many errors" message. Do not attempt a major GPU/MapLibre dependency upgrade under WP3 solely to suppress warnings.
+
 ## Release gate
 
 WP3 provides modular frame **scheduling and stage ownership** while retaining legacy MapLibre DOM/GeoJSON drawing code in `TravelMap.jsx` for visual parity. Extraction of all editor and projection modules is deferred to WP4. Do not switch WP3 on by default or merge without browser parity and actual resource/performance comparison.
