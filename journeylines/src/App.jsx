@@ -17,6 +17,7 @@ import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
+import { nextPlaybackTransition, playbackLegsConnect, resolveTimelineSeek } from './utils/playbackTransitions.js';
 import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRoutingEngine, subscribeRoutingStatus } from './utils/routingClient.js';
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 import { DEFAULT_GLOBE_SPIN_SPEED, clampGlobeSpinSpeed, locationIdsVisitedByTrip, shouldEnterIdleMode } from './utils/globeInteraction.js';
@@ -157,13 +158,6 @@ function legIdentityForEntry(entry, index = 0, progress = 0) {
     progress: Math.max(0, Math.min(1, Number(progress) || 0)),
     index
   };
-}
-
-function playbackLegsConnect(previousLeg, nextLeg, toleranceMiles = 3.5) {
-  if (!previousLeg?.to || !nextLeg?.from) return false;
-  if (previousLeg.to.id && nextLeg.from.id && previousLeg.to.id === nextLeg.from.id) return true;
-  const gap = milesBetween(previousLeg.to, nextLeg.from);
-  return Number.isFinite(gap) && gap <= toleranceMiles;
 }
 
 function findLegIndexByIdentity(legs = [], identity = {}) {
@@ -328,7 +322,6 @@ export default function App() {
   const [liveRouteDetails, setLiveRouteDetails] = useState(() => routeDetails);
   const [playbackGeneration, setPlaybackGeneration] = useState(0);
   const clickRef = useRef(0);
-  const tRef = useRef({ last: null, elapsed: 0 });
   const activeIndexRef = useRef(activeIndex);
   const legsRef = useRef([]);
   const speedRef = useRef(speed);
@@ -336,7 +329,6 @@ export default function App() {
   const playbackUiThrottleRef = useRef(0);
   const advancePlaybackRef = useRef(() => {});
   const playbackGenerationRef = useRef(0);
-  const configuredPlaybackKeyRef = useRef('');
   const jumpTimersRef = useRef([]);
   const activePlaybackRef = useRef({ tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: 0 });
   const pendingPlaySavedTripRef = useRef(null);
@@ -402,7 +394,6 @@ export default function App() {
       setStudioModalOnly(false);
       if (resumeAfterStudioRef.current) {
         resumeAfterStudioRef.current = false;
-        tRef.current.last = null;
         setIsPlaying(true);
       }
     };
@@ -465,8 +456,9 @@ export default function App() {
     const identity = activePlaybackRef.current;
     const resolved = findLegIndexByIdentity(currentLegs, identity);
     const baseIndex = resolved >= 0 ? resolved : Math.max(0, Math.min(activeIndexRef.current, currentLegs.length - 1));
-    const nextIndex = baseIndex + 1;
-    if (nextIndex >= currentLegs.length) {
+    const transitionDecision = nextPlaybackTransition(currentLegs, baseIndex);
+    const nextIndex = transitionDecision.nextIndex;
+    if (transitionDecision.kind === 'complete') {
       const finalEntry = currentLegs[Math.max(0, currentLegs.length - 1)];
       activePlaybackRef.current = { ...legIdentityForEntry(finalEntry, currentLegs.length - 1, 1), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
       setLegProgress(1);
@@ -476,7 +468,7 @@ export default function App() {
 
     const currentEntry = currentLegs[baseIndex];
     const nextEntry = currentLegs[nextIndex];
-    if (!playbackLegsConnect(currentEntry?.leg, nextEntry?.leg)) {
+    if (transitionDecision.kind === 'relocation') {
       playbackEngine.pause();
       setIsPlaying(false);
       setLegProgress(1);
@@ -507,7 +499,6 @@ export default function App() {
       activePlaybackRef.current = { tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: playbackGenerationRef.current };
       setActiveIndex(0);
       setLegProgress(1);
-      tRef.current = { last: null, elapsed: 0 };
       return;
     }
 
@@ -526,7 +517,6 @@ export default function App() {
         const dur = legDurationMs(resolvedLeg?.miles || 500, speed, resolvedLeg?.mode);
         setActiveIndex(resolvedIndex);
         setLegProgress(progress);
-        tRef.current = { last: null, elapsed: progress * dur };
       }
       return;
     }
@@ -535,7 +525,6 @@ export default function App() {
     if (fallbackTripIndex >= 0) {
       setActiveIndex(fallbackTripIndex);
       setLegProgress(0);
-      tRef.current = { last: null, elapsed: 0 };
       activePlaybackRef.current = { ...legIdentityForEntry(legs[fallbackTripIndex], fallbackTripIndex, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
       return;
     }
@@ -544,7 +533,6 @@ export default function App() {
     if (clamped !== activeIndex) {
       setActiveIndex(clamped);
       setLegProgress(0);
-      tRef.current = { last: null, elapsed: 0 };
       activePlaybackRef.current = { ...legIdentityForEntry(legs[clamped], clamped, 0), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
     }
   }, [legs]);
@@ -566,14 +554,12 @@ export default function App() {
         if (isPlaying) {
           resumeAfterTabHiddenRef.current = true;
           freezePlaybackClock();
-          tRef.current.last = null;
           setIsPlaying(false);
         }
         return;
       }
       if (resumeAfterTabHiddenRef.current) {
         resumeAfterTabHiddenRef.current = false;
-        tRef.current.last = null;
         setIsPlaying(true);
       }
     };
@@ -585,7 +571,6 @@ export default function App() {
     const pauseForHopModal = () => {
       resumeAfterStudioRef.current = isPlaying;
       if (isPlaying) freezePlaybackClock();
-      tRef.current.last = null;
       setIsPlaying(false);
     };
     const resumeAfterHopModal = () => {
@@ -595,7 +580,6 @@ export default function App() {
       }
       if (resumeAfterStudioRef.current) {
         resumeAfterStudioRef.current = false;
-        tRef.current.last = null;
         setIsPlaying(true);
       }
     };
@@ -817,7 +801,6 @@ export default function App() {
         : Math.max(0, Math.min(1, Number(legProgress) || 0));
     const duration = legDurationMs(entry?.leg?.miles || 500, speed, entry?.leg?.mode);
     const settle = SETTLE_MS / Math.max(0.25, Number(speed) || 1);
-    const playbackKey = `${entry?.trip?.id || ''}:${entry?.legId || entry?.leg?.legId || entry?.legIndex || 0}`;
     const generation = playbackEngine.configure({
       duration,
       settle,
@@ -827,7 +810,6 @@ export default function App() {
     });
     playbackGenerationRef.current = generation;
     setPlaybackGeneration(generation);
-    configuredPlaybackKeyRef.current = playbackKey;
     activePlaybackRef.current = {
       ...legIdentityForEntry(entry, activeIndex, Math.min(1, progress)),
       generation
@@ -860,12 +842,11 @@ export default function App() {
   }, []);
 
   function freezePlaybackClock() {
-    const snapshot = playbackEngine.snapshot();
     playbackEngine.pause();
+    const snapshot = playbackEngine.snapshot();
     const progress = Math.max(0, Math.min(1, Number(snapshot?.progress ?? legProgress) || 0));
     setLegProgress(progress);
     activePlaybackRef.current = { ...activePlaybackRef.current, progress };
-    tRef.current = { last: null, elapsed: Number(snapshot?.elapsed || 0) };
   }
 
   function play() {
@@ -905,7 +886,6 @@ export default function App() {
       setActiveIndex(0);
       setLegProgress(0);
       activePlaybackRef.current = { ...legIdentityForEntry(legs[0], 0, 0), generation: playbackGenerationRef.current };
-      tRef.current = { last: null, elapsed: 0 };
       setStarted(true);
       setIsPlaying(false);
       setIntroLaunching(true);
@@ -914,7 +894,6 @@ export default function App() {
 
     const currentLeg = legs[activeIndex]?.leg;
     const dur = legDurationMs(currentLeg?.miles || 500, speed, currentLeg?.mode);
-    tRef.current = { last: null, elapsed: Math.max(0, Number(legProgress) || 0) * dur };
     if (wasGlobeOverview) {
       setIsPlaying(false);
       setIntroLaunching(true);
@@ -984,7 +963,6 @@ export default function App() {
     setAdmin(true);
     setStarted(true);
     setIntroLaunching(false);
-    tRef.current.last = null;
     setIsPlaying(false);
   }
   function pause() { resumeAfterTabHiddenRef.current = false; freezePlaybackClock(); setIsPlaying(false); }
@@ -1032,7 +1010,6 @@ export default function App() {
     setTimelineTuningOpen(false);
     setActiveIndex(999999);
     setLegProgress(1);
-    tRef.current = { last: null, elapsed: 0 };
     activePlaybackRef.current = { tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: playbackGenerationRef.current };
     setCameraMode('global');
     setResetNonce(n => n + 1);
@@ -1043,6 +1020,11 @@ export default function App() {
   }
 
   function jumpToLeg(index, progressWithinLeg = 0, autoPlay = false) {
+    // Cancel the existing leg BEFORE the 115 ms visual seek fade. Otherwise
+    // a completion microtask can advance the wrong trip while the fade runs.
+    cancelPendingJumpTimers();
+    playbackEngine.pause();
+    setIsPlaying(false);
     relocationTransitionRef.current = null;
     setRelocationTransition(null);
     if (!legs.length) return;
@@ -1059,8 +1041,8 @@ export default function App() {
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
       activePlaybackRef.current = { ...legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
-      tRef.current = { last: null, elapsed: safeProgress * dur };
-      playbackEngine.seek(safeProgress);
+      // Configuring the destination leg occurs in the [activeIndex, legs, speed]
+      // effect. Seeking the old leg here would race its completion metadata.
       setIsPlaying(Boolean(autoPlay));
 
       window.setTimeout(() => {
@@ -1072,7 +1054,6 @@ export default function App() {
       }, 0);
     };
 
-    cancelPendingJumpTimers();
     setJumpFade(true);
     const applyTimer = window.setTimeout(applyJump, 115);
     const fadeTimer = window.setTimeout(() => {
@@ -1110,11 +1091,8 @@ export default function App() {
 
   function seekTimeline(fraction) {
     if (!legs.length) return;
-    const p = Math.max(0, Math.min(0.999999, Number(fraction) || 0));
-    const raw = p * legs.length;
-    const index = Math.max(0, Math.min(legs.length - 1, Math.floor(raw)));
-    const withinLeg = raw - index;
-    jumpToLeg(index, withinLeg, isPlaying);
+    const { index, progress } = resolveTimelineSeek(fraction, legs.length);
+    jumpToLeg(index, progress, isPlaying);
   }
   function openStudioForTrip(tripId) {
     prewarmRoutingEngine('Edit Hop').catch(() => {});
@@ -1228,7 +1206,6 @@ export default function App() {
     setActiveIndex(0);
     setLegProgress(0);
     activePlaybackRef.current = { ...legIdentityForEntry(currentLegs[0], 0, 0), generation: playbackGenerationRef.current };
-    tRef.current = { last: null, elapsed: 0 };
     setStarted(true);
     setIsPlaying(false);
     setScreensaverPhase('timeline');
