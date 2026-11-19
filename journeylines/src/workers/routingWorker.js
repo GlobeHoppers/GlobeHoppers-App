@@ -836,7 +836,7 @@ function unpackCoordinateBuffer(value, pointCount = 0) {
   return geometry;
 }
 
-function buildPlaybackPlan(leg, geometry, requestedSamples) {
+export function buildPlaybackPlan(leg, geometry, requestedSamples) {
   const mode = leg?.mode || 'plane';
   let route = Array.isArray(geometry) && geometry.length > 1 ? geometry.map(toCoord).filter(Boolean) : null;
   if (!route?.length) route = mode === 'plane' || mode === 'move' ? greatCircleCoordinates(leg.from, leg.to, 220) : [[leg.from.lon, leg.from.lat], [leg.to.lon, leg.to.lat]];
