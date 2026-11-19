@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { flattenLegs } from '../src/utils/tripExpansion.js';
-import { playbackLegsConnect, nextPlaybackTransition, resolveTimelineSeek } from '../src/utils/playbackTransitions.js';
+import { playbackLegsConnect, nextPlaybackTransition, resolveTimelineSeek, matchesConfiguredPlaybackLeg } from '../src/utils/playbackTransitions.js';
 
 const a = { id: 'A', lat: 32.715, lon: -117.16 };
 const b = { id: 'B', lat: 34.05, lon: -118.24 };
@@ -61,4 +61,15 @@ test('legacy 178-trip history yields deterministic transition decisions', () => 
   assert.equal(counts.connected + counts.relocation,400);
   assert.ok(counts.connected>0 && counts.relocation>0,JSON.stringify(counts));
   console.log('WP2 leg handoffs:', JSON.stringify(counts));
+});
+
+test('same-leg scrubs reuse the clock only when composite leg identity matches', () => {
+  const first = { trip: { id:'trip-a' }, legId: 'legacy-leg-id', legIndex:0 };
+  const duplicateInOtherTrip = { trip: { id:'trip-b' }, legId: 'legacy-leg-id', legIndex:0 };
+  const metadata = { tripId: 'trip-a', legId:'legacy-leg-id', legIndex:0, generation:3 };
+  assert.equal(matchesConfiguredPlaybackLeg(metadata, first), true);
+  assert.equal(matchesConfiguredPlaybackLeg(metadata, duplicateInOtherTrip), false);
+  assert.equal(matchesConfiguredPlaybackLeg({...metadata, legIndex:1}, first), false);
+  assert.equal(matchesConfiguredPlaybackLeg({...metadata, legId:'other-leg'}, first), false);
+  assert.equal(matchesConfiguredPlaybackLeg({}, first), false);
 });
