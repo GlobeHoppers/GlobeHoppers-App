@@ -1658,7 +1658,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       currentOverlayStateRef.current = { active: renderEntry, scene: sceneState, color };
       placardRuntimeRef.current.focus = sceneState.vehicle;
       if (V9_RENDERER_ENABLED) {
-        measurePlaybackEvent('v9VehicleFrame', () => updateOverlay(map, renderEntry, sceneState, color));
+        measurePlaybackEvent('v9VehicleFrame', () => updateOverlay(map, renderEntry, sceneState, color, sample.now));
       } else {
         updateOverlay(map, renderEntry, sceneState, color);
       }
@@ -1739,7 +1739,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     }
   }
 
-  function updateOverlay(map, activeLeg, sceneState, color) {
+  function updateOverlay(map, activeLeg, sceneState, color, frameTimestamp = null) {
     if (!vehicleRef.current) return;
     const { leg } = activeLeg;
     const vehiclePt = map.project([sceneState.vehicle.lon, sceneState.vehicle.lat]);
@@ -1759,7 +1759,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     // Cars now consume the pre-smoothed route tangent directly. Heading filters
     // used to hide route noise by lagging behind every turn, which made vehicles
     // feel loose and over-corrected. Shape the route once, then point the car at it.
-    const rotationBlend = iconMode === 'car' ? 1 : iconMode === 'plane' ? 0.34 : iconMode === 'train' ? 0.48 : 0.42;
+    const referenceRotationBlend = iconMode === 'car' ? 1 : iconMode === 'plane' ? 0.34 : iconMode === 'train' ? 0.48 : 0.42;
+    const previousRotationAt = Number(vehicleRef.current.__jlVehicleRotationAt);
+    const elapsedRotationMs = Number.isFinite(frameTimestamp) && Number.isFinite(previousRotationAt)
+      ? Math.max(0, frameTimestamp - previousRotationAt) : 1000 / 60;
+    // Maintain the same turning response across 30, 60 and 120Hz: a fixed
+    // per-frame blend would make planes rotate twice as slowly at 30Hz.
+    const rotationBlend = V9_RENDERER_ENABLED && Number.isFinite(frameTimestamp)
+      ? timeBasedCameraAlpha(referenceRotationBlend, elapsedRotationMs, 1000 / 60)
+      : referenceRotationBlend;
+    if (Number.isFinite(frameTimestamp)) vehicleRef.current.__jlVehicleRotationAt = frameTimestamp;
     const rotation = Number.isFinite(previousRotation) && rotationBlend < 1
       ? lerpAngle(previousRotation, rawRotation, rotationBlend)
       : rawRotation;
