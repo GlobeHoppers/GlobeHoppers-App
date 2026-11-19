@@ -106,8 +106,8 @@ export class PlaybackFramePipeline {
     this.scheduler = scheduler;
   }
 
-  render(frame, { routeKey, generation, progress, quality } = {}, adapter = {}) {
-    const work = this.scheduler.plan({
+  render(frame, { routeKey, generation, progress, quality } = {}, adapter = {}, preplannedWork = null) {
+    const work = preplannedWork || this.scheduler.plan({
       timestamp: frame?.timestamp,
       routeKey, generation, progress, quality
     });
