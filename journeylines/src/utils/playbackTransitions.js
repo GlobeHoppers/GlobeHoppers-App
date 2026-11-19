@@ -37,3 +37,16 @@ export function resolveTimelineSeek(fraction, legCount) {
   const index = Math.max(0, Math.min(count - 1, Math.floor(position)));
   return { index, progress: Math.max(0, Math.min(1, position - index)) };
 }
+
+/**
+ * A scrub to the currently configured leg must seek the clock immediately,
+ * even if React's activeIndex does not change. Trip IDs are part of identity
+ * because several legacy leg IDs are reused by separate trips.
+ */
+export function matchesConfiguredPlaybackLeg(metadata = {}, entry = null) {
+  if (!metadata?.tripId || !entry?.trip?.id) return false;
+  const entryLegId = entry.legId || entry.leg?.legId || entry.leg?.id || '';
+  return metadata.tripId === entry.trip.id
+    && String(metadata.legId || '') === String(entryLegId)
+    && Number(metadata.legIndex || 0) === Number(entry.legIndex || 0);
+}
