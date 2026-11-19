@@ -545,6 +545,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const map = mapRef.current;
     if (!map) return;
     function handleJumpToLegStart(event) {
+      // Compatibility event for older Studio callers, not automatic handoffs.
+      // Unowned camera writes cannot interrupt intro/relocation/overview.
+      if (!cameraDirectorRef.current.allows('scene') && !cameraDirectorRef.current.allows('playback')) return;
       const { lon, lat, mode, forceScene } = event.detail || {};
       if (lon == null || lat == null) return;
       try {
@@ -1187,7 +1190,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const request = playbackSeekRequest;
     const map = mapRef.current;
-    if (!mapReady || !map || !request || !cameraDirectorRef.current) return;
+    if (!mapReady || !map || !request || Number(request.index) !== Number(activeIndex)) return;
     if (!cameraDirectorRef.current.allows('scene') && !cameraDirectorRef.current.allows('playback')) return;
     const entry = legs[request.index];
     if (!entry || entry.trip?.id !== request.tripId ||
@@ -1539,9 +1542,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
       const cameraDue = now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0;
       if (cameraDue) {
-        let smoothing = adaptiveCameraSmoothing(sceneState.phase, quality);
+        let smoothing = adaptiveCameraSmoothing(sceneState.phase);
         if ((sceneState.legMode === 'plane' || sceneState.legMode === 'move') && sceneState.distance > 1500 && Number(frame.rawProgress || 0) < 0.28) {
-          smoothing = Math.min(smoothing, quality === 'low' ? 0.008 : 0.012);
+          smoothing = Math.min(smoothing, 0.012);
         }
         if (transitionAge < CONTINUOUS_HANDOFF_HOLD_MS && stats.transitionKind !== 'continuous') {
           smoothing = Math.min(smoothing, 0.018);
