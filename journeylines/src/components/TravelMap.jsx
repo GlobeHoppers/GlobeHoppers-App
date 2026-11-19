@@ -21,7 +21,7 @@ import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
 import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
-import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame, playbackPerformanceSnapshot, resetPlaybackPerformanceDiagnostics } from '../utils/playbackPerformance.js';
+import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame, recordRenderedFrame, playbackPerformanceSnapshot, setPlaybackDiagnosticsEnabled, resetPlaybackPerformanceDiagnostics } from '../utils/playbackPerformance.js';
 import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
 import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '../utils/globeInteraction.js';
 
@@ -288,11 +288,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   useEffect(() => {
     const api = {
       mode: V9_RENDERER_ENABLED ? 'v9-pipeline' : 'wp2-legacy',
-      snapshot: () => ({
-        mode: api.mode,
-        schedule: framePipelineRef.current.scheduler.snapshot(),
-        performance: playbackPerformanceSnapshot()
-      }),
+      snapshot: () => {
+        const perf = playbackPerformanceSnapshot();
+        return {
+          mode: api.mode,
+          diagnosticsStatus: !perf.diagnosticsEnabled ? 'disabled' : perf.renderedFrameCount === 0 ? 'awaiting-rendered-frames' : 'collecting',
+          schedule: framePipelineRef.current.scheduler.snapshot(),
+          performance: perf
+        };
+      },
+      enableMetrics: () => {
+        setPlaybackDiagnosticsEnabled(true);
+        resetPlaybackPerformanceDiagnostics();
+        return 'Performance recording enabled. Play the timeline, then call snapshot() after 30 seconds.';
+      },
+      disableMetrics: () => setPlaybackDiagnosticsEnabled(false),
       reset: () => {
         framePipelineRef.current.scheduler.reset();
         resetPlaybackPerformanceDiagnostics();
@@ -1699,6 +1709,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           }, work);
         });
         frameRenderStatsRef.current.lastFrame = Number(frame.timestamp || performance.now());
+        recordRenderedFrame(frameRenderStatsRef.current.lastFrame);
       } else {
         // WP2 renderer comparison path remains byte-for-byte equivalent in
         // ordering and camera/trail timing to the pre-WP3 render implementation.
@@ -1710,6 +1721,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         renderVehicle(sample, frame, work);
         renderArc(sample, frame, work);
         frameRenderStatsRef.current.lastFrame = sample.now;
+        recordRenderedFrame(sample.now);
       }
     });
   }, [mapReady, trailTuningOpen]);
