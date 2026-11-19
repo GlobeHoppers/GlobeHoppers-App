@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PlaybackFramePipeline, PlaybackRenderScheduler, isV9RendererRequested } from '../src/utils/playbackFramePipeline.js';
+import { timeBasedCameraAlpha } from '../src/utils/cameraDirector.js';
 
 const frame = timestamp => ({ timestamp, rawProgress: timestamp / 2000, generation: 7 });
 
@@ -97,4 +98,34 @@ test('no extra RAF, React state, or per-frame timer exists in renderer schedulin
   assert.equal('requestAnimationFrame' in source, false);
   assert.equal('setTimeout' in source, false);
   assert.equal('subscribe' in source, false);
+});
+
+test('vehicle turn damping is time-consistent at 30, 60 and 120Hz', () => {
+  for (const blend of [0.34, 0.42, 0.48]) {
+    const p120 = timeBasedCameraAlpha(blend, 1000 / 120, 1000 / 60);
+    const p60 = timeBasedCameraAlpha(blend, 1000 / 60, 1000 / 60);
+    const p30 = timeBasedCameraAlpha(blend, 1000 / 30, 1000 / 60);
+    assert.ok(Math.abs(p60 - blend) < 1e-12);
+    assert.ok(Math.abs(1 - (1 - p120) ** 4 - p30) < 1e-12);
+    assert.ok(Math.abs(1 - (1 - p60) ** 2 - p30) < 1e-12);
+  }
+});
+
+test('30 minute unattended playback schedule has constant-size state', () => {
+  const scheduler = new PlaybackRenderScheduler();
+  // 30 min of 120Hz clock frames, with a leg handoff each 3 minutes.
+  const totalTicks = 120 * 60 * 30;
+  for (let i = 0; i < totalTicks; i++) {
+    const timestamp = i * 1000 / 120;
+    scheduler.plan({ timestamp, quality: 'high',
+      routeKey: 'trip-' + Math.floor(timestamp / 180000), generation: 1 + Math.floor(timestamp / 180000),
+      progress: (timestamp % 180000) / 180000 });
+  }
+  const stats = scheduler.snapshot();
+  assert.equal(stats.ticks, totalTicks);
+  assert.ok(stats.displays >= 107000 && stats.displays <= 108100, JSON.stringify(stats));
+  assert.ok(stats.trails < 22000, JSON.stringify(stats));
+  assert.ok(stats.arcs < 40000, JSON.stringify(stats));
+  assert.ok(stats.skipped > 100000, JSON.stringify(stats));
+  assert.equal(Object.keys(stats).length, 9, 'scheduler should not accumulate per-frame records');
 });
