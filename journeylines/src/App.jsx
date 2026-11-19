@@ -17,7 +17,7 @@ import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
-import { nextPlaybackTransition, playbackLegsConnect, resolveTimelineSeek } from './utils/playbackTransitions.js';
+import { nextPlaybackTransition, resolveTimelineSeek } from './utils/playbackTransitions.js';
 import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRoutingEngine, subscribeRoutingStatus } from './utils/routingClient.js';
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 import { DEFAULT_GLOBE_SPIN_SPEED, clampGlobeSpinSpeed, locationIdsVisitedByTrip, shouldEnterIdleMode } from './utils/globeInteraction.js';
@@ -321,6 +321,7 @@ export default function App() {
   const [routingStatus, setRoutingStatus] = useState(() => getRoutingStatus());
   const [liveRouteDetails, setLiveRouteDetails] = useState(() => routeDetails);
   const [playbackGeneration, setPlaybackGeneration] = useState(0);
+  const [playbackSeekRequest, setPlaybackSeekRequest] = useState(null);
   const clickRef = useRef(0);
   const activeIndexRef = useRef(activeIndex);
   const legsRef = useRef([]);
@@ -329,6 +330,7 @@ export default function App() {
   const playbackUiThrottleRef = useRef(0);
   const advancePlaybackRef = useRef(() => {});
   const playbackGenerationRef = useRef(0);
+  const seekNonceRef = useRef(0);
   const jumpTimersRef = useRef([]);
   const activePlaybackRef = useRef({ tripId: null, legId: null, legIndex: 0, progress: 1, index: null, generation: 0 });
   const pendingPlaySavedTripRef = useRef(null);
@@ -997,6 +999,7 @@ export default function App() {
     resumeAfterStudioRef.current = false;
     resumeAfterTabHiddenRef.current = false;
     playbackEngine.stop(1);
+    setPlaybackSeekRequest(null);
     setIsPlaying(false);
     setIntroLaunching(false);
     setStarted(false);
@@ -1030,9 +1033,6 @@ export default function App() {
     if (!legs.length) return;
     const safeIndex = Math.max(0, Math.min(legs.length - 1, Math.floor(index)));
     const safeProgress = Math.max(0, Math.min(1, progressWithinLeg));
-    const selectedLeg = legs[safeIndex]?.leg;
-    const dur = legDurationMs(selectedLeg?.miles || 500, speed, selectedLeg?.mode);
-
     const applyJump = () => {
       setGlobeOverview(false);
       setCameraMode(prev => prev === 'global' ? 'follow' : (prev || 'follow'));
@@ -1041,17 +1041,17 @@ export default function App() {
       setActiveIndex(safeIndex);
       setLegProgress(safeProgress);
       activePlaybackRef.current = { ...legIdentityForEntry(legs[safeIndex], safeIndex, safeProgress), generation: activePlaybackRef.current.generation || playbackGenerationRef.current };
+      setPlaybackSeekRequest({
+        nonce: ++seekNonceRef.current,
+        tripId: legs[safeIndex]?.trip?.id,
+        legId: legs[safeIndex]?.legId || legs[safeIndex]?.leg?.legId,
+        index: safeIndex,
+        progress: safeProgress
+      });
       // Configuring the destination leg occurs in the [activeIndex, legs, speed]
       // effect. Seeking the old leg here would race its completion metadata.
       setIsPlaying(Boolean(autoPlay));
 
-      window.setTimeout(() => {
-        if (selectedLeg?.from) {
-          window.dispatchEvent(new CustomEvent('globehoppers-jump-to-leg-start', {
-            detail: { lon: selectedLeg.from.lon, lat: selectedLeg.from.lat, mode: selectedLeg.mode, forceScene: true }
-          }));
-        }
-      }, 0);
     };
 
     setJumpFade(true);
@@ -1298,7 +1298,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} playbackSeekRequest={playbackSeekRequest} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
