@@ -19,9 +19,10 @@ export function playbackDiagnosticsEnabled() {
   try {
     diagnosticsEnabledCache = Boolean(import.meta.env.DEV
       || runtimeConfig().performanceDiagnostics
+      || new URLSearchParams(window.location.search).get('v9Metrics') === '1'
       || window.localStorage?.getItem('globehoppers.performanceDiagnostics') === 'true');
   } catch {
-    diagnosticsEnabledCache = Boolean(import.meta.env.DEV || runtimeConfig().performanceDiagnostics);
+    diagnosticsEnabledCache = Boolean(import.meta.env.DEV || runtimeConfig().performanceDiagnostics || new URLSearchParams(window.location.search).get('v9Metrics') === '1');
   }
   return diagnosticsEnabledCache;
 }
