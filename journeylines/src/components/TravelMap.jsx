@@ -21,7 +21,7 @@ import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
 import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
-import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame } from '../utils/playbackPerformance.js';
+import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame, playbackPerformanceSnapshot, resetPlaybackPerformanceDiagnostics } from '../utils/playbackPerformance.js';
 import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
 import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '../utils/globeInteraction.js';
 
@@ -282,6 +282,27 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const trailTuningConfig = useMemo(() => ({ ...DEFAULT_TRAIL_TUNING, ...(trailTuning || {}) }), [trailTuning]);
 
   useEffect(() => { preloadBaseVesselIcons(); }, []);
+
+  // Read-only browser diagnostics for A/B testing without altering the UI.
+  // The renderer stays opt-in: ?v9Renderer=1&v9Metrics=1.
+  useEffect(() => {
+    const api = {
+      mode: V9_RENDERER_ENABLED ? 'v9-pipeline' : 'wp2-legacy',
+      snapshot: () => ({
+        mode: api.mode,
+        schedule: framePipelineRef.current.scheduler.snapshot(),
+        performance: playbackPerformanceSnapshot()
+      }),
+      reset: () => {
+        framePipelineRef.current.scheduler.reset();
+        resetPlaybackPerformanceDiagnostics();
+      }
+    };
+    window.__GLOBEHOPPERS_RENDERER__ = api;
+    return () => {
+      if (window.__GLOBEHOPPERS_RENDERER__ === api) delete window.__GLOBEHOPPERS_RENDERER__;
+    };
+  }, []);
 
 
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
