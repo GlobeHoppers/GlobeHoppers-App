@@ -17,7 +17,7 @@ import parameters from './data/parameters.json';
 import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
-import { nextPlaybackTransition, resolveTimelineSeek } from './utils/playbackTransitions.js';
+import { matchesConfiguredPlaybackLeg, nextPlaybackTransition, resolveTimelineSeek } from './utils/playbackTransitions.js';
 import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRoutingEngine, subscribeRoutingStatus } from './utils/routingClient.js';
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 import { DEFAULT_GLOBE_SPIN_SPEED, clampGlobeSpinSpeed, locationIdsVisitedByTrip, shouldEnterIdleMode } from './utils/globeInteraction.js';
@@ -1057,10 +1057,7 @@ export default function App() {
       // avoiding a seek notification with the previous leg's metadata.
       const selected = legs[safeIndex];
       const metadata = playbackEngine.snapshot()?.metadata || {};
-      const sameConfiguredLeg = metadata.tripId === selected?.trip?.id
-        && String(metadata.legId || '') === String(selected?.legId || selected?.leg?.legId || '')
-        && Number(metadata.legIndex || 0) === Number(selected?.legIndex || 0);
-      if (sameConfiguredLeg) playbackEngine.seek(safeProgress);
+      if (matchesConfiguredPlaybackLeg(metadata, selected)) playbackEngine.seek(safeProgress);
       setIsPlaying(Boolean(autoPlay));
 
     };
