@@ -15,12 +15,14 @@ import { peekRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVessel
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
+import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
 import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
 import { bidirectionalRouteKey, canonicalGeometryForLeg, geometryForLegDirection } from '../utils/routeReuse.js';
 import { measurePlaybackEvent, recordPlaybackEvent, recordPlaybackFrame } from '../utils/playbackPerformance.js';
 import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
 import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '../utils/globeInteraction.js';
 
+const V9_COMPILED_PLAYBACK_ENABLED = isV9CompiledPlaybackRequested();
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
 const IDLE_SPIN_GLOBE_ZOOM = 4.20;
@@ -221,6 +223,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const previousActiveRouteRef = useRef({ key: '', active: null, progress: 0, features: [] });
   const completedRouteRenderRef = useRef({ signature: '' });
   const playbackPlansRef = useRef(new Map());
+  const compiledPlaybackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
   const frameRenderStatsRef = useRef({
@@ -267,6 +270,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
   const travById = useMemo(() => Object.fromEntries(travelers.map(t => [t.id, t])), [travelers]);
   const legs = useMemo(() => applyRouteDetailsToEntries(flattenLegs(trips, locById, homeBases), routeDetailsData), [trips, locById, homeBases, routeDetailsData]);
+  // Compiled plans are scoped by trip+leg, never by a globally reused legacy legId.
+  // Invalidate on travel-history changes so edited routes cannot reuse stale plans.
+  useEffect(() => { compiledPlaybackPlansRef.current.clear(); }, [legs]);
 
   const hasActivePlayback = Boolean(isStarted || isPlaying || introLaunching);
   const completedMode = hasActivePlayback && activeIndex >= legs.length;
@@ -318,6 +324,18 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         if (cancelled) break;
         const leg = entry?.leg;
         if (!leg?.from || !leg?.to) continue;
+        if (V9_COMPILED_PLAYBACK_ENABLED) {
+          // Experimental v9 route: load immutable plans per trip before touching
+          // the routing worker. Missing/stale/invalid packages safely fall back.
+          const compiled = await compiledPlaybackLibrary.getPlan(entry);
+          if (cancelled) break;
+          if (compiled) {
+            compiledPlaybackPlansRef.current.set(compiledPlaybackEntryKey(entry), compiled);
+            recordPlaybackEvent('v9CompiledPlanLoaded');
+            continue;
+          }
+          recordPlaybackEvent('v9CompiledPlanFallback');
+        }
         let geometry = getRoutedGeometry(leg, routedGeometriesRef.current);
         if (!geometry?.length && isNaturalEarthVesselMode(leg.mode)) {
           try {
@@ -1374,7 +1392,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         }
         stats.lastPulse = false;
         const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
-        const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
+        const livePlan = (V9_COMPILED_PLAYBACK_ENABLED && compiledPlaybackPlansRef.current.get(compiledPlaybackEntryKey(activeEntry)))
+          || playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
         const transitionScene = getScene(
           activeEntry,
           Number(frame.rawProgress || 0),
@@ -1416,9 +1435,14 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         // Late route/plan promotion is polled at a low rate. Do not rebuild route
         // keys and geometry signatures on every animation frame.
         const liveGeometry = getRoutedGeometry(activeEntry.leg, routedGeometriesRef.current);
-        const livePlan = playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
+        const livePlan = (V9_COMPILED_PLAYBACK_ENABLED && compiledPlaybackPlansRef.current.get(compiledPlaybackEntryKey(activeEntry)))
+          || playbackPlansRef.current.get(playbackPlanKey(activeEntry.leg, liveGeometry)) || null;
         stats.lastPlanCheck = now;
-        if (livePlan) stats.playbackPlan = livePlan;
+        // A newly arrived precompiled plan must not switch trajectory halfway
+        // through a leg. Use it on a subsequent leg or a seek/restart instead.
+        if (livePlan && !(livePlan.compiled && !stats.playbackPlan && Number(frame.rawProgress || 0) > 0.01)) {
+          stats.playbackPlan = livePlan;
+        }
         if (!stats.frozenEntry?.leg?.presentationGeometry && liveGeometry?.length > 1) {
           stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current, livePlan);
         }
