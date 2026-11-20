@@ -1,0 +1,61 @@
+name: GlobeHoppers v9 Chromium A-B (No Deploy)
+
+on:
+  push:
+    branches:
+      - refactor/v9-core
+    paths:
+      - .github/workflows/browser-v9.yml
+      - journeylines/scripts/browser-v9-benchmark.mjs
+      - journeylines/src/**
+      - journeylines/package.json
+      - journeylines/package-lock.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chromium-v9-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-benchmark:
+    name: Headless Chromium WP2 vs WP3
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: journeylines
+    steps:
+      - name: Checkout isolated refactor branch
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+      - name: Install locked app dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Compile precomputed trip playback packages
+        run: node scripts/compile-v9-playback.mjs --out public/data/v9-playback
+      - name: Build v9 local preview
+        run: npm run build
+      - name: Install browser automation (CI only; no package changes)
+        run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.1
+      - name: Install matching headless Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Run WP2/WP3 browser A-B and collect WebGL warnings
+        run: node scripts/browser-v9-benchmark.mjs --out "$RUNNER_TEMP/v9-browser"
+        env:
+          V9_BROWSER_SAMPLE_MS: '15000'
+          V9_BROWSER_BOOT_MS: '55000'
+      - name: Upload browser screenshots and performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlobeHoppers-v9-Chromium-A-B
+          path: ${{ runner.temp }}/v9-browser/
+          if-no-files-found: warn
+          retention-days: 14
