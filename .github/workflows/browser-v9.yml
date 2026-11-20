@@ -22,7 +22,8 @@ concurrency:
 jobs:
   chromium-benchmark:
     name: Headless Chromium WP2 vs WP3
-    runs-on: ubuntu-latest
+    # Pin an OS supported by the pinned Playwright Chromium package.
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     defaults:
       run:
