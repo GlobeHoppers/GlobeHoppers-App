@@ -117,14 +117,17 @@ async function runMode(label, query) {
     const expectedMode = label === 'wp3' ? 'v9-pipeline' : 'wp2-legacy';
     if (result.initialMode !== expectedMode) throw new Error('Wrong renderer mode: ' + result.initialMode);
 
+    // WP2 does not use the WP3 frame scheduler: its schedule.displays stays
+    // at zero even during healthy playback. Wait for sampled playback frames
+    // instead, which both renderers record when v9Metrics=1.
     const ready = await page.waitForFunction(() => {
       const s = window.__GLOBEHOPPERS_RENDERER__?.snapshot();
-      return s && s.schedule?.displays >= 20;
+      return s && Number(s.performance?.counters?.frames || 0) >= 5;
     }, null, { timeout: entryTimeoutMs }).then(() => true, () => false);
     result.playbackStarted = ready;
     if (!ready) {
       result.status = result.gpu?.webgl ? 'no-playback' : 'webgl-unavailable';
-      result.failure = 'No 20-frame playback after timeout; inspect console and screenshot';
+      result.failure = 'No 5-frame playback after timeout; inspect console and screenshot';
     } else {
       await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.enableMetrics());
       await sleep(sampleDurationMs);
