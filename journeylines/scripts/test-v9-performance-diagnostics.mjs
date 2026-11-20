@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   playbackDiagnosticsEnabled, setPlaybackDiagnosticsEnabled,
   recordPlaybackFrame, recordRenderedFrame,
@@ -42,5 +44,34 @@ test('disabling metrics stops sampling without affecting any render or clock sta
   setPlaybackDiagnosticsEnabled(true);
   resetPlaybackPerformanceDiagnostics();
   assert.equal(playbackPerformanceSnapshot().renderedFrameCount, 0);
+  setPlaybackDiagnosticsEnabled(false);
+});
+
+test('renderer integration records clock ticks before display budget filtering', () => {
+  const source = fs.readFileSync(path.resolve(import.meta.dirname, '../src/components/TravelMap.jsx'), 'utf8');
+  const clockTick = source.indexOf("recordPlaybackFrame(Number(frame.timestamp || performance.now())");
+  const sampler = source.indexOf("const sampleScene = () => {");
+  const scheduler = source.indexOf("framePipelineRef.current.scheduler.plan(");
+  assert.ok(clockTick >= 0 && sampler > clockTick && scheduler > sampler,
+    'clock FPS must be measured before the renderer samples/skips display frames');
+});
+
+test('rare long stalls are visible even when p95 looks good', () => {
+  setPlaybackDiagnosticsEnabled(true);
+  resetPlaybackPerformanceDiagnostics();
+  let t = 1000;
+  recordRenderedFrame(t);
+  for (let i = 0; i < 25; i++) {
+    t += 33.3;
+    recordRenderedFrame(t);
+  }
+  t += 1000;
+  recordRenderedFrame(t);
+  const report = playbackPerformanceSnapshot();
+  assert.equal(report.renderedFrameCount, 26);
+  assert.ok(report.p95RenderedFrameMs < 100);
+  assert.ok(report.maxRenderedFrameMs >= 999);
+  assert.equal(report.renderedGapsOver250Ms, 1);
+  assert.equal(report.renderedGapsOver100Ms, 1);
   setPlaybackDiagnosticsEnabled(false);
 });
