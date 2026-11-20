@@ -1484,6 +1484,10 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       if (Number(metadata.legIndex || 0) !== Number(activeEntry?.legIndex || 0)) return;
       if (Number(frame.generation || metadata.generation || 0) !== Number(context.playbackGeneration || 0)) return;
 
+      // Measure every playback RAF tick independently from the slower visual
+      // scheduler. Previously this lived inside sampleScene(), so "clock FPS"
+      // incorrectly duplicated the renderer's sampled rate.
+      recordPlaybackFrame(Number(frame.timestamp || performance.now()), frame.quality || 'high');
 
       // Every display frame samples scene state once. Each renderer stage
       // consumes that same snapshot; React never drives frame positions.
@@ -1493,7 +1497,6 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const trailInterval = quality === 'high' ? 84 : quality === 'medium' ? 100 : 125;
       const cameraInterval = quality === 'high' ? 28 : quality === 'medium' ? 35 : 44;
       const stats = frameRenderStatsRef.current;
-      recordPlaybackFrame(now, quality);
 
       if (stats.lastRouteKey !== routeKey) {
         const previousEntry = stats.lastActiveEntry;
