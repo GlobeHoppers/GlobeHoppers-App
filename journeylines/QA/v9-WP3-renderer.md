@@ -109,6 +109,16 @@ console.log(s.schedule);
 
 The first user also observed a Chromium/MapLibre WebGL warning about a READ-usage buffer's shadow copy, along with the WebGL message limit. This same warning is recorded upstream in maplibre-gl-js issue #7872 and Chromium issues #558254911 / #573671133. It is **not evidence, by itself**, that the WP3 renderer caused a regression. Compare the WP2 and WP3 tabs with the same scene/Chrome version; if errors persist, inspect the *first* WebGL error after a clean reload rather than the final "too many errors" message. Do not attempt a major GPU/MapLibre dependency upgrade under WP3 solely to suppress warnings.
 
+### Performance investigation update — November 20
+
+A WP3 preview measurement showed `rendererFPS≈15.73`, `p95RenderedFrameMs≈33.3` and `p95RenderWorkMs≈7`, alongside 256 identical WebGL READ-usage buffer warnings. The attached console output shows one benign `favicon.ico` 404 as well. This establishes real low JavaScript display cadence, **not** why Chrome delivers fewer ticks.
+
+**Measurement bug fixed:** `recordPlaybackFrame` formerly lived inside `sampleScene`, which runs only after the WP3 scheduler accepts a display tick. As a result, `playbackClockFPS` copied the renderer's frequency; this did not measure RAF independently. It now records each validated playback clock tick *before* display throttling. A regression test checks the ordering.
+
+**Long-gap instrumentation added:** `p50RenderedFrameMs`, `p99RenderedFrameMs`, `maxRenderedFrameMs`, `renderedGapsOver50Ms`, `renderedGapsOver100Ms`, `renderedGapsOver250Ms`, and separate clock-gap statistics. This can explain a mean ~64 ms interval despite a p95 around 33 ms, which otherwise implies occasional very long stalls.
+
+**Controlled A/B protocol:** Compare WP2 `?v9Playback=1&v9Metrics=1` with WP3 `?v9Playback=1&v9Renderer=1&v9Metrics=1` using the same trip, camera, playback speed, viewport and hardware. Open only one playback tab at a time, enable recording after entering playback, then collect at least 30 seconds without hiding the tab. Compare independent clock/render FPS, p99/max gaps, MapLibre/DevTools GPU traces, and the GPU acceleration status in `chrome://gpu`. Console logging and warning floods can distort measurements; use a clean load and a Chrome Performance capture if needed. Neither short-term low FPS nor the upstream Chromium warning alone establishes causality.
+
 ## Release gate
 
 WP3 provides modular frame **scheduling and stage ownership** while retaining legacy MapLibre DOM/GeoJSON drawing code in `TravelMap.jsx` for visual parity. Extraction of all editor and projection modules is deferred to WP4. Do not switch WP3 on by default or merge without browser parity and actual resource/performance comparison.
