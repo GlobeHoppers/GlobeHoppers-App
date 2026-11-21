@@ -37,6 +37,10 @@ Verify the build contains dist/index.html and dist/cinematic/index.html. Existin
 3. Offer licensed satellite imagery (vector tiles are not satellite imagery). Honor tile and imagery licenses/attribution.
 4. Build video export locally through Playwright/Chromium frame capture and FFmpeg; render exact timestamps, not live screen recording. Never depend on Mult.dev services.
 
+## License
+
+The newly authored Cinematic-specific files under journeylines/src/cinematic and journeylines/cinematic, plus its dedicated tests, are offered under the MIT License in cinematic/LICENSE. This license does not relicense the existing GlobeHoppers v9 core modules imported by the prototype; those require their own applicable licensing review before republishing as a fully standalone open-source distribution.
+
 ## Security baseline
 
 There is no remote scene submission endpoint in this prototype. Inputs are bounded to 2–128 valid stops; no private trip data is loaded. Avoid embedding private route datasets or service-account credentials in GitHub Pages builds. The current sample route is public demo data.
