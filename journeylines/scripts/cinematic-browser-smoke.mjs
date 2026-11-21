@@ -79,16 +79,58 @@ try {
   assert.equal(phase.flight.visibleStops.length, 2);
   assert.ok(phase.arrivalMs > phase.flightMs);
   await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.flightMs);
+  const flightDom = await page.evaluate(() => ({
+    visible: document.querySelector('.cg-aircraft')?.style.visibility,
+    transform: document.querySelector('.cg-aircraft-visual')?.style.transform,
+    lift: document.querySelector('.cg-aircraft-lift')?.style.transform
+  }));
+  assert.equal(flightDom.visible, 'visible', 'flight airplane should be visible');
+  assert.ok(flightDom.transform?.includes('rotate('), 'airplane should rotate with flight heading');
+  assert.ok(flightDom.lift?.includes('translate3d('), 'airplane should lift on takeoff');
   await page.screenshot({ path: path.join(out, 'cinematic-aircraft.png') });
   await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.arrivalMs);
-  await page.locator('.cg-arrival-name').getByText('Los Angeles').waitFor({ timeout: 5000 });
+  await page.locator('.cg-arrival-place').getByText('Los Angeles').waitFor({ timeout: 5000 });
+  assert.equal(await page.locator('.cg-arrival-label').count(), 1,
+    'arrival is a small map-anchored label, not a full-screen popup');
+  assert.equal(await page.getByText('TOUCHDOWN').count(), 0,
+    'large touchdown title must be absent');
   await page.screenshot({ path: path.join(out, 'cinematic-touchdown.png') });
+
+  // The aircraft transform is updated on every exact seek, not only at GeoJSON cadence.
+  const continuity = await page.evaluate(() => {
+    const api = window.__CINEMATIC_GLOBEHOPPERS__;
+    const firstLegEnd = (() => {
+      for (let t = 0; t < api.durationMs; t += 20) {
+        const current = api.getPresentationAtMs(t);
+        const after = api.getPresentationAtMs(t + 20);
+        if (current.plane?.legIndex === 0 && !after.plane) return t;
+      }
+      return -1;
+    })();
+    if (firstLegEnd < 0) return { valid: false };
+    const heights = [];
+    const rotations = [];
+    for (let ms = firstLegEnd - 400; ms < firstLegEnd - 50; ms += 16.666) {
+      const plane = api.getPresentationAtMs(ms).plane;
+      api.seekMs(ms);
+      heights.push(plane?.altitude);
+      rotations.push(document.querySelector('.cg-aircraft-visual')?.style.transform);
+    }
+    return { valid: heights.length > 10 && heights.every(Number.isFinite) &&
+      heights[0] > heights.at(-1) && rotations.every(Boolean),
+      samples: heights.length };
+  });
+  assert.ok(continuity.valid, 'aircraft should descend smoothly while zooming toward a destination');
+
 
 
   await page.goto(base + '?capture=1', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__CINEMATIC_GLOBEHOPPERS__,
     null, { timeout: 15000 });
   assert.equal(await page.locator('.cg-console').count(), 0, 'capture mode must hide playback UI');
+  await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(13000));
+  assert.equal(await page.locator('.cg-actors').count(), 1,
+    'cinematic actors remain available for headless video capture');
   assert.deepEqual(unexpectedHosts, [], 'unexpected Mult.dev requests');
   assert.deepEqual(runtimeErrors, [], 'browser runtime exceptions');
   console.log(JSON.stringify({ status: 'PASS', meta, screenshots: out }, null, 2));

@@ -210,7 +210,14 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const a = positionAlong(leg, clamp(u - 0.009, 0, 1));
     const b = positionAlong(leg, clamp(u + 0.009, 0, 1));
     const bearing = bearingBetween({ lon: a[0], lat: a[1] }, { lon: b[0], lat: b[1] });
-    return { coordinates: coordinate, bearing, legIndex: leg.index, progress: u };
+    // A shallow virtual climb is independent of map zoom: the aircraft leaves the
+    // ground at departure and settles back onto the destination during arrival.
+    const ascent = smooth(u / 0.22);
+    const descent = smooth((1 - u) / 0.23);
+    const altitude = Math.min(ascent, descent);
+    const pitchDegrees = -21 * (1 - ascent) + 15 * (1 - descent);
+    return { coordinates: coordinate, bearing, legIndex: leg.index, progress: u,
+      altitude, pitchDegrees, scale: 0.68 + 0.32 * altitude };
   }
 
   /** Arrival timing drives both world-space ripple rings and the on-screen title. */
@@ -226,6 +233,20 @@ export function buildCinematicScene(rawStops, overrides = {}) {
         introProgress: smooth(ageMs / 420), opacity: fadeIn * fadeOut };
     }
     return null;
+  }
+
+  /** Only the currently flying route is changed each frame. Completed legs are static. */
+  function activeRouteAt(ms) {
+    const timeMs = clamp(Number.isFinite(ms) ? ms : 0, 0, totalMs);
+    const leg = legs.find(entry => timeMs >= entry.startMs && timeMs < entry.endMs);
+    if (!leg) return { type: 'FeatureCollection', features: [] };
+    const u = smooth((timeMs - leg.startMs) / leg.durationMs);
+    const end = Math.min(leg.path.length - 1, Math.floor(u * (leg.path.length - 1)));
+    const coordinates = leg.path.slice(0, end + 1);
+    if (u > 0 && u < 1) coordinates.push(positionAlong(leg, u));
+    return { type: 'FeatureCollection', features: coordinates.length > 1
+      ? [{ type: 'Feature', properties: { legIndex: leg.index },
+           geometry: { type: 'LineString', coordinates } }] : [] };
   }
 
   function revealedRoute(ms) {
@@ -249,5 +270,5 @@ export function buildCinematicScene(rawStops, overrides = {}) {
 
   return { stops, legs, segments, headings, stopTimesMs, totalMs,
            totalMiles: legs.reduce((sum, leg) => sum + leg.miles, 0),
-           preset, sample, revealedRoute, visibleStops, visibleRoutes, planeAt, arrivalAt };
+           preset, sample, revealedRoute, activeRouteAt, visibleStops, visibleRoutes, planeAt, arrivalAt };
 }

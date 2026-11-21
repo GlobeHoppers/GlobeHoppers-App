@@ -20,54 +20,65 @@ button { cursor: pointer; }
 .cg-flyout-place { font-size: clamp(35px, 5vw, 75px); letter-spacing: -.065em; font-weight: 720; line-height: 1.05; margin-top: 5px; }
 .cg-flyout-sub { color: #e0eef5a8; font-size: clamp(12px, 1.25vw, 15px); margin-top: 9px; letter-spacing: .015em; }
 
-/* Timestamp-driven arrival title. The world-space double ripple is drawn by MapLibre. */
+/* The aircraft and small map-attached arrival accent are drawn on the
+   compositor at the SAME timestamp as the camera. No CSS travel transitions. */
+.cg-actors { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+.cg-aircraft {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  pointer-events: none; transform: translate3d(0,0,0);
+  will-change: transform;
+}
+.cg-aircraft-shadow {
+  position: absolute; left: 0; top: 0; width: 31px; height: 14px;
+  border-radius: 50%; background: #031421b8; filter: blur(6px);
+  transform-origin: center; will-change: transform, opacity;
+}
+.cg-aircraft-lift {
+  position: absolute; left: -27px; top: -30px; width: 54px; height: 60px;
+  will-change: transform;
+}
+.cg-aircraft-visual {
+  display: block; width: 54px; height: 60px;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 2px 6px #002433ba) drop-shadow(0 0 3px #76ebfa92);
+  will-change: transform;
+}
+.cg-arrival-anchor {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  transform: translate3d(0,0,0); will-change: transform, opacity;
+}
+.cg-arrival-label {
+  position: absolute; left: 0; top: 0;
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 130px; padding: 10px 17px 11px;
+  border: 1px solid #b6fcfd5b;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #0e303cdd, #091e2be9);
+  box-shadow: 0 7px 24px #03121a9e, 0 0 22px #65e1ed38;
+  backdrop-filter: blur(7px);
+  transform: translate(-50%, calc(-100% - 25px + var(--cg-arrival-rise, 0px)))
+             scale(var(--cg-arrival-scale, 1));
+  transform-origin: 50% 100%;
+  white-space: nowrap;
+  text-align: center;
+}
+.cg-arrival-eyebrow {
+  font-size: 9px; letter-spacing: .22em;
+  font-weight: 750; color: #a8e9ed;
+}
+.cg-arrival-place {
+  margin-top: 4px; color: #fbffff;
+  font-size: clamp(23px, 2.6vw, 34px); line-height: 1.08;
+  font-weight: 700; letter-spacing: -.045em;
+  text-shadow: 0 2px 15px #62dfea45;
+}
+.cg-arrival-stem {
+  position: absolute; top: 100%; left: 50%;
+  width: 1px; height: 21px;
+  background: linear-gradient(#abf7f7cc, #abf7f700);
+}
 .cg-flyout { transition: opacity 110ms ease; }
 .cg-flyout.is-arriving { opacity: 0; }
-.cg-arrival {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 43%;
-  width: min(900px, 88vw);
-  pointer-events: none;
-  text-align: center;
-  transform-origin: 50% 50%;
-  color: #f0ffff;
-  text-shadow: 0 3px 38px #002638, 0 0 60px #2bdbe340;
-}
-.cg-arrival-kicker {
-  font-weight: 720;
-  font-size: clamp(11px, 1.2vw, 14px);
-  letter-spacing: .36em;
-  color: #b0f7f7;
-  text-transform: uppercase;
-}
-.cg-arrival-spark { color: #ffe2a5; padding-inline: 12px; font-size: 1.3em; }
-.cg-arrival-name {
-  margin: 9px 0 15px;
-  font-weight: 750;
-  letter-spacing: -.067em;
-  line-height: 1.02;
-  font-size: clamp(50px, 7.5vw, 110px);
-  color: #f7ffff;
-  -webkit-text-stroke: .3px #ffffff40;
-}
-.cg-arrival-rule {
-  width: clamp(94px, 16vw, 210px);
-  height: 2px;
-  margin-inline: auto;
-  background: linear-gradient(90deg, transparent, #a0f2f3 30%, #ffe9b5 50%, #a0f2f3 70%, transparent);
-  box-shadow: 0 0 24px #83ecf0a8;
-}
-.cg-arrival-subtitle {
-  margin-top: 15px;
-  color: #cbe7e9;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .19em;
-  text-transform: uppercase;
-}
-
 .cg-diagnostics { position: absolute; right: 24px; top: 104px; padding: 13px 16px; border: 1px solid #7ca4b745; border-radius: 13px; background: #061523dc; font-size: 12px; line-height: 1.8; font-variant-numeric: tabular-nums; backdrop-filter: blur(14px); }
 .cg-console { position: absolute; bottom: 47px; left: 50%; transform: translateX(-50%); width: min(1100px, calc(100% - 40px)); padding: 18px 20px 14px; border: 1px solid #83bbc63d; border-radius: 18px; background: linear-gradient(140deg, #0b2234e9, #071929ec); box-shadow: 0 18px 70px #0109159e; backdrop-filter: blur(22px); }
 .cg-controls { display: flex; align-items: center; gap: 14px; }
@@ -97,10 +108,8 @@ button:disabled { opacity: .45; cursor: default; }
   .cg-meta .cg-dataset { display: none; }
   .cg-flyout { top: 35%; left: 19px; }
   .cg-flyout-place { font-size: 39px; }
-  .cg-arrival { top: 41%; width: 94vw; }
-  .cg-arrival-name { font-size: clamp(43px, 10vw, 70px); }
-  .cg-arrival-kicker { letter-spacing: .22em; }
-  .cg-arrival-spark { padding-inline: 4px; }
+  .cg-arrival-label { padding: 9px 12px 10px; min-width: 110px; }
+  .cg-arrival-place { font-size: 23px; }
   .cg-console { width: calc(100% - 20px); bottom: 30px; padding: 11px; }
   .cg-stoplist { display: flex; overflow-x: auto; padding-bottom: 5px; }
   .cg-stop { flex: 0 0 100px; }

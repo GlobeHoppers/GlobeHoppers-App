@@ -165,3 +165,36 @@ test('north-up limit is configurable only within the 0 to 45 degree safety envel
     assert.ok(Math.abs(pose.bearing) <= 15);
   }
 });
+
+
+test('takeoff, climb, approach and landing are defined by the same frame timestamp', () => {
+  const scene = buildCinematicScene(pts);
+  const leg = scene.legs[0];
+  const nearStart = scene.planeAt(leg.startMs + leg.durationMs * .03);
+  const airborne = scene.planeAt(leg.startMs + leg.durationMs * .48);
+  const nearEnd = scene.planeAt(leg.startMs + leg.durationMs * .97);
+  assert.ok(nearStart);
+  assert.ok(airborne);
+  assert.ok(nearEnd);
+  assert.ok(nearStart.altitude < .25, 'departure starts near the ground');
+  assert.ok(airborne.altitude > .99, 'aircraft climbs to cruise');
+  assert.ok(nearEnd.altitude < .25, 'aircraft returns to the ground');
+  assert.ok(nearStart.pitchDegrees < -5, 'departure nose pitches up');
+  assert.ok(nearEnd.pitchDegrees > 5, 'approach nose pitches down');
+  assert.ok(airborne.scale > nearStart.scale);
+  assert.deepEqual(scene.planeAt(leg.startMs + leg.durationMs * .48), airborne);
+  assert.equal(scene.planeAt(leg.endMs), null, 'airplane is hidden once landed');
+});
+
+test('active trail contains only current flight, not re-serialized completed trips', () => {
+  const scene = buildCinematicScene(pts);
+  assert.equal(scene.activeRouteAt(0).features.length, 0);
+  const first = scene.legs[0];
+  const second = scene.legs[1];
+  assert.equal(scene.activeRouteAt((first.startMs + first.endMs) / 2).features.length, 1);
+  assert.equal(scene.activeRouteAt(first.endMs).features.length, 0);
+  const activeSecond = scene.activeRouteAt((second.startMs + second.endMs) / 2);
+  assert.equal(activeSecond.features.length, 1);
+  assert.equal(activeSecond.features[0].properties.legIndex, 1);
+  assert.equal(scene.activeRouteAt(scene.totalMs).features.length, 0);
+});

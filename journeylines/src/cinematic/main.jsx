@@ -6,6 +6,7 @@ import { PlaybackEngine } from '../utils/playbackEngine.js';
 import { buildCinematicScene } from './scene.js';
 import { demoStops } from './demoStops.js';
 import { installCinematicLayers, updateCinematicRoute } from './mapLayers.js';
+import { updateCinematicActors } from './actorOverlay.js';
 import './cinematic.css';
 
 const scene = buildCinematicScene(demoStops);
@@ -22,6 +23,12 @@ function CinematicApp() {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const layersReadyRef = useRef(false);
+  const planeRootRef = useRef(null);
+  const planeLiftRef = useRef(null);
+  const planeVisualRef = useRef(null);
+  const planeShadowRef = useRef(null);
+  const arrivalRootRef = useRef(null);
+  const arrivalNameRef = useRef(null);
   const engineRef = useRef(null);
   if (!engineRef.current) engineRef.current = new PlaybackEngine();
   const currentMsRef = useRef(0);
@@ -40,11 +47,20 @@ function CinematicApp() {
     // Rendering must not freeze just because the style is temporarily busy.
     if (!map || !layersReadyRef.current) return scene.sample(ms);
     const pose = scene.sample(ms);
+    // One camera timestamp drives both map projection and the airplane overlay.
     map.jumpTo({ center: pose.center, zoom: pose.zoom,
       pitch: pose.pitch, bearing: pose.bearing });
-    // Camera transforms update at display refresh; GeoJSON sources at ~30 Hz.
-    // Forced updates keep paused seeks and video frame capture exact.
-    if (force || Math.abs(ms - lastRenderedMsRef.current) >= 30 ||
+    updateCinematicActors(map, scene, ms, {
+      planeRoot: planeRootRef.current,
+      planeLift: planeLiftRef.current,
+      planeVisual: planeVisualRef.current,
+      planeShadow: planeShadowRef.current,
+      arrivalRoot: arrivalRootRef.current,
+      arrivalName: arrivalNameRef.current
+    });
+    // Heavy GeoJSON source writes remain separate from the visual aircraft.
+    // During close zooms the aircraft still runs at full display refresh.
+    if (force || Math.abs(ms - lastRenderedMsRef.current) >= 65 ||
         pose.segmentType !== lastRenderedSegmentRef.current) {
       updateCinematicRoute(map, scene, ms);
       lastRenderedMsRef.current = ms;
@@ -76,6 +92,18 @@ function CinematicApp() {
     map.on('mousedown', cancelForGesture);
     map.on('touchstart', cancelForGesture);
     map.on('wheel', cancelForGesture);
+    // When the user pauses and pans the map, keep aircraft/map labels anchored.
+    map.on('move', () => {
+      if (!layersReadyRef.current || engineRef.current.snapshot().playing) return;
+      updateCinematicActors(map, scene, currentMsRef.current, {
+        planeRoot: planeRootRef.current,
+        planeLift: planeLiftRef.current,
+        planeVisual: planeVisualRef.current,
+        planeShadow: planeShadowRef.current,
+        arrivalRoot: arrivalRootRef.current,
+        arrivalName: arrivalNameRef.current
+      });
+    });
     map.on('load', () => {
       try {
         installCinematicLayers(map, scene);
@@ -163,25 +191,45 @@ function CinematicApp() {
     ? scene.stops[pose.legIndex + 1]
     : scene.stops[pose.stopIndex];
   const arrival = scene.arrivalAt(screen.ms);
-  const arrivalStyle = arrival ? {
-    opacity: arrival.opacity,
-    transform: 'translate(-50%, calc(-50% + ' +
-      Math.round(25 * (1 - arrival.introProgress)) + 'px)) scale(' +
-      (1.07 - 0.07 * arrival.introProgress).toFixed(3) + ')'
-  } : undefined;
 
   return (
     <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}>
       <div ref={mapEl} className="cg-map" aria-label="Animated globe showing an eight-stop travel route" />
       <div className="cg-vignette" aria-hidden="true" />
-      {arrival && (
-        <div className="cg-arrival" style={arrivalStyle} aria-live="off">
-          <div className="cg-arrival-kicker"><span className="cg-arrival-spark">✦</span> TOUCHDOWN <span className="cg-arrival-spark">✦</span></div>
-          <div className="cg-arrival-name">{arrival.stop.name}</div>
-          <div className="cg-arrival-rule" aria-hidden="true" />
-          <div className="cg-arrival-subtitle">Destination {String(arrival.stopIndex + 1).padStart(2, '0')} of {scene.stops.length}</div>
+      <div className="cg-actors" aria-hidden="true">
+        <div className="cg-aircraft" ref={planeRootRef} style={{ visibility: 'hidden' }}>
+          <div className="cg-aircraft-shadow" ref={planeShadowRef} />
+          <div className="cg-aircraft-lift" ref={planeLiftRef}>
+            <svg ref={planeVisualRef} className="cg-aircraft-visual"
+              xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 64"
+              role="presentation" aria-hidden="true">
+              <defs>
+                <linearGradient id="cg-aircraft-paint" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stopColor="#ffffff" />
+                  <stop offset=".65" stopColor="#ccf4fa" />
+                  <stop offset="1" stopColor="#71b9d3" />
+                </linearGradient>
+              </defs>
+              <path d="M30 3 C34 3 34 13 35 23 L56 38 Q59 43 54 45
+                L36 40 L35 52 L44 58 L44 62 L30 57 L16 62 L16 58
+                L25 52 L24 40 L6 45 Q1 43 4 38 L25 23
+                C26 13 26 3 30 3 Z"
+                fill="url(#cg-aircraft-paint)" stroke="#173a50" strokeWidth="2.1"
+                strokeLinejoin="round" />
+              <path d="M30 10 L30 54" stroke="#628ea5" strokeWidth="1.6" opacity=".65" />
+              <path d="M27.5 13 Q30 7 32.5 13 L33 22 L27 22Z" fill="#147c9e" opacity=".9" />
+            </svg>
+          </div>
         </div>
-      )}
+        <div className="cg-arrival-anchor" ref={arrivalRootRef}
+          style={{ visibility: 'hidden' }}>
+          <div className="cg-arrival-label">
+            <span className="cg-arrival-eyebrow">ARRIVED IN</span>
+            <strong ref={arrivalNameRef} className="cg-arrival-place" />
+            <span className="cg-arrival-stem" />
+          </div>
+        </div>
+      </div>
       {!CAPTURE_MODE && (
         <>
           <header className="cg-topbar">
@@ -210,7 +258,7 @@ function CinematicApp() {
               <div>Camera {pose.segmentType}</div>
               <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
               <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
-              <div>Aircraft {scene.planeAt(screen.ms) ? 'in flight' : 'hidden'}</div>
+              <div>Aircraft {scene.planeAt(screen.ms) ? '60 Hz overlay' : 'hidden'}</div>
               <div>Visible stops {scene.visibleStops(screen.ms).length} / {scene.stops.length}</div>
               <div>Frame {screen.fps} FPS · {screen.quality}</div>
               <div>Clock {Math.round(screen.ms)} ms</div>

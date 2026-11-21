@@ -17,9 +17,10 @@ An independently authored, open-source cinematic camera prototype built on top o
 - WP1.1 flight polish: camera is north-biased and limited to ±45°; aircraft orientation follows the actual geographic travel heading independently of the camera bearing.
 - Flight geometry retains the great-circle basis but adds a small endpoint-preserving lateral arc to each leg. This is a visual flight-path bow, not a physically elevated 3D line. A true world-space altitude arc is a potential later refinement.
 - Only the initial city is visible at time zero; each next destination marker, label and unrevealed route outline appears when its incoming leg begins. Seeking backward hides future markers and paths again.
-- The aircraft is visible only during flight. On landing, the airplane disappears, two time-driven geographic ripple rings expand from the arrival point and a cinematic destination title appears, including in capture mode.
+- The aircraft uses a compositor-only DOM/SVG overlay updated in the same callback as the MapLibre camera on every playback frame. It points along the travel tangent and shows a small virtual takeoff climb, cruise altitude, and nose-down landing descent. The airplane disappears at the arrival coordinate.
+- Arrivals use small map-anchored destination labels and restrained geographic ripple rings. The large centered TOUCHDOWN popup has been removed; the accent remains visible in capture mode.
 - Arrival dwell is 1.75 seconds so the ripple/title can read. These effects use scene time and can therefore be reproduced exactly during eventual fixed-FPS video export.
-- MapLibre's route sources update at about 30 Hz while its camera transform follows the v9 playback refresh. Completed and upcoming-marker source updates are cached, avoiding redundant large GeoJSON writes.
+- The map camera and DOM airplane use the v9 refresh clock. Expensive GeoJSON updates run about every 65 ms, separate active-flight trails from cached completed legs, and only update destination labels and route outlines when a flight starts. The marker is never quantized to that slower update cadence.
 
 
 ## Run and verify
@@ -56,3 +57,9 @@ There is no remote scene submission endpoint in this prototype. Inputs are bound
 This module is independently written and does not incorporate Mult.dev's proprietary JS bundles.
 
 WP1.1 uses a programmatically drawn aircraft glyph rather than a third-party airline asset.
+
+## WP1.2 playback smoothness acceptance criteria
+
+- Chromium browser smoke confirms an airplane overlay, map-anchored arrival label, per-frame deterministic seeking and a descending aircraft in the final approach.
+- Scene unit tests verify low initial altitude, higher cruise, lower final approach, and that active route geometry excludes completed legs.
+- Browser automation verifies correctness but is not an objective FPS/stutter measurement on every GPU. Continue visual testing on the actual deployment and hardware before treating the performance issue as fully resolved.
