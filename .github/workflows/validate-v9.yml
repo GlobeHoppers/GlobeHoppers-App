@@ -56,6 +56,8 @@ jobs:
         run: node --test scripts/test-v9-performance-diagnostics.mjs
       - name: Test verified lazy viewer data and Studio isolation
         run: node --test scripts/test-v9-viewer-store.mjs
+      - name: Test extracted timeline model and drawer parity
+        run: node --test scripts/test-v9-timeline-modules.mjs
       - name: Compile trips into Vite public assets (v9 preview only)
         run: node scripts/compile-v9-playback.mjs --out public/data/v9-playback
       - name: Verify all compiled trips and playback plans
