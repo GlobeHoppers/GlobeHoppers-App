@@ -1,0 +1,98 @@
+name: GlobeHoppers v9 WP5 Release Validation (No Deploy)
+
+on:
+  push:
+    branches:
+      - refactor/v9-core
+    paths:
+      - .github/workflows/release-v9.yml
+      - journeylines/scripts/browser-v9-release-smoke.mjs
+      - journeylines/scripts/browser-v9-endurance.mjs
+      - journeylines/scripts/v9-release-gate.mjs
+      - journeylines/QA/v9-WP5-release-gates.md
+      - journeylines/src/**
+  workflow_dispatch:
+    inputs:
+      full_endurance:
+        description: Run 30-minute browser endurance instead of 2 minutes
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-v9-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: WP5 regression, visual captures, benchmarks and endurance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    defaults:
+      run:
+        working-directory: journeylines
+    steps:
+      - name: Checkout isolated v9 baseline
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+      - name: Install and verify frozen pre-account v7.5.15 functionality
+        run: |
+          node scripts/verify-v9-baseline.mjs .
+          npm ci --no-audit --no-fund
+          npm run verify:v7.5.15
+      - name: Compile route/playback packages and verify the preview build
+        run: |
+          node scripts/compile-v9-playback.mjs --out public/data/v9-playback
+          npm run build
+          node scripts/verify-v9-playback.mjs dist/data/v9-playback
+          node scripts/verify-v9-viewer-data.mjs dist/data/v9-viewer
+      - name: Regression tests for WP1 through WP4
+        run: |
+          node --test scripts/test-v9-playback.mjs scripts/test-v9-worker-parity.mjs scripts/test-v9-playback-library.mjs scripts/test-v9-playback-clock.mjs scripts/test-v9-playback-transitions.mjs scripts/test-v9-camera-director.mjs scripts/test-v9-renderer-pipeline.mjs scripts/test-v9-map-render-budget.mjs scripts/test-v9-performance-diagnostics.mjs scripts/test-v9-viewer-store.mjs scripts/test-v9-timeline-modules.mjs
+      - name: Install CI-only Chromium
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.1
+          npx playwright install chromium --with-deps
+      - name: WP4 verified viewer/editor browser smoke
+        run: node scripts/browser-v9-viewer-smoke.mjs --out "$RUNNER_TEMP/wp5-viewer"
+      - name: WP5 functional and visual candidate captures
+        run: node scripts/browser-v9-release-smoke.mjs --out "$RUNNER_TEMP/wp5-smoke"
+      - name: Controlled same-leg three-way browser A/B
+        run: node scripts/browser-v9-benchmark.mjs --out "$RUNNER_TEMP/wp5-benchmark"
+        env:
+          V9_BROWSER_SAMPLE_MS: '15000'
+          V9_BROWSER_BOOT_MS: '55000'
+      - name: Unattended playback watchdog
+        run: node scripts/browser-v9-endurance.mjs --out "$RUNNER_TEMP/wp5-endurance"
+        env:
+          V9_ENDURANCE_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.full_endurance && '30' || '2' }}
+      - name: Generate automated release gate report (never promotes)
+        if: always()
+        run: |
+          node scripts/v9-release-gate.mjs \
+            --viewer "$RUNNER_TEMP/wp5-viewer/summary.json" \
+            --smoke "$RUNNER_TEMP/wp5-smoke/summary.json" \
+            --benchmark "$RUNNER_TEMP/wp5-benchmark/summary.json" \
+            --endurance "$RUNNER_TEMP/wp5-endurance/summary.json" \
+            --out "$RUNNER_TEMP/wp5-readiness"
+      - name: Archive WP5 screenshot, diagnostics and gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlobeHoppers-v9-WP5-release-evidence
+          path: |
+            ${{ runner.temp }}/wp5-viewer/
+            ${{ runner.temp }}/wp5-smoke/
+            ${{ runner.temp }}/wp5-benchmark/
+            ${{ runner.temp }}/wp5-endurance/
+            ${{ runner.temp }}/wp5-readiness/
+          retention-days: 30
+          if-no-files-found: warn
