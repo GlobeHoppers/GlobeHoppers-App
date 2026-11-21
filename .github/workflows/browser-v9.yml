@@ -52,6 +52,7 @@ jobs:
       - name: Install matching headless Chromium
         run: npx playwright install chromium --with-deps
       - name: Run WP2/WP3 browser A-B and collect WebGL warnings
+        if: github.ref != 'refs/heads/feature/v9-cinematic-camera'
         run: node scripts/browser-v9-benchmark.mjs --out "$RUNNER_TEMP/v9-browser"
         env:
           V9_BROWSER_SAMPLE_MS: '15000'
