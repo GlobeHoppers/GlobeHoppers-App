@@ -88,8 +88,20 @@ jobs:
           }
           NODE
 
+      - name: Compile and verify v9 playback bundles
+        run: |
+          node scripts/compile-v9-playback.mjs --out public/data/v9-playback
+          node scripts/verify-v9-playback.mjs public/data/v9-playback
+
       - name: Build without exposing token to Vite
         run: npm run build
+
+      - name: Verify production v9 compiled assets before publishing
+        run: |
+          test -f dist/data/v9-playback/manifest.json
+          test -f dist/data/v9-viewer/manifest.json
+          node scripts/verify-v9-playback.mjs dist/data/v9-playback
+          node scripts/verify-v9-viewer-data.mjs dist/data/v9-viewer
 
       - name: Remove runtime config from dist
         run: |
