@@ -233,7 +233,7 @@ async function acquireRepoSaveLock(onStatus = () => {}) {
 }
 
 
-export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
+export default function AdminPanel({ trips, setTrips, locations, setLocations, homeBases, routeDetailsData = null, initialEditTripId, initialAddRequestId = 0, initialTimelineRequestId = 0, initialScroll, onScrollStore, onConsumedInitialEdit, viewType = 'expanded', onViewTypeChange, addTripNoun = 'Hop', hopperData, setHopperData, activeTripId, onPlayTrip, onTripSaved = () => {}, modalOnly = false, onRepoSaveStatus = () => {} }) {
   const [draft, setDraft] = useState(empty);
   const [modal, setModal] = useState(null); // 'add' | 'edit' | null
   const [modalClosing, setModalClosing] = useState(false);
@@ -270,6 +270,15 @@ export default function AdminPanel({ trips, setTrips, locations, setLocations, h
   const modalTriggerRef = useRef(null);
   const locs = useMemo(() => [...locations].sort((a,b) => a.name.localeCompare(b.name)), [locations]);
   const locById = useMemo(() => Object.fromEntries(locations.map(l => [l.id, l])), [locations]);
+  // The playback-only route projection intentionally omits editor metadata.
+  // Studio always begins with the canonical source. If a new canonical
+  // payload was published by a save while Studio was closed, prefer it.
+  useEffect(() => {
+    if (routeDetailsData?.routes &&
+        routeDetailsData.source !== 'v9-compiled-viewer-route-geometry') {
+      routeDetailsRef.current = routeDetailsData;
+    }
+  }, [routeDetailsData]);
   useEffect(() => { tripsRef.current = trips; }, [trips]);
   useEffect(() => { locationsRef.current = locations; }, [locations]);
   const sortedTrips = useMemo(() => sortTripsForEditor(trips), [trips]);
