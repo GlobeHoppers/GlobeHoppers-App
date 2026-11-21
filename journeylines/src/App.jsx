@@ -1066,6 +1066,59 @@ export default function App() {
     }, 360);
     jumpTimersRef.current = [applyTimer, fadeTimer];
   }
+  // Browser-benchmark-only control. Never present unless the explicit
+  // v9Benchmark flag is supplied on the isolated development preview.
+  // A fixed source leg, camera mode, speed and start progress prevent the
+  // CI A/B run from comparing unrelated flights or screenshots.
+  useEffect(() => {
+    if (typeof window === 'undefined' ||
+        new URLSearchParams(window.location.search).get('v9Benchmark') !== '1') return undefined;
+    const api = {
+      chooseLeg: () => {
+        const index = legs.findIndex(item => item?.leg?.mode === 'plane' && Number(item?.leg?.miles) >= 2000);
+        if (index < 0) throw new Error('No long-haul plane leg available for benchmark');
+        const entry = legs[index];
+        return { index, tripId: entry.trip.id, legId: entry.legId, miles: entry.leg.miles };
+      },
+      start: ({ index, progress = 0.20, speed: benchmarkSpeed = 0.25 } = {}) => {
+        const selection = api.chooseLeg();
+        const requestedIndex = Number.isInteger(index) ? index : selection.index;
+        const entry = legs[requestedIndex];
+        if (!entry) throw new Error('Invalid benchmark leg index');
+        setShowHero(false);
+        setAdmin(false);
+        setTripDrawerOpen(false);
+        setProjection('globe');
+        setCameraMode('follow');
+        setFilter('all');
+        setSpeed(Math.max(0.1, Math.min(1, Number(benchmarkSpeed) || 0.25)));
+        jumpToLeg(requestedIndex, progress, true);
+        return {
+          index: requestedIndex,
+          tripId: entry.trip.id,
+          legId: entry.legId,
+          miles: entry.leg.miles,
+          progress,
+          speed: benchmarkSpeed
+        };
+      },
+      snapshot: () => {
+        const state = playbackEngine.snapshot();
+        return {
+          playing: state.playing,
+          progress: state.progress,
+          tripId: state.metadata?.tripId,
+          legId: state.metadata?.legId,
+          generation: state.generation
+        };
+      }
+    };
+    window.__GLOBEHOPPERS_BENCHMARK__ = api;
+    return () => {
+      if (window.__GLOBEHOPPERS_BENCHMARK__ === api) delete window.__GLOBEHOPPERS_BENCHMARK__;
+    };
+  }, [legs]);
+
   useEffect(() => {
     const pending = pendingPlaySavedTripRef.current;
     if (!pending?.tripId || !legs.length) return;
