@@ -5,6 +5,7 @@ on:
     branches:
       - refactor/v9-core
       - release/v9-single-user-candidate
+      - feature/v9-cinematic-camera
   workflow_dispatch:
 
 permissions:
@@ -51,6 +52,8 @@ jobs:
         run: node --test scripts/test-v9-camera-director.mjs
       - name: Test WP3 refresh-aware renderer (60-165Hz), transitions and subsystems
         run: node --test scripts/test-v9-renderer-pipeline.mjs
+      - name: Test cinematic camera trajectory, dateline, connected legs and Classic fallback
+        run: node --test scripts/test-v9-cinematic-camera.mjs
       - name: Test GPU pixel/render budgets without changing legacy mode
         run: node --test scripts/test-v9-map-render-budget.mjs
       - name: Verify disabled metrics and distinct playback/renderer FPS samples

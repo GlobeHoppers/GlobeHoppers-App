@@ -63,6 +63,24 @@ try {
     return x?.playing && x.tripId===tripId && String(x.legId)===String(legId);
   },summary.selection,{timeout:70000});
   summary.playback=await page.evaluate(()=>window.__GLOBEHOPPERS_BENCHMARK__.snapshot());
+  await page.waitForFunction(()=>window.__GLOBEHOPPERS_RENDERER__?.snapshot()?.cinematic?.active,
+    null,{timeout:15000});
+  summary.cinematicStart=await page.evaluate(()=>window.__GLOBEHOPPERS_RENDERER__.snapshot().cinematic);
+  check(summary.cinematicStart.knots>=10, 'No preplanned cinematic camera keyframes');
+  await screenshot('cinematic-playback.png');
+
+  await page.locator('.controls-advanced-toggle').click();
+  await page.getByLabel('Camera motion').selectOption('classic');
+  await page.waitForFunction(()=>{
+    const x=window.__GLOBEHOPPERS_RENDERER__?.snapshot()?.cinematic;
+    return x?.selected==='classic' && !x?.active;
+  },null,{timeout:12000});
+  summary.classicToggle=await page.evaluate(()=>window.__GLOBEHOPPERS_RENDERER__.snapshot().cinematic);
+  await page.getByLabel('Camera motion').selectOption('cinematic');
+  await page.waitForFunction(()=>window.__GLOBEHOPPERS_RENDERER__?.snapshot()?.cinematic?.active,
+    null,{timeout:12000});
+  summary.cinematicRestored=await page.evaluate(()=>window.__GLOBEHOPPERS_RENDERER__.snapshot().cinematic);
+  await page.locator('.controls-advanced-toggle').click();
   await screenshot('viewer.png');
 
   await page.evaluate(()=>window.__GLOBEHOPPERS_BENCHMARK__.openStudio());

@@ -5,6 +5,7 @@ on:
     branches:
       - refactor/v9-core
       - release/v9-single-user-candidate
+      - feature/v9-cinematic-camera
     paths:
       - .github/workflows/browser-v9.yml
       - journeylines/scripts/browser-v9-benchmark.mjs
