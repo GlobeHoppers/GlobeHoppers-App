@@ -9,7 +9,6 @@ import { milesBetween } from '../utils/distanceUtils.js';
 import routeOverrides from '../data/routeOverrides.json';
 import routingSettings from '../data/routingSettings.json';
 import generatedRoutes from '../data/generatedRoutes.json';
-import baseRouteDetails from '../data/routeDetails.json';
 import { applyRouteDetailsToEntries, routeDetailsGeometryCache } from '../utils/routeDetails.js';
 import { peekRecoloredVesselIconUrl, primeRecoloredVesselIcon, preloadBaseVesselIcons } from '../utils/vesselIcons.js';
 import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROUTING_VERSION } from '../utils/routingClient.js';
@@ -187,7 +186,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = baseRouteDetails, playbackGeneration = 0, playbackSeekRequest = null, onPlaybackSeekApplied = () => {}, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = { routes: {} }, playbackGeneration = 0, playbackSeekRequest = null, onPlaybackSeekApplied = () => {}, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -259,7 +258,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     transitionStartCamera: null,
     frozenEntry: null
   });
-  const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache());
+  const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache(routeDetailsData));
 
 
   const clearOverviewLockTimers = () => {
@@ -382,6 +381,16 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     playbackGeneration
   };
   useEffect(() => { routedGeometriesRef.current = routedGeometries; }, [routedGeometries]);
+  // Studio saves publish a new source payload. Update the read-only route
+  // cache without remounting the globe, resetting camera pose, or dropping
+  // already valid worker geometries for unrelated legs.
+  useEffect(() => {
+    const fresh = routeDetailsGeometryCache(routeDetailsData);
+    setRoutedGeometries(previous => {
+      const changed = Object.entries(fresh).some(([key, value]) => previous[key] !== value);
+      return changed ? { ...previous, ...fresh } : previous;
+    });
+  }, [routeDetailsData]);
 
 
   const routePrefetchIndex = safeActiveIndex >= 0 ? safeActiveIndex : 0;
@@ -3790,9 +3799,9 @@ function getManualRoute(leg) {
   return null;
 }
 
-function loadInitialRouteCache() {
+function loadInitialRouteCache(details = {}) {
   const generated = generatedRoutes?.routes || {};
-  const detailed = routeDetailsGeometryCache(baseRouteDetails);
+  const detailed = routeDetailsGeometryCache(details);
   // v6: startup uses only deployed geometry. Larger browser caches are restored
   // asynchronously from IndexedDB after the first render.
   return { ...generated, ...detailed };
