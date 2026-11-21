@@ -1,0 +1,1268 @@
+{
+  "schema": "globehoppers.playback.v1",
+  "sourceHash": "e37e7da533a36f6b2966e48b5767f93661d5efb53aae5188052235e05d0267c3",
+  "counts": {
+    "trips": 178,
+    "legs": 401,
+    "modes": {
+      "plane": 330,
+      "drive": 54,
+      "boat": 13,
+      "train": 4
+    },
+    "coverage": {
+      "detailed": 71,
+      "simple": 330,
+      "generated": 0,
+      "missing": 0
+    }
+  },
+  "trips": [
+    {
+      "id": "k32oci",
+      "file": "trips/k32oci.json",
+      "legCount": 2,
+      "sha256": "474531aa7dee1947fa7713915ee4da2a278cc5b3898bf711b9e74179f9530cf0",
+      "bytes": 56297
+    },
+    {
+      "id": "puogfw",
+      "file": "trips/puogfw.json",
+      "legCount": 4,
+      "sha256": "05b9f13f28f195cc7b7da19c6d6f54e5606cc14a57ba06f108ce33795708fd0f",
+      "bytes": 88102
+    },
+    {
+      "id": "k3m37j",
+      "file": "trips/k3m37j.json",
+      "legCount": 4,
+      "sha256": "cecfa5353eb523f23de32bd58c237a07b8916a112202fbfe37d13f13b9b04edd",
+      "bytes": 105231
+    },
+    {
+      "id": "5bsiu9",
+      "file": "trips/5bsiu9.json",
+      "legCount": 2,
+      "sha256": "246806d2be9970ca60b874e25bd47a51392e3d3a15c0f7811768c7a00efcbff7",
+      "bytes": 50055
+    },
+    {
+      "id": "nb429o",
+      "file": "trips/nb429o.json",
+      "legCount": 2,
+      "sha256": "887dc392c66e4fa6f79856bc7ae4e48b42f031863076bb27f2e71344a9b0eed8",
+      "bytes": 78275
+    },
+    {
+      "id": "t0r0b4",
+      "file": "trips/t0r0b4.json",
+      "legCount": 2,
+      "sha256": "4cc29da68d36c9d52952cbd3bbdd8b63abc6c94bf9e1c1c95007a8a1f93acb8f",
+      "bytes": 43322
+    },
+    {
+      "id": "rjylx5",
+      "file": "trips/rjylx5.json",
+      "legCount": 4,
+      "sha256": "af77bce149a6aa15ec6bd026190dee0ec12ad697095c21ba2fbc712d37d10a2a",
+      "bytes": 88102
+    },
+    {
+      "id": "a9rk7t",
+      "file": "trips/a9rk7t.json",
+      "legCount": 2,
+      "sha256": "c2cbd8bef4bc65d69338b2e3230589faebb64754125ea2c067cc359ce045732e",
+      "bytes": 47902
+    },
+    {
+      "id": "8pe4wt",
+      "file": "trips/8pe4wt.json",
+      "legCount": 2,
+      "sha256": "938b5f44a0138be7c3d21b7718eba6dd339a9b290ee49e79550066ac1a79b00a",
+      "bytes": 63578
+    },
+    {
+      "id": "1edy6t",
+      "file": "trips/1edy6t.json",
+      "legCount": 2,
+      "sha256": "cde23ee1d4b47a3bbcaa5f0b76982a7ecd66e8d4bf58c39eac9f6db822aa8af7",
+      "bytes": 76589
+    },
+    {
+      "id": "sn2fmo",
+      "file": "trips/sn2fmo.json",
+      "legCount": 2,
+      "sha256": "a1a6e1e522c2ec2169168ee39aa0de1cc5602952bfb93a819fd77223e3c60ce1",
+      "bytes": 62553
+    },
+    {
+      "id": "dcr014",
+      "file": "trips/dcr014.json",
+      "legCount": 2,
+      "sha256": "fb1d24e3c1e435dfd506a1fbb68a486c1ef05f3a7ee7c1bf64bdb116f1ddf97b",
+      "bytes": 54296
+    },
+    {
+      "id": "id170w",
+      "file": "trips/id170w.json",
+      "legCount": 2,
+      "sha256": "c9978d4d6815607af40d79b3656540c9331625c52812b2d45576667e4083eadc",
+      "bytes": 78275
+    },
+    {
+      "id": "hnym39",
+      "file": "trips/hnym39.json",
+      "legCount": 2,
+      "sha256": "949c77d9f2ad09a0d889a3d0e073723138dfb5191ac4e11ed4636559376d7bd4",
+      "bytes": 47902
+    },
+    {
+      "id": "qp3jg5",
+      "file": "trips/qp3jg5.json",
+      "legCount": 2,
+      "sha256": "034ca80dd9d347fd3096c8e9beb5c7098c11070342fc3f44619a0e627677abd8",
+      "bytes": 71340
+    },
+    {
+      "id": "n4cu5t",
+      "file": "trips/n4cu5t.json",
+      "legCount": 2,
+      "sha256": "a36e6caa18ab0c07b2240bfb5eb58fa328e5f98c52719f46153c254dce6c8507",
+      "bytes": 78026
+    },
+    {
+      "id": "em923q",
+      "file": "trips/em923q.json",
+      "legCount": 2,
+      "sha256": "ed683f829c270d47ade197824487105aab6cead55b42295ea535864ba50a1d27",
+      "bytes": 52690
+    },
+    {
+      "id": "n9p3l2",
+      "file": "trips/n9p3l2.json",
+      "legCount": 2,
+      "sha256": "42b28d5abb6e36e445f92557c700f7818f34bfa1b11559a076d0daa95170acac",
+      "bytes": 77422
+    },
+    {
+      "id": "s2dojb",
+      "file": "trips/s2dojb.json",
+      "legCount": 2,
+      "sha256": "4f70545621f1505690743269247957bf6f070d3c32f5d48c4009aa3099f25977",
+      "bytes": 53342
+    },
+    {
+      "id": "xxdzol",
+      "file": "trips/xxdzol.json",
+      "legCount": 2,
+      "sha256": "9b17fc7241d4e8fc734c5b4fb07f6b8c8be44d60285429695de7d65da96e418a",
+      "bytes": 55807
+    },
+    {
+      "id": "jo2l8f",
+      "file": "trips/jo2l8f.json",
+      "legCount": 2,
+      "sha256": "f02b380fe0870818aed67e5b0baefaf8165a0a3021c244ccfdd7e4e985432eb1",
+      "bytes": 67312
+    },
+    {
+      "id": "k0n2cz",
+      "file": "trips/k0n2cz.json",
+      "legCount": 2,
+      "sha256": "c0521e93d7ac5259707d1ab615aa003aa867bc6b9e3762c33cd3b50781c9c13a",
+      "bytes": 76589
+    },
+    {
+      "id": "e4eh0b",
+      "file": "trips/e4eh0b.json",
+      "legCount": 2,
+      "sha256": "3bfaf555edbed3a290c9bb9c4de0f9a0e21e88744b587ede44407a5a5c828cc4",
+      "bytes": 52690
+    },
+    {
+      "id": "w6iwwu",
+      "file": "trips/w6iwwu.json",
+      "legCount": 5,
+      "sha256": "28140592ad1ffc6fae7955f51804e7409f083ebe565782d4f8213be3fdb4cbbf",
+      "bytes": 123498
+    },
+    {
+      "id": "01qq92",
+      "file": "trips/01qq92.json",
+      "legCount": 2,
+      "sha256": "838ca3cde3ec829c38fb94408ae4d19f64e99e7024a7d2704287cde02dede8c7",
+      "bytes": 47215
+    },
+    {
+      "id": "qp0fkg",
+      "file": "trips/qp0fkg.json",
+      "legCount": 2,
+      "sha256": "f68a9eb51f140e79981dbc9f2e9b91216f944769e2accc9ec7803ad06baa109c",
+      "bytes": 77422
+    },
+    {
+      "id": "fni76t",
+      "file": "trips/fni76t.json",
+      "legCount": 2,
+      "sha256": "26f0df2b903f902079930fa2e2b862b5665f969760bbe82c366291eb8cf0e888",
+      "bytes": 63578
+    },
+    {
+      "id": "sad8hg",
+      "file": "trips/sad8hg.json",
+      "legCount": 4,
+      "sha256": "503e39516c5dc0fbb091061abeff4e19991a05f1293411c9b585c0566574abe5",
+      "bytes": 88102
+    },
+    {
+      "id": "8r98ei",
+      "file": "trips/8r98ei.json",
+      "legCount": 2,
+      "sha256": "70f9c602a720766fa03fba1e9a5ebf2d46b7c667598cfaf589167936f3fff4d3",
+      "bytes": 78661
+    },
+    {
+      "id": "u9fpa0",
+      "file": "trips/u9fpa0.json",
+      "legCount": 2,
+      "sha256": "3fb2e30d2396d13ba05c83f816b894fd320125f270b5434903f24f13802b6351",
+      "bytes": 52690
+    },
+    {
+      "id": "bxrri4",
+      "file": "trips/bxrri4.json",
+      "legCount": 2,
+      "sha256": "576482d42f4a559d5bce4125e343b6811df2e020c422c665e275b8cace5d5216",
+      "bytes": 74618
+    },
+    {
+      "id": "92k9q5",
+      "file": "trips/92k9q5.json",
+      "legCount": 2,
+      "sha256": "711556376f87bf66d7cd4b2b2659c189e30c961b18789b39ec0caa14dd34b308",
+      "bytes": 55807
+    },
+    {
+      "id": "aqzxjc",
+      "file": "trips/aqzxjc.json",
+      "legCount": 1,
+      "sha256": "2bff8858463af906f750bd345e8e7c49feb814becff23c3278f3d0d87ef5fe10",
+      "bytes": 38752
+    },
+    {
+      "id": "hdvfp0",
+      "file": "trips/hdvfp0.json",
+      "legCount": 2,
+      "sha256": "95a3a033558ee07323f3992e69b5a607c694b2ff803937d81dae2ddb6728bf51",
+      "bytes": 78508
+    },
+    {
+      "id": "zjqcly",
+      "file": "trips/zjqcly.json",
+      "legCount": 2,
+      "sha256": "d9942fce49c26b37b15d167f3262e9042417d079a6967510e2b3c0d100addc6e",
+      "bytes": 53742
+    },
+    {
+      "id": "1j7foh",
+      "file": "trips/1j7foh.json",
+      "legCount": 2,
+      "sha256": "d17665f4c021ffad248cb0e048ec791115080c15d1f3d5917a4c52d04a30f7c4",
+      "bytes": 50505
+    },
+    {
+      "id": "1axqcv",
+      "file": "trips/1axqcv.json",
+      "legCount": 2,
+      "sha256": "919697679f31dccf5e516ecef4ab0a6b3e98a889e9559185bc7af2dc2f7f2e0c",
+      "bytes": 74174
+    },
+    {
+      "id": "1sdhc6",
+      "file": "trips/1sdhc6.json",
+      "legCount": 2,
+      "sha256": "815394f7be630c6cb23ac7b6d404bf9b3035217601ff3304cdb81673c90a49a8",
+      "bytes": 78630
+    },
+    {
+      "id": "xk0o05",
+      "file": "trips/xk0o05.json",
+      "legCount": 2,
+      "sha256": "c921495010a873d80e6e91096bf9923961eab1ee9d51ebb723ffa3602e5f8eae",
+      "bytes": 77736
+    },
+    {
+      "id": "hv3m1g",
+      "file": "trips/hv3m1g.json",
+      "legCount": 2,
+      "sha256": "a7c3ab1a5a371613500c5fff727922cbeb0368262244e550a21de387bba286c9",
+      "bytes": 50505
+    },
+    {
+      "id": "ulh1bl",
+      "file": "trips/ulh1bl.json",
+      "legCount": 2,
+      "sha256": "7f9342c3566cdd54b975fef916ab042f8812c5575843610a21e8ee3803fe99b8",
+      "bytes": 43425
+    },
+    {
+      "id": "glx5y3",
+      "file": "trips/glx5y3.json",
+      "legCount": 4,
+      "sha256": "4df990d7581770e9c8ad96de72e2dcd1d1bd4a003d1fb47da8e02b6e1eaf6c38",
+      "bytes": 122486
+    },
+    {
+      "id": "pwq7rt",
+      "file": "trips/pwq7rt.json",
+      "legCount": 2,
+      "sha256": "3d65fd2090c3603ef481b7a22b1db09a3df9f5d4604c20798c9404a421e3bc42",
+      "bytes": 59146
+    },
+    {
+      "id": "xmatqa",
+      "file": "trips/xmatqa.json",
+      "legCount": 2,
+      "sha256": "58e5dd86dac7ba151e26e77b4d69b9bd713b5f4bc113789e56eb784cdf63b0b2",
+      "bytes": 61954
+    },
+    {
+      "id": "k1o3am",
+      "file": "trips/k1o3am.json",
+      "legCount": 2,
+      "sha256": "2248935e164027fbb8f678653d99b7f2ee31c45d136c6b7f3e1725fbc326f7fd",
+      "bytes": 78630
+    },
+    {
+      "id": "o8lx5c",
+      "file": "trips/o8lx5c.json",
+      "legCount": 2,
+      "sha256": "5636abc8a8c4b8826163c67c60bdaa919b5f5913df4da75095d715d371dfbd74",
+      "bytes": 53742
+    },
+    {
+      "id": "w1t9me",
+      "file": "trips/w1t9me.json",
+      "legCount": 3,
+      "sha256": "6a85136c50f38056049ecaa9c34ea076fa910f68f712b020ab98808972dcc7c5",
+      "bytes": 98179
+    },
+    {
+      "id": "undcsu",
+      "file": "trips/undcsu.json",
+      "legCount": 2,
+      "sha256": "2eb7b194865a0f9bbc42d11ddf12075b0e49e91b8256d143adf66804ab87c0c9",
+      "bytes": 53742
+    },
+    {
+      "id": "nqw38m",
+      "file": "trips/nqw38m.json",
+      "legCount": 2,
+      "sha256": "9e869e733af8a0c011e8637bcdd22d52b7c57645c286ec042704bd81e63c2537",
+      "bytes": 47628
+    },
+    {
+      "id": "8i40tt",
+      "file": "trips/8i40tt.json",
+      "legCount": 2,
+      "sha256": "b864226743fe2953e75a4dd28a357b6c5cf69a28969c88424b6e11654ba44fc3",
+      "bytes": 77704
+    },
+    {
+      "id": "dnup4p",
+      "file": "trips/dnup4p.json",
+      "legCount": 2,
+      "sha256": "9fffb0bee41261c14e258543fd5e238f4e24ed816a1b47f8b8c09a12b24e8a3e",
+      "bytes": 35053
+    },
+    {
+      "id": "ie2vkq",
+      "file": "trips/ie2vkq.json",
+      "legCount": 2,
+      "sha256": "9ccfae74e2c5fd520d4d90015d0cb770cb2c2e8b13db0f89563faed2ffc14d25",
+      "bytes": 77736
+    },
+    {
+      "id": "4d4xdj",
+      "file": "trips/4d4xdj.json",
+      "legCount": 2,
+      "sha256": "1d55788752e70f73aa1b181c49643454978dfbda31c3d488ded359bb1c0bd3b9",
+      "bytes": 62083
+    },
+    {
+      "id": "j2wfd5",
+      "file": "trips/j2wfd5.json",
+      "legCount": 2,
+      "sha256": "ae6dcd6727cc77cd65eccc55f779eab93725d36722cec1b203d51d5e99479030",
+      "bytes": 76866
+    },
+    {
+      "id": "vfbay2",
+      "file": "trips/vfbay2.json",
+      "legCount": 2,
+      "sha256": "98859d78b13b70b6759d8febdc343e031add783bce26938af568b646c93e30d5",
+      "bytes": 53287
+    },
+    {
+      "id": "xq5ydf",
+      "file": "trips/xq5ydf.json",
+      "legCount": 2,
+      "sha256": "5f3cad5efc432be4bc7dcfec4d8fbab57ce30b82da1297e73e7b77afbb967b3e",
+      "bytes": 68464
+    },
+    {
+      "id": "c756bi",
+      "file": "trips/c756bi.json",
+      "legCount": 2,
+      "sha256": "c823da0ea8bc313c970d36ac828d496e5c8051183ec71361374f828feb2424c3",
+      "bytes": 77736
+    },
+    {
+      "id": "z3oy2w",
+      "file": "trips/z3oy2w.json",
+      "legCount": 2,
+      "sha256": "ef31fb3d06a6e74bf6bc3513412175d6a32ea0c849f5ac5a0cad7642069bf498",
+      "bytes": 81933
+    },
+    {
+      "id": "6a5bv3",
+      "file": "trips/6a5bv3.json",
+      "legCount": 3,
+      "sha256": "229788d1d6b5b3912e93358c68930ffc9486520c281d3d8c65549d19b2857985",
+      "bytes": 100476
+    },
+    {
+      "id": "5kkx8p",
+      "file": "trips/5kkx8p.json",
+      "legCount": 2,
+      "sha256": "4e27c20270cd90b4f856faf7d387cfa3b9d56f55dc3dec49d59ca8f608ffc1cf",
+      "bytes": 77736
+    },
+    {
+      "id": "8ef9ha",
+      "file": "trips/8ef9ha.json",
+      "legCount": 2,
+      "sha256": "7ac813b61ea8a5cce0b6e296dc2dc49e91bdddb1adb8fcbb868bf74d60f918d3",
+      "bytes": 74166
+    },
+    {
+      "id": "0ur0vx",
+      "file": "trips/0ur0vx.json",
+      "legCount": 2,
+      "sha256": "75854e97c3143521fd837bff3712f59b691f501045ab600846ba92c5c1e4a77b",
+      "bytes": 76030
+    },
+    {
+      "id": "5kxusq",
+      "file": "trips/5kxusq.json",
+      "legCount": 2,
+      "sha256": "45c38572dcc4a6e501ed6ac8ea9b4c5e238141a5e77a9c6567219545858c5b48",
+      "bytes": 65196
+    },
+    {
+      "id": "mx9zge",
+      "file": "trips/mx9zge.json",
+      "legCount": 2,
+      "sha256": "fd36b97cf9ed09f5a3f335e628ee41a384a0312c53f02ed0507fdc9f356f5aff",
+      "bytes": 89714
+    },
+    {
+      "id": "juwvjt",
+      "file": "trips/juwvjt.json",
+      "legCount": 2,
+      "sha256": "1ad0fb1f820a622f7084ebfd6a7b996d54e00e3bf49d04a98826343d40b9633d",
+      "bytes": 78508
+    },
+    {
+      "id": "fh8vhe",
+      "file": "trips/fh8vhe.json",
+      "legCount": 2,
+      "sha256": "e63aa005c91bbc647534215f5ad0cab70158fe5385c2a228bafd66e086889e91",
+      "bytes": 47628
+    },
+    {
+      "id": "h58jv0",
+      "file": "trips/h58jv0.json",
+      "legCount": 2,
+      "sha256": "bd0a0b260b40cec9f955520dbcaf6756eb5368a2d9fcf3f5a07eb5a491acaf73",
+      "bytes": 78523
+    },
+    {
+      "id": "4pymk1",
+      "file": "trips/4pymk1.json",
+      "legCount": 2,
+      "sha256": "54af457ada23279eb1ee00aae778f96bbdb105cbf53ab237af05822d2c2ade31",
+      "bytes": 61954
+    },
+    {
+      "id": "odhtd6",
+      "file": "trips/odhtd6.json",
+      "legCount": 2,
+      "sha256": "f2c2f9d7acf215abbacaa09c0bf99a06049ef2a72897772453c9f7efd9f1aa77",
+      "bytes": 78630
+    },
+    {
+      "id": "ka4l3y",
+      "file": "trips/ka4l3y.json",
+      "legCount": 2,
+      "sha256": "88adeeaf95fa73de48ac2eae4213455f1276962224b256ed6c533296d7d217cb",
+      "bytes": 81933
+    },
+    {
+      "id": "dzoqqz",
+      "file": "trips/dzoqqz.json",
+      "legCount": 2,
+      "sha256": "4ba78846a8eca6e6d42694b553ebd9093630bdad94d37817b2d927feb179d79c",
+      "bytes": 77736
+    },
+    {
+      "id": "365u0d",
+      "file": "trips/365u0d.json",
+      "legCount": 2,
+      "sha256": "647433223a5359336ff064f2b53d97645c7f4ab8287c4899d6b942e1015b7d99",
+      "bytes": 72600
+    },
+    {
+      "id": "wcpr4g",
+      "file": "trips/wcpr4g.json",
+      "legCount": 2,
+      "sha256": "0f7b4dc1bd444d109cdc052ed9111481368e25d5bf172585b71661f4a00c4cfe",
+      "bytes": 65196
+    },
+    {
+      "id": "q8ievm",
+      "file": "trips/q8ievm.json",
+      "legCount": 2,
+      "sha256": "f7c14e7c55162becc56ce1da1de060fc48ced5cb60cf8cf323586cec3dee4342",
+      "bytes": 77778
+    },
+    {
+      "id": "ch9io7",
+      "file": "trips/ch9io7.json",
+      "legCount": 7,
+      "sha256": "1bc7dcc2e30a6d1c7976cd39016f7ee95be4c9bcc43c18c0e47d97c9d6faabb7",
+      "bytes": 195764
+    },
+    {
+      "id": "gpzneo",
+      "file": "trips/gpzneo.json",
+      "legCount": 2,
+      "sha256": "496d13fbcf9916f2a657113144d06e0e6503132548101d252130e33d8846d59f",
+      "bytes": 76542
+    },
+    {
+      "id": "fmtsmw",
+      "file": "trips/fmtsmw.json",
+      "legCount": 2,
+      "sha256": "d65bfdab216397e4cf75f14df1ff0b938442fc27d5dc8a3fd566358199cdbc44",
+      "bytes": 77736
+    },
+    {
+      "id": "0fzjcl",
+      "file": "trips/0fzjcl.json",
+      "legCount": 2,
+      "sha256": "1e06246a13346fcd26658c52cd1c92ee3f425800fe037d850d75dc95cc170548",
+      "bytes": 65196
+    },
+    {
+      "id": "4xkub7",
+      "file": "trips/4xkub7.json",
+      "legCount": 2,
+      "sha256": "9b6f21937f4de07c8cdf12430f588b258d5f16d63ee108329a8da0c606d92e7e",
+      "bytes": 89444
+    },
+    {
+      "id": "pl62na",
+      "file": "trips/pl62na.json",
+      "legCount": 2,
+      "sha256": "2dcbe20c2e0afe581a2fe4076766368f6e938e2e621519307bb3be0d6a0b26b1",
+      "bytes": 77736
+    },
+    {
+      "id": "qeulg1",
+      "file": "trips/qeulg1.json",
+      "legCount": 2,
+      "sha256": "e92412812dae5a94d21c45e9324883b72d2bc32903ad789ca007547578418835",
+      "bytes": 74166
+    },
+    {
+      "id": "ijhp7a",
+      "file": "trips/ijhp7a.json",
+      "legCount": 2,
+      "sha256": "3eba8ced82b6252ebccc965106ffe23e2c7430a23f631e42c95183614990fe68",
+      "bytes": 76919
+    },
+    {
+      "id": "ke0yq6",
+      "file": "trips/ke0yq6.json",
+      "legCount": 4,
+      "sha256": "f449ebce6fedddb1bff88b3fa11b75073d7addbb5267e4cf339cd6dc70516df4",
+      "bytes": 142678
+    },
+    {
+      "id": "806j4y",
+      "file": "trips/806j4y.json",
+      "legCount": 2,
+      "sha256": "27d3848ea5f792e3c06824ba01a07366cd812de6e27a90728bb7700dc4d8d44a",
+      "bytes": 68464
+    },
+    {
+      "id": "7ma4we",
+      "file": "trips/7ma4we.json",
+      "legCount": 2,
+      "sha256": "3f3aa454a87c77e7d3d612d868766cc507767d295534528145707ccb645ac5e4",
+      "bytes": 54367
+    },
+    {
+      "id": "zirs14",
+      "file": "trips/zirs14.json",
+      "legCount": 2,
+      "sha256": "8b5cd12e31f90832d20ed5ad17352cce3aec3bbe213fb61a5cc1bc343b4d5bd2",
+      "bytes": 77422
+    },
+    {
+      "id": "ow0j64",
+      "file": "trips/ow0j64.json",
+      "legCount": 2,
+      "sha256": "ab6e8fa08e60612324e5295b8b1dc907d735ecdc077ada4897c42e1320805b78",
+      "bytes": 78630
+    },
+    {
+      "id": "y4zhqf",
+      "file": "trips/y4zhqf.json",
+      "legCount": 2,
+      "sha256": "5dfa303177e28576c429df9ee209fb50a777dcdc8a36c267c9d72bc17f47cb00",
+      "bytes": 47628
+    },
+    {
+      "id": "eign5z",
+      "file": "trips/eign5z.json",
+      "legCount": 2,
+      "sha256": "5474f2f68066bafe2fa6652d90659d534e3057c5b41b19fa0e37df939a87c21e",
+      "bytes": 41488
+    },
+    {
+      "id": "rlnhph",
+      "file": "trips/rlnhph.json",
+      "legCount": 2,
+      "sha256": "de4916864f8129033a79a9fa524afdfe883affdeb8f7a2c267892625d411b4b0",
+      "bytes": 74166
+    },
+    {
+      "id": "x9wz8q",
+      "file": "trips/x9wz8q.json",
+      "legCount": 4,
+      "sha256": "7231abaf960abf967441c6ae8d238c583f38d88190f45adebe76ac9d4f765b4a",
+      "bytes": 123127
+    },
+    {
+      "id": "kfy512",
+      "file": "trips/kfy512.json",
+      "legCount": 2,
+      "sha256": "61f1987060b1dac9b3dbe93f33b34d5d9fe81e2e8bfd0de6fc1bc9a4003eb3ce",
+      "bytes": 50505
+    },
+    {
+      "id": "zdokjf",
+      "file": "trips/zdokjf.json",
+      "legCount": 2,
+      "sha256": "0ab7f982abb4d0f188e121398c058f2355bb1b60669157f0ff944a5b575ffaf5",
+      "bytes": 50505
+    },
+    {
+      "id": "di61uv",
+      "file": "trips/di61uv.json",
+      "legCount": 2,
+      "sha256": "40b3fd1f89aa78446f27a448aa0649036f094c0c64caf97f7e6e8080c74891cd",
+      "bytes": 77790
+    },
+    {
+      "id": "guijgd",
+      "file": "trips/guijgd.json",
+      "legCount": 2,
+      "sha256": "7d792712ec9f06538cb7dbce9fc14ad921f53c0a73b86a43961e7e8aa2dbcfd4",
+      "bytes": 81269
+    },
+    {
+      "id": "at2c0s",
+      "file": "trips/at2c0s.json",
+      "legCount": 2,
+      "sha256": "addd47d4f420b9d17c5f194aef3fe6236c673898e0b742d75d06a91be75ccc3c",
+      "bytes": 79093
+    },
+    {
+      "id": "eich35",
+      "file": "trips/eich35.json",
+      "legCount": 2,
+      "sha256": "d50daf99312157a6b1c92b20ae5f6ae688bee2abc9a3641832cf43d303feb4a5",
+      "bytes": 74588
+    },
+    {
+      "id": "11imuc",
+      "file": "trips/11imuc.json",
+      "legCount": 2,
+      "sha256": "4d8886bd4d743810921e283e0e1167e229f2720300c160a5c70dfa4ad6b83e82",
+      "bytes": 77790
+    },
+    {
+      "id": "knn8xl",
+      "file": "trips/knn8xl.json",
+      "legCount": 2,
+      "sha256": "64cbdf65ecbcaa47d010aee64fa00b945bf5480df87bd7936a941557a93beaa6",
+      "bytes": 77790
+    },
+    {
+      "id": "ruzime",
+      "file": "trips/ruzime.json",
+      "legCount": 4,
+      "sha256": "104a13060864a3ab3c3132d462ece5312d6e3ff72ffa057f75039337f2d02592",
+      "bytes": 82709
+    },
+    {
+      "id": "mserk4",
+      "file": "trips/mserk4.json",
+      "legCount": 2,
+      "sha256": "d854b5d0b9d772913585e0b69a2ac8e74d62a908ad72193ee2033659dbdbfadc",
+      "bytes": 74588
+    },
+    {
+      "id": "1jcz56",
+      "file": "trips/1jcz56.json",
+      "legCount": 2,
+      "sha256": "5f4e18a46104a2fc959a3f61474b8c2cf371c9856ee66c03f3fb618b067a89dc",
+      "bytes": 79093
+    },
+    {
+      "id": "srrcs3",
+      "file": "trips/srrcs3.json",
+      "legCount": 2,
+      "sha256": "84eb117d0641b2a7bc6c4333239a527bb33599e84fa42f529535160cef0afad3",
+      "bytes": 46050
+    },
+    {
+      "id": "fq2qmy",
+      "file": "trips/fq2qmy.json",
+      "legCount": 2,
+      "sha256": "89047f1c3237ca33d2cc9da32a4fb3655f980e7c024ab3a14b5bcfd1ead38311",
+      "bytes": 77790
+    },
+    {
+      "id": "671l1w",
+      "file": "trips/671l1w.json",
+      "legCount": 2,
+      "sha256": "7d39f8b87c4fdd1867983cf509722d201377d78f0c9d50d48d7f81cf0cc15767",
+      "bytes": 34659
+    },
+    {
+      "id": "t0ruhh",
+      "file": "trips/t0ruhh.json",
+      "legCount": 2,
+      "sha256": "edd2f72ca8a899387e4d9c217880c88948a78f892ea15974954c98c253468956",
+      "bytes": 34659
+    },
+    {
+      "id": "o6q1qq",
+      "file": "trips/o6q1qq.json",
+      "legCount": 2,
+      "sha256": "664d51e7f9305ca39f173210bacb75adfbd07ef4f6853e34749f7d61cc0e63c3",
+      "bytes": 78917
+    },
+    {
+      "id": "j6kwbk",
+      "file": "trips/j6kwbk.json",
+      "legCount": 2,
+      "sha256": "a244e012f0cd022e8f6990464d18582136274436ce5f68e7bb2360678e87b410",
+      "bytes": 77790
+    },
+    {
+      "id": "864k6l",
+      "file": "trips/864k6l.json",
+      "legCount": 2,
+      "sha256": "1c6c918d30b0a46ae0946d36b3d217779397597e8820a7408c33d70f23c75262",
+      "bytes": 46050
+    },
+    {
+      "id": "m4e6iw",
+      "file": "trips/m4e6iw.json",
+      "legCount": 2,
+      "sha256": "512119a37da9e9bcda48ce7d955b2e2362ac8b4fc1aa5472cc889a604806191c",
+      "bytes": 78621
+    },
+    {
+      "id": "yh7sl5",
+      "file": "trips/yh7sl5.json",
+      "legCount": 2,
+      "sha256": "6eb13d877f74a8c6f52fd175fd70b9c4140d5b9eb052034771ce6dd51e6302e4",
+      "bytes": 77790
+    },
+    {
+      "id": "w1nnlr",
+      "file": "trips/w1nnlr.json",
+      "legCount": 2,
+      "sha256": "2319d0d735f7ff5a4305d1c59c3cc74f2a78050171dcf6c9e1fb5e469f9822fd",
+      "bytes": 77790
+    },
+    {
+      "id": "gssg33",
+      "file": "trips/gssg33.json",
+      "legCount": 2,
+      "sha256": "8a2c9d8fc7391c746caf077462c4f111790f67e31c131d68a17b0b62fb67e9f2",
+      "bytes": 67433
+    },
+    {
+      "id": "pj352v",
+      "file": "trips/pj352v.json",
+      "legCount": 2,
+      "sha256": "8417c15d3e9d166fc2b9ed7de3711ac87ceacccebe55ed690cc92eb2bcca8b67",
+      "bytes": 77790
+    },
+    {
+      "id": "yazg3i",
+      "file": "trips/yazg3i.json",
+      "legCount": 2,
+      "sha256": "739f287234f59c2f073622dbd21532e21ba84dd5a0f958fe62aad9a36a5dc427",
+      "bytes": 74588
+    },
+    {
+      "id": "qxo6or",
+      "file": "trips/qxo6or.json",
+      "legCount": 2,
+      "sha256": "2db1293893b018eb4f36fb59e1a1a405248b232946844423ac850a79e7103c52",
+      "bytes": 81269
+    },
+    {
+      "id": "4bleq1",
+      "file": "trips/4bleq1.json",
+      "legCount": 4,
+      "sha256": "2fe9687f074e91aa7cf7e1e49a0359130b8cea3396e9436f56788e67ffc44d48",
+      "bytes": 123424
+    },
+    {
+      "id": "yot370",
+      "file": "trips/yot370.json",
+      "legCount": 2,
+      "sha256": "665e982823077d8d0da2e06f172847378801611ab06c988115572173b28a3bb3",
+      "bytes": 77790
+    },
+    {
+      "id": "v8qkzm",
+      "file": "trips/v8qkzm.json",
+      "legCount": 2,
+      "sha256": "04d9deb39f4a079332ebf71ba47b66cd3605c054ee11e4ca563246d9ab3457a8",
+      "bytes": 44336
+    },
+    {
+      "id": "q9h3bv",
+      "file": "trips/q9h3bv.json",
+      "legCount": 10,
+      "sha256": "68a0cf2a8c37d64f0b8752b0880ad7d7e1fda6012bc45c4b4b874b9051d02f64",
+      "bytes": 250915
+    },
+    {
+      "id": "b9s33s",
+      "file": "trips/b9s33s.json",
+      "legCount": 2,
+      "sha256": "1b7b55ec4889ccc192f2d4646d13e54b5c017ef97d2d80626a5c97c9e0fe5190",
+      "bytes": 69501
+    },
+    {
+      "id": "0pf4l7",
+      "file": "trips/0pf4l7.json",
+      "legCount": 2,
+      "sha256": "ec1904404233ed57e4393fc91c904dc0bac5aa932fc9816e89b23fc8762dc2cc",
+      "bytes": 78004
+    },
+    {
+      "id": "n1nudd",
+      "file": "trips/n1nudd.json",
+      "legCount": 2,
+      "sha256": "6818c108581d44f33c5787d71153b9e866a384f01ee5299cae13cbc887f4cc05",
+      "bytes": 67641
+    },
+    {
+      "id": "djt458",
+      "file": "trips/djt458.json",
+      "legCount": 2,
+      "sha256": "3a0c4a6d6111581a1046ac40656622c6024cca481a2fb1395baa97770edbfec2",
+      "bytes": 61855
+    },
+    {
+      "id": "926ao0",
+      "file": "trips/926ao0.json",
+      "legCount": 2,
+      "sha256": "e10ae55182a16a062fc5247f1df78625dde3067d8d940bf91af91a99db6d519c",
+      "bytes": 78950
+    },
+    {
+      "id": "5o0pf4",
+      "file": "trips/5o0pf4.json",
+      "legCount": 3,
+      "sha256": "8cd4a6d6fac2f5cac5333aa812ebcac70b9c7077a8b50a14b57a4cbb5cb87a4d",
+      "bytes": 109966
+    },
+    {
+      "id": "c46wk2",
+      "file": "trips/c46wk2.json",
+      "legCount": 2,
+      "sha256": "d3c2d07d3e5f6a6075b996625a26f97c098bbfa1c637c6b24d772ae3a477f66d",
+      "bytes": 77295
+    },
+    {
+      "id": "as9kuh",
+      "file": "trips/as9kuh.json",
+      "legCount": 2,
+      "sha256": "2d719c8048e89bd995812b6faa006e1577f3357723e1968c4df21334465ca4ab",
+      "bytes": 46050
+    },
+    {
+      "id": "jkcojw",
+      "file": "trips/jkcojw.json",
+      "legCount": 2,
+      "sha256": "ccac3ec8d76a1e36d8beb795c68e6f92e9b5ef43d48ea782c2ad35cba3cd4785",
+      "bytes": 78004
+    },
+    {
+      "id": "cjn6z8",
+      "file": "trips/cjn6z8.json",
+      "legCount": 2,
+      "sha256": "c604fbbe43c1630ba7033d9a28aec80f900009ccaf55da97411a6e6b0a6bbc35",
+      "bytes": 89823
+    },
+    {
+      "id": "tfupg0",
+      "file": "trips/tfupg0.json",
+      "legCount": 2,
+      "sha256": "9056a6f182480dceb91b4c2a3ca62fd19dd801b4a531066d68d15db673506ebe",
+      "bytes": 46050
+    },
+    {
+      "id": "lal8di",
+      "file": "trips/lal8di.json",
+      "legCount": 2,
+      "sha256": "b266ef68669f306340147f21d990e640d9fd3673be4f1865f2bd1b6c241bca76",
+      "bytes": 77736
+    },
+    {
+      "id": "c0544l",
+      "file": "trips/c0544l.json",
+      "legCount": 2,
+      "sha256": "9a532acd548d6517b138fe9f085172025f57034cdd229b9acdc639e0222ce220",
+      "bytes": 76375
+    },
+    {
+      "id": "gcpsd4",
+      "file": "trips/gcpsd4.json",
+      "legCount": 4,
+      "sha256": "41ccdf2f401a67830734bdbfc796737f6bb00dce25a318ec84651c60f0c74bad",
+      "bytes": 131299
+    },
+    {
+      "id": "7emqfv",
+      "file": "trips/7emqfv.json",
+      "legCount": 2,
+      "sha256": "e2ed8aad9c72701997aa021892c2ce110ba735f68f1ad04d43171c174e410152",
+      "bytes": 73186
+    },
+    {
+      "id": "b69o0y",
+      "file": "trips/b69o0y.json",
+      "legCount": 2,
+      "sha256": "64e4c59006e7176aafb27d255b8477597f62675cbd0bf1b51a03e480e76db35f",
+      "bytes": 75284
+    },
+    {
+      "id": "ddksub",
+      "file": "trips/ddksub.json",
+      "legCount": 2,
+      "sha256": "7f920a7e856dd8d1b6fc97439d68f2530c75712776cba6998ce8a02971117739",
+      "bytes": 78347
+    },
+    {
+      "id": "b5xbwv",
+      "file": "trips/b5xbwv.json",
+      "legCount": 2,
+      "sha256": "a59c142472fee9b6b0f04ae12e4cd503f4a6242bac191a7eea7405c22b02a1ec",
+      "bytes": 77778
+    },
+    {
+      "id": "bi38jv",
+      "file": "trips/bi38jv.json",
+      "legCount": 2,
+      "sha256": "83c0909886cffd7acd8281c2aa94b3e4e04dd72e028ddd0f633a6a2f2f928047",
+      "bytes": 47628
+    },
+    {
+      "id": "rc9cn9",
+      "file": "trips/rc9cn9.json",
+      "legCount": 2,
+      "sha256": "bab12ff3d1a9a85c060d486269c20381858ae5fe147fb5ff089b4a4e89e8a09a",
+      "bytes": 77736
+    },
+    {
+      "id": "bae65j",
+      "file": "trips/bae65j.json",
+      "legCount": 2,
+      "sha256": "54aa356823363fb3e51ae753d705a756d7ffb7bc712fd1f4b9e223f62091a1cb",
+      "bytes": 76856
+    },
+    {
+      "id": "ru9v7o",
+      "file": "trips/ru9v7o.json",
+      "legCount": 2,
+      "sha256": "84b0acbb20d4304143993fb8adfbb66fb96aed3e6b011f6d7fdd3a7a12ad1269",
+      "bytes": 78347
+    },
+    {
+      "id": "940dgt",
+      "file": "trips/940dgt.json",
+      "legCount": 2,
+      "sha256": "4c37929b796ccc27387eb5b6f85c295ed7c8d9db3081a4311e8fb7200da73db5",
+      "bytes": 47628
+    },
+    {
+      "id": "ulwo7n",
+      "file": "trips/ulwo7n.json",
+      "legCount": 2,
+      "sha256": "effa0511268495256aac6639fcf2acdaf132fe4e17b683d189c0880bf90554f0",
+      "bytes": 79582
+    },
+    {
+      "id": "y8rywn",
+      "file": "trips/y8rywn.json",
+      "legCount": 3,
+      "sha256": "cf4d1f48dac62e4d4361f0e78d35366408da22f935787186acdbce0c7155b0f5",
+      "bytes": 76880
+    },
+    {
+      "id": "xqodtl",
+      "file": "trips/xqodtl.json",
+      "legCount": 3,
+      "sha256": "1e79a936355b43ae2284898b0c9ae35fe16e2fc1e6f43acb12da71784ebd7076",
+      "bytes": 104773
+    },
+    {
+      "id": "w5f0rk",
+      "file": "trips/w5f0rk.json",
+      "legCount": 2,
+      "sha256": "a4962c8db7c9736b1363116732fa9fd98818e8e982c468fcfb57b120a6eca51c",
+      "bytes": 81283
+    },
+    {
+      "id": "tr3zlj",
+      "file": "trips/tr3zlj.json",
+      "legCount": 2,
+      "sha256": "f47ab861e78f3bf7f8bc43e8e23a7f55cebdf8704be2499562b7630e789e104f",
+      "bytes": 53287
+    },
+    {
+      "id": "pwaqx1",
+      "file": "trips/pwaqx1.json",
+      "legCount": 3,
+      "sha256": "ad728d8ebbeb5f133847bc1fdf7c6a66845ddb475d80e66d57f0038a4f1ff89a",
+      "bytes": 104341
+    },
+    {
+      "id": "4fd0km",
+      "file": "trips/4fd0km.json",
+      "legCount": 1,
+      "sha256": "5b5af4d5819810c4435f65d502e91f78830c8db447f42f176e7f0442e516f678",
+      "bytes": 37072
+    },
+    {
+      "id": "2427wk",
+      "file": "trips/2427wk.json",
+      "legCount": 2,
+      "sha256": "4b23d6a7d94728917cf23eae0d82ec7db2a82f0cfbfaa817ac8953cadc23b878",
+      "bytes": 54787
+    },
+    {
+      "id": "31empi",
+      "file": "trips/31empi.json",
+      "legCount": 3,
+      "sha256": "995d4c00b70239d1a81d26e26228cb3bc5ca77620f4cf2dfd5a2dd927a0a2435",
+      "bytes": 95091
+    },
+    {
+      "id": "5jbhc0",
+      "file": "trips/5jbhc0.json",
+      "legCount": 3,
+      "sha256": "bdb697796a86ab5efb84bda29a73f10da081fcc3b66d80935f8bdbeb53093b0b",
+      "bytes": 118817
+    },
+    {
+      "id": "dadt87",
+      "file": "trips/dadt87.json",
+      "legCount": 2,
+      "sha256": "877da2d254a42db64ab9aa86ee311dcd25c85c6e06de623c61dac2720342672f",
+      "bytes": 78630
+    },
+    {
+      "id": "auyhe2",
+      "file": "trips/auyhe2.json",
+      "legCount": 2,
+      "sha256": "addb53546616e68eec9c890f8941498d783e8962033659dede927ba703d1f3f1",
+      "bytes": 77736
+    },
+    {
+      "id": "wgjb75",
+      "file": "trips/wgjb75.json",
+      "legCount": 2,
+      "sha256": "0215719866a164f62073dcfcc155ec38f682362d9eb597d5dd924db1f236fd16",
+      "bytes": 78508
+    },
+    {
+      "id": "ariz7k",
+      "file": "trips/ariz7k.json",
+      "legCount": 2,
+      "sha256": "8545503be4e5f12a3fd0dcde4a1d9dd50bd4b936c1bada23e2d53309bf1874c5",
+      "bytes": 68302
+    },
+    {
+      "id": "12ua0h",
+      "file": "trips/12ua0h.json",
+      "legCount": 2,
+      "sha256": "1f4f63e49e7a53e0414bc06cfb03687ce86dfe84c40d0afc7075c9347fae5031",
+      "bytes": 48922
+    },
+    {
+      "id": "zplesa",
+      "file": "trips/zplesa.json",
+      "legCount": 2,
+      "sha256": "c73163e0f107f8789d7ae784ff3428b4a1d991fb10b7561dd2a5bd82ba61df84",
+      "bytes": 48922
+    },
+    {
+      "id": "fv8z18",
+      "file": "trips/fv8z18.json",
+      "legCount": 2,
+      "sha256": "a73fb3ad354dec513b9f13d9a8dbd1261fd53c8cd92f82eee9a1766482b7d888",
+      "bytes": 47628
+    },
+    {
+      "id": "gbg11z",
+      "file": "trips/gbg11z.json",
+      "legCount": 2,
+      "sha256": "548d25775a224bce45d5dade5093aa02d7786a8557bd68050a469478cb0e43fa",
+      "bytes": 65196
+    },
+    {
+      "id": "hjdhnj",
+      "file": "trips/hjdhnj.json",
+      "legCount": 2,
+      "sha256": "5036c561b1bd0ebecf1dc8ccb7aa34ace867fa3d2e05f75b86b20dd1c80a5f58",
+      "bytes": 47628
+    },
+    {
+      "id": "1z2oz1",
+      "file": "trips/1z2oz1.json",
+      "legCount": 2,
+      "sha256": "88337b11f104b8f65f527463ddfc625b19b1c071889d36b8c2a11d5910439526",
+      "bytes": 79582
+    },
+    {
+      "id": "5lmkn8",
+      "file": "trips/5lmkn8.json",
+      "legCount": 2,
+      "sha256": "07a1860fc72969979b7d2ddd2181a9d74ac0c86202e2efea921c12f80cfa738f",
+      "bytes": 70529
+    },
+    {
+      "id": "2rtk8a",
+      "file": "trips/2rtk8a.json",
+      "legCount": 2,
+      "sha256": "31b307db7ae37363109f4968c5b6925ff4379fdbc8d81bb5939ef2aac558f3af",
+      "bytes": 77736
+    },
+    {
+      "id": "rsg6p8",
+      "file": "trips/rsg6p8.json",
+      "legCount": 2,
+      "sha256": "a24546c2da41a8bc872b65f45d5dc499459814da2568117e6a9c04d8886063e0",
+      "bytes": 74166
+    },
+    {
+      "id": "5s3jcp",
+      "file": "trips/5s3jcp.json",
+      "legCount": 2,
+      "sha256": "93714bbaeb546130597c2b0eb0ed581559216194f9b5ccbb24ddf57dfc9883c1",
+      "bytes": 78508
+    },
+    {
+      "id": "fy0i84",
+      "file": "trips/fy0i84.json",
+      "legCount": 2,
+      "sha256": "7c2fc0c91241cb3144322d6ac9807d84dc854e5fcdfd8ec63d53028fc6f59a1f",
+      "bytes": 77736
+    },
+    {
+      "id": "c9elqz",
+      "file": "trips/c9elqz.json",
+      "legCount": 2,
+      "sha256": "ad536c3d3a8c88fd383c144319fdf579ebd1fe72ff8fd3b1a99b8d1d0735dc9b",
+      "bytes": 75868
+    },
+    {
+      "id": "sfx8kf",
+      "file": "trips/sfx8kf.json",
+      "legCount": 2,
+      "sha256": "d038d65788f6aae031ddbfac86f7b97f77b55ce4f5854a0946715332f74cdd88",
+      "bytes": 72600
+    },
+    {
+      "id": "k8hd0a",
+      "file": "trips/k8hd0a.json",
+      "legCount": 2,
+      "sha256": "58180e47db2cbfe81a355d57fd5a59382debc0fd3f96adbc0570bbe49d70acbc",
+      "bytes": 53742
+    },
+    {
+      "id": "83kilm",
+      "file": "trips/83kilm.json",
+      "legCount": 4,
+      "sha256": "40196effd21ee6b4d6df7fbb987cb87ab66ac4eaeb12ee88a9e09ea19b5df851",
+      "bytes": 132505
+    },
+    {
+      "id": "gxkbyg",
+      "file": "trips/gxkbyg.json",
+      "legCount": 3,
+      "sha256": "b1e0a2b273fd9cf9c9d1311479455e64b549815057cf61f91a7128dd2a0e1035",
+      "bytes": 109568
+    },
+    {
+      "id": "q19fcc",
+      "file": "trips/q19fcc.json",
+      "legCount": 2,
+      "sha256": "aa4f3b65dc65797b34484cadbd40f070e484fcee5704508a0ae189a7ffcedb78",
+      "bytes": 74976
+    },
+    {
+      "id": "jw6aew",
+      "file": "trips/jw6aew.json",
+      "legCount": 2,
+      "sha256": "3f1de6624864608a5af7fa8eb84d87095dc5ac25c3d8d91799fd6541e4b89025",
+      "bytes": 80303
+    },
+    {
+      "id": "elbae2",
+      "file": "trips/elbae2.json",
+      "legCount": 2,
+      "sha256": "3d0b6dbba31b584ddc6b31f122c9f4aaaa4d1b5b0d248c9a2493ca1b05f46510",
+      "bytes": 84769
+    },
+    {
+      "id": "a6pzc2",
+      "file": "trips/a6pzc2.json",
+      "legCount": 2,
+      "sha256": "b00571fb0a4fa4741b52fd76c8e30eee1802396997a6a05f89d9c4a63d79fc16",
+      "bytes": 62083
+    },
+    {
+      "id": "62lj0x",
+      "file": "trips/62lj0x.json",
+      "legCount": 2,
+      "sha256": "70be9ec89d99bc12ba0e8aa06cd0c2093ae933bc1c1417223482c084c2971f15",
+      "bytes": 78269
+    }
+  ]
+}
