@@ -1,4 +1,5 @@
 import TravelMap from '../components/TravelMap.jsx';
+import './viewer.css';
 
 /**
  * Playback presentation boundary.
