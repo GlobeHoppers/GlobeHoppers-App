@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/browser-v9.yml
       - journeylines/scripts/browser-v9-benchmark.mjs
+      - journeylines/scripts/browser-v9-viewer-smoke.mjs
+      - journeylines/scripts/build-v9-viewer-data.mjs
       - journeylines/src/**
       - journeylines/package.json
       - journeylines/package-lock.json
@@ -52,6 +54,16 @@ jobs:
         env:
           V9_BROWSER_SAMPLE_MS: '15000'
           V9_BROWSER_BOOT_MS: '55000'
+      - name: WP4 browser verification of compact viewer and lazy Studio
+        run: node scripts/browser-v9-viewer-smoke.mjs --out "$RUNNER_TEMP/v9-viewer-smoke"
+      - name: Upload WP4 viewer smoke report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlobeHoppers-v9-WP4-viewer-smoke
+          path: ${{ runner.temp }}/v9-viewer-smoke/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload browser screenshots and performance report
         if: always()
         uses: actions/upload-artifact@v4
