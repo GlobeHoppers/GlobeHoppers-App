@@ -1,5 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import TravelMap from './components/TravelMap.jsx';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import PlaybackViewer from './viewer/PlaybackViewer.jsx';
+import StudioBoundary from './editor/StudioBoundary.jsx';
+import { isV9ViewerRequested, viewerRouteStore } from './viewer/viewerRouteStore.js';
 import PlaybackControls from './components/PlaybackControls.jsx';
 import HopResultCards from './components/HopResultCards.jsx';
 import TripCard from './components/TripCard.jsx';
@@ -14,7 +16,6 @@ import homeBases from './data/homeBases.json';
 import baseHoppers from './data/hoppers.json';
 import settings from './data/settings.json';
 import parameters from './data/parameters.json';
-import routeDetails from './data/routeDetails.json';
 import { buildRouteDetailsPayload, summarizeRouteDetails } from './utils/routeDetails.js';
 import { playbackEngine } from './utils/playbackEngine.js';
 import { matchesConfiguredPlaybackLeg, nextPlaybackTransition, resolveTimelineSeek } from './utils/playbackTransitions.js';
@@ -22,7 +23,8 @@ import { getRoutingStatus, prewarmRoutingEngine, prewarmWhenIdle, restartRouting
 import { normalizeTripsForV61 } from './utils/tripModel.js';
 import { DEFAULT_GLOBE_SPIN_SPEED, clampGlobeSpinSpeed, locationIdsVisitedByTrip, shouldEnterIdleMode } from './utils/globeInteraction.js';
 
-const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
+// The read-only viewer loads compact verified route assets out of band.
+const V9_VIEWER_ENABLED = isV9ViewerRequested();
 
 const DEFAULT_TRAIL_TUNING = {
   solidThickness: 2.4,
@@ -319,7 +321,7 @@ export default function App() {
   const [routeDetailsBusy, setRouteDetailsBusy] = useState(false);
   const [repoSaveStatus, setRepoSaveStatus] = useState({ state: 'idle', label: 'No recent repository save', detail: '', startedAt: null, completedAt: null, error: null });
   const [routingStatus, setRoutingStatus] = useState(() => getRoutingStatus());
-  const [liveRouteDetails, setLiveRouteDetails] = useState(() => routeDetails);
+  const [liveRouteDetails, setLiveRouteDetails] = useState(null);
   const [playbackGeneration, setPlaybackGeneration] = useState(0);
   const [playbackSeekRequest, setPlaybackSeekRequest] = useState(null);
   const clickRef = useRef(0);
@@ -364,6 +366,19 @@ export default function App() {
   useEffect(() => localStorage.setItem('globehoppers.timelineView', timelineView), [timelineView]);
   useEffect(() => localStorage.setItem('globehoppers.globeSpinSpeed.v7.3', String(globeSpinSpeed)), [globeSpinSpeed]);
   useEffect(() => { destinationSelectionRef.current = destinationSelection; }, [destinationSelection]);
+  useEffect(() => {
+    let mounted = true;
+    viewerRouteStore.load(V9_VIEWER_ENABLED).then(payload => {
+      if (!mounted) return;
+      // Never let an older network response overwrite an active Studio edit.
+      setLiveRouteDetails(previous => previous?.routes ? previous : payload);
+    }).catch(error => {
+      if (!mounted) return;
+      console.error('[GlobeHoppers] Cannot initialize playback route data', error);
+      setRouteDetailsMessage('Could not prepare route geometry. Reload to retry.');
+    });
+    return () => { mounted = false; };
+  }, []);
   useEffect(() => subscribeRoutingStatus(setRoutingStatus), []);
   useEffect(() => {
     const handleRouteDetailsUpdate = event => {
@@ -381,7 +396,8 @@ export default function App() {
     return () => window.removeEventListener('globehoppers-route-preparation-failed', handleRoutePreparationFailure);
   }, []);
   useEffect(() => {
-    prewarmWhenIdle();
+    // Viewer playback does not eagerly initialize Studio routing workers.
+    if (!V9_VIEWER_ENABLED) prewarmWhenIdle();
     const warm = () => prewarmRoutingEngine('Add/Edit Hop').catch(() => {});
     window.addEventListener('globehoppers-open-new-trip', warm);
     window.addEventListener('globehoppers-open-edit-trip', warm);
@@ -1193,7 +1209,11 @@ export default function App() {
     try {
       setRouteDetailsBusy(true);
       setRouteDetailsMessage('Rebuilding route details…');
-      const payload = buildRouteDetailsPayload(trips, locations, homeBases, liveRouteDetails);
+      // Canonical saves must retain the full editor provenance.
+      const canonical = V9_VIEWER_ENABLED && liveRouteDetails?.source === 'v9-compiled-viewer-route-geometry'
+        ? await viewerRouteStore.full()
+        : (liveRouteDetails || await viewerRouteStore.full());
+      const payload = buildRouteDetailsPayload(trips, locations, homeBases, canonical);
       await commitSingleJsonFile(repo, token, 'journeylines/src/data/routeDetails.json', payload, 'Rebuild GlobeHoppers route details');
       try { localStorage.setItem('journeylines.routeDetails', JSON.stringify(payload)); } catch {}
       setLiveRouteDetails(payload);
@@ -1355,7 +1375,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <TravelMap routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} playbackSeekRequest={playbackSeekRequest} onPlaybackSeekApplied={(nonce) => setPlaybackSeekRequest(previous => previous?.nonce === nonce ? null : previous)} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <PlaybackViewer routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} playbackSeekRequest={playbackSeekRequest} onPlaybackSeekApplied={(nonce) => setPlaybackSeekRequest(previous => previous?.nonce === nonce ? null : previous)} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -1394,7 +1414,7 @@ export default function App() {
       <strong>About</strong> GlobeHoppers is an animated travel-history map for all your hops, skips & jumps. Five-click the title to open GlobeHoppers Studio.
     </section>
     {hopperEditorOpen && <HopperEditorPanel hopperData={hopperData} setHopperData={setHopperData} onClose={() => setHopperEditorOpen(false)} repo={""} />}
-    {admin && <Suspense fallback={<div className="studio-loading-overlay"><div className="studio-loading-card glass"><strong>Opening GlobeHoppers Studio…</strong><span>Loading editor tools</span></div></div>}><AdminPanel trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} /></Suspense>}
+    <StudioBoundary open={admin} routeDetailsData={liveRouteDetails} trips={trips} setTrips={setTrips} locations={locations} setLocations={setLocations} homeBases={homeBases} initialEditTripId={studioEditTripId} initialAddRequestId={studioAddRequestId} initialTimelineRequestId={studioTimelineRequestId} initialScroll={tripDrawerScrollRef.current || studioDrawerScrollRef.current} onScrollStore={(y) => { studioDrawerScrollRef.current = y; }} onConsumedInitialEdit={() => setStudioEditTripId(null)} viewType={timelineView} onViewTypeChange={setTimelineView} addTripNoun={addTripNoun} hopperData={hopperData} setHopperData={setHopperData} activeTripId={current?.trip?.id} onPlayTrip={playTripFromStudio} onTripSaved={handleTripSavedPlayback} modalOnly={studioModalOnly} onRepoSaveStatus={setRepoSaveStatus} />
   </main>;
 }
 
