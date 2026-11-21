@@ -57,6 +57,22 @@ console.table({
 - GitHub Actions Chromium A/B generates three captures: WP2, WP3, and WP3 GPU mode at forced 0.75 pixel ratio. It writes the actual canvas resolution, command count, JS FPS, frame-time p95 and recorded warnings into the CI report.
 - CI uses software graphics and cannot certify Windows GPU quality or frame rate. A performance win must be demonstrated under comparable browser conditions and checked visually on the final hardware before default-on.
 
+## Controlled Chromium results and next validation
+
+The first **exploratory** software-WebGL run at DPR1 measured:
+
+| Headless mode | JS renderer FPS | Internal pixel ratio |
+| --- | ---: | ---: |
+| WP2 | 2.37 | 1.00 |
+| WP3 | 2.65 | 1.00 |
+| WP3 + GPU budget | 3.61 | 0.75 |
+
+The resulting 36.2% increase relative to WP3 is **not an accepted performance gain** because the unconstrained screensaver selected different leg IDs. The GPU run did verify a reduction in physical framebuffer area from 1440×900 to 1080×675, 0.75× on each axis (56.25% of original pixels). Software-GPU frame rates are too low to reflect normal hardware.
+
+The CI harness now uses an explicit `?v9Benchmark=1` route, available only when that preview flag is supplied, to start the **same first long-haul plane leg (at least 2,000 miles)** at 20% progress, quarter-speed playback, follow camera, globe projection and identical viewport. It records the selected composite `tripId::legId` and rejects comparisons when the legs do not match or playback advances away before measurement.
+
+This is a three-way browser smoke test, not a statistically rigorous multi-run experiment. It isolates route mismatch as a confounder but cannot eliminate software-WebGL GPU sharing, tile-load timing or thermal variability.
+
 ## Release/rollback rule
 
 Do **not** turn the GPU budget on automatically based on a single low-FPS sample. It changes visual sharpness and camera redraw cadence, so it needs controlled A/B acceptance. Removing `v9GpuBudget=1` immediately restores the previously verified WP3 code path. WP4 remains deferred until the rendering bottleneck is characterized.
