@@ -1291,6 +1291,21 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     const seekScene = getScene(entry, request.progress, cameraMode, next, routedGeometriesRef.current,
       Boolean(latestFrameContextRef.current?.routeStackingEnabled), plan);
     if (!seekScene?.camera) return;
+    let seekCamera = seekScene.camera;
+    if (V9_RENDERER_ENABLED && cameraMotion === 'cinematic' && cameraMode === 'follow') {
+      try {
+        const seekEntry = freezeActiveEntryGeometry(entry, routedGeometriesRef.current, plan);
+        const cinematic = buildCinematicCameraPlan({
+          sampleAt: t => getScene(seekEntry, t, cameraMode, next, routedGeometriesRef.current,
+            Boolean(latestFrameContextRef.current?.routeStackingEnabled), plan),
+          from: entry.leg.from, to: entry.leg.to,
+          mode: entry.leg.mode, distanceMiles: seekScene.distance
+        });
+        seekCamera = sampleCinematicCamera(cinematic, request.progress) || seekCamera;
+      } catch (error) {
+        console.warn('[GlobeHoppers] Cinematic seek unavailable; using Classic camera.', error);
+      }
+    }
     try {
       // A seek invalidates old overview locks and manual-return timers even
       // when the user chooses to remain paused at the new position.
@@ -1298,8 +1313,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       window.clearTimeout(playbackCameraReturnRef.current?.timer);
       window.clearTimeout(manualSpinResumeTimerRef.current);
       map.stop();
-      map.jumpTo({ ...seekScene.camera, essential: true });
-      const settled = captureCameraState(map) || seekScene.camera;
+      map.jumpTo({ ...seekCamera, essential: true });
+      const settled = captureCameraState(map) || seekCamera;
       lastCameraRef.current = { ...settled, center: [...settled.center] };
       latestDesiredCameraRef.current = { ...settled, center: [...settled.center] };
       playbackCameraReturnRef.current = createPlaybackReturnState();
@@ -1315,7 +1330,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       console.warn('[GlobeHoppers] Camera seek target failed', error);
       onPlaybackSeekApplied(request.nonce);
     }
-  }, [mapReady, playbackSeekRequest?.nonce, isPlaying, introLaunching, globeOverview, relocationTransition?.id]);
+  }, [mapReady, playbackSeekRequest?.nonce, isPlaying, introLaunching, globeOverview, relocationTransition?.id, cameraMotion]);
 
   useEffect(() => {
     const map = mapRef.current;
