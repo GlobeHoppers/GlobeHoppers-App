@@ -17,6 +17,7 @@ import { playbackEngine } from '../utils/playbackEngine.js';
 import { PlaybackFramePipeline, isV9RendererRequested } from '../utils/playbackFramePipeline.js';
 import { gpuBudgetRequested, gpuRenderSettings, MapCameraWorkBudget } from '../utils/mapRenderBudget.js';
 import { CameraDirector, timeBasedCameraAlpha } from '../utils/cameraDirector.js';
+import { buildCinematicCameraPlan, anchorCinematicCameraPlan, sampleCinematicCamera, blendCinematicCamera } from '../utils/cinematicCamera.js';
 import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
 import { anchorRouteGeometryToEndpoints, buildSurfacePresentationGeometry, isSurfaceRouteMode, stableRoutePrefix } from '../utils/routePresentation.js';
@@ -186,7 +187,7 @@ export default function TravelMap(props) {
   return <MapLibreGlobe {...props} />;
 }
 
-function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = { routes: {} }, playbackGeneration = 0, playbackSeekRequest = null, onPlaybackSeekApplied = () => {}, cameraMode, showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
+function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, activeIndex, legProgress, routeDetailsData = { routes: {} }, playbackGeneration = 0, playbackSeekRequest = null, onPlaybackSeekApplied = () => {}, cameraMode, cameraMotion = 'classic', showTrails, trailOpacity = 0.28, trailWidth = 1.55, trailTuningOpen = false, trailTuning = DEFAULT_TRAIL_TUNING, placeBackgroundsEnabled = true, isPlaying = false, isStarted = false, introLaunching = false, globeOverview = false, globeDisplayMode = 'both', globeSpinSpeed = 0.32, globeSpinPaused = false, idleMode = false, idleExitMode = 'none', destinationSelectionEnabled = false, destinationSelectionActive = false, selectedDestinationId = null, relocationTransition = null, onRelocationComplete = () => {}, onIntroLaunchComplete = () => {}, resetNonce = 0, onMapClick = () => {} }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const vehicleRef = useRef(null);
@@ -256,7 +257,11 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     transitionStartedAt: 0,
     transitionKind: 'initial',
     transitionStartCamera: null,
-    frozenEntry: null
+    frozenEntry: null,
+    cinematicPlan: null,
+    cinematicKey: '',
+    lastMotionProfile: null,
+    motionBlend: null
   });
   const [routedGeometries, setRoutedGeometries] = useState(() => loadInitialRouteCache(routeDetailsData));
 
@@ -371,6 +376,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
     routedGeometries,
     routeStackingEnabled: Boolean(trailTuning?.routeStackingEnabled),
     cameraMode,
+    cameraMotion,
     hopperVisuals: hopperData || travById,
     trailTuningConfig,
     trailWidth,
@@ -1583,6 +1589,9 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         stats.lastPlanCheck = now;
         stats.playbackPlan = livePlan;
         stats.frozenEntry = freezeActiveEntryGeometry(activeEntry, routedGeometriesRef.current, livePlan);
+        stats.cinematicPlan = null;
+        stats.cinematicKey = '';
+        stats.motionBlend = null;
         stats.lastActiveEntry = activeEntry;
       } else if ((!stats.playbackPlan || !stats.frozenEntry?.leg?.presentationGeometry) && now - Number(stats.lastPlanCheck || 0) >= 500) {
         // Late route/plan promotion is polled at a low rate. Do not rebuild route
@@ -1612,8 +1621,47 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         context.routeStackingEnabled,
         plan
       );
+      // Camera choreography is planned once per route. Vehicle, trail and
+      // timeline still consume the single authoritative playback scene.
+      const cinematicEnabled = V9_RENDERER_ENABLED && context.cameraMotion === 'cinematic' && context.cameraMode === 'follow';
+      const profile = cinematicEnabled ? 'cinematic' : 'classic';
+      const priorProfile = stats.lastMotionProfile;
+      if (priorProfile && priorProfile !== profile) {
+        stats.motionBlend = cinematicEnabled
+          ? { from: captureCameraState(map) || lastCameraRef.current, start: now, duration: 850 }
+          : null;
+      }
+      stats.lastMotionProfile = profile;
+      let cinematicCamera = null;
+      if (cinematicEnabled) {
+        const cameraKey = `${routeKey}:${context.cameraMode}:${Boolean(context.routeStackingEnabled)}`;
+        if (!stats.cinematicPlan || stats.cinematicKey !== cameraKey) {
+          try {
+            const nextPlan = buildCinematicCameraPlan({
+              sampleAt: t => getScene(renderEntry, t, context.cameraMode, context.nextActive,
+                routedGeometriesRef.current, context.routeStackingEnabled, plan),
+              from: renderEntry.leg.from, to: renderEntry.leg.to,
+              mode: renderEntry.leg.mode, distanceMiles: sceneState.distance
+            });
+            const continuousHandoff = stats.transitionKind === 'continuous'
+              && stats.transitionStartedAt === now && Number(frame.rawProgress || 0) < 0.06;
+            stats.cinematicPlan = continuousHandoff
+              ? anchorCinematicCameraPlan(nextPlan, captureCameraState(map) || stats.transitionStartCamera)
+              : nextPlan;
+            stats.cinematicKey = cameraKey;
+            recordPlaybackEvent('cinematicCameraPlans');
+          } catch (error) {
+            // Any missing scene data should degrade to an ordinary Classic
+            // camera rather than stall playback or discard the route.
+            console.warn('[GlobeHoppers] Cinematic plan unavailable; Classic fallback.', error);
+            stats.cinematicPlan = null;
+            stats.cinematicKey = '';
+          }
+        }
+        cinematicCamera = sampleCinematicCamera(stats.cinematicPlan, Number(frame.rawProgress || 0));
+      }
       const color = colorForLeg(renderEntry, context.hopperVisuals);
-      return { now, quality, trailInterval, cameraInterval, stats, routeKey, renderEntry, sceneState, color };
+      return { now, quality, trailInterval, cameraInterval, stats, routeKey, renderEntry, sceneState, cinematicCamera, color };
       };
 
       const renderTrail = (sample, _frame, work) => {
@@ -1685,16 +1733,23 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         // Connected legs use the same continuous follow target. Do not hold or
         // release a second zoom target across the handoff; that produced the
         // repeated accelerate/brake sensation when selecting a new pin.
-        const targetCamera = sceneState.camera;
+        const targetCamera = sample.cinematicCamera || sceneState.camera;
 
         const returnState = playbackCameraReturnRef.current;
         const desiredPrevious = returnState.active ? latestDesiredCameraRef.current : lastCameraRef.current;
         const cameraElapsedMs = stats.lastCamera ? now - stats.lastCamera : (V9_RENDERER_ENABLED ? work.deltaMs : cameraInterval);
-        let camera = smoothCamera(desiredPrevious, targetCamera, timeBasedCameraAlpha(smoothing, cameraElapsedMs));
+        let camera = sample.cinematicCamera
+          ? targetCamera
+          : smoothCamera(desiredPrevious, targetCamera, timeBasedCameraAlpha(smoothing, cameraElapsedMs));
+        if (sample.cinematicCamera && stats.motionBlend?.from) {
+          const blend = Math.max(0, Math.min(1, (now - stats.motionBlend.start) / stats.motionBlend.duration));
+          camera = blendCinematicCamera(stats.motionBlend.from, camera, 1 - Math.pow(1 - blend, 3));
+          if (blend >= 1) stats.motionBlend = null;
+        }
         // During staged reacquisition the live map is intentionally looking away
         // from the vessel. Screen-space constraint math against that temporary
         // camera would tug the desired target every frame and cause visible jitter.
-        if (!returnState.active) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
+        if (!returnState.active && !sample.cinematicCamera) camera = constrainCameraToVessel(map, camera, sceneState.vehicle, quality);
         latestDesiredCameraRef.current = camera;
         if (returnState.active && returnState.current) {
           const returnCamera = updatePlaybackReturnCamera(returnState, camera, now);

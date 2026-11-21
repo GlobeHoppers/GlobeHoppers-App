@@ -4,6 +4,7 @@ import StudioBoundary from './editor/StudioBoundary.jsx';
 import TripTimelineDrawer from './timeline/TripTimelineDrawer.jsx';
 import { buildTimelineMarkers, buildTimelineYearSegments, buildTimelineMonthTicks, buildTimelineYearSpan, buildTripCardRows } from './timeline/timelineModel.js';
 import { isV9ViewerRequested, viewerRouteStore } from './viewer/viewerRouteStore.js';
+import { cinematicMotionRequested } from './utils/cinematicCamera.js';
 import PlaybackControls from './components/PlaybackControls.jsx';
 import HopResultCards from './components/HopResultCards.jsx';
 import TripCard from './components/TripCard.jsx';
@@ -302,6 +303,12 @@ export default function App() {
   const [showHero, setShowHero] = useState(() => !screensaverConfig.enabled);
   const [globeOverview, setGlobeOverview] = useState(false);
   const [globeDisplayMode, setGlobeDisplayMode] = useState('both');
+  const [cameraMotion, setCameraMotion] = useState(() => {
+    const search = typeof window === 'undefined' ? '' : window.location.search;
+    if (!cinematicMotionRequested(search)) return 'classic';
+    if (new URLSearchParams(search).get('v9Cinematic') === '1') return 'cinematic';
+    return localStorage.getItem('globehoppers.cameraMotion.v9') === 'classic' ? 'classic' : 'cinematic';
+  });
   const [globeSpinSpeed, setGlobeSpinSpeed] = useState(() => clampGlobeSpinSpeed(localStorage.getItem('globehoppers.globeSpinSpeed.v7.3') || DEFAULT_GLOBE_SPIN_SPEED));
   const [globeSpinPaused, setGlobeSpinPaused] = useState(false);
   const [idleMode, setIdleMode] = useState(false);
@@ -360,6 +367,7 @@ export default function App() {
     } catch {}
   }, []);
   useEffect(() => localStorage.setItem('globehoppers.theme', theme), [theme]);
+  useEffect(() => localStorage.setItem('globehoppers.cameraMotion.v9', cameraMotion), [cameraMotion]);
   useEffect(() => writeSyncedLocal('globehoppers.trailTuning', trailTuning), [trailTuning]);
   useEffect(() => writeSyncedBoolean('globehoppers.showTrails', showTrails), [showTrails]);
   useEffect(() => writeSyncedLocal('globehoppers.timelineTuning', timelineTuning), [timelineTuning]);
@@ -1399,7 +1407,7 @@ export default function App() {
       <button className="topbar-pill topbar-icon-pill" title={topbarPlaybackTitle} aria-label={topbarPlaybackTitle} disabled={isRelocating} onClick={isPlaying ? pause : play}>{isRelocating ? '…' : isPlaying ? '⏸' : '▶'}</button>
     </header>
     <div className={`timeline-jump-fade ${jumpFade ? 'is-active' : ''}`} />
-    <PlaybackViewer routeDetailsData={liveRouteDetails} playbackGeneration={playbackGeneration} playbackSeekRequest={playbackSeekRequest} onPlaybackSeekApplied={(nonce) => setPlaybackSeekRequest(previous => previous?.nonce === nonce ? null : previous)} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
+    <PlaybackViewer routeDetailsData={liveRouteDetails} cameraMotion={cameraMotion} playbackGeneration={playbackGeneration} playbackSeekRequest={playbackSeekRequest} onPlaybackSeekApplied={(nonce) => setPlaybackSeekRequest(previous => previous?.nonce === nonce ? null : previous)} trips={filteredTrips} locations={locations} homeBases={homeBases} travelers={travelers} activeIndex={activeIndex} legProgress={legProgress} projectionName={projection} hopperData={normalizedHoppers} cameraMode={cameraMode} showTrails={showTrails} trailOpacity={settings.trailOpacity} trailWidth={settings.trailWidth} trailTuningOpen={trailTuningOpen} trailTuning={{ ...trailTuning, routeStackingEnabled }} placeBackgroundsEnabled={placeBackgroundsEnabled} isPlaying={isPlaying} isStarted={started} introLaunching={introLaunching} relocationTransition={relocationTransition} onRelocationComplete={completeRelocationTransition} onIntroLaunchComplete={completeIntroLaunch} resetNonce={resetNonce} globeOverview={globeOverview} globeDisplayMode={globeDisplayMode} globeSpinSpeed={globeSpinSpeed} globeSpinPaused={globeSpinPaused} idleMode={idleMode} idleExitMode={idleExitMode} destinationSelectionEnabled={!isRelocating && !admin} destinationSelectionActive={Boolean(destinationSelection)} selectedDestinationId={destinationSelection?.locationId || null} onMapClick={() => { if (destinationSelectionRef.current) { cancelDestinationSelection('map-click'); return; } if (admin) window.dispatchEvent(new CustomEvent('globehoppers-request-close-studio')); if (tripDrawerOpen) setTripDrawerOpen(false); }} />
     {!started && showHero && <section className="hero glass">
       <button type="button" className="hero-close" aria-label="Close welcome popup" title="Close" onClick={() => setShowHero(false)}>×</button>
       <p className="eyebrow">{filteredTrips.length} trips · lifetime travel archive</p>
@@ -1424,7 +1432,7 @@ export default function App() {
       freezePlaybackClock();
       setIsPlaying(false);
       setFilter(value);
-    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} monthTicks={timelineMonthTicks} timelineYearSpan={timelineYearSpan} searchRows={tripTimeline} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} onRetryRouting={() => restartRoutingEngine('manual retry').catch(() => {})} tripsDataStatus={tripsDataStatus} hopperIntegrity={hopperIntegrity} repoSaveStatus={repoSaveStatus}
+    }} projection={projection} setProjection={setProjection} cameraMode={cameraMode} setCameraMode={setCameraMode} cameraMotion={cameraMotion} setCameraMotion={setCameraMotion} showTrails={showTrails} setShowTrails={setShowTrails} routeStackingEnabled={routeStackingEnabled} setRouteStackingEnabled={setRouteStackingEnabled} placeBackgroundsEnabled={placeBackgroundsEnabled} setPlaceBackgroundsEnabled={setPlaceBackgroundsEnabled} theme={theme} setTheme={setTheme} onToggleTripDrawer={() => { setAdmin(false); setTripDrawerOpen(v => !v); }} onToggleTimelineUtility={() => { setTimelineTuningOpen(v => !v); setTrailTuningOpen(false); }} timelineTuning={timelineTuning} tripMarkers={timelineMarkers} activeMarkerId={globeOverview ? null : (current?.trip?.id || null)} yearSegments={timelineYearSegments} monthTicks={timelineMonthTicks} timelineYearSpan={timelineYearSpan} searchRows={tripTimeline} routeDetailsStatus={routeDetailsStatus} routingStatus={routingStatus} onRetryRouting={() => restartRoutingEngine('manual retry').catch(() => {})} tripsDataStatus={tripsDataStatus} hopperIntegrity={hopperIntegrity} repoSaveStatus={repoSaveStatus}
         onRetryRepoSave={() => {
           setAdmin(true);
           setStudioModalOnly(false);
