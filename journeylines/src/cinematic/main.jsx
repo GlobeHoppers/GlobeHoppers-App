@@ -224,7 +224,6 @@ function CinematicApp() {
         <div className="cg-arrival-anchor" ref={arrivalRootRef}
           style={{ visibility: 'hidden' }}>
           <div className="cg-arrival-label">
-            <span className="cg-arrival-eyebrow">ARRIVED IN</span>
             <strong ref={arrivalNameRef} className="cg-arrival-place" />
             <span className="cg-arrival-stem" />
           </div>

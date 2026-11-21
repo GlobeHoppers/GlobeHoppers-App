@@ -50,32 +50,35 @@ button { cursor: pointer; }
 .cg-arrival-label {
   position: absolute; left: 0; top: 0;
   display: flex; flex-direction: column; align-items: center;
-  min-width: 130px; padding: 10px 17px 11px;
-  border: 1px solid #b6fcfd5b;
-  border-radius: 12px;
-  background: linear-gradient(160deg, #0e303cdd, #091e2be9);
-  box-shadow: 0 7px 24px #03121a9e, 0 0 22px #65e1ed38;
-  backdrop-filter: blur(7px);
-  transform: translate(-50%, calc(-100% - 25px + var(--cg-arrival-rise, 0px)))
+  padding: 6px 12px;
+  transform: translate(-50%, calc(-100% - 30px + var(--cg-arrival-rise, 0px)))
              scale(var(--cg-arrival-scale, 1));
   transform-origin: 50% 100%;
   white-space: nowrap;
   text-align: center;
-}
-.cg-arrival-eyebrow {
-  font-size: 9px; letter-spacing: .22em;
-  font-weight: 750; color: #a8e9ed;
+  pointer-events: none;
 }
 .cg-arrival-place {
-  margin-top: 4px; color: #fbffff;
-  font-size: clamp(23px, 2.6vw, 34px); line-height: 1.08;
-  font-weight: 700; letter-spacing: -.045em;
-  text-shadow: 0 2px 15px #62dfea45;
+  color: #f8ffff;
+  font-size: clamp(28px, 3.4vw, 43px);
+  line-height: 1.12;
+  font-weight: 715;
+  letter-spacing: -.05em;
+  -webkit-text-stroke: .35px #003244;
+  text-shadow: 0 3px 12px #041d2ee8, 0 0 22px #83eef39d, 0 0 38px #6bdeee71;
+}
+.cg-arrival-label::after {
+  content: '';
+  width: 60%;
+  height: 2px;
+  margin-top: 6px;
+  background: linear-gradient(90deg, transparent, #c3feff, transparent);
+  box-shadow: 0 0 12px #62e4e9;
 }
 .cg-arrival-stem {
   position: absolute; top: 100%; left: 50%;
-  width: 1px; height: 21px;
-  background: linear-gradient(#abf7f7cc, #abf7f700);
+  width: 1px; height: 24px;
+  background: linear-gradient(#c3f4f4ad, #c3f4f400);
 }
 .cg-flyout { transition: opacity 110ms ease; }
 .cg-flyout.is-arriving { opacity: 0; }
@@ -108,8 +111,8 @@ button:disabled { opacity: .45; cursor: default; }
   .cg-meta .cg-dataset { display: none; }
   .cg-flyout { top: 35%; left: 19px; }
   .cg-flyout-place { font-size: 39px; }
-  .cg-arrival-label { padding: 9px 12px 10px; min-width: 110px; }
-  .cg-arrival-place { font-size: 23px; }
+  .cg-arrival-label { padding: 5px 8px; }
+  .cg-arrival-place { font-size: 27px; }
   .cg-console { width: calc(100% - 20px); bottom: 30px; padding: 11px; }
   .cg-stoplist { display: flex; overflow-x: auto; padding-bottom: 5px; }
   .cg-stop { flex: 0 0 100px; }
