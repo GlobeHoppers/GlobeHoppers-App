@@ -7,6 +7,7 @@ on:
       - release/v9-single-user-candidate
     paths:
       - .github/workflows/release-v9.yml
+      - .github/workflows/deploy.yml
       - journeylines/scripts/test-v9-renderer-pipeline.mjs
       - journeylines/scripts/browser-v9-benchmark.mjs
       - journeylines/scripts/browser-v9-release-smoke.mjs

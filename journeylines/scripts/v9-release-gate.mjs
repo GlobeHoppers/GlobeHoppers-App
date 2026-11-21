@@ -17,6 +17,7 @@ const app=fs.readFileSync('src/App.jsx','utf8');
 const deploy=fs.readFileSync('../.github/workflows/deploy.yml','utf8');
 pass('pre-account v7.5.15 baseline',pkg.version==='7.5.15'&&!pkg.dependencies?.['@supabase/supabase-js']&&!app.includes('useAuth')&&!app.includes('bootstrapAccount'),'v8 authentication and account repository integrations are out of scope');
 pass('release does not deploy',deploy.includes('branches: [main]')&&!deploy.includes('refactor/v9-core'),'main-only deploy trigger preserved');
+pass('production deploy compiles and verifies playback and viewer assets',deploy.includes('node scripts/compile-v9-playback.mjs --out public/data/v9-playback') && deploy.includes('node scripts/verify-v9-playback.mjs dist/data/v9-playback') && deploy.includes('node scripts/verify-v9-viewer-data.mjs dist/data/v9-viewer'),'default-on v9 may not ship without its compiled route bundles');
 pass('browser functional and candidate visual regression',smoke?.status==='pass'&&smoke.checks?.length>=12&&smoke.screenshots?.length>=4&&smoke.errors?.length===0,smoke?.failure||'checks '+(smoke?.checks?.length||0));
 pass('WP4 viewer and lazy single-user Studio',viewer?.status==='pass'&&viewer.editorRequested===true&&viewer.fullRouteModuleRequested===true,viewer?.failure||viewer?.status);
 pass('unattended playback watchdog',endurance?.status==='pass'&&endurance.durationObservedSeconds>=110&&endurance.samples?.length>=4&&endurance.errors?.length===0,endurance?.failure||'seconds '+(endurance?.durationObservedSeconds||0));

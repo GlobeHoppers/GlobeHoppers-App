@@ -39,3 +39,9 @@ Windows Chrome 157 / NVIDIA RTX 3090 / 3840x2033 application canvas: three same-
 6. On failure, restore the recorded old main SHA and corresponding deployment. Keep candidate for root-cause analysis.
 
 **Current status:** main and gh-pages remain unchanged. Candidate validation must finish before promotion. CI never performs the branch replacement automatically.
+
+## Production deployment manifest gate
+
+The production `deploy.yml` must run `compile-v9-playback.mjs` (401 legs) and verify `dist/data/v9-playback/manifest.json` plus `dist/data/v9-viewer/manifest.json` before publishing to `gh-pages`. The pre-release workflow now enforces this rule. Missing these assets would silently bypass the intended v9 precompiled-playback architecture.
+
+The `?v9Legacy=1` recovery URL disables the WP1 compiled loader, WP3 renderer and WP4 viewer. The WP2 authoritative clock remains in the source; complete historical rollback requires restoring the archived prior production branch rather than only using the URL switch.
