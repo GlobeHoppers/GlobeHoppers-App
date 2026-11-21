@@ -76,26 +76,26 @@ test('adaptive medium and low profiles retain slower render budgets', () => {
 
 test('transitions and new generations force a frame even inside the throttle window', () => {
   const s = new PlaybackRenderScheduler();
-  const first = s.plan({ timestamp: 1000, routeKey: 'trip1', generation: 1, progress: 0.1 });
+  const first = s.plan({ timestamp: 1000, routeKey: 'trip1', generation: 1, progress: 0.1, quality: 'medium' });
   assert.equal(first.display, true);
   assert.equal(first.trail, true);
   assert.equal(first.arc, true);
-  const skipped = s.plan({ timestamp: 1004, routeKey: 'trip1', generation: 1, progress: 0.2 });
+  const skipped = s.plan({ timestamp: 1004, routeKey: 'trip1', generation: 1, progress: 0.2, quality: 'medium' });
   assert.equal(skipped.display, false);
-  const connected = s.plan({ timestamp: 1005, routeKey: 'trip2', generation: 2, progress: 0 });
+  const connected = s.plan({ timestamp: 1005, routeKey: 'trip2', generation: 2, progress: 0, quality: 'medium' });
   assert.equal(connected.display, true);
   assert.equal(connected.trail, true);
-  const seek = s.plan({ timestamp: 1006, routeKey: 'trip2', generation: 3, progress: 0.5 });
+  const seek = s.plan({ timestamp: 1006, routeKey: 'trip2', generation: 3, progress: 0.5, quality: 'medium' });
   assert.equal(seek.display, true);
 });
 
 test('final arrival forces exactly one additional trail update, not repeated setData', () => {
   const s = new PlaybackRenderScheduler();
-  s.plan({ timestamp: 1000, routeKey: 'a', generation: 1, progress: 0.98 });
-  const end = s.plan({ timestamp: 1002, routeKey: 'a', generation: 1, progress: 1 });
+  s.plan({ timestamp: 1000, routeKey: 'a', generation: 1, progress: 0.98, quality: 'medium' });
+  const end = s.plan({ timestamp: 1002, routeKey: 'a', generation: 1, progress: 1, quality: 'medium' });
   assert.equal(end.display, true);
   assert.equal(end.trail, true);
-  const second = s.plan({ timestamp: 1003, routeKey: 'a', generation: 1, progress: 1.2 });
+  const second = s.plan({ timestamp: 1003, routeKey: 'a', generation: 1, progress: 1.2, quality: 'medium' });
   assert.equal(second.display, false);
   assert.equal(second.trail, false);
 });
