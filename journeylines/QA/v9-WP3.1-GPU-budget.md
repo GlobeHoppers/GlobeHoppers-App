@@ -73,6 +73,24 @@ The CI harness now uses an explicit `?v9Benchmark=1` route, available only when 
 
 This is a three-way browser smoke test, not a statistically rigorous multi-run experiment. It isolates route mismatch as a confounder but cannot eliminate software-WebGL GPU sharing, tile-load timing or thermal variability.
 
+## Controlled same-leg browser A/B — November 20
+
+**Run:** `https://github.com/GlobeHoppers/GlobeHoppers-App/actions/runs/44842222257`
+
+The corrected benchmark launched exactly **trip `nb429o`, leg `leg-c589d8b09818`**, a 2,252-mile plane flight, at 20% progress and 0.25× speed in all three cases. All runs remained on that same leg through their measurement windows.
+
+| Mode | JS display FPS | p95 frame interval | Canvas pixels |
+| --- | ---: | ---: | --- |
+| WP2 | 2.24 | 1,683 ms | 1440×900 |
+| WP3 normal | 1.75 | 1,883 ms | 1440×900 |
+| WP3 GPU experiment | 3.09 | 417 ms | 1080×675 |
+
+The experimental GPU-budget path was **76.6% higher JavaScript render FPS than WP3** in this single, controlled-headless session. It still ran at only 3.09 FPS because the CI renderer was SwiftShader **software WebGL**. This is evidence that the new lower-raster-area mode can reduce the workload, **not** a prediction of performance on a hardware-accelerated Windows GPU.
+
+GPU mode issued 52 camera commands and skipped just 1. It is therefore **unlikely that camera backpressure explains most of this particular improvement**; reduced pixel count, cache effects or run variability remain potential contributors. Do not claim a causal gain from camera throttling. No WebGL console warnings or JavaScript console errors were captured in this CI environment. User's Windows WebGL warnings remain unverified/untreated.
+
+The true production-quality release gate remains local/hardware GPU visual comparison (blur, trails, camera handoffs, input latency, tile reloads) and at least one sustained performance run on the target device. The experiment remains OFF by default.
+
 ## Release/rollback rule
 
 Do **not** turn the GPU budget on automatically based on a single low-FPS sample. It changes visual sharpness and camera redraw cadence, so it needs controlled A/B acceptance. Removing `v9GpuBudget=1` immediately restores the previously verified WP3 code path. WP4 remains deferred until the rendering bottleneck is characterized.
