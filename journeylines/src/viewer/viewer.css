@@ -1,0 +1,30 @@
+/* WP4 bootstrap placeholder uses existing glass aesthetics and remains
+   visible only while the viewer route asset is being verified. */
+.viewer-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: rgba(231, 244, 255, 0.90);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  background: radial-gradient(circle at 50% 42%, rgba(24, 59, 102, 0.38), #030b18 74%);
+  pointer-events: none;
+}
+.viewer-loading__spinner {
+  display: block;
+  width: 31px;
+  height: 31px;
+  border: 2px solid rgba(186, 219, 250, 0.25);
+  border-top-color: rgba(186, 219, 250, 0.92);
+  border-radius: 50%;
+  animation: v9-viewer-spin 0.95s linear infinite;
+}
+@keyframes v9-viewer-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .viewer-loading__spinner { animation: none; }
+}
