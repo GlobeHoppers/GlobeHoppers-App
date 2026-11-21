@@ -307,6 +307,13 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         const perf = playbackPerformanceSnapshot();
         return {
           mode: api.mode,
+          cinematic: {
+            selected: latestFrameContextRef.current?.cameraMotion || 'classic',
+            active: V9_RENDERER_ENABLED && latestFrameContextRef.current?.cameraMode === 'follow'
+              && latestFrameContextRef.current?.cameraMotion === 'cinematic'
+              && Boolean(frameRenderStatsRef.current.cinematicPlan),
+            knots: frameRenderStatsRef.current.cinematicPlan?.knots?.length || 0
+          },
           diagnosticsStatus: !perf.diagnosticsEnabled ? 'disabled' : perf.renderedFrameCount === 0 ? 'awaiting-rendered-frames' : 'collecting',
           schedule: framePipelineRef.current.scheduler.snapshot(),
           gpu: (() => {
