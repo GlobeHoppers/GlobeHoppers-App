@@ -379,6 +379,20 @@ export default function App() {
     });
     return () => { mounted = false; };
   }, []);
+  // Read-only diagnostics allow CI to prove that viewer playback does not
+  // fetch the full Studio route payload. No trip history or tokens exposed.
+  useEffect(() => {
+    const probe = { snapshot: () => ({
+      enabled: V9_VIEWER_ENABLED,
+      ready: Boolean(liveRouteDetails?.routes),
+      routesInMemory: Object.keys(liveRouteDetails?.routes || {}).length,
+      ...viewerRouteStore.snapshot()
+    }) };
+    window.__GLOBEHOPPERS_VIEWER__ = probe;
+    return () => {
+      if (window.__GLOBEHOPPERS_VIEWER__ === probe) delete window.__GLOBEHOPPERS_VIEWER__;
+    };
+  }, [liveRouteDetails]);
   useEffect(() => subscribeRoutingStatus(setRoutingStatus), []);
   useEffect(() => {
     const handleRouteDetailsUpdate = event => {
@@ -1096,6 +1110,14 @@ export default function App() {
         const entry = legs[index];
         return { index, tripId: entry.trip.id, legId: entry.legId, miles: entry.leg.miles };
       },
+      openStudio: () => {
+        setIsPlaying(false);
+        setIntroLaunching(false);
+        setAdmin(true);
+        setStudioModalOnly(false);
+        return true;
+      },
+      closeStudio: () => window.dispatchEvent(new CustomEvent('globehoppers-close-studio')),
       start: ({ index, progress = 0.20, speed: benchmarkSpeed = 0.25 } = {}) => {
         const selection = api.chooseLeg();
         const requestedIndex = Number.isInteger(index) ? index : selection.index;
