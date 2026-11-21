@@ -30,8 +30,15 @@ try{
  await visit('?v9Benchmark=1');
  await page.waitForFunction(()=>window.__GLOBEHOPPERS_RENDERER__?.snapshot(),null,{timeout:50000});
  let s=await state();
- insist(s.r.mode==='wp2-legacy','WP2 remains default before promotion');
- insist(!s.v.enabled,'compact v9 viewer is not default');
+ insist(s.r.mode==='v9-pipeline','release defaults to v9 renderer');
+ await viewerReady();s=await state();
+ insist(s.v.enabled&&s.v.mode==='viewer','release defaults to verified compact viewer');
+ await close();
+ await visit('?v9Benchmark=1&v9Legacy=1');
+ await page.waitForFunction(()=>window.__GLOBEHOPPERS_RENDERER__?.snapshot(),null,{timeout:50000});
+ s=await state();
+ insist(s.r.mode==='wp2-legacy','legacy rescue URL restores WP2 renderer');
+ insist(!s.v.enabled,'legacy rescue URL restores canonical viewer data path');
  await close();
  await visit('?v9Benchmark=1&v9Viewer=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
  await viewerReady();s=await state();

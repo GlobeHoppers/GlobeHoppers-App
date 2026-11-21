@@ -43,10 +43,13 @@ function bundleFixture({ malformedHash = false, tamper = false, delayed = false 
   return { entry, library, requests };
 }
 
-test('flag is explicit and disabled by default', () => {
-  assert.equal(isV9CompiledPlaybackRequested(''), false);
+test('release defaults to compiled playback with explicit legacy rollback', () => {
+  assert.equal(isV9CompiledPlaybackRequested(''), true);
   assert.equal(isV9CompiledPlaybackRequested('?v9Playback=1'), true);
   assert.equal(isV9CompiledPlaybackRequested('?v9Playback=0'), false);
+  assert.equal(isV9CompiledPlaybackRequested('?v9Legacy=1'), false);
+  assert.equal(isV9CompiledPlaybackRequested('?v9=0'), false);
+  assert.equal(isV9CompiledPlaybackRequested('?v9Legacy=1&v9Playback=1'), false);
 });
 
 test('manifest and trip package load lazily once with verified SHA-256 and typed arrays', async () => {

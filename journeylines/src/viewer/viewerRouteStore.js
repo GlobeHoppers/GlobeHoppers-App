@@ -7,11 +7,13 @@
  *
  * No module-level import of the 10MB source file is permitted here.
  */
+import { isV9FeatureEnabled } from '../utils/v9ReleaseFlags.js';
+
 const VIEWER_FOLDER = 'data/v9-viewer/';
 const DEFAULT_BASE = typeof window === 'undefined' ? 'http://localhost/' : window.location.href;
 
 export function isV9ViewerRequested(search = typeof window === 'undefined' ? '' : window.location.search) {
-  return new URLSearchParams(search).get('v9Viewer') === '1';
+  return isV9FeatureEnabled(search, 'v9Viewer');
 }
 
 export class ViewerRouteStore {

@@ -195,11 +195,11 @@ try {
       '--disable-dev-shm-usage', '--no-sandbox']
   });
   report.browserVersion = browser.version();
-  await runMode('wp2', '?v9Benchmark=1&v9Playback=1&v9Metrics=1');
-  await runMode('wp3', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
+  await runMode('wp2', '?v9Benchmark=1&v9Playback=1&v9Renderer=0&v9Viewer=0&v9Metrics=1');
+  await runMode('wp3', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9Viewer=0&v9Metrics=1');
   // Force a lowered internal canvas ratio even on CI DPR1 so we can isolate
   // raster fill-rate costs. On a normal HiDPI screen the auto cap is 1.25.
-  await runMode('wp3gpu', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
+  await runMode('wp3gpu', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9Viewer=0&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
   // Separate the compact viewer data boundary from its shared WP3 renderer.
   await runMode('wp4viewer', '?v9Benchmark=1&v9Viewer=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
   // Verify the exact same travel leg was exercised in all variants.

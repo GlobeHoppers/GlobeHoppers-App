@@ -1,5 +1,5 @@
 /**
- * v9 opt-in runtime for precompiled travel playback.
+ * v9 release-default runtime for precompiled travel playback.
  *
  * The original routing worker remains the fallback until parity is proven.
  * One index is loaded lazily, and each active/nearby trip is fetched once.
@@ -7,12 +7,14 @@
  * leg identity, endpoints, mode and distance match the currently loaded trip.
  */
 
+import { isV9FeatureEnabled } from './v9ReleaseFlags.js';
+
 const PACKAGES = 'data/v9-playback/';
 const MAX_TRIPS_IN_MEMORY = 8;
 const ARRAY_FIELDS = ['positions', 'headings', 'camera', 'cumulative', 'overview', 'regional', 'presentation'];
 
 export function isV9CompiledPlaybackRequested(search = typeof window === 'undefined' ? '' : window.location.search) {
-  return new URLSearchParams(search).get('v9Playback') === '1';
+  return isV9FeatureEnabled(search, 'v9Playback');
 }
 
 export function compiledPlaybackEntryKey(entry) {

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - refactor/v9-core
+      - release/v9-single-user-candidate
   workflow_dispatch:
 
 permissions:

@@ -34,10 +34,13 @@ function factory({ editBody = null, editManifest = null, fail = false, delay = f
 }
 
 test('viewer mode requires exact explicit opt-in', () => {
-  assert.equal(isV9ViewerRequested(''),false);
-  assert.equal(isV9ViewerRequested('?v9Renderer=1'),false);
+  assert.equal(isV9ViewerRequested(''),true);
+  assert.equal(isV9ViewerRequested('?v9Renderer=1'),true);
   assert.equal(isV9ViewerRequested('?v9Viewer=1'),true);
   assert.equal(isV9ViewerRequested('?v9Viewer=0'),false);
+  assert.equal(isV9ViewerRequested('?v9Legacy=1'),false);
+  assert.equal(isV9ViewerRequested('?v9=0'),false);
+  assert.equal(isV9ViewerRequested('?v9Legacy=1&v9Viewer=1'),false);
 });
 
 test('compact route asset fetched lazily once and verified with SHA-256', async () => {

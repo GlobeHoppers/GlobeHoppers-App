@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - refactor/v9-core
+      - release/v9-single-user-candidate
     paths:
       - .github/workflows/browser-v9.yml
       - journeylines/scripts/browser-v9-benchmark.mjs

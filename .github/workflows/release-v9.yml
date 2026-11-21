@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - refactor/v9-core
+      - release/v9-single-user-candidate
     paths:
       - .github/workflows/release-v9.yml
       - journeylines/scripts/test-v9-renderer-pipeline.mjs
@@ -13,6 +14,8 @@ on:
       - journeylines/scripts/v9-release-gate.mjs
       - journeylines/QA/v9-WP5-release-gates.md
       - journeylines/src/**
+      - journeylines/scripts/test-v9-playback-library.mjs
+      - journeylines/scripts/test-v9-viewer-store.mjs
   workflow_dispatch:
     inputs:
       full_endurance:
@@ -75,7 +78,7 @@ jobs:
       - name: Unattended playback watchdog
         run: node scripts/browser-v9-endurance.mjs --out "$RUNNER_TEMP/wp5-endurance"
         env:
-          V9_ENDURANCE_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.full_endurance && '30' || '2' }}
+          V9_ENDURANCE_MINUTES: ${{ github.ref == 'refs/heads/release/v9-single-user-candidate' && '30' || (github.event_name == 'workflow_dispatch' && inputs.full_endurance && '30' || '2') }}
       - name: Generate automated release gate report (never promotes)
         if: always()
         run: |

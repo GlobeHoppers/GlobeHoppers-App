@@ -10,6 +10,8 @@
  * Trails and air arcs are slower because GeoJSON setData and SVG geometry are
  * costlier than a position/transform. A phase/leg change forces a sample.
  */
+import { isV9FeatureEnabled } from './v9ReleaseFlags.js';
+
 export const RENDER_PROFILES = Object.freeze({
   high: Object.freeze({ displayMs: 0, trailMs: 90, arcMs: 50 }),
   medium: Object.freeze({ displayMs: 1000 / 45, trailMs: 110, arcMs: 66 }),
@@ -31,7 +33,7 @@ function advanceDeadline(previous, now, period) {
 }
 
 export function isV9RendererRequested(search = typeof window === 'undefined' ? '' : window.location.search) {
-  return new URLSearchParams(search).get('v9Renderer') === '1';
+  return isV9FeatureEnabled(search, 'v9Renderer');
 }
 
 export class PlaybackRenderScheduler {

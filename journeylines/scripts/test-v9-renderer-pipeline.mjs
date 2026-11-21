@@ -5,11 +5,14 @@ import { timeBasedCameraAlpha } from '../src/utils/cameraDirector.js';
 
 const frame = timestamp => ({ timestamp, rawProgress: timestamp / 2000, generation: 7 });
 
-test('WP3 renderer is opt-in and never enabled implicitly', () => {
-  assert.equal(isV9RendererRequested(''), false);
-  assert.equal(isV9RendererRequested('?v9Playback=1'), false);
+test('release renderer defaults to v9 with explicit legacy rollback', () => {
+  assert.equal(isV9RendererRequested(''), true);
+  assert.equal(isV9RendererRequested('?v9Playback=1'), true);
   assert.equal(isV9RendererRequested('?v9Renderer=1'), true);
   assert.equal(isV9RendererRequested('?v9Renderer=0'), false);
+  assert.equal(isV9RendererRequested('?v9Legacy=1'), false);
+  assert.equal(isV9RendererRequested('?v9=0'), false);
+  assert.equal(isV9RendererRequested('?v9Legacy=1&v9Renderer=1'), false);
 });
 
 test('120Hz source clock reaches the high-refresh display; camera and vehicle share exact frames', () => {
