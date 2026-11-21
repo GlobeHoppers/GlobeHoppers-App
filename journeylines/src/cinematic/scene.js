@@ -213,12 +213,16 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     // Match the existing v9 Airplane PNG attitude: a pronounced nose-up
     // departure, neutral cruise, then nose-down approach. The airplane's
     // geographic anchor stays ON the route. Pitch changes only its image.
-    const takeoffWindow = 1 - smooth(u / 0.25);
-    const landingWindow = smooth((u - 0.70) / 0.30);
+    // The map position uses eased travel progress (u), but attitude uses the
+    // raw flight clock. Double-easing here made the plane reach full landing
+    // pitch far before the final zoom, then appear frozen during approach.
+    const elapsedFraction = clamp((pose.elapsedMs - leg.startMs) / leg.durationMs, 0, 1);
+    const takeoffWindow = 1 - smooth(elapsedFraction / 0.25);
+    const landingWindow = smooth((elapsedFraction - 0.70) / 0.30);
     const pitchDegrees = Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10;
-    const endpointBias = Math.max(0, 1 - Math.min(u, 1 - u) / 0.22);
-    const takeoffGrow = mix(0.72, 1, smooth(u / 0.085));
-    const landingScale = mix(1, 0.78, smooth((u - 0.92) / 0.08));
+    const endpointBias = Math.max(0, 1 - Math.min(elapsedFraction, 1 - elapsedFraction) / 0.22);
+    const takeoffGrow = mix(0.72, 1, smooth(elapsedFraction / 0.085));
+    const landingScale = mix(1, 0.78, smooth((elapsedFraction - 0.92) / 0.08));
     const scale = (0.76 + 0.16 * smooth(endpointBias)) * takeoffGrow * landingScale;
     return { coordinates: coordinate,
       behindCoordinates: a, aheadCoordinates: b,

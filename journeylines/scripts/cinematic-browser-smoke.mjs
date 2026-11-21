@@ -150,7 +150,7 @@ try {
       alignmentErrors.every(error => error < 0.12),
       samples: pitches.length, maxAlignmentPx: Math.max(...alignmentErrors) };
   });
-  assert.ok(continuity.valid, 'aircraft should descend smoothly while zooming toward a destination');
+  assert.ok(continuity.valid, 'aircraft pitch and route anchor must stay smooth in approach: ' + JSON.stringify(continuity));
 
 
 
