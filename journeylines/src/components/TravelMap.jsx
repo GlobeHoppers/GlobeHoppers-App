@@ -16,6 +16,7 @@ import { buildPlaybackPlanInWorker, routeLegInWorker, routingMemoryGeometry, ROU
 import { routeCacheKeyV6 } from '../utils/routeCacheIndexedDb.js';
 import { playbackEngine } from '../utils/playbackEngine.js';
 import { PlaybackFramePipeline, isV9RendererRequested } from '../utils/playbackFramePipeline.js';
+import { gpuBudgetRequested, gpuRenderSettings, MapCameraWorkBudget } from '../utils/mapRenderBudget.js';
 import { CameraDirector, timeBasedCameraAlpha } from '../utils/cameraDirector.js';
 import { playbackLegsConnect } from '../utils/playbackTransitions.js';
 import { compiledPlaybackLibrary, compiledPlaybackEntryKey, isV9CompiledPlaybackRequested } from '../utils/compiledPlaybackLibrary.js';
@@ -27,6 +28,14 @@ import { autoLevelGlobeCamera, captureCameraState, clampGlobeSpinSpeed } from '.
 
 const V9_COMPILED_PLAYBACK_ENABLED = isV9CompiledPlaybackRequested();
 const V9_RENDERER_ENABLED = isV9RendererRequested();
+// The GPU experiment is OFF unless explicitly requested alongside WP3.
+// The normal WP2 and WP3 A/B baselines retain their original MapLibre options.
+const V9_GPU_BUDGET_ENABLED = V9_RENDERER_ENABLED && gpuBudgetRequested();
+const V9_GPU_SETTINGS = gpuRenderSettings({
+  search: typeof window === 'undefined' ? '' : window.location.search,
+  devicePixelRatio: typeof window === 'undefined' ? 1 : window.devicePixelRatio,
+  enabled: V9_GPU_BUDGET_ENABLED
+});
 const INTRO_GLOBE_CENTER = [-100, 37];
 const INTRO_GLOBE_ZOOM = 4.20;
 const IDLE_SPIN_GLOBE_ZOOM = 4.20;
@@ -231,6 +240,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
   const compiledPlaybackPlansRef = useRef(new Map());
   const routedGeometriesRef = useRef({});
   const latestFrameContextRef = useRef(null);
+  const gpuCameraBudgetRef = useRef(null);
+  if (!gpuCameraBudgetRef.current) gpuCameraBudgetRef.current = new MapCameraWorkBudget();
   const framePipelineRef = useRef(null);
   if (!framePipelineRef.current) framePipelineRef.current = new PlaybackFramePipeline();
   const frameRenderStatsRef = useRef({
@@ -294,6 +305,20 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           mode: api.mode,
           diagnosticsStatus: !perf.diagnosticsEnabled ? 'disabled' : perf.renderedFrameCount === 0 ? 'awaiting-rendered-frames' : 'collecting',
           schedule: framePipelineRef.current.scheduler.snapshot(),
+          gpu: (() => {
+            const map = mapRef.current;
+            const canvas = map?.getCanvas?.();
+            return {
+              enabled: V9_GPU_BUDGET_ENABLED,
+              source: V9_GPU_SETTINGS.source,
+              requestedPixelRatio: V9_GPU_SETTINGS.effectivePixelRatio,
+              appliedPixelRatio: typeof map?.getPixelRatio === 'function' ? map.getPixelRatio() : null,
+              canvasPixels: canvas ? [canvas.width, canvas.height] : null,
+              canvasCSSPixels: canvas ? [canvas.clientWidth, canvas.clientHeight] : null,
+              maxTileCacheSize: V9_GPU_SETTINGS.maxTileCacheSize,
+              camera: gpuCameraBudgetRef.current.snapshot()
+            };
+          })(),
           performance: perf
         };
       },
@@ -305,6 +330,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       disableMetrics: () => setPlaybackDiagnosticsEnabled(false),
       reset: () => {
         framePipelineRef.current.scheduler.reset();
+        gpuCameraBudgetRef.current.reset();
         resetPlaybackPerformanceDiagnostics();
       }
     };
@@ -437,7 +463,8 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       interactive: true,
       renderWorldCopies: false,
       fadeDuration: 700,
-      maxTileCacheSize: 1200,
+      maxTileCacheSize: V9_GPU_SETTINGS.maxTileCacheSize,
+      ...(V9_GPU_BUDGET_ENABLED ? { pixelRatio: V9_GPU_SETTINGS.effectivePixelRatio } : {}),
       refreshExpiredTiles: false,
       prefetchZoomDelta: 2
     });
@@ -1619,6 +1646,25 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
       const transitionAge = Math.max(0, now - Number(stats.transitionStartedAt || 0));
       const cameraDue = V9_RENDERER_ENABLED ? work.camera : (now - Number(stats.lastCamera || 0) >= cameraInterval || stats.lastCamera === 0);
       if (cameraDue) {
+        // MapLibre camera changes can block the JS thread and invalidate
+        // the entire WebGL globe. Preserve the vehicle/scene cadence while
+        // reducing *map camera* updates if synchronous work grows costly.
+        if (V9_GPU_BUDGET_ENABLED && !gpuCameraBudgetRef.current.shouldIssue(now, {
+          quality,
+          force: Boolean(work.reset)
+        })) {
+          recordPlaybackEvent('v9GpuCameraSkipped');
+          return;
+        }
+        const cameraCommandStart = V9_GPU_BUDGET_ENABLED ? performance.now() : 0;
+        const issueCameraMove = camera => {
+          if (V9_GPU_BUDGET_ENABLED) {
+            measurePlaybackEvent('v9MapJumpToMs', () => map.jumpTo({ ...camera, essential: true }));
+            recordPlaybackEvent('v9GpuCameraMoves');
+          } else {
+            map.jumpTo({ ...camera, essential: true });
+          }
+        };
         let smoothing = adaptiveCameraSmoothing(sceneState.phase);
         if ((sceneState.legMode === 'plane' || sceneState.legMode === 'move') && sceneState.distance > 1500 && Number(frame.rawProgress || 0) < 0.28) {
           smoothing = Math.min(smoothing, 0.012);
@@ -1644,7 +1690,7 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
         if (returnState.active && returnState.current) {
           const returnCamera = updatePlaybackReturnCamera(returnState, camera, now);
           if (returnCamera && cameraChangedEnough(captureCameraState(map), returnCamera)) {
-            map.jumpTo({ ...returnCamera, essential: true });
+            issueCameraMove(returnCamera);
           }
           lastCameraRef.current = returnCamera || lastCameraRef.current;
           if (!returnState.active) {
@@ -1654,11 +1700,12 @@ function MapLibreGlobe({ trips, locations, homeBases, travelers, hopperData, act
           }
         } else {
           if (!userCameraOverrideRef.current && cameraChangedEnough(captureCameraState(map), camera)) {
-            map.jumpTo({ ...camera, essential: true });
+            issueCameraMove(camera);
           }
           lastCameraRef.current = camera;
         }
         stats.lastCamera = now;
+        if (V9_GPU_BUDGET_ENABLED) gpuCameraBudgetRef.current.recordCommandCost(performance.now() - cameraCommandStart);
         recordPlaybackEvent('cameraUpdates');
       }
         };
