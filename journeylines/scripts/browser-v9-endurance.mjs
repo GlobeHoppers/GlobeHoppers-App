@@ -20,6 +20,7 @@ try{
  if(!ready)throw Error('preview server unavailable');
  browser=await chromium.launch({headless:true,args:['--enable-webgl','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--enable-precise-memory-info','--no-sandbox','--disable-dev-shm-usage']});
  page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Performance.enable');
  page.on('pageerror',e=>report.errors.push(String(e)));
  page.on('console',m=>{if(m.type()==='warning'&&/WebGL|READ-usage|GPU/i.test(m.text()))report.webglWarnings++});
  const response=await page.goto(base+'?v9Benchmark=1&v9Viewer=1&v9Playback=1&v9Renderer=1&v9Metrics=1',{waitUntil:'domcontentloaded',timeout:45000});
@@ -31,7 +32,9 @@ try{
  const start=Date.now();let moving=Date.now(),previous='';
  while(Date.now()-start<duration){
   await sleep(Math.min(15000,Math.max(800,duration-(Date.now()-start))));
-  const m=await page.metrics();
+  const raw=await cdp.send('Performance.getMetrics');
+  const m=Object.fromEntries(raw.metrics.map(row=>[row.name,row.value]));
+  if(!Number.isFinite(m.JSHeapUsedSize)||!Number.isFinite(m.JSHeapTotalSize))throw Error('Chromium heap counters unavailable');
   const x=await page.evaluate(()=>{const r=window.__GLOBEHOPPERS_RENDERER__.snapshot(),p=window.__GLOBEHOPPERS_BENCHMARK__.snapshot();return {p,viewer:window.__GLOBEHOPPERS_VIEWER__.snapshot(),mode:r.mode,displayFps:r.performance.estimatedRenderedFps||0,frames:r.performance.counters.frames||0,longGaps:r.performance.renderedGapsOver250Ms||0}});
   if(x.viewer.routesInMemory!==401||x.mode!=='v9-pipeline')throw Error('view/renderer changed unexpectedly');
   if(!x.p.playing)throw Error('playback halted');
