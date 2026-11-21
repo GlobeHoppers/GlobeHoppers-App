@@ -54,6 +54,37 @@ try {
   assert.ok(Number.isFinite(seek.zoom));
   await page.screenshot({ path: path.join(out, 'cinematic-seek.png') });
 
+  // Verify that no future marker appears early, and inspect a flight in Chromium.
+  const phase = await page.evaluate(() => {
+    const api = window.__CINEMATIC_GLOBEHOPPERS__;
+    const initial = api.getPresentationAtMs(0);
+    let flightMs = -1;
+    let arrivalMs = -1;
+    for (let ms = 0; ms < api.durationMs; ms += 95) {
+      const frame = api.getPresentationAtMs(ms);
+      if (flightMs < 0 && frame.plane && frame.visibleStops.length === 2) flightMs = ms;
+      if (arrivalMs < 0 && frame.arrival?.opacity > 0.85) arrivalMs = ms;
+      const pose = api.sampleAtMs(ms);
+      if (pose.bearing < -45.0001 || pose.bearing > 45.0001) {
+        throw new Error('Camera exceeds north-up limit at ' + ms + 'ms');
+      }
+    }
+    return { initial, flightMs, arrivalMs,
+      flight: api.getPresentationAtMs(flightMs) };
+  });
+  assert.equal(phase.initial.visibleStops.length, 1);
+  assert.equal(phase.initial.visibleRouteCount, 0);
+  assert.ok(phase.flightMs > 0);
+  assert.ok(phase.flight.plane);
+  assert.equal(phase.flight.visibleStops.length, 2);
+  assert.ok(phase.arrivalMs > phase.flightMs);
+  await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.flightMs);
+  await page.screenshot({ path: path.join(out, 'cinematic-aircraft.png') });
+  await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.arrivalMs);
+  await page.locator('.cg-arrival-name').getByText('Los Angeles').waitFor({ timeout: 5000 });
+  await page.screenshot({ path: path.join(out, 'cinematic-touchdown.png') });
+
+
   await page.goto(base + '?capture=1', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__CINEMATIC_GLOBEHOPPERS__,
     null, { timeout: 15000 });

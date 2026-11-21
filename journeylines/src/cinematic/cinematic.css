@@ -19,6 +19,55 @@ button { cursor: pointer; }
 .cg-flyout { position: absolute; top: 34%; left: clamp(20px, 4vw, 60px); max-width: min(470px, 75vw); text-shadow: 0 3px 24px #061422; pointer-events: none; }
 .cg-flyout-place { font-size: clamp(35px, 5vw, 75px); letter-spacing: -.065em; font-weight: 720; line-height: 1.05; margin-top: 5px; }
 .cg-flyout-sub { color: #e0eef5a8; font-size: clamp(12px, 1.25vw, 15px); margin-top: 9px; letter-spacing: .015em; }
+
+/* Timestamp-driven arrival title. The world-space double ripple is drawn by MapLibre. */
+.cg-flyout { transition: opacity 110ms ease; }
+.cg-flyout.is-arriving { opacity: 0; }
+.cg-arrival {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 43%;
+  width: min(900px, 88vw);
+  pointer-events: none;
+  text-align: center;
+  transform-origin: 50% 50%;
+  color: #f0ffff;
+  text-shadow: 0 3px 38px #002638, 0 0 60px #2bdbe340;
+}
+.cg-arrival-kicker {
+  font-weight: 720;
+  font-size: clamp(11px, 1.2vw, 14px);
+  letter-spacing: .36em;
+  color: #b0f7f7;
+  text-transform: uppercase;
+}
+.cg-arrival-spark { color: #ffe2a5; padding-inline: 12px; font-size: 1.3em; }
+.cg-arrival-name {
+  margin: 9px 0 15px;
+  font-weight: 750;
+  letter-spacing: -.067em;
+  line-height: 1.02;
+  font-size: clamp(50px, 7.5vw, 110px);
+  color: #f7ffff;
+  -webkit-text-stroke: .3px #ffffff40;
+}
+.cg-arrival-rule {
+  width: clamp(94px, 16vw, 210px);
+  height: 2px;
+  margin-inline: auto;
+  background: linear-gradient(90deg, transparent, #a0f2f3 30%, #ffe9b5 50%, #a0f2f3 70%, transparent);
+  box-shadow: 0 0 24px #83ecf0a8;
+}
+.cg-arrival-subtitle {
+  margin-top: 15px;
+  color: #cbe7e9;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+
 .cg-diagnostics { position: absolute; right: 24px; top: 104px; padding: 13px 16px; border: 1px solid #7ca4b745; border-radius: 13px; background: #061523dc; font-size: 12px; line-height: 1.8; font-variant-numeric: tabular-nums; backdrop-filter: blur(14px); }
 .cg-console { position: absolute; bottom: 47px; left: 50%; transform: translateX(-50%); width: min(1100px, calc(100% - 40px)); padding: 18px 20px 14px; border: 1px solid #83bbc63d; border-radius: 18px; background: linear-gradient(140deg, #0b2234e9, #071929ec); box-shadow: 0 18px 70px #0109159e; backdrop-filter: blur(22px); }
 .cg-controls { display: flex; align-items: center; gap: 14px; }
@@ -48,6 +97,10 @@ button:disabled { opacity: .45; cursor: default; }
   .cg-meta .cg-dataset { display: none; }
   .cg-flyout { top: 35%; left: 19px; }
   .cg-flyout-place { font-size: 39px; }
+  .cg-arrival { top: 41%; width: 94vw; }
+  .cg-arrival-name { font-size: clamp(43px, 10vw, 70px); }
+  .cg-arrival-kicker { letter-spacing: .22em; }
+  .cg-arrival-spark { padding-inline: 4px; }
   .cg-console { width: calc(100% - 20px); bottom: 30px; padding: 11px; }
   .cg-stoplist { display: flex; overflow-x: auto; padding-bottom: 5px; }
   .cg-stop { flex: 0 0 100px; }

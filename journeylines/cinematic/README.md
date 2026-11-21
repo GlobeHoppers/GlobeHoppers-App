@@ -14,6 +14,14 @@ An independently authored, open-source cinematic camera prototype built on top o
 - Query flag ?capture=1 hides controls; window.__CINEMATIC_GLOBEHOPPERS__ exposes a deterministic timestamp seek/sample API for a future local headless capture tool.
 - A cinematicStopsFromTrip adapter exists but is not connected to the user's trip base yet. Do not enable without read-only data-source QA.
 
+- WP1.1 flight polish: camera is north-biased and limited to ±45°; aircraft orientation follows the actual geographic travel heading independently of the camera bearing.
+- Flight geometry retains the great-circle basis but adds a small endpoint-preserving lateral arc to each leg. This is a visual flight-path bow, not a physically elevated 3D line. A true world-space altitude arc is a potential later refinement.
+- Only the initial city is visible at time zero; each next destination marker, label and unrevealed route outline appears when its incoming leg begins. Seeking backward hides future markers and paths again.
+- The aircraft is visible only during flight. On landing, the airplane disappears, two time-driven geographic ripple rings expand from the arrival point and a cinematic destination title appears, including in capture mode.
+- Arrival dwell is 1.75 seconds so the ripple/title can read. These effects use scene time and can therefore be reproduced exactly during eventual fixed-FPS video export.
+- MapLibre's route sources update at about 30 Hz while its camera transform follows the v9 playback refresh. Completed and upcoming-marker source updates are cached, avoiding redundant large GeoJSON writes.
+
+
 ## Run and verify
 
 From journeylines/:
@@ -46,3 +54,5 @@ The newly authored Cinematic-specific files under journeylines/src/cinematic and
 There is no remote scene submission endpoint in this prototype. Inputs are bounded to 2–128 valid stops; no private trip data is loaded. Avoid embedding private route datasets or service-account credentials in GitHub Pages builds. The current sample route is public demo data.
 
 This module is independently written and does not incorporate Mult.dev's proprietary JS bundles.
+
+WP1.1 uses a programmatically drawn aircraft glyph rather than a third-party airline asset.

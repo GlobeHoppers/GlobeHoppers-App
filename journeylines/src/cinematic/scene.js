@@ -15,7 +15,9 @@ const degrees = r => r * 180 / Math.PI;
 
 export const CINEMATIC_PRESET = Object.freeze({
   introMs: 1900,
-  holdMs: 680,
+  holdMs: 1750,
+  arrivalEffectMs: 1625,
+  northLimitDegrees: 45,
   outroMs: 2200,
   arrivalZoom: 7.6,
   arrivalPitch: 47,
@@ -60,6 +62,28 @@ function positionAlong(leg, u) {
   return [a[0] + deltaAngle(a[0], b[0]) * t, mix(a[1], b[1], t)];
 }
 
+function northBoundBearing(bearing, limit) {
+  return clamp(deltaAngle(0, bearing), -limit, limit);
+}
+
+/** A subtle cross-track bow over the geodesic; starts and ends exactly at the real coordinates. */
+function curveAirRoute(points, miles, legIndex) {
+  const bendMiles = clamp(miles * 0.026, 1.7, 52) * (legIndex % 2 === 0 ? 1 : -1);
+  return points.map((point, index) => {
+    if (index === 0 || index === points.length - 1) return [...point];
+    const before = points[index - 1], after = points[index + 1];
+    const latitudeRadians = radians(point[1]);
+    const cosine = Math.max(0.17, Math.abs(Math.cos(latitudeRadians)));
+    const east = deltaAngle(before[0], after[0]) * 69.17 * cosine;
+    const north = (after[1] - before[1]) * 69.05;
+    const length = Math.hypot(east, north);
+    if (length < 1e-7) return [...point];
+    const amplitude = bendMiles * Math.sin(Math.PI * index / (points.length - 1));
+    return [point[0] - north / length * amplitude / (69.17 * cosine),
+      clamp(point[1] + east / length * amplitude / 69.05, -89.9, 89.9)];
+  });
+}
+
 function poseAtStop(stop, heading, preset) {
   return { center: [stop.lon, stop.lat], zoom: preset.arrivalZoom,
            pitch: preset.arrivalPitch, bearing: heading };
@@ -68,19 +92,22 @@ function poseAtStop(stop, heading, preset) {
 export function buildCinematicScene(rawStops, overrides = {}) {
   const preset = { ...CINEMATIC_PRESET, ...overrides };
   const stops = normalizeCinematicStops(rawStops);
-  for (const field of ['introMs', 'holdMs', 'outroMs', 'arrivalZoom', 'arrivalPitch', 'cruisingPitch']) {
+  for (const field of ['introMs', 'holdMs', 'outroMs', 'arrivalEffectMs', 'arrivalZoom', 'arrivalPitch', 'cruisingPitch', 'northLimitDegrees']) {
     if (!Number.isFinite(preset[field])) throw new Error('Invalid cinematic setting: ' + field);
   }
   if (preset.introMs < 100 || preset.outroMs < 100 || preset.holdMs < 0 ||
+      preset.arrivalEffectMs < 100 || preset.arrivalEffectMs > 5000 ||
+      preset.northLimitDegrees < 0 || preset.northLimitDegrees > 45 ||
       preset.arrivalZoom < 0 || preset.arrivalZoom > 14 ||
       preset.arrivalPitch < 0 || preset.arrivalPitch > 65 ||
       preset.cruisingPitch < 0 || preset.cruisingPitch > 65) {
     throw new Error('Cinematic settings outside supported range.');
   }
 
-  const headings = stops.map((stop, i) => i < stops.length - 1
+  // The camera stays north-biased. The aircraft heading remains unrestricted.
+  const headings = stops.map((stop, i) => northBoundBearing(i < stops.length - 1
     ? bearingBetween(stop, stops[i + 1])
-    : bearingBetween(stops[i - 1], stop));
+    : bearingBetween(stops[i - 1], stop), preset.northLimitDegrees));
 
   const legs = stops.slice(1).map((to, index) => {
     const from = stops[index];
@@ -88,10 +115,10 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     if (!(miles > 0.001)) throw new Error('Adjacent cinematic stops are indistinguishable.');
     // This is GlobeHoppers v9's deterministic geometry compiler, not third-party code.
     const compiled = compilePlaybackLeg({ from, to, mode: 'plane', miles });
-    const path = Array.from({ length: compiled.sampleCount }, (_, p) => [
+    const path = curveAirRoute(Array.from({ length: compiled.sampleCount }, (_, p) => [
       Number(compiled.positions[p * 2]),
       Number(compiled.positions[p * 2 + 1])
-    ]);
+    ]), miles, index);
     const durationMs = clamp(4400 + 45 * Math.sqrt(miles), 4600, 7700);
     const cruiseZoom = clamp(6.35 - 0.7 * Math.log2(Math.max(miles, 70) / 70), 2.65, 5.5);
     return { index, from, to, miles, path, durationMs, cruiseZoom, startMs: 0, endMs: 0 };
@@ -148,9 +175,8 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const departure = smooth(u / 0.37);
     const arrival = smooth((u - 0.61) / 0.39);
     const highAltitude = departure * (1 - arrival);
-    const bearing = headings[leg.index] +
-      deltaAngle(headings[leg.index], headings[leg.index + 1]) * eased +
-      Math.sin(Math.PI * u) ** 2 * 6;
+    const bearing = clamp(mix(headings[leg.index], headings[leg.index + 1], eased) +
+      Math.sin(Math.PI * u) ** 2 * 3.5, -preset.northLimitDegrees, preset.northLimitDegrees);
     return {
       center: positionAlong(leg, eased),
       zoom: mix(preset.arrivalZoom, leg.cruiseZoom, highAltitude),
@@ -162,6 +188,44 @@ export function buildCinematicScene(rawStops, overrides = {}) {
       legIndex: leg.index,
       travelProgress: eased
     };
+  }
+
+  /** Only publish each destination once its incoming flight has started. */
+  function visibleStops(ms) {
+    const timeMs = clamp(Number.isFinite(ms) ? ms : 0, 0, totalMs);
+    return stops.filter((stop, index) => index === 0 || timeMs >= legs[index - 1].startMs);
+  }
+
+  function visibleRoutes(ms) {
+    const timeMs = clamp(Number.isFinite(ms) ? ms : 0, 0, totalMs);
+    return legs.filter(leg => timeMs >= leg.startMs);
+  }
+
+  function planeAt(ms) {
+    const pose = sample(ms);
+    if (pose.segmentType !== 'travel') return null;
+    const leg = legs[pose.legIndex];
+    const u = pose.travelProgress;
+    const coordinate = positionAlong(leg, u);
+    const a = positionAlong(leg, clamp(u - 0.009, 0, 1));
+    const b = positionAlong(leg, clamp(u + 0.009, 0, 1));
+    const bearing = bearingBetween({ lon: a[0], lat: a[1] }, { lon: b[0], lat: b[1] });
+    return { coordinates: coordinate, bearing, legIndex: leg.index, progress: u };
+  }
+
+  /** Arrival timing drives both world-space ripple rings and the on-screen title. */
+  function arrivalAt(ms) {
+    const timeMs = clamp(Number.isFinite(ms) ? ms : 0, 0, totalMs);
+    for (let index = stopTimesMs.length - 1; index >= 1; index--) {
+      const ageMs = timeMs - stopTimesMs[index];
+      if (ageMs < 0 || ageMs >= preset.arrivalEffectMs) continue;
+      const progress = ageMs / preset.arrivalEffectMs;
+      const fadeIn = smooth(ageMs / 260);
+      const fadeOut = 1 - smooth((ageMs - preset.arrivalEffectMs * 0.62) / (preset.arrivalEffectMs * 0.38));
+      return { stop: stops[index], stopIndex: index, ageMs, progress,
+        introProgress: smooth(ageMs / 420), opacity: fadeIn * fadeOut };
+    }
+    return null;
   }
 
   function revealedRoute(ms) {
@@ -185,5 +249,5 @@ export function buildCinematicScene(rawStops, overrides = {}) {
 
   return { stops, legs, segments, headings, stopTimesMs, totalMs,
            totalMiles: legs.reduce((sum, leg) => sum + leg.miles, 0),
-           preset, sample, revealedRoute };
+           preset, sample, revealedRoute, visibleStops, visibleRoutes, planeAt, arrivalAt };
 }

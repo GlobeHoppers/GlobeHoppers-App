@@ -25,7 +25,8 @@ function CinematicApp() {
   const engineRef = useRef(null);
   if (!engineRef.current) engineRef.current = new PlaybackEngine();
   const currentMsRef = useRef(0);
-  const lastRouteFrameRef = useRef(-1);
+  const lastRenderedMsRef = useRef(-Infinity);
+  const lastRenderedSegmentRef = useRef('');
   const lastUiFrameRef = useRef(0);
   const [screen, setScreen] = useState({ playing: false, ms: 0, fps: 60, quality: 'high' });
   const [speed, setSpeed] = useState(1);
@@ -41,10 +42,13 @@ function CinematicApp() {
     const pose = scene.sample(ms);
     map.jumpTo({ center: pose.center, zoom: pose.zoom,
       pitch: pose.pitch, bearing: pose.bearing });
-    const frame = Math.floor(ms / 55);
-    if (force || frame !== lastRouteFrameRef.current) {
+    // Camera transforms update at display refresh; GeoJSON sources at ~30 Hz.
+    // Forced updates keep paused seeks and video frame capture exact.
+    if (force || Math.abs(ms - lastRenderedMsRef.current) >= 30 ||
+        pose.segmentType !== lastRenderedSegmentRef.current) {
       updateCinematicRoute(map, scene, ms);
-      lastRouteFrameRef.current = frame;
+      lastRenderedMsRef.current = ms;
+      lastRenderedSegmentRef.current = pose.segmentType;
     }
     return pose;
   }, []);
@@ -97,9 +101,9 @@ function CinematicApp() {
     const unsubscribe = clock.subscribe(state => {
       const ms = clamp(state.progress, 0, 1) * scene.totalMs;
       currentMsRef.current = ms;
-      renderAt(ms);
+      renderAt(ms, !state.playing);
       const now = performance.now();
-      if (!state.playing || now - lastUiFrameRef.current > 85) {
+      if (!state.playing || now - lastUiFrameRef.current > 45) {
         lastUiFrameRef.current = now;
         setScreen({ playing: state.playing, ms,
           fps: Math.round(1000 / Math.max(1, state.frameMs)),
@@ -123,6 +127,14 @@ function CinematicApp() {
         return scene.sample(normalized);
       },
       sampleAtMs(ms) { return scene.sample(ms); },
+      getPresentationAtMs(ms) {
+        return {
+          visibleStops: scene.visibleStops(ms).map(s => s.id),
+          visibleRouteCount: scene.visibleRoutes(ms).length,
+          plane: scene.planeAt(ms),
+          arrival: scene.arrivalAt(ms)
+        };
+      },
       getState() { return { elapsedMs: currentMsRef.current, ready: layersReadyRef.current }; }
     });
     window.__CINEMATIC_GLOBEHOPPERS__ = api;
@@ -150,11 +162,26 @@ function CinematicApp() {
   const currentStop = pose.segmentType === 'travel'
     ? scene.stops[pose.legIndex + 1]
     : scene.stops[pose.stopIndex];
+  const arrival = scene.arrivalAt(screen.ms);
+  const arrivalStyle = arrival ? {
+    opacity: arrival.opacity,
+    transform: 'translate(-50%, calc(-50% + ' +
+      Math.round(25 * (1 - arrival.introProgress)) + 'px)) scale(' +
+      (1.07 - 0.07 * arrival.introProgress).toFixed(3) + ')'
+  } : undefined;
 
   return (
     <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}>
       <div ref={mapEl} className="cg-map" aria-label="Animated globe showing an eight-stop travel route" />
       <div className="cg-vignette" aria-hidden="true" />
+      {arrival && (
+        <div className="cg-arrival" style={arrivalStyle} aria-live="off">
+          <div className="cg-arrival-kicker"><span className="cg-arrival-spark">✦</span> TOUCHDOWN <span className="cg-arrival-spark">✦</span></div>
+          <div className="cg-arrival-name">{arrival.stop.name}</div>
+          <div className="cg-arrival-rule" aria-hidden="true" />
+          <div className="cg-arrival-subtitle">Destination {String(arrival.stopIndex + 1).padStart(2, '0')} of {scene.stops.length}</div>
+        </div>
+      )}
       {!CAPTURE_MODE && (
         <>
           <header className="cg-topbar">
@@ -173,7 +200,7 @@ function CinematicApp() {
           </header>
           {error && <div className="cg-alert" role="alert">{error}</div>}
           {!ready && !error && <div className="cg-loading" role="status">Preparing cinematic globe…</div>}
-          <div className="cg-flyout" aria-live="off">
+          <div className={'cg-flyout' + (arrival ? ' is-arriving' : '')} aria-live="off">
             <div className="cg-flyout-kicker">{pose.segmentType === 'travel' ? 'NOW FLYING TO' : 'EXPLORING'}</div>
             <div className="cg-flyout-place">{currentStop.name}</div>
             <div className="cg-flyout-sub">{pose.segmentType === 'travel' ? 'Cinematic flight path' : 'A globe of possibilities'}</div>
@@ -182,7 +209,9 @@ function CinematicApp() {
             <aside className="cg-diagnostics" aria-label="Camera diagnostics">
               <div>Camera {pose.segmentType}</div>
               <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
-              <div>Bearing {pose.bearing.toFixed(1)}°</div>
+              <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
+              <div>Aircraft {scene.planeAt(screen.ms) ? 'in flight' : 'hidden'}</div>
+              <div>Visible stops {scene.visibleStops(screen.ms).length} / {scene.stops.length}</div>
               <div>Frame {screen.fps} FPS · {screen.quality}</div>
               <div>Clock {Math.round(screen.ms)} ms</div>
             </aside>

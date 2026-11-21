@@ -78,3 +78,90 @@ test('trip adapter reads versioned trip-route points through the existing v9 nor
   assert.equal(stops[0].name, 'A');
   assert.notEqual(stops[0].id, stops[1].id);
 });
+
+
+test('north-biased camera remains within 45 degrees for every segment and stop', () => {
+  const scene = buildCinematicScene(pts);
+  for (let t = 0; t <= scene.totalMs; t += 67) {
+    const camera = scene.sample(t);
+    assert.ok(camera.bearing >= -45.00001 && camera.bearing <= 45.00001,
+      'north-up limit violated at ' + t + 'ms');
+  }
+  assert.ok(scene.headings.some(angle => Math.abs(angle) > 10),
+    'test should cover nontrivial rotation');
+});
+
+test('destinations and unflown routes appear only at the start of their incoming leg', () => {
+  const scene = buildCinematicScene(pts);
+  assert.deepEqual(scene.visibleStops(0).map(stop => stop.id), ['sd']);
+  assert.equal(scene.visibleRoutes(0).length, 0);
+  const start = scene.legs[0].startMs;
+  assert.deepEqual(scene.visibleStops(start - 1).map(stop => stop.id), ['sd']);
+  assert.deepEqual(scene.visibleStops(start).map(stop => stop.id), ['sd', 'ny']);
+  assert.equal(scene.visibleRoutes(start).length, 1);
+  assert.equal(scene.visibleRoutes(scene.legs[1].startMs - 1).length, 1);
+  assert.equal(scene.visibleRoutes(scene.legs[1].startMs).length, 2);
+  assert.deepEqual(scene.visibleStops(scene.totalMs).map(stop => stop.id), ['sd', 'ny', 'tk']);
+  // Rewinding also hides those locations and legs.
+  assert.equal(scene.visibleStops(0).length, 1);
+});
+
+test('aircraft position and heading follow the curved flight arc, disappearing at landing', () => {
+  const scene = buildCinematicScene(pts);
+  const leg = scene.legs[0];
+  assert.equal(scene.planeAt(0), null);
+  assert.equal(scene.planeAt(leg.endMs), null);
+  const ms = (leg.startMs + leg.endMs) / 2;
+  const plane = scene.planeAt(ms);
+  assert.ok(plane);
+  assert.equal(plane.legIndex, 0);
+  assert.ok(plane.bearing >= 0 && plane.bearing <= 360);
+  assert.ok(plane.coordinates.every(Number.isFinite));
+  const revealed = scene.revealedRoute(ms).features[0].geometry.coordinates.at(-1);
+  assert.ok(Math.abs(dlon(plane.coordinates[0], revealed[0])) < 0.0001);
+  assert.ok(Math.abs(plane.coordinates[1] - revealed[1]) < 0.0001);
+});
+
+test('curved routes preserve exact endpoints and add a subtle lateral bow', async () => {
+  const { compilePlaybackLeg } = await import('../src/utils/compiledPlaybackPlan.js');
+  const { milesBetween } = await import('../src/utils/distanceUtils.js');
+  const scene = buildCinematicScene(pts);
+  for (const leg of scene.legs) {
+    assert.ok(Math.abs(dlon(leg.path[0][0], leg.from.lon)) < 0.0001);
+    assert.ok(Math.abs(leg.path[0][1] - leg.from.lat) < 0.0001);
+    assert.ok(Math.abs(dlon(leg.path.at(-1)[0], leg.to.lon)) < 0.0001);
+    assert.ok(Math.abs(leg.path.at(-1)[1] - leg.to.lat) < 0.0001);
+  }
+  const first = scene.legs[0];
+  const direct = compilePlaybackLeg({ from: first.from, to: first.to,
+    mode: 'plane', miles: milesBetween(first.from, first.to) });
+  const midpoint = Math.floor(first.path.length / 2);
+  const curved = first.path[midpoint];
+  const directCenter = [direct.positions[midpoint * 2], direct.positions[midpoint * 2 + 1]];
+  assert.ok(Math.hypot(dlon(directCenter[0], curved[0]), curved[1] - directCenter[1]) > .008,
+    'air route should have a visible mid-flight bend');
+});
+
+test('touchdown title and ripple state are deterministic and time-bounded', () => {
+  const scene = buildCinematicScene(pts);
+  const landing = scene.stopTimesMs[1];
+  assert.equal(scene.arrivalAt(landing - 1), null);
+  assert.equal(scene.planeAt(landing), null);
+  const immediately = scene.arrivalAt(landing);
+  const during = scene.arrivalAt(landing + 440);
+  assert.equal(immediately.stop.id, 'ny');
+  assert.ok(during.opacity > 0.8);
+  assert.equal(during.stopIndex, 1);
+  assert.deepEqual(scene.arrivalAt(landing + 440), during);
+  assert.equal(scene.arrivalAt(landing + scene.preset.arrivalEffectMs), null);
+  assert.equal(scene.arrivalAt(scene.totalMs), null);
+});
+
+test('north-up limit is configurable only within the 0 to 45 degree safety envelope', () => {
+  assert.throws(() => buildCinematicScene(pts, { northLimitDegrees: 60 }), /outside/);
+  const scene = buildCinematicScene(pts, { northLimitDegrees: 15 });
+  for (const leg of scene.legs) {
+    const pose = scene.sample((leg.startMs + leg.endMs) / 2);
+    assert.ok(Math.abs(pose.bearing) <= 15);
+  }
+});
