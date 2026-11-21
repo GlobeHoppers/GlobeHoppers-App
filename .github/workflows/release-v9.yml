@@ -6,6 +6,8 @@ on:
       - refactor/v9-core
     paths:
       - .github/workflows/release-v9.yml
+      - journeylines/scripts/test-v9-renderer-pipeline.mjs
+      - journeylines/scripts/browser-v9-benchmark.mjs
       - journeylines/scripts/browser-v9-release-smoke.mjs
       - journeylines/scripts/browser-v9-endurance.mjs
       - journeylines/scripts/v9-release-gate.mjs
@@ -65,7 +67,7 @@ jobs:
         run: node scripts/browser-v9-viewer-smoke.mjs --out "$RUNNER_TEMP/wp5-viewer"
       - name: WP5 functional and visual candidate captures
         run: node scripts/browser-v9-release-smoke.mjs --out "$RUNNER_TEMP/wp5-smoke"
-      - name: Controlled same-leg three-way browser A/B
+      - name: Controlled same-leg four-way browser A/B
         run: node scripts/browser-v9-benchmark.mjs --out "$RUNNER_TEMP/wp5-benchmark"
         env:
           V9_BROWSER_SAMPLE_MS: '15000'

@@ -15,7 +15,7 @@ The non-deploying .github/workflows/release-v9.yml executes on changes to the v9
 3. Run WP1–WP4 numerical, clock, camera, renderer, GPU-budget, viewer and timeline regression tests.
 4. Run the existing WP4 browser test of compact-route loading, editor chunk isolation, canonical Studio loading and viewer restoration.
 5. Run a new browser functional test: legacy path remains off by default before release; v9 renderer/viewer load with explicit flags; play and seek a fixed long-haul leg; pause and resume with visible controls; open/close the single-user Studio; inject compact-asset failure and confirm full canonical fallback; launch screensaver mode. Save candidate screenshots.
-6. Run the controlled WP2/WP3/WP3-GPU same-leg Chromium A/B benchmark, preserving the software WebGL limitation.
+6. Run a controlled four-way WP2, WP3, WP3-GPU and WP4-compact-viewer same-leg Chromium benchmark; preserve the software WebGL limitation.
 7. Run the playback watchdog for two minutes on every v9 WP5 workflow, recording JavaScript heap, DOM nodes, event listeners, WebGL warnings, route/clock health and stalls. A manually dispatched full 30-minute run is mandatory before release approval.
 8. Create a machine-readable release-readiness.json containing automated check outcomes and a separate list of pending manual gates.
 
@@ -51,3 +51,7 @@ GitHub > Actions > **GlobeHoppers v9 WP5 Release Validation (No Deploy)** > Run 
 6. Check the live globe, playback and editor. On a severe regression, restore the recorded prior main/deployment reference and investigate on an isolated branch.
 
 **Status:** WP5 release tooling implemented; full readiness remains pending until acceptance evidence is reviewed. Never describe passing unit tests or SwiftShader snapshots as hardware performance certification.
+
+## WP5.1 frame-pacing correction
+
+WP5.1 removes the WP3 high-quality 60Hz display cap and lets the camera and vehicle use each browser animation frame. Trail and arc update budgets remain bounded; medium and low rendering are still capped at 45/30 Hz when the playback clock reports degraded frame latency. The corrected four-way benchmark compares the compact viewer on the same source leg. Follow [WP5.1 frame-cadence audit](v9-WP5.1-frame-cadence.md). This change must be validated on the target Windows GPU before production promotion.
