@@ -40,6 +40,8 @@ function writeReport() {
   // logs when connector artifact downloads are not available.
   const modes = Object.fromEntries(Object.entries(report.modes).map(([key, item]) => [key, {
     status: item.status,
+    benchmark: item.benchmark,
+    benchmarkEnd: item.benchmarkEnd,
     gpu: item.gpu,
     metrics: item.metrics,
     warnings: item.browserWarnings?.length ?? 0,
@@ -109,7 +111,8 @@ async function runMode(label, query) {
   try {
     const response = await page.goto(result.pageUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
     result.httpStatus = response?.status() ?? null;
-    await page.waitForFunction(() => window.__GLOBEHOPPERS_RENDERER__?.snapshot,
+    await page.waitForFunction(() => window.__GLOBEHOPPERS_RENDERER__?.snapshot
+      && window.__GLOBEHOPPERS_BENCHMARK__?.start,
       { timeout: 30000 });
     result.gpu = await inspectGPU(page);
     const preSnapshot = await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.snapshot());
@@ -117,21 +120,33 @@ async function runMode(label, query) {
     const expectedMode = label.startsWith('wp3') ? 'v9-pipeline' : 'wp2-legacy';
     if (result.initialMode !== expectedMode) throw new Error('Wrong renderer mode: ' + result.initialMode);
 
-    // WP2 does not use the WP3 frame scheduler: its schedule.displays stays
-    // at zero even during healthy playback. Wait for sampled playback frames
-    // instead, which both renderers record when v9Metrics=1.
-    const ready = await page.waitForFunction(() => {
-      const s = window.__GLOBEHOPPERS_RENDERER__?.snapshot();
-      return s && Number(s.performance?.counters?.frames || 0) >= 5;
-    }, null, { timeout: entryTimeoutMs }).then(() => true, () => false);
+    // Every browser run starts the SAME long-haul flight, exact progress,
+    // camera mode and speed, instead of launching the screensaver and
+    // accidentally sampling different legs or transition states.
+    result.benchmark = await page.evaluate(() =>
+      window.__GLOBEHOPPERS_BENCHMARK__.start({ progress: .20, speed: .25 }));
+    const ready = await page.waitForFunction(({ tripId, legId }) => {
+      const state = window.__GLOBEHOPPERS_BENCHMARK__?.snapshot();
+      const perf = window.__GLOBEHOPPERS_RENDERER__?.snapshot();
+      return state?.playing && state.tripId === tripId
+        && String(state.legId) === String(legId)
+        && Number(perf?.performance?.counters?.frames || 0) >= 5;
+    }, { tripId: result.benchmark.tripId, legId: result.benchmark.legId },
+    { timeout: entryTimeoutMs }).then(() => true, () => false);
     result.playbackStarted = ready;
     if (!ready) {
       result.status = result.gpu?.webgl ? 'no-playback' : 'webgl-unavailable';
-      result.failure = 'No 5-frame playback after timeout; inspect console and screenshot';
+      result.failure = 'No 5-frame controlled flight playback after timeout; inspect console and screenshot';
     } else {
       await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.enableMetrics());
       await sleep(sampleDurationMs);
       const snapshot = await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.snapshot());
+      result.benchmarkEnd = await page.evaluate(() => window.__GLOBEHOPPERS_BENCHMARK__.snapshot());
+      if (result.benchmarkEnd?.tripId !== result.benchmark.tripId ||
+          String(result.benchmarkEnd?.legId) !== String(result.benchmark.legId)) {
+        result.status = 'route-changed-during-test';
+        result.failure = 'Trip advanced during sample; results are not comparable';
+      }
       result.metrics = {
         diagnosticsStatus: snapshot.diagnosticsStatus,
         clockFps: Number(snapshot.performance.estimatedFps?.toFixed(2) || 0),
@@ -150,7 +165,7 @@ async function runMode(label, query) {
         schedule: snapshot.schedule,
         gpuBudget: snapshot.gpu || null
       };
-      result.status = result.metrics.rendererFps > 0 ? 'measured' : 'no-render-samples';
+      if (result.status !== 'route-changed-during-test') result.status = result.metrics.rendererFps > 0 ? 'measured' : 'no-render-samples';
       if (result.metrics.rendererFps === 0) result.failure = 'No displayed JS renderer frames recorded';
     }
     await page.screenshot({ path: path.join(output, label + '.png'), fullPage: false, timeout: 15000 })
@@ -177,13 +192,18 @@ try {
       '--disable-dev-shm-usage', '--no-sandbox']
   });
   report.browserVersion = browser.version();
-  await runMode('wp2', '?screensaver=1&v9Playback=1&v9Metrics=1');
-  await runMode('wp3', '?screensaver=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
+  await runMode('wp2', '?v9Benchmark=1&v9Playback=1&v9Metrics=1');
+  await runMode('wp3', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
   // Force a lowered internal canvas ratio even on CI DPR1 so we can isolate
   // raster fill-rate costs. On a normal HiDPI screen the auto cap is 1.25.
-  await runMode('wp3gpu', '?screensaver=1&v9Playback=1&v9Renderer=1&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
-  const a = report.modes.wp2?.metrics;
-  const b = report.modes.wp3?.metrics;
+  await runMode('wp3gpu', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
+  // Verify the exact same travel leg was exercised in all variants.
+  const chosen = ['wp2', 'wp3', 'wp3gpu'].map(mode => report.modes[mode]?.benchmark);
+  const sameLeg = chosen.every(x => x?.tripId && x?.legId &&
+    x.tripId === chosen[0].tripId && String(x.legId) === String(chosen[0].legId));
+  if (!sameLeg) report.caveats.push('Benchmark leg mismatch; relative FPS comparison invalid.');
+  const a = report.modes.wp2?.status === 'measured' && sameLeg ? report.modes.wp2.metrics : null;
+  const b = report.modes.wp3?.status === 'measured' && sameLeg ? report.modes.wp3.metrics : null;
   if (a?.rendererFps > 0 && b?.rendererFps > 0) {
     report.comparison = {
       wp2JsRendererFps: a.rendererFps, wp3JsRendererFps: b.rendererFps,
@@ -193,7 +213,7 @@ try {
   } else {
     report.caveats.push('A/B comparison incomplete; one or both browser modes did not produce rendered frames.');
   }
-  const c = report.modes.wp3gpu?.metrics;
+  const c = report.modes.wp3gpu?.status === 'measured' && sameLeg ? report.modes.wp3gpu.metrics : null;
   const expectedRatio = Number(c?.gpuBudget?.requestedPixelRatio ?? NaN);
   if (expectedRatio !== .75 || !c?.gpuBudget?.enabled) {
     report.caveats.push('GPU budget could not be verified; low-DPR comparison is not valid.');
