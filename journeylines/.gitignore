@@ -11,3 +11,6 @@ Thumbs.db
 # Generated v9 trip bundles. Build on demand; never commit generated JSON.
 public/data/v9-playback/
 .v9-playback-build/
+
+# WP4: generated read-only routes, rebuilt from canonical Studio data for every build
+public/data/v9-viewer/
