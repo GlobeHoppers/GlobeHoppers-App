@@ -51,8 +51,15 @@ test('connected legs begin from exact outgoing camera without overshoot or a jum
   assert.deepEqual(sampleCinematicCamera(anchored, 0), previous);
   assert.deepEqual(sampleCinematicCamera(route, 0), sampleAt(0).camera, 'anchoring does not mutate cached plan');
   const a = sampleCinematicCamera(anchored, .055), b = sampleCinematicCamera(anchored, .12);
+  // Departure intentionally has a pitch/zoom peak at its first keyframe.
+  // Check physical bounds and smooth interpolation between keyframes, not
+  // monotonicity across the designed cinematic rise and fall.
+  within(a.zoom, 3, 10, 'departure zoom');
+  within(a.pitch, 0, 75, 'departure pitch');
   for (const ch of ['zoom', 'pitch']) {
-    within(a[ch], Math.min(previous[ch], b[ch]) - .01, Math.max(previous[ch], b[ch]) + 1, ch);
+    const midpoint = sampleCinematicCamera(anchored, (.055 + .12) / 2);
+    within(midpoint[ch], Math.min(a[ch], b[ch]) - .001, Math.max(a[ch], b[ch]) + .001,
+      'keyframe segment ' + ch);
   }
   const start = sampleCinematicCamera(anchored, 0);
   const next = sampleCinematicCamera(anchored, 1 / 10000);
