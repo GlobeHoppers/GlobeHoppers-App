@@ -21,6 +21,7 @@ const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 function CinematicApp() {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
+  const layersReadyRef = useRef(false);
   const engineRef = useRef(null);
   if (!engineRef.current) engineRef.current = new PlaybackEngine();
   const currentMsRef = useRef(0);
@@ -34,7 +35,9 @@ function CinematicApp() {
 
   const renderAt = useCallback((ms, force = false) => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return scene.sample(ms);
+    // Tile requests may still be outstanding after scene layer initialization.
+    // Rendering must not freeze just because the style is temporarily busy.
+    if (!map || !layersReadyRef.current) return scene.sample(ms);
     const pose = scene.sample(ms);
     map.jumpTo({ center: pose.center, zoom: pose.zoom,
       pitch: pose.pitch, bearing: pose.bearing });
@@ -72,6 +75,7 @@ function CinematicApp() {
     map.on('load', () => {
       try {
         installCinematicLayers(map, scene);
+        layersReadyRef.current = true;
         renderAt(currentMsRef.current, true);
         setReady(true);
       } catch (e) {
@@ -79,9 +83,10 @@ function CinematicApp() {
       }
     });
     map.on('error', event => {
-      if (event.error && !map.isStyleLoaded()) setError('Map tiles could not be loaded. An internet connection is needed for the default basemap.');
+      if (event.error && !layersReadyRef.current) setError('Map tiles could not be loaded. An internet connection is needed for the default basemap.');
     });
     return () => {
+      layersReadyRef.current = false;
       mapRef.current = null;
       map.remove();
     };
@@ -118,7 +123,7 @@ function CinematicApp() {
         return scene.sample(normalized);
       },
       sampleAtMs(ms) { return scene.sample(ms); },
-      getState() { return { elapsedMs: currentMsRef.current, ready: Boolean(mapRef.current?.isStyleLoaded()) }; }
+      getState() { return { elapsedMs: currentMsRef.current, ready: layersReadyRef.current }; }
     });
     window.__CINEMATIC_GLOBEHOPPERS__ = api;
     return () => { delete window.__CINEMATIC_GLOBEHOPPERS__; };
