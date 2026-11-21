@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/build-v9-viewer-data.mjs --out public/data/v9-viewer && vite build",
     "preview": "vite preview",
     "generate:routes": "node scripts/generate-mapbox-routes.mjs",
     "verify:v7.1": "node scripts/verify-v7.1.mjs .",
