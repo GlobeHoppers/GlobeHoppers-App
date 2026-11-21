@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate:
-    name: WP0–WP3 playback and rendering regression build
+    name: WP0–WP4 data, playback, viewer and editor regression build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -54,6 +54,8 @@ jobs:
         run: node --test scripts/test-v9-map-render-budget.mjs
       - name: Verify disabled metrics and distinct playback/renderer FPS samples
         run: node --test scripts/test-v9-performance-diagnostics.mjs
+      - name: Test verified lazy viewer data and Studio isolation
+        run: node --test scripts/test-v9-viewer-store.mjs
       - name: Compile trips into Vite public assets (v9 preview only)
         run: node scripts/compile-v9-playback.mjs --out public/data/v9-playback
       - name: Verify all compiled trips and playback plans
@@ -65,12 +67,14 @@ jobs:
           test -f dist/index.html
           test -d dist/assets
           test -f dist/data/v9-playback/manifest.json
+          test -f dist/data/v9-viewer/manifest.json
           node scripts/verify-v9-playback.mjs dist/data/v9-playback
+          node scripts/verify-v9-viewer-data.mjs dist/data/v9-viewer
           echo "WP0–WP3 engine, camera, renderer and compiler validated; no production deploy"
       - name: Upload isolated v9 preview build
         uses: actions/upload-artifact@v4
         with:
-          name: GlobeHoppers-v9-WP3-preview
+          name: GlobeHoppers-v9-WP4-preview
           path: journeylines/dist/
           if-no-files-found: error
           retention-days: 7
