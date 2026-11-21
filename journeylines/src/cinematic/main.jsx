@@ -1,0 +1,225 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { PlaybackEngine } from '../utils/playbackEngine.js';
+import { buildCinematicScene } from './scene.js';
+import { demoStops } from './demoStops.js';
+import { installCinematicLayers, updateCinematicRoute } from './mapLayers.js';
+import './cinematic.css';
+
+const scene = buildCinematicScene(demoStops);
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
+const CAPTURE_MODE = new URLSearchParams(window.location.search).get('capture') === '1';
+const formatClock = ms => {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  return Math.floor(sec / 60).toString().padStart(2, '0') + ':' +
+    (sec % 60).toString().padStart(2, '0');
+};
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+function CinematicApp() {
+  const mapEl = useRef(null);
+  const mapRef = useRef(null);
+  const engineRef = useRef(null);
+  if (!engineRef.current) engineRef.current = new PlaybackEngine();
+  const currentMsRef = useRef(0);
+  const lastRouteFrameRef = useRef(-1);
+  const lastUiFrameRef = useRef(0);
+  const [screen, setScreen] = useState({ playing: false, ms: 0, fps: 60, quality: 'high' });
+  const [speed, setSpeed] = useState(1);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+  const renderAt = useCallback((ms, force = false) => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return scene.sample(ms);
+    const pose = scene.sample(ms);
+    map.jumpTo({ center: pose.center, zoom: pose.zoom,
+      pitch: pose.pitch, bearing: pose.bearing });
+    const frame = Math.floor(ms / 55);
+    if (force || frame !== lastRouteFrameRef.current) {
+      updateCinematicRoute(map, scene, ms);
+      lastRouteFrameRef.current = frame;
+    }
+    return pose;
+  }, []);
+
+  useEffect(() => {
+    let map;
+    try {
+      map = new maplibregl.Map({
+        container: mapEl.current,
+        style: MAP_STYLE,
+        projection: { type: 'globe' },
+        center: [scene.stops[0].lon, scene.stops[0].lat],
+        zoom: 2.25, pitch: 7, bearing: scene.headings[0],
+        minZoom: 1.5, maxZoom: 14, antialias: true,
+        attributionControl: true
+      });
+    } catch (e) {
+      setError('Unable to initialize WebGL. Check browser GPU acceleration.');
+      return;
+    }
+    mapRef.current = map;
+    const cancelForGesture = () => {
+      if (engineRef.current.snapshot().playing) engineRef.current.pause();
+    };
+    map.on('mousedown', cancelForGesture);
+    map.on('touchstart', cancelForGesture);
+    map.on('wheel', cancelForGesture);
+    map.on('load', () => {
+      try {
+        installCinematicLayers(map, scene);
+        renderAt(currentMsRef.current, true);
+        setReady(true);
+      } catch (e) {
+        setError('Map layers could not be initialized: ' + (e?.message || String(e)));
+      }
+    });
+    map.on('error', event => {
+      if (event.error && !map.isStyleLoaded()) setError('Map tiles could not be loaded. An internet connection is needed for the default basemap.');
+    });
+    return () => {
+      mapRef.current = null;
+      map.remove();
+    };
+  }, [renderAt]);
+
+  useEffect(() => {
+    const clock = engineRef.current;
+    const unsubscribe = clock.subscribe(state => {
+      const ms = clamp(state.progress, 0, 1) * scene.totalMs;
+      currentMsRef.current = ms;
+      renderAt(ms);
+      const now = performance.now();
+      if (!state.playing || now - lastUiFrameRef.current > 85) {
+        lastUiFrameRef.current = now;
+        setScreen({ playing: state.playing, ms,
+          fps: Math.round(1000 / Math.max(1, state.frameMs)),
+          quality: state.quality });
+      }
+    });
+    clock.configure({ duration: scene.totalMs, progress: 0 });
+    return () => { clock.pause(); unsubscribe(); };
+  }, [renderAt]);
+
+  useEffect(() => {
+    const api = Object.freeze({
+      version: 'cinematic-globehoppers.v1',
+      durationMs: scene.totalMs,
+      stopCount: scene.stops.length,
+      seekMs(ms) {
+        const clock = engineRef.current;
+        clock.pause();
+        const normalized = clamp(Number(ms) || 0, 0, scene.totalMs);
+        clock.seek(normalized / scene.totalMs);
+        return scene.sample(normalized);
+      },
+      sampleAtMs(ms) { return scene.sample(ms); },
+      getState() { return { elapsedMs: currentMsRef.current, ready: Boolean(mapRef.current?.isStyleLoaded()) }; }
+    });
+    window.__CINEMATIC_GLOBEHOPPERS__ = api;
+    return () => { delete window.__CINEMATIC_GLOBEHOPPERS__; };
+  }, []);
+
+  const togglePlay = () => {
+    const clock = engineRef.current;
+    if (clock.snapshot().playing) clock.pause();
+    else {
+      if (clock.snapshot().progress >= 1) clock.stop(0);
+      clock.play();
+    }
+  };
+  const seek = ms => engineRef.current.seek(clamp(ms, 0, scene.totalMs) / scene.totalMs);
+  const changeSpeed = value => {
+    const next = Number(value);
+    if (![0.5, 1, 1.5, 2].includes(next)) return;
+    const clock = engineRef.current;
+    const progress = clock.snapshot().progress;
+    clock.configure({ duration: scene.totalMs / next, progress });
+    setSpeed(next);
+  };
+  const pose = scene.sample(screen.ms);
+  const currentStop = pose.segmentType === 'travel'
+    ? scene.stops[pose.legIndex + 1]
+    : scene.stops[pose.stopIndex];
+
+  return (
+    <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}>
+      <div ref={mapEl} className="cg-map" aria-label="Animated globe showing an eight-stop travel route" />
+      <div className="cg-vignette" aria-hidden="true" />
+      {!CAPTURE_MODE && (
+        <>
+          <header className="cg-topbar">
+            <div className="cg-brand">
+              <span className="cg-brand-icon" aria-hidden="true">✦</span>
+              <div>
+                <div className="cg-kicker">GLOBEHOPPERS · EXPERIMENTAL VIEWER</div>
+                <h1>Cinematic <span>GlobeHoppers</span></h1>
+              </div>
+            </div>
+            <div className="cg-meta">
+              <span className="cg-dataset">8 stops · demo route</span>
+              <button type="button" onClick={() => setShowDiagnostics(v => !v)}
+                aria-pressed={showDiagnostics}>Diagnostics</button>
+            </div>
+          </header>
+          {error && <div className="cg-alert" role="alert">{error}</div>}
+          {!ready && !error && <div className="cg-loading" role="status">Preparing cinematic globe…</div>}
+          <div className="cg-flyout" aria-live="off">
+            <div className="cg-flyout-kicker">{pose.segmentType === 'travel' ? 'NOW FLYING TO' : 'EXPLORING'}</div>
+            <div className="cg-flyout-place">{currentStop.name}</div>
+            <div className="cg-flyout-sub">{pose.segmentType === 'travel' ? 'Cinematic flight path' : 'A globe of possibilities'}</div>
+          </div>
+          {showDiagnostics && (
+            <aside className="cg-diagnostics" aria-label="Camera diagnostics">
+              <div>Camera {pose.segmentType}</div>
+              <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
+              <div>Bearing {pose.bearing.toFixed(1)}°</div>
+              <div>Frame {screen.fps} FPS · {screen.quality}</div>
+              <div>Clock {Math.round(screen.ms)} ms</div>
+            </aside>
+          )}
+          <section className="cg-console" aria-label="Cinematic playback controls">
+            <div className="cg-controls">
+              <button className="cg-play" type="button" disabled={!ready}
+                onClick={togglePlay} aria-label={screen.playing ? 'Pause playback' : 'Play cinematic route'}>
+                {screen.playing ? 'Ⅱ' : '▶'}
+              </button>
+              <button className="cg-restart" type="button" disabled={!ready}
+                onClick={() => { engineRef.current.pause(); seek(0); }}
+                aria-label="Restart cinematic route">↺</button>
+              <div className="cg-clock">{formatClock(screen.ms)} <span>/ {formatClock(scene.totalMs)}</span></div>
+              <label className="cg-speed">
+                Speed
+                <select value={speed} onChange={e => changeSpeed(e.target.value)} aria-label="Playback speed">
+                  <option value="0.5">0.5×</option>
+                  <option value="1">1×</option>
+                  <option value="1.5">1.5×</option>
+                  <option value="2">2×</option>
+                </select>
+              </label>
+            </div>
+            <input className="cg-scrubber" type="range" min="0" max={scene.totalMs}
+              step="25" value={screen.ms} disabled={!ready} aria-label="Seek cinematic playback"
+              onChange={e => seek(Number(e.target.value))} />
+            <div className="cg-stoplist" aria-label="Eight demo stops">
+              {scene.stops.map((stop, index) => (
+                <button key={stop.id} type="button" disabled={!ready}
+                  className={currentStop.id === stop.id ? 'cg-stop is-current' : 'cg-stop'}
+                  onClick={() => { engineRef.current.pause(); seek(scene.stopTimesMs[index]); }}>
+                  <span className="cg-stop-num">{String(index + 1).padStart(2, '0')}</span>
+                  <span>{stop.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+          <footer className="cg-footnote">Independent open-source camera prototype · MapLibre + OpenFreeMap · No Mult.dev calls</footer>
+        </>
+      )}
+    </div>
+  );
+}
+createRoot(document.getElementById('cinematic-root')).render(<CinematicApp />);

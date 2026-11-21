@@ -1,0 +1,52 @@
+name: Cinematic GlobeHoppers WP1 (No Deploy)
+
+on:
+  push:
+    branches:
+      - feature/cinematic-globehoppers-v1
+    paths:
+      - 'journeylines/cinematic/**'
+      - 'journeylines/src/cinematic/**'
+      - 'journeylines/scripts/test-cinematic-scene.mjs'
+      - 'journeylines/package.json'
+      - 'journeylines/vite.config.js'
+      - '.github/workflows/cinematic-validation.yml'
+  pull_request:
+    paths:
+      - 'journeylines/cinematic/**'
+      - 'journeylines/src/cinematic/**'
+      - 'journeylines/scripts/test-cinematic-scene.mjs'
+      - 'journeylines/package.json'
+      - 'journeylines/vite.config.js'
+      - '.github/workflows/cinematic-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: journeylines
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test cinematic camera and scene boundaries
+        run: npm run test:cinematic
+      - name: Test existing v9 playback geometry
+        run: node --test scripts/test-v9-playback.mjs
+      - name: Build both viewer entry points
+        run: npm run build
+      - name: Confirm isolated cinematic output and preserved main app
+        run: |
+          test -s dist/index.html
+          test -s dist/cinematic/index.html
+          test -s dist/data/v9-viewer/manifest.json
