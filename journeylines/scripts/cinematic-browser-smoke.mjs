@@ -83,14 +83,17 @@ try {
     const root = document.querySelector('.cg-aircraft');
     const image = document.querySelector('.cg-aircraft-img');
     const expected = window.__CINEMATIC_GLOBEHOPPERS__.projectAircraftAtMs(ms);
-    const match = root?.style.transform.match(/translate3d\(([-0-9.]+)px,([-0-9.]+)px,0\)/);
+    const rootBounds = root?.getBoundingClientRect();
+    const actorBounds = document.querySelector('.cg-actors')?.getBoundingClientRect();
     return {
       visible: root?.style.visibility,
       transform: image?.style.transform,
       imageSrc: image?.currentSrc || image?.src,
       imageLoaded: Boolean(image?.complete && image.naturalWidth > 0),
       expected,
-      actual: match ? { x: Number(match[1]), y: Number(match[2]) } : null,
+      actual: rootBounds && actorBounds
+        ? { x: rootBounds.left - actorBounds.left, y: rootBounds.top - actorBounds.top }
+        : null,
       noLegacyLift: document.querySelector('.cg-aircraft-lift') === null,
       noLegacyVector: document.querySelector('.cg-aircraft-visual') === null
     };
@@ -132,12 +135,14 @@ try {
       const plane = api.getPresentationAtMs(ms).plane;
       api.seekMs(ms);
       const root = document.querySelector('.cg-aircraft');
-      const match = root?.style.transform.match(/translate3d\(([-0-9.]+)px,([-0-9.]+)px,0\)/);
+      const rootBounds = root?.getBoundingClientRect();
+    const actorBounds = document.querySelector('.cg-actors')?.getBoundingClientRect();
       const expected = api.projectAircraftAtMs(ms);
       pitches.push(plane?.pitchDegrees);
       rotations.push(document.querySelector('.cg-aircraft-img')?.style.transform);
-      alignmentErrors.push(expected && match
-        ? Math.hypot(Number(match[1]) - expected.x, Number(match[2]) - expected.y)
+      alignmentErrors.push(expected && rootBounds && actorBounds
+        ? Math.hypot(rootBounds.left - actorBounds.left - expected.x,
+          rootBounds.top - actorBounds.top - expected.y)
         : Infinity);
     }
     return { valid: pitches.length > 10 && pitches.every(Number.isFinite) &&
