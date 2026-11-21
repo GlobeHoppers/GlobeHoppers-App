@@ -39,7 +39,7 @@ test('120Hz source clock reaches the high-refresh display; camera and vehicle sh
   }
 });
 
-test('60Hz input remains approximately 60Hz without accidental half rate' () => {
+test('60Hz input remains approximately 60Hz without accidental half rate', () => {
   const scheduler = new PlaybackRenderScheduler();
   let scenes = 0;
   for (let i = 0; i <= 60; i++) {
