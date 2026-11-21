@@ -7,6 +7,7 @@ import { buildCinematicScene } from './scene.js';
 import { demoStops } from './demoStops.js';
 import { installCinematicLayers, updateCinematicRoute } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
+import airplaneBluePng from '../Icons/Airplanes/Airplane - Blue.png?url';
 import './cinematic.css';
 
 const scene = buildCinematicScene(demoStops);
@@ -24,9 +25,7 @@ function CinematicApp() {
   const mapRef = useRef(null);
   const layersReadyRef = useRef(false);
   const planeRootRef = useRef(null);
-  const planeLiftRef = useRef(null);
   const planeVisualRef = useRef(null);
-  const planeShadowRef = useRef(null);
   const arrivalRootRef = useRef(null);
   const arrivalNameRef = useRef(null);
   const engineRef = useRef(null);
@@ -52,9 +51,7 @@ function CinematicApp() {
       pitch: pose.pitch, bearing: pose.bearing });
     updateCinematicActors(map, scene, ms, {
       planeRoot: planeRootRef.current,
-      planeLift: planeLiftRef.current,
       planeVisual: planeVisualRef.current,
-      planeShadow: planeShadowRef.current,
       arrivalRoot: arrivalRootRef.current,
       arrivalName: arrivalNameRef.current
     });
@@ -97,9 +94,7 @@ function CinematicApp() {
       if (!layersReadyRef.current || engineRef.current.snapshot().playing) return;
       updateCinematicActors(map, scene, currentMsRef.current, {
         planeRoot: planeRootRef.current,
-        planeLift: planeLiftRef.current,
         planeVisual: planeVisualRef.current,
-        planeShadow: planeShadowRef.current,
         arrivalRoot: arrivalRootRef.current,
         arrivalName: arrivalNameRef.current
       });
@@ -155,6 +150,13 @@ function CinematicApp() {
         return scene.sample(normalized);
       },
       sampleAtMs(ms) { return scene.sample(ms); },
+      projectAircraftAtMs(ms) {
+        const plane = scene.planeAt(ms);
+        const map = mapRef.current;
+        if (!plane || !map || !layersReadyRef.current) return null;
+        const point = map.project(plane.coordinates);
+        return { x: point.x, y: point.y };
+      },
       getPresentationAtMs(ms) {
         return {
           visibleStops: scene.visibleStops(ms).map(s => s.id),
@@ -198,28 +200,8 @@ function CinematicApp() {
       <div className="cg-vignette" aria-hidden="true" />
       <div className="cg-actors" aria-hidden="true">
         <div className="cg-aircraft" ref={planeRootRef} style={{ visibility: 'hidden' }}>
-          <div className="cg-aircraft-shadow" ref={planeShadowRef} />
-          <div className="cg-aircraft-lift" ref={planeLiftRef}>
-            <svg ref={planeVisualRef} className="cg-aircraft-visual"
-              xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 64"
-              role="presentation" aria-hidden="true">
-              <defs>
-                <linearGradient id="cg-aircraft-paint" x1="0" x2="1" y1="0" y2="1">
-                  <stop offset="0" stopColor="#ffffff" />
-                  <stop offset=".65" stopColor="#ccf4fa" />
-                  <stop offset="1" stopColor="#71b9d3" />
-                </linearGradient>
-              </defs>
-              <path d="M30 3 C34 3 34 13 35 23 L56 38 Q59 43 54 45
-                L36 40 L35 52 L44 58 L44 62 L30 57 L16 62 L16 58
-                L25 52 L24 40 L6 45 Q1 43 4 38 L25 23
-                C26 13 26 3 30 3 Z"
-                fill="url(#cg-aircraft-paint)" stroke="#173a50" strokeWidth="2.1"
-                strokeLinejoin="round" />
-              <path d="M30 10 L30 54" stroke="#628ea5" strokeWidth="1.6" opacity=".65" />
-              <path d="M27.5 13 Q30 7 32.5 13 L33 22 L27 22Z" fill="#147c9e" opacity=".9" />
-            </svg>
-          </div>
+          <img ref={planeVisualRef} className="cg-aircraft-img"
+            src={airplaneBluePng} alt="" draggable={false} />
         </div>
         <div className="cg-arrival-anchor" ref={arrivalRootRef}
           style={{ visibility: 'hidden' }}>
@@ -257,7 +239,7 @@ function CinematicApp() {
               <div>Camera {pose.segmentType}</div>
               <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
               <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
-              <div>Aircraft {scene.planeAt(screen.ms) ? '60 Hz overlay' : 'hidden'}</div>
+              <div>Aircraft {scene.planeAt(screen.ms) ? 'v9 PNG · route-anchored' : 'hidden'}</div>
               <div>Visible stops {scene.visibleStops(screen.ms).length} / {scene.stops.length}</div>
               <div>Frame {screen.fps} FPS · {screen.quality}</div>
               <div>Clock {Math.round(screen.ms)} ms</div>

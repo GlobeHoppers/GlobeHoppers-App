@@ -210,14 +210,20 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const a = positionAlong(leg, clamp(u - 0.009, 0, 1));
     const b = positionAlong(leg, clamp(u + 0.009, 0, 1));
     const bearing = bearingBetween({ lon: a[0], lat: a[1] }, { lon: b[0], lat: b[1] });
-    // A shallow virtual climb is independent of map zoom: the aircraft leaves the
-    // ground at departure and settles back onto the destination during arrival.
-    const ascent = smooth(u / 0.22);
-    const descent = smooth((1 - u) / 0.23);
-    const altitude = Math.min(ascent, descent);
-    const pitchDegrees = -21 * (1 - ascent) + 15 * (1 - descent);
-    return { coordinates: coordinate, bearing, legIndex: leg.index, progress: u,
-      altitude, pitchDegrees, scale: 0.68 + 0.32 * altitude };
+    // Match the existing v9 Airplane PNG attitude: a pronounced nose-up
+    // departure, neutral cruise, then nose-down approach. The airplane's
+    // geographic anchor stays ON the route. Pitch changes only its image.
+    const takeoffWindow = 1 - smooth(u / 0.25);
+    const landingWindow = smooth((u - 0.70) / 0.30);
+    const pitchDegrees = Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10;
+    const endpointBias = Math.max(0, 1 - Math.min(u, 1 - u) / 0.22);
+    const takeoffGrow = mix(0.72, 1, smooth(u / 0.085));
+    const landingScale = mix(1, 0.78, smooth((u - 0.92) / 0.08));
+    const scale = (0.76 + 0.16 * smooth(endpointBias)) * takeoffGrow * landingScale;
+    return { coordinates: coordinate,
+      behindCoordinates: a, aheadCoordinates: b,
+      bearing, legIndex: leg.index, progress: u,
+      pitchDegrees, scale };
   }
 
   /** Arrival timing drives both world-space ripple rings and the on-screen title. */

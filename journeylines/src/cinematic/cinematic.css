@@ -28,20 +28,21 @@ button { cursor: pointer; }
   pointer-events: none; transform: translate3d(0,0,0);
   will-change: transform;
 }
-.cg-aircraft-shadow {
-  position: absolute; left: 0; top: 0; width: 31px; height: 14px;
-  border-radius: 50%; background: #031421b8; filter: blur(6px);
-  transform-origin: center; will-change: transform, opacity;
-}
-.cg-aircraft-lift {
-  position: absolute; left: -27px; top: -30px; width: 54px; height: 60px;
+/* Identical blue airplane PNG to GlobeHoppers v9, centred on the route.
+   Takeoff/landing are perspective rotations, never screen-space translations. */
+.cg-aircraft-img {
+  position: absolute;
+  display: block;
+  width: 86px; height: 86px;
+  left: -43px; top: -43px;
+  object-fit: contain;
+  transform-origin: 50% 55%;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  filter: drop-shadow(0 8px 5px rgba(0, 0, 0, .38));
   will-change: transform;
-}
-.cg-aircraft-visual {
-  display: block; width: 54px; height: 60px;
-  transform-origin: 50% 50%;
-  filter: drop-shadow(0 2px 6px #002433ba) drop-shadow(0 0 3px #76ebfa92);
-  will-change: transform;
+  user-select: none;
+  pointer-events: none;
 }
 .cg-arrival-anchor {
   position: absolute; left: 0; top: 0; width: 0; height: 0;

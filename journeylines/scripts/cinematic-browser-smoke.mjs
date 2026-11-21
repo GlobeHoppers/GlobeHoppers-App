@@ -79,14 +79,31 @@ try {
   assert.equal(phase.flight.visibleStops.length, 2);
   assert.ok(phase.arrivalMs > phase.flightMs);
   await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.flightMs);
-  const flightDom = await page.evaluate(() => ({
-    visible: document.querySelector('.cg-aircraft')?.style.visibility,
-    transform: document.querySelector('.cg-aircraft-visual')?.style.transform,
-    lift: document.querySelector('.cg-aircraft-lift')?.style.transform
-  }));
-  assert.equal(flightDom.visible, 'visible', 'flight airplane should be visible');
-  assert.ok(flightDom.transform?.includes('rotate('), 'airplane should rotate with flight heading');
-  assert.ok(flightDom.lift?.includes('translate3d('), 'airplane should lift on takeoff');
+  const flightDom = await page.evaluate(ms => {
+    const root = document.querySelector('.cg-aircraft');
+    const image = document.querySelector('.cg-aircraft-img');
+    const expected = window.__CINEMATIC_GLOBEHOPPERS__.projectAircraftAtMs(ms);
+    const match = root?.style.transform.match(/translate3d\(([-0-9.]+)px,([-0-9.]+)px,0\)/);
+    return {
+      visible: root?.style.visibility,
+      transform: image?.style.transform,
+      imageSrc: image?.currentSrc || image?.src,
+      imageLoaded: Boolean(image?.complete && image.naturalWidth > 0),
+      expected,
+      actual: match ? { x: Number(match[1]), y: Number(match[2]) } : null,
+      noLegacyLift: document.querySelector('.cg-aircraft-lift') === null,
+      noLegacyVector: document.querySelector('.cg-aircraft-visual') === null
+    };
+  }, phase.flightMs);
+  assert.equal(flightDom.visible, 'visible', 'airplane should be visible during flight');
+  assert.ok(flightDom.transform?.includes('rotate('), 'airplane rotates with route tangent');
+  assert.ok(flightDom.transform?.includes('rotateX('), 'v9 PNG pitches during takeoff and landing');
+  assert.ok(flightDom.imageSrc?.includes('Airplane'), 'use actual GlobeHoppers PNG asset');
+  assert.ok(flightDom.imageLoaded, 'v9 PNG must be loaded');
+  assert.ok(flightDom.noLegacyLift && flightDom.noLegacyVector, 'remove synthetic lift and SVG');
+  assert.ok(flightDom.expected && flightDom.actual, 'route anchor must be measurable');
+  assert.ok(Math.hypot(flightDom.actual.x - flightDom.expected.x,
+    flightDom.actual.y - flightDom.expected.y) < 0.12, 'airplane center must stay on route');
   await page.screenshot({ path: path.join(out, 'cinematic-aircraft.png') });
   await page.evaluate(ms => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(ms), phase.arrivalMs);
   await page.locator('.cg-arrival-place').getByText('Los Angeles').waitFor({ timeout: 5000 });
@@ -108,17 +125,25 @@ try {
       return -1;
     })();
     if (firstLegEnd < 0) return { valid: false };
-    const heights = [];
+    const pitches = [];
+    const alignmentErrors = [];
     const rotations = [];
     for (let ms = firstLegEnd - 400; ms < firstLegEnd - 50; ms += 16.666) {
       const plane = api.getPresentationAtMs(ms).plane;
       api.seekMs(ms);
-      heights.push(plane?.altitude);
-      rotations.push(document.querySelector('.cg-aircraft-visual')?.style.transform);
+      const root = document.querySelector('.cg-aircraft');
+      const match = root?.style.transform.match(/translate3d\(([-0-9.]+)px,([-0-9.]+)px,0\)/);
+      const expected = api.projectAircraftAtMs(ms);
+      pitches.push(plane?.pitchDegrees);
+      rotations.push(document.querySelector('.cg-aircraft-img')?.style.transform);
+      alignmentErrors.push(expected && match
+        ? Math.hypot(Number(match[1]) - expected.x, Number(match[2]) - expected.y)
+        : Infinity);
     }
-    return { valid: heights.length > 10 && heights.every(Number.isFinite) &&
-      heights[0] > heights.at(-1) && rotations.every(Boolean),
-      samples: heights.length };
+    return { valid: pitches.length > 10 && pitches.every(Number.isFinite) &&
+      pitches.at(-1) > pitches[0] && rotations.every(Boolean) &&
+      alignmentErrors.every(error => error < 0.12),
+      samples: pitches.length, maxAlignmentPx: Math.max(...alignmentErrors) };
   });
   assert.ok(continuity.valid, 'aircraft should descend smoothly while zooming toward a destination');
 

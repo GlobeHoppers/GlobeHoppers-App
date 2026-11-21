@@ -17,7 +17,7 @@ An independently authored, open-source cinematic camera prototype built on top o
 - WP1.1 flight polish: camera is north-biased and limited to ±45°; aircraft orientation follows the actual geographic travel heading independently of the camera bearing.
 - Flight geometry retains the great-circle basis but adds a small endpoint-preserving lateral arc to each leg. This is a visual flight-path bow, not a physically elevated 3D line. A true world-space altitude arc is a potential later refinement.
 - Only the initial city is visible at time zero; each next destination marker, label and unrevealed route outline appears when its incoming leg begins. Seeking backward hides future markers and paths again.
-- The aircraft uses a compositor-only DOM/SVG overlay updated in the same callback as the MapLibre camera on every playback frame. It points along the travel tangent and shows a small virtual takeoff climb, cruise altitude, and nose-down landing descent. The airplane disappears at the arrival coordinate.
+- The aircraft uses the actual existing GlobeHoppers v9 `Airplane - Blue.png` (nose-up artwork), rendered in a compositor-only DOM overlay on the same frame as the camera. It takes its screen rotation from the projected route tangent on the pitched globe, and reuses v9-style `rotateX` perspective attitudes (-56° takeoff, 0° cruise, +76° landing) and scale shaping. Its center stays projected to the geographic route coordinate at all times: no artificial screen-space climb or lift. It disappears at the arrival coordinate.
 - Arrivals use small map-anchored destination labels and restrained geographic ripple rings. The large centered TOUCHDOWN popup has been removed; the accent remains visible in capture mode.
 - Arrival dwell is 1.75 seconds so the ripple/title can read. These effects use scene time and can therefore be reproduced exactly during eventual fixed-FPS video export.
 - The map camera and DOM airplane use the v9 refresh clock. Expensive GeoJSON updates run about every 65 ms, separate active-flight trails from cached completed legs, and only update destination labels and route outlines when a flight starts. The marker is never quantized to that slower update cadence.
@@ -63,3 +63,10 @@ WP1.1 uses a programmatically drawn aircraft glyph rather than a third-party air
 - Chromium browser smoke confirms an airplane overlay, map-anchored arrival label, per-frame deterministic seeking and a descending aircraft in the final approach.
 - Scene unit tests verify low initial altitude, higher cruise, lower final approach, and that active route geometry excludes completed legs.
 - Browser automation verifies correctness but is not an objective FPS/stutter measurement on every GPU. Continue visual testing on the actual deployment and hardware before treating the performance issue as fully resolved.
+
+## WP1.3 airplane PNG / route anchor correction
+
+- Shares the same airplane PNG and nose-up sprite orientation used by the current GlobeHoppers v9 map renderer. No additional aircraft artwork or off-route lift layer.
+- Plane anchor is always exactly MapLibre's projection of the current curved-route coordinate. View rotation comes from the *projected* forward and backward path samples rather than geographic heading alone, so it points along its drawn route even on tilted maps.
+- The airplane's 3D takeoff/landing impression is purely local perspective rotation of the PNG and scaling. World latitude/longitude and the route line never shift as a consequence of that visual effect.
+- The browser smoke test checks that PNG pixels actually load, sprite attitude transforms exist and the rendered aircraft anchor matches the map-projected route point within a fraction of a pixel, including during approach.

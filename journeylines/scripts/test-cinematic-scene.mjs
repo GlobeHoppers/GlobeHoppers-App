@@ -167,23 +167,26 @@ test('north-up limit is configurable only within the 0 to 45 degree safety envel
 });
 
 
-test('takeoff, climb, approach and landing are defined by the same frame timestamp', () => {
+test('v9 PNG takeoff/cruise/landing uses perspective, never geographic or screen lift', () => {
   const scene = buildCinematicScene(pts);
   const leg = scene.legs[0];
   const nearStart = scene.planeAt(leg.startMs + leg.durationMs * .03);
   const airborne = scene.planeAt(leg.startMs + leg.durationMs * .48);
   const nearEnd = scene.planeAt(leg.startMs + leg.durationMs * .97);
-  assert.ok(nearStart);
-  assert.ok(airborne);
-  assert.ok(nearEnd);
-  assert.ok(nearStart.altitude < .25, 'departure starts near the ground');
-  assert.ok(airborne.altitude > .99, 'aircraft climbs to cruise');
-  assert.ok(nearEnd.altitude < .25, 'aircraft returns to the ground');
-  assert.ok(nearStart.pitchDegrees < -5, 'departure nose pitches up');
-  assert.ok(nearEnd.pitchDegrees > 5, 'approach nose pitches down');
-  assert.ok(airborne.scale > nearStart.scale);
+  assert.ok(nearStart && airborne && nearEnd);
+  assert.ok(nearStart.pitchDegrees < -50, 'v9 nose-up departure');
+  assert.ok(Math.abs(airborne.pitchDegrees) < 0.1, 'level cruise');
+  assert.ok(nearEnd.pitchDegrees > 65, 'v9 nose-down landing approach');
+  assert.ok(airborne.scale > nearStart.scale, 'airplane grows from departure');
+  for (const point of [nearStart, airborne, nearEnd]) {
+    assert.ok(point.coordinates.every(Number.isFinite));
+    assert.ok(point.behindCoordinates.every(Number.isFinite));
+    assert.ok(point.aheadCoordinates.every(Number.isFinite));
+    assert.equal(Object.hasOwn(point, 'altitude'), false,
+      'virtual altitude would detach PNG from route');
+  }
   assert.deepEqual(scene.planeAt(leg.startMs + leg.durationMs * .48), airborne);
-  assert.equal(scene.planeAt(leg.endMs), null, 'airplane is hidden once landed');
+  assert.equal(scene.planeAt(leg.endMs), null, 'airplane is hidden on landing');
 });
 
 test('active trail contains only current flight, not re-serialized completed trips', () => {
@@ -197,4 +200,19 @@ test('active trail contains only current flight, not re-serialized completed tri
   assert.equal(activeSecond.features.length, 1);
   assert.equal(activeSecond.features[0].properties.legIndex, 1);
   assert.equal(scene.activeRouteAt(scene.totalMs).features.length, 0);
+});
+
+
+test('projected aircraft anchor stays exactly on curved flight path for every leg', () => {
+  const scene = buildCinematicScene(pts);
+  for (const leg of scene.legs) {
+    for (let f = 0.015; f < 0.995; f += .035) {
+      const ms = leg.startMs + leg.durationMs * f;
+      const aircraft = scene.planeAt(ms);
+      const line = scene.revealedRoute(ms).features.find(feature =>
+        feature.properties.legIndex === leg.index).geometry.coordinates.at(-1);
+      assert.ok(Math.abs(dlon(aircraft.coordinates[0], line[0])) < 0.00001);
+      assert.ok(Math.abs(aircraft.coordinates[1] - line[1]) < 0.00001);
+    }
+  }
 });

@@ -1,9 +1,12 @@
 /**
- * Lightweight presentation overlay for the airplane and destination label.
- * No React updates, GeoJSON serialization, or map source writes per camera frame.
- * The camera and aircraft are projected from the SAME scene timestamp.
+ * Cinematic actors use one projected map coordinate per frame, shared with the
+ * cinematic route. Plane attitude is a visual transform on the v9 PNG only.
+ * No artificial vertical lift: that previously detached the aircraft from
+ * its geographic flight line whenever the camera zoomed in.
  */
-const finitePosition = position => Number.isFinite(position?.x) && Number.isFinite(position?.y);
+import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
+
+const finitePosition = point => Number.isFinite(point?.x) && Number.isFinite(point?.y);
 const show = (element, visible) => {
   if (element) element.style.visibility = visible ? 'visible' : 'hidden';
 };
@@ -12,12 +15,26 @@ const atPoint = (element, point) => {
     point.y.toFixed(2) + 'px,0)';
 };
 
+/** Match v9's camera-stable route-tangent orientation on pitched globe views. */
+export function projectedAircraftHeading(map, plane) {
+  const behind = map.project(plane.behindCoordinates);
+  const ahead = map.project(plane.aheadCoordinates);
+  if (finitePosition(behind) && finitePosition(ahead)) {
+    const dx = ahead.x - behind.x;
+    const dy = ahead.y - behind.y;
+    if (Math.hypot(dx, dy) >= 0.75) {
+      return applyVesselSpriteOffset(Math.atan2(dx, -dy) * 180 / Math.PI, 'plane');
+    }
+  }
+  // At extreme distance/zoom, fall back to the geographic heading.
+  return applyVesselSpriteOffset(plane.bearing - map.getBearing(), 'plane');
+}
+
 export function updateCinematicActors(map, scene, ms, {
-  planeRoot, planeLift, planeVisual, planeShadow,
-  arrivalRoot, arrivalName
+  planeRoot, planeVisual, arrivalRoot, arrivalName
 }) {
   const aircraft = scene.planeAt(ms);
-  if (!aircraft || !planeRoot || !planeLift || !planeVisual || !planeShadow) {
+  if (!aircraft || !planeRoot || !planeVisual) {
     show(planeRoot, false);
   } else {
     const projected = map.project(aircraft.coordinates);
@@ -25,19 +42,12 @@ export function updateCinematicActors(map, scene, ms, {
       show(planeRoot, false);
     } else {
       show(planeRoot, true);
+      // Anchor the CENTRE of the existing v9 PNG directly to the route point.
       atPoint(planeRoot, projected);
-      const altitude = aircraft.altitude;
-      const heading = aircraft.bearing - map.getBearing();
-      // Plane lifts away from the map point on departure and settles to it
-      // before arrival. Its shadow stays attached to the underlying geography.
-      planeLift.style.transform = 'translate3d(0,' +
-        (-24 * altitude).toFixed(2) + 'px,0)';
-      planeVisual.style.transform = 'rotate(' + heading.toFixed(3) + 'deg) ' +
-        'perspective(260px) rotateX(' + aircraft.pitchDegrees.toFixed(2) +
+      const rotation = projectedAircraftHeading(map, aircraft);
+      planeVisual.style.transform = 'rotate(' + rotation.toFixed(3) + 'deg) ' +
+        'perspective(900px) rotateX(' + aircraft.pitchDegrees.toFixed(1) +
         'deg) scale(' + aircraft.scale.toFixed(3) + ')';
-      planeShadow.style.opacity = (0.56 - 0.38 * altitude).toFixed(3);
-      planeShadow.style.transform = 'translate(-50%, -50%) scale(' +
-        (0.7 + 0.5 * altitude).toFixed(3) + ')';
     }
   }
 
