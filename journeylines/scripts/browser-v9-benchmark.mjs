@@ -46,7 +46,7 @@ function writeReport() {
     consoleErrors: item.consoleErrors?.length ?? 0,
     failure: item.failure
   }]));
-  console.log('V9_BROWSER_REPORT ' + JSON.stringify({ modes, comparison: report.comparison, caveats: report.caveats }));
+  console.log('V9_BROWSER_REPORT ' + JSON.stringify({ modes, comparison: report.comparison, gpuComparison: report.gpuComparison, caveats: report.caveats }));
 }
 async function startServer() {
   if (process.env.V9_BROWSER_URL) return;
@@ -114,7 +114,7 @@ async function runMode(label, query) {
     result.gpu = await inspectGPU(page);
     const preSnapshot = await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.snapshot());
     result.initialMode = preSnapshot.mode;
-    const expectedMode = label === 'wp3' ? 'v9-pipeline' : 'wp2-legacy';
+    const expectedMode = label.startsWith('wp3') ? 'v9-pipeline' : 'wp2-legacy';
     if (result.initialMode !== expectedMode) throw new Error('Wrong renderer mode: ' + result.initialMode);
 
     // WP2 does not use the WP3 frame scheduler: its schedule.displays stays
@@ -147,7 +147,8 @@ async function runMode(label, query) {
         webglWarnings: totalWarnings,
         consoleErrors: totalErrors,
         longTaskCount: snapshot.performance.longTasks?.length || 0,
-        schedule: snapshot.schedule
+        schedule: snapshot.schedule,
+        gpuBudget: snapshot.gpu || null
       };
       result.status = result.metrics.rendererFps > 0 ? 'measured' : 'no-render-samples';
       if (result.metrics.rendererFps === 0) result.failure = 'No displayed JS renderer frames recorded';
@@ -178,6 +179,9 @@ try {
   report.browserVersion = browser.version();
   await runMode('wp2', '?screensaver=1&v9Playback=1&v9Metrics=1');
   await runMode('wp3', '?screensaver=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
+  // Force a lowered internal canvas ratio even on CI DPR1 so we can isolate
+  // raster fill-rate costs. On a normal HiDPI screen the auto cap is 1.25.
+  await runMode('wp3gpu', '?screensaver=1&v9Playback=1&v9Renderer=1&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
   const a = report.modes.wp2?.metrics;
   const b = report.modes.wp3?.metrics;
   if (a?.rendererFps > 0 && b?.rendererFps > 0) {
@@ -188,6 +192,24 @@ try {
     };
   } else {
     report.caveats.push('A/B comparison incomplete; one or both browser modes did not produce rendered frames.');
+  }
+  const c = report.modes.wp3gpu?.metrics;
+  const expectedRatio = Number(c?.gpuBudget?.requestedPixelRatio ?? NaN);
+  if (expectedRatio !== .75 || !c?.gpuBudget?.enabled) {
+    report.caveats.push('GPU budget could not be verified; low-DPR comparison is not valid.');
+  }
+  if (b?.rendererFps > 0 && c?.rendererFps > 0 && c.gpuBudget?.enabled && expectedRatio === .75) {
+    report.gpuComparison = {
+      wp3JsRendererFps: b.rendererFps,
+      wp3ReducedPixelJsRendererFps: c.rendererFps,
+      percentChange: Math.round((c.rendererFps - b.rendererFps) / b.rendererFps * 1000) / 10,
+      pixelRatio: expectedRatio,
+      cameraIssued: c.gpuBudget.camera?.issued,
+      cameraSkipped: c.gpuBudget.camera?.skipped,
+      note: 'CI software GPU: tests renderer cost under lower raster area; cannot predict discrete-GPU gains'
+    };
+  } else {
+    report.caveats.push('WP3 GPU A/B incomplete; one or both modes did not measure playback.');
   }
   if (!report.modes.wp3?.gpu?.webgl || !report.modes.wp2?.gpu?.webgl) {
     report.caveats.push('WebGL unavailable in this browser; screenshot or performance output cannot establish globe rendering parity.');
@@ -205,9 +227,9 @@ try {
 if (runFailure) {
   console.error(runFailure);
   process.exitCode = 1;
-} else if (!report.modes.wp2 || !report.modes.wp3) {
+} else if (!report.modes.wp2 || !report.modes.wp3 || !report.modes.wp3gpu) {
   process.exitCode = 1;
-} else if (report.modes.wp2.status === 'error' || report.modes.wp3.status === 'error') {
+} else if (report.modes.wp2.status === 'error' || report.modes.wp3.status === 'error' || report.modes.wp3gpu.status === 'error') {
   process.exitCode = 1;
 } else {
   console.log('Browser benchmark completed. Results can be limited by CI software WebGL; inspect summary.json.');
