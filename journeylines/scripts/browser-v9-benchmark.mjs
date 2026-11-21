@@ -48,7 +48,7 @@ function writeReport() {
     consoleErrors: item.consoleErrors?.length ?? 0,
     failure: item.failure
   }]));
-  console.log('V9_BROWSER_REPORT ' + JSON.stringify({ modes, comparison: report.comparison, gpuComparison: report.gpuComparison, caveats: report.caveats }));
+  console.log('V9_BROWSER_REPORT ' + JSON.stringify({ modes, comparison: report.comparison, viewerComparison: report.viewerComparison, gpuComparison: report.gpuComparison, caveats: report.caveats }));
 }
 async function startServer() {
   if (process.env.V9_BROWSER_URL) return;
@@ -117,7 +117,10 @@ async function runMode(label, query) {
     result.gpu = await inspectGPU(page);
     const preSnapshot = await page.evaluate(() => window.__GLOBEHOPPERS_RENDERER__.snapshot());
     result.initialMode = preSnapshot.mode;
-    const expectedMode = label.startsWith('wp3') ? 'v9-pipeline' : 'wp2-legacy';
+    result.viewer = await page.evaluate(() => window.__GLOBEHOPPERS_VIEWER__?.snapshot());
+    if (label === 'wp4viewer' && !(result.viewer?.ready && result.viewer.mode === 'viewer' && result.viewer.routesInMemory === 401))
+      throw new Error('WP4 comparison did not load verified compact viewer geometry');
+    const expectedMode = label === 'wp2' ? 'wp2-legacy' : 'v9-pipeline';
     if (result.initialMode !== expectedMode) throw new Error('Wrong renderer mode: ' + result.initialMode);
 
     // Every browser run starts the SAME long-haul flight, exact progress,
@@ -197,8 +200,10 @@ try {
   // Force a lowered internal canvas ratio even on CI DPR1 so we can isolate
   // raster fill-rate costs. On a normal HiDPI screen the auto cap is 1.25.
   await runMode('wp3gpu', '?v9Benchmark=1&v9Playback=1&v9Renderer=1&v9GpuBudget=1&v9PixelRatio=0.75&v9Metrics=1');
+  // Separate the compact viewer data boundary from its shared WP3 renderer.
+  await runMode('wp4viewer', '?v9Benchmark=1&v9Viewer=1&v9Playback=1&v9Renderer=1&v9Metrics=1');
   // Verify the exact same travel leg was exercised in all variants.
-  const chosen = ['wp2', 'wp3', 'wp3gpu'].map(mode => report.modes[mode]?.benchmark);
+  const chosen = ['wp2', 'wp3', 'wp3gpu', 'wp4viewer'].map(mode => report.modes[mode]?.benchmark);
   const sameLeg = chosen.every(x => x?.tripId && x?.legId &&
     x.tripId === chosen[0].tripId && String(x.legId) === String(chosen[0].legId));
   if (!sameLeg) report.caveats.push('Benchmark leg mismatch; relative FPS comparison invalid.');
@@ -213,6 +218,15 @@ try {
   } else {
     report.caveats.push('A/B comparison incomplete; one or both browser modes did not produce rendered frames.');
   }
+  const viewerMode = report.modes.wp4viewer?.status === 'measured' && sameLeg ? report.modes.wp4viewer.metrics : null;
+  if (b?.rendererFps > 0 && viewerMode?.rendererFps > 0) {
+    report.viewerComparison = {
+      wp3JsRendererFps: b.rendererFps, wp4ViewerJsRendererFps: viewerMode.rendererFps,
+      percentChange: Math.round((viewerMode.rendererFps - b.rendererFps) / b.rendererFps * 1000) / 10,
+      wp3SourceClockFps: b.clockFps, wp4SourceClockFps: viewerMode.clockFps,
+      note: 'WP3 and WP4 share TravelMap; run-to-run CPU/GPU variation and asset-cache warmup can dominate the difference'
+    };
+  } else report.caveats.push('WP4 viewer vs WP3 comparison incomplete');
   const c = report.modes.wp3gpu?.status === 'measured' && sameLeg ? report.modes.wp3gpu.metrics : null;
   const expectedRatio = Number(c?.gpuBudget?.requestedPixelRatio ?? NaN);
   if (expectedRatio !== .75 || !c?.gpuBudget?.enabled) {
@@ -247,10 +261,10 @@ try {
 if (runFailure) {
   console.error(runFailure);
   process.exitCode = 1;
-} else if (!report.modes.wp2 || !report.modes.wp3 || !report.modes.wp3gpu) {
+} else if (!report.modes.wp2 || !report.modes.wp3 || !report.modes.wp3gpu || !report.modes.wp4viewer) {
   process.exitCode = 1;
-} else if (report.modes.wp2.status === 'error' || report.modes.wp3.status === 'error' || report.modes.wp3gpu.status === 'error') {
+} else if (report.modes.wp2.status === 'error' || report.modes.wp3.status === 'error' || report.modes.wp3gpu.status === 'error' || report.modes.wp4viewer.status === 'error') {
   process.exitCode = 1;
 } else {
-  console.log('Browser benchmark completed. Results can be limited by CI software WebGL; inspect summary.json.');
+  console.log('Four-way browser benchmark completed. Software WebGL cannot establish real hardware FPS; inspect summary.json.');
 }

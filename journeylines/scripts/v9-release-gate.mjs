@@ -21,8 +21,8 @@ pass('browser functional and candidate visual regression',smoke?.status==='pass'
 pass('WP4 viewer and lazy single-user Studio',viewer?.status==='pass'&&viewer.editorRequested===true&&viewer.fullRouteModuleRequested===true,viewer?.failure||viewer?.status);
 pass('unattended playback watchdog',endurance?.status==='pass'&&endurance.durationObservedSeconds>=110&&endurance.samples?.length>=4&&endurance.errors?.length===0,endurance?.failure||'seconds '+(endurance?.durationObservedSeconds||0));
 const modes=benchmark?.modes||{};
-const sameLeg=['wp2','wp3','wp3gpu'].every(k=>modes[k]?.benchmark?.tripId&&modes[k]?.benchmark?.legId&&modes[k].benchmark.tripId===modes.wp2?.benchmark?.tripId&&String(modes[k].benchmark.legId)===String(modes.wp2?.benchmark?.legId));
-pass('software-WebGL same-leg three-way A/B',sameLeg&&['wp2','wp3','wp3gpu'].every(k=>modes[k].status==='measured'),'CI FPS is diagnostic, not physical GPU FPS');
+const sameLeg=['wp2','wp3','wp3gpu','wp4viewer'].every(k=>modes[k]?.benchmark?.tripId&&modes[k]?.benchmark?.legId&&modes[k].benchmark.tripId===modes.wp2?.benchmark?.tripId&&String(modes[k].benchmark.legId)===String(modes.wp2?.benchmark?.legId));
+pass('software-WebGL same-leg four-way A/B',sameLeg&&['wp2','wp3','wp3gpu','wp4viewer'].every(k=>modes[k].status==='measured')&&modes.wp4viewer.viewer?.mode==='viewer'&&Boolean(benchmark.viewerComparison),'CI FPS is diagnostic, not physical GPU FPS');
 const automatedPass=checks.every(c=>c.status==='pass');
 const pending=[
  {name:'30-minute browser endurance',complete:endurance?.status==='pass'&&endurance.durationObservedSeconds>=1800&&!endurance.memoryReviewRequired},

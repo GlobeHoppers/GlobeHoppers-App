@@ -124,3 +124,9 @@ A WP3 preview measurement showed `rendererFPS≈15.73`, `p95RenderedFrameMs≈33
 WP3 provides modular frame **scheduling and stage ownership** while retaining legacy MapLibre DOM/GeoJSON drawing code in `TravelMap.jsx` for visual parity. Extraction of all editor and projection modules is deferred to WP4. Do not switch WP3 on by default or merge without browser parity and actual resource/performance comparison.
 
 The core WP3 architectural benefit is decoupled work budgets: avoid expensive route/arc geometry reconstruction at every camera/vehicle frame. Measured FPS gains remain unproven until browser acceptance.
+
+## WP5.1 refresh-rate correction (supersedes the original 60 Hz high budget)
+
+The original WP3 implementation targeted 60 Hz high / 45 Hz medium / 30 Hz low, as documented above. The Windows RTX 3090 WP5 test exposed an artificial **60 Hz high-quality ceiling** even when the playback clock delivered about 98–110 RAF callbacks/s.
+
+WP5.1 removes that *high-quality display throttle*: one scene/camera/vehicle update may now occur on **each browser-supplied RAF tick**. Secondary trail and arc budgets remain independent, the authoritative playback clock is unchanged, and medium/low fallback rates remain 45/30 Hz. This is not a claim of measured 120 Hz GPU presentation. See [v9-WP5.1-frame-cadence.md](v9-WP5.1-frame-cadence.md) for the source investigation, live-GPU evidence and validation limits.

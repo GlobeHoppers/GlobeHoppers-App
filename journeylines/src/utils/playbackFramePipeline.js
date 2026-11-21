@@ -5,11 +5,13 @@
  * never creates another timer, RAF, React update or camera command.
  *
  * Camera + vehicle share one display cadence to stay visually connected.
+ * On high-quality playback it follows each browser RAF instead of imposing
+ * an artificial 60 Hz ceiling. The playback clock is still the sole RAF owner.
  * Trails and air arcs are slower because GeoJSON setData and SVG geometry are
  * costlier than a position/transform. A phase/leg change forces a sample.
  */
 export const RENDER_PROFILES = Object.freeze({
-  high: Object.freeze({ displayMs: 1000 / 60, trailMs: 90, arcMs: 50 }),
+  high: Object.freeze({ displayMs: 0, trailMs: 90, arcMs: 50 }),
   medium: Object.freeze({ displayMs: 1000 / 45, trailMs: 110, arcMs: 66 }),
   low: Object.freeze({ displayMs: 1000 / 30, trailMs: 145, arcMs: 100 })
 });
@@ -21,6 +23,9 @@ const asTime = value => Number.isFinite(Number(value)) ? Math.max(0, Number(valu
  * monitor because 22.22ms rounds to three 8.33ms clock frames.
  */
 function advanceDeadline(previous, now, period) {
+  // A zero display period means sample every supplied RAF tick. There is no
+  // second requestAnimationFrame or timer, and costly geometry keeps its budget.
+  if (period <= 0) return now;
   const next = previous + period;
   return next <= now + 1 ? now + period : next;
 }
@@ -69,7 +74,8 @@ export class PlaybackRenderScheduler {
     const newlyCompleted = isEnd && !this.atEnd;
     this.atEnd = isEnd;
 
-    // One millisecond of tolerance avoids accidental 30 Hz sampling on a
+    // High quality accepts every source RAF; medium and low retain adaptive
+    // caps under load. One millisecond of tolerance avoids accidental 30 Hz on a
     // nominal 60 Hz monitor (many RAF timestamps differ by 16.65 ms).
     const display = newRoute || suspended || newlyCompleted || now + 1 >= this.nextDisplayAt;
     if (!display) {
@@ -79,7 +85,7 @@ export class PlaybackRenderScheduler {
 
     const deltaMs = this.lastDisplayAt >= 0
       ? Math.max(0, Math.min(250, now - this.lastDisplayAt))
-      : profile.displayMs;
+      : (profile.displayMs || 1000 / 60);
     this.lastDisplayAt = now;
     this.nextDisplayAt = advanceDeadline(this.nextDisplayAt, now, profile.displayMs);
     this.counts.displays++;

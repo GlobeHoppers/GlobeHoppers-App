@@ -12,7 +12,7 @@ test('WP3 renderer is opt-in and never enabled implicitly', () => {
   assert.equal(isV9RendererRequested('?v9Renderer=0'), false);
 });
 
-test('120Hz source clock targets 60Hz display; camera and vehicle share exact frames', () => {
+test('120Hz source clock reaches the high-refresh display; camera and vehicle share exact frames', () => {
   const pipeline = new PlaybackFramePipeline();
   const counts = { scenes: 0, camera: 0, vehicle: 0, trail: 0, arc: 0 };
   const observed = [];
@@ -27,18 +27,19 @@ test('120Hz source clock targets 60Hz display; camera and vehicle share exact fr
     };
     pipeline.render(frame(timestamp), { routeKey: 'trip-a::leg-1', generation: 7, quality: 'high', progress: timestamp / 2000 }, adapters);
   }
-  assert.ok(counts.scenes >= 57 && counts.scenes <= 62, JSON.stringify(counts));
+  assert.equal(counts.scenes, 121, 'high quality samples each browser RAF rather than capping at 60Hz');
   assert.equal(counts.scenes, counts.camera);
   assert.equal(counts.camera, counts.vehicle);
   assert.ok(counts.trail >= 9 && counts.trail <= 15, JSON.stringify(counts));
   assert.ok(counts.arc >= 17 && counts.arc <= 24, JSON.stringify(counts));
-  assert.ok(counts.scenes < 121, 'scene must not be computed on every 120Hz tick');
+  assert.ok(counts.trail < counts.scenes / 5 && counts.arc < counts.scenes / 3,
+    'expensive geometry stays independently budgeted at higher display refresh');
   for (let i = 0; i < observed.length; i += 2) {
     assert.deepEqual(observed.slice(i, i + 2), [['camera', observed[i][1]], ['vehicle', observed[i][1]]]);
   }
 });
 
-test('60Hz input remains approximately 60Hz without accidental half rate', () => {
+test('60Hz input remains approximately 60Hz without accidental half rate' () => {
   const scheduler = new PlaybackRenderScheduler();
   let scenes = 0;
   for (let i = 0; i <= 60; i++) {
@@ -47,8 +48,24 @@ test('60Hz input remains approximately 60Hz without accidental half rate', () =>
   assert.ok(scenes >= 58 && scenes <= 61, `scenes=${scenes}`);
 });
 
-test('adaptive profiles reduce render budgets on lower-quality frames', () => {
-  for (const [quality, min, max] of [['high', 57, 62], ['medium', 43, 47], ['low', 29, 32]]) {
+test('high quality is RAF-driven at 60/90/120/144/165Hz with no added frame timer', () => {
+  for (const hz of [60, 90, 120, 144, 165]) {
+    const scheduler = new PlaybackRenderScheduler();
+    let displayed = 0;
+    const ticks = hz + 1;
+    for (let i = 0; i < ticks; i++) {
+      if (scheduler.plan({ timestamp: i * 1000 / hz, quality: 'high', routeKey: 'a', generation: 1 }).display) displayed++;
+    }
+    assert.equal(displayed, ticks, `high-quality display must follow ${hz}Hz source ticks`);
+    const counters = scheduler.snapshot();
+    assert.ok(counters.trails >= 10 && counters.trails <= 13, JSON.stringify(counters));
+    assert.ok(counters.arcs >= 18 && counters.arcs <= 22, JSON.stringify(counters));
+    assert.equal(counters.skipped, 0);
+  }
+});
+
+test('adaptive medium and low profiles retain slower render budgets', () => {
+  for (const [quality, min, max] of [['medium', 43, 47], ['low', 29, 32]]) {
     const s = new PlaybackRenderScheduler();
     let count = 0;
     for (let i = 0; i <= 120; i++)
@@ -123,9 +140,9 @@ test('30 minute unattended playback schedule has constant-size state', () => {
   }
   const stats = scheduler.snapshot();
   assert.equal(stats.ticks, totalTicks);
-  assert.ok(stats.displays >= 107000 && stats.displays <= 108100, JSON.stringify(stats));
+  assert.equal(stats.displays, totalTicks, 'high profile follows every supplied animation tick');
   assert.ok(stats.trails < 22000, JSON.stringify(stats));
   assert.ok(stats.arcs < 40000, JSON.stringify(stats));
-  assert.ok(stats.skipped > 100000, JSON.stringify(stats));
+  assert.equal(stats.skipped, 0, 'no artificial 60Hz throttle under stable 120Hz input');
   assert.equal(Object.keys(stats).length, 8, 'scheduler should not accumulate per-frame records');
 });
