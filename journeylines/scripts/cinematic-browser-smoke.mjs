@@ -51,7 +51,7 @@ try {
   assert.deepEqual(initialImagery.activeLayers,['cg-earth-local']);
   assert.equal(initialImagery.labelLayerCount,0,'local Earth requires no remote glyphs');
   assert.equal(initialImagery.localEarth.ready,true);
-  assert.equal(initialImagery.localEarth.cachedTiles,341);
+  assert.equal(initialImagery.localEarth.cachedTiles,1365);
   assert.ok(await page.locator('.cg-local-stop-label').count()>=1,
     'the self-contained globe should retain geographically attached city labels');
   assert.deepEqual(unexpectedLocalImageryRequests,[],
