@@ -37,8 +37,9 @@ const CREDITS = {
 
 // Both layers coexist in one WebGL style. Overlapping raster draws blend
 // continuously with zoom, while source tiles can load ahead of the camera.
-const nasaOpacity = ['interpolate', ['linear'], ['zoom'],
-  0, 1, 4.7, 1, 6.35, 0];
+// Never fade the low-resolution globe away before the detailed raster has
+// loaded. NASA overzoomed imagery remains a graceful visual fallback.
+const nasaOpacity = 1;
 const satelliteOpacity = ['interpolate', ['linear'], ['zoom'],
   4.75, 0, 6.35, 1, 14, 1];
 
@@ -84,13 +85,13 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
     id: NASA_SOURCE, type: 'raster', source: NASA_SOURCE,
     layout: { visibility: 'none' },
     paint: { 'raster-opacity': nasaOpacity, 'raster-fade-duration': 350,
-      'raster-saturation': 0.08, 'raster-contrast': 0.04 }
+      'raster-saturation': 0.15, 'raster-contrast': 0.08 }
   }, beforeId);
   map.addLayer({
     id: SENTINEL_SOURCE, type: 'raster', source: SENTINEL_SOURCE,
     layout: { visibility: 'none' },
     paint: { 'raster-opacity': satelliteOpacity, 'raster-fade-duration': 400,
-      'raster-saturation': 0.1, 'raster-contrast': 0.09 }
+      'raster-saturation': 0.22, 'raster-contrast': 0.13 }
   }, beforeId);
 
   stateByMap.set(map, { labels: labelLayers, preset: null, skySupported: false });

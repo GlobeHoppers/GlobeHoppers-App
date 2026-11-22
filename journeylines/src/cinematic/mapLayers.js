@@ -88,6 +88,11 @@ export function installCinematicLayers(map, scene) {
 export function updateCinematicRoute(map, scene, ms) {
   const state = metadata.get(map);
   if (!state) return;
+  if (state.scene !== scene) {
+    // A new trip must not retain the previous trip's completed trails.
+    state.scene = scene; state.routes = -1; state.stops = -1;
+    state.completed = -1; state.trailActive = true; state.arrivalActive = true;
+  }
   const routes = scene.visibleRoutes(ms);
   const stops = scene.visibleStops(ms);
   if (routes.length !== state.routes) {
@@ -116,4 +121,14 @@ export function updateCinematicRoute(map, scene, ms) {
     map.getSource('cg-arrival-rings')?.setData(arrivalFeatures(arrival));
   }
   state.arrivalActive = Boolean(arrival);
+}
+
+export function clearCinematicRoute(map) {
+  const state = metadata.get(map);
+  if (!state || state.scene === null) return;
+  state.scene = null; state.routes = -1; state.stops = -1;
+  state.completed = -1; state.trailActive = false; state.arrivalActive = false;
+  const empty = { type: 'FeatureCollection', features: [] };
+  for (const id of ['cg-route-full','cg-route-completed','cg-route-revealed',
+    'cg-stops','cg-arrival-rings']) map.getSource(id)?.setData(empty);
 }

@@ -23,15 +23,15 @@ export function projectedAircraftHeading(map, plane) {
     const dx = ahead.x - behind.x;
     const dy = ahead.y - behind.y;
     if (Math.hypot(dx, dy) >= 0.75) {
-      return applyVesselSpriteOffset(Math.atan2(dx, -dy) * 180 / Math.PI, 'plane');
+      return applyVesselSpriteOffset(Math.atan2(dx, -dy) * 180 / Math.PI, plane.mode || 'plane');
     }
   }
   // At extreme distance/zoom, fall back to the geographic heading.
-  return applyVesselSpriteOffset(plane.bearing - map.getBearing(), 'plane');
+  return applyVesselSpriteOffset(plane.bearing - map.getBearing(), plane.mode || 'plane');
 }
 
 export function updateCinematicActors(map, scene, ms, {
-  planeRoot, planeVisual, arrivalRoot, arrivalName
+  planeRoot, planeVisual, arrivalRoot, arrivalName, vehicleImages
 }) {
   const aircraft = scene.planeAt(ms);
   if (!aircraft || !planeRoot || !planeVisual) {
@@ -42,8 +42,13 @@ export function updateCinematicActors(map, scene, ms, {
       show(planeRoot, false);
     } else {
       show(planeRoot, true);
-      // Anchor the CENTRE of the existing v9 PNG directly to the route point.
+      // Keep the vehicle's center on the projected geographic route point.
       atPoint(planeRoot, projected);
+      const mode = aircraft.mode || 'plane';
+      if (vehicleImages?.[mode] && planeVisual.dataset.mode !== mode) {
+        planeVisual.src = vehicleImages[mode];
+        planeVisual.dataset.mode = mode;
+      }
       const rotation = projectedAircraftHeading(map, aircraft);
       planeVisual.style.transform = 'rotate(' + rotation.toFixed(3) + 'deg) ' +
         'perspective(900px) rotateX(' + aircraft.pitchDegrees.toFixed(1) +

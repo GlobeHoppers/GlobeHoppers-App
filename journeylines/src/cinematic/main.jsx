@@ -3,337 +3,347 @@ import { createRoot } from 'react-dom/client';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { PlaybackEngine } from '../utils/playbackEngine.js';
-import { buildCinematicScene } from './scene.js';
 import { demoStops } from './demoStops.js';
-import { installCinematicLayers, updateCinematicRoute } from './mapLayers.js';
+import { createHistoryPlaylist, createEightStopPlaylist } from './historyPlaylist.js';
+import tripHistory from '../data/trips.json';
+import locations from '../data/locations.json';
+import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
-import airplaneBluePng from '../Icons/Airplanes/Airplane - Blue.png?url';
+import { createImageryPreflight } from './imageryPreflight.js';
 import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
   installCinematicEarth, setCinematicEarthPreset, getCinematicEarthState } from './earthStyles.js';
+import airplanePng from '../Icons/Airplanes/Airplane - Blue.png?url';
+import carPng from '../Icons/Cars/Car - Blue.png?url';
+import boatPng from '../Icons/Boats/Boat - Blue.png?url';
+import trainPng from '../Icons/Trains/Train - Blue.png?url';
 import './cinematic.css';
 
-const scene = buildCinematicScene(demoStops);
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
 const query = new URLSearchParams(window.location.search);
+const DEMO_MODE = query.get('demo') === '1';
 const CAPTURE_MODE = query.get('capture') === '1';
 const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v1';
-function initialEarthPreset() {
-  const requested = query.get('map');
-  if (validEarthPreset(requested)) return requested;
-  try {
-    const saved = window.localStorage.getItem(MAP_STORAGE_KEY);
-    if (validEarthPreset(saved)) return saved;
-  } catch { /* Storage is optional in kiosk/private-browser mode. */ }
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
+const VEHICLE_IMAGES = { plane: airplanePng, drive: carPng, boat: boatPng, train: trainPng };
+const playlist = DEMO_MODE ? createEightStopPlaylist(demoStops) :
+  createHistoryPlaylist(tripHistory, locations);
+const warmup = createImageryPreflight();
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const formatClock = ms => {
+  const seconds=Math.max(0,Math.floor(ms/1000));
+  const hours=Math.floor(seconds/3600);
+  const minutes=Math.floor(seconds%3600/60);
+  const tail=String(seconds%60).padStart(2,'0');
+  return hours ? hours+':'+String(minutes).padStart(2,'0')+':'+tail :
+    String(minutes).padStart(2,'0')+':'+tail;
+};
+function initialPreset() {
+  const requested=query.get('map');
+  if(validEarthPreset(requested))return requested;
+  try{const saved=localStorage.getItem(MAP_STORAGE_KEY);
+    if(validEarthPreset(saved))return saved;}catch{}
   return DEFAULT_EARTH_PRESET;
 }
-const formatClock = ms => {
-  const sec = Math.max(0, Math.floor(ms / 1000));
-  return Math.floor(sec / 60).toString().padStart(2, '0') + ':' +
-    (sec % 60).toString().padStart(2, '0');
-};
-const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-function CinematicApp() {
-  const mapEl = useRef(null);
-  const mapRef = useRef(null);
-  const layersReadyRef = useRef(false);
-  const [mapPreset, setMapPreset] = useState(initialEarthPreset);
-  const mapPresetRef = useRef(mapPreset);
-  const planeRootRef = useRef(null);
-  const planeVisualRef = useRef(null);
-  const arrivalRootRef = useRef(null);
-  const arrivalNameRef = useRef(null);
-  const engineRef = useRef(null);
-  if (!engineRef.current) engineRef.current = new PlaybackEngine();
-  const currentMsRef = useRef(0);
-  const lastRenderedMsRef = useRef(-Infinity);
-  const lastRenderedSegmentRef = useRef('');
-  const lastUiFrameRef = useRef(0);
-  const [screen, setScreen] = useState({ playing: false, ms: 0, fps: 60, quality: 'high' });
-  const [speed, setSpeed] = useState(1);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState('');
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
+function CinematicApp(){
+  const mapContainer=useRef(null);
+  const mapRef=useRef(null);
+  const layersReady=useRef(false);
+  const planeRef=useRef(null),planeImageRef=useRef(null);
+  const arrivalRef=useRef(null),arrivalNameRef=useRef(null);
+  const engineRef=useRef(null);
+  if(!engineRef.current)engineRef.current=new PlaybackEngine();
+  const elapsedRef=useRef(0);
+  const routeUpdatedRef=useRef(-Infinity);
+  const routeSegmentRef=useRef('');
+  const previousTripRef=useRef(-1);
+  const uiRef=useRef(0);
+  const gateRef=useRef({key:null,active:false,token:0});
+  const [display,setDisplay]=useState({playing:false,ms:0,fps:60,quality:'high'});
+  const [speed,setSpeed]=useState(1);
+  const [mapPreset,setMapPreset]=useState(initialPreset);
+  const presetRef=useRef(mapPreset);
+  const [ready,setReady]=useState(false);
+  const [error,setError]=useState('');
+  const [diagnostics,setDiagnostics]=useState(false);
+  const [warming,setWarming]=useState(false);
 
-  const renderAt = useCallback((ms, force = false) => {
-    const map = mapRef.current;
-    // Tile requests may still be outstanding after scene layer initialization.
-    // Rendering must not freeze just because the style is temporarily busy.
-    if (!map || !layersReadyRef.current) return scene.sample(ms);
-    const pose = scene.sample(ms);
-    // One camera timestamp drives both map projection and the airplane overlay.
-    map.jumpTo({ center: pose.center, zoom: pose.zoom,
-      pitch: pose.pitch, bearing: pose.bearing });
-    updateCinematicActors(map, scene, ms, {
-      planeRoot: planeRootRef.current,
-      planeVisual: planeVisualRef.current,
-      arrivalRoot: arrivalRootRef.current,
-      arrivalName: arrivalNameRef.current
+  const updateAt=useCallback((ms,force=false)=>{
+    const clip=playlist.locate(ms),pose=clip.pose;
+    const map=mapRef.current;
+    if(!map||!layersReady.current)return pose;
+    // v9 clock owns camera and vehicle together, independent from GeoJSON cadence.
+    map.jumpTo({center:pose.center,zoom:pose.zoom,pitch:pose.pitch,bearing:pose.bearing});
+    updateCinematicActors(map,playlist,ms,{
+      planeRoot:planeRef.current,planeVisual:planeImageRef.current,
+      arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
+      vehicleImages:VEHICLE_IMAGES
     });
-    // Heavy GeoJSON source writes remain separate from the visual aircraft.
-    // During close zooms the aircraft still runs at full display refresh.
-    if (force || Math.abs(ms - lastRenderedMsRef.current) >= 65 ||
-        pose.segmentType !== lastRenderedSegmentRef.current) {
-      updateCinematicRoute(map, scene, ms);
-      lastRenderedMsRef.current = ms;
-      lastRenderedSegmentRef.current = pose.segmentType;
+    if(force||Math.abs(ms-routeUpdatedRef.current)>=65||
+       pose.segmentType!==routeSegmentRef.current){
+      if(clip.kind==='trip')updateCinematicRoute(map,clip.scene,clip.localMs);
+      else clearCinematicRoute(map);
+      routeUpdatedRef.current=ms;routeSegmentRef.current=pose.segmentType;
     }
     return pose;
-  }, []);
+  },[]);
 
-  useEffect(() => {
+  useEffect(()=>{
     let map;
-    try {
-      map = new maplibregl.Map({
-        container: mapEl.current,
-        style: MAP_STYLE,
-        projection: { type: 'globe' },
-        center: [scene.stops[0].lon, scene.stops[0].lat],
-        zoom: 2.25, pitch: 7, bearing: scene.headings[0],
-        minZoom: 1.5, maxZoom: 14, antialias: true,
-        attributionControl: true
+    try{
+      const start=playlist.sample(0);
+      map=new maplibregl.Map({
+        container:mapContainer.current,style:MAP_STYLE,projection:{type:'globe'},
+        center:start.center,zoom:start.zoom,pitch:start.pitch,bearing:start.bearing,
+        minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true
       });
-    } catch (e) {
-      setError('Unable to initialize WebGL. Check browser GPU acceleration.');
-      return;
-    }
-    mapRef.current = map;
-    const cancelForGesture = () => {
-      if (engineRef.current.snapshot().playing) engineRef.current.pause();
-    };
-    map.on('mousedown', cancelForGesture);
-    map.on('touchstart', cancelForGesture);
-    map.on('wheel', cancelForGesture);
-    // When the user pauses and pans the map, keep aircraft/map labels anchored.
-    map.on('move', () => {
-      if (!layersReadyRef.current || engineRef.current.snapshot().playing) return;
-      updateCinematicActors(map, scene, currentMsRef.current, {
-        planeRoot: planeRootRef.current,
-        planeVisual: planeVisualRef.current,
-        arrivalRoot: arrivalRootRef.current,
-        arrivalName: arrivalNameRef.current
+    }catch(e){setError('Unable to initialize WebGL. Check browser GPU acceleration.');return;}
+    mapRef.current=map;
+    const manual=()=>{if(engineRef.current.snapshot().playing)engineRef.current.pause();};
+    map.on('mousedown',manual);map.on('touchstart',manual);map.on('wheel',manual);
+    map.on('move',()=>{
+      if(!layersReady.current||engineRef.current.snapshot().playing)return;
+      updateCinematicActors(map,playlist,elapsedRef.current,{
+        planeRoot:planeRef.current,planeVisual:planeImageRef.current,
+        arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
+        vehicleImages:VEHICLE_IMAGES
       });
     });
-    map.on('load', () => {
-      try {
-        installCinematicEarth(map, mapPresetRef.current);
-        installCinematicLayers(map, scene);
-        layersReadyRef.current = true;
-        renderAt(currentMsRef.current, true);
+    map.on('load',()=>{
+      try{
+        installCinematicEarth(map,presetRef.current);
+        installCinematicLayers(map,playlist.locate(0).scene);
+        layersReady.current=true;
+        updateAt(elapsedRef.current,true);
         setReady(true);
-      } catch (e) {
-        setError('Map layers could not be initialized: ' + (e?.message || String(e)));
+      }catch(e){setError('Unable to initialize cinematic map layers: '+(e?.message||String(e)));}
+    });
+    map.on('error',e=>{
+      if(e.error&&!layersReady.current)setError('Base map could not load. Check your connection.');
+    });
+    return ()=>{layersReady.current=false;mapRef.current=null;map.remove();};
+  },[updateAt]);
+
+  useEffect(()=>{
+    const engine=engineRef.current;
+    const unsubscribe=engine.subscribe(state=>{
+      const ms=clamp(state.progress,0,1)*playlist.totalMs;
+      const clip=playlist.locate(ms);
+      if(clip.index!==previousTripRef.current){
+        previousTripRef.current=clip.index;
+        if(!DEMO_MODE){
+          const compile=()=>playlist.primeNear(ms);
+          if(window.requestIdleCallback)window.requestIdleCallback(compile,{timeout:1500});
+          else window.setTimeout(compile,150);
+        }
+      }
+      if(clip.kind==='trip'&&clip.pose.segmentType==='travel'){
+        const leg=clip.scene.legs[clip.pose.legIndex];
+        const key=clip.entry.id+':'+leg.index+':'+presetRef.current;
+        const job=warmup.schedule(leg.to,presetRef.current);
+        const phase=(clip.localMs-leg.startMs)/leg.durationMs;
+        if(state.playing&&phase>=0.63&&phase<0.79&&
+           job.status==='loading'&&gateRef.current.key!==key){
+          const token=gateRef.current.token+1;
+          gateRef.current={key,active:true,token};
+          engine.pause();setWarming(true);
+          Promise.race([job.promise,new Promise(resolve=>setTimeout(resolve,4500))])
+            .finally(()=>{
+              if(!gateRef.current.active||gateRef.current.token!==token)return;
+              gateRef.current.active=false;setWarming(false);engine.play();
+            });
+          return;
+        }
+      }else if(clip.kind==='trip'){
+        const next=Math.min(clip.scene.stops.length-1,Math.max(1,clip.pose.stopIndex+1));
+        warmup.schedule(clip.scene.stops[next],presetRef.current);
+      }
+      elapsedRef.current=ms;
+      updateAt(ms,!state.playing);
+      const now=performance.now();
+      if(!state.playing||now-uiRef.current>65){
+        uiRef.current=now;
+        setDisplay({playing:state.playing,ms,
+          fps:Math.round(1000/Math.max(1,state.frameMs)),quality:state.quality});
       }
     });
-    map.on('error', event => {
-      if (event.error && !layersReadyRef.current) setError('Map tiles could not be loaded. An internet connection is needed for the default basemap.');
-    });
-    return () => {
-      layersReadyRef.current = false;
-      mapRef.current = null;
-      map.remove();
-    };
-  }, [renderAt]);
+    engine.configure({duration:playlist.totalMs,progress:0});
+    return ()=>{engine.pause();unsubscribe();gateRef.current.active=false;};
+  },[updateAt]);
 
-  useEffect(() => {
-    const clock = engineRef.current;
-    const unsubscribe = clock.subscribe(state => {
-      const ms = clamp(state.progress, 0, 1) * scene.totalMs;
-      currentMsRef.current = ms;
-      renderAt(ms, !state.playing);
-      const now = performance.now();
-      if (!state.playing || now - lastUiFrameRef.current > 45) {
-        lastUiFrameRef.current = now;
-        setScreen({ playing: state.playing, ms,
-          fps: Math.round(1000 / Math.max(1, state.frameMs)),
-          quality: state.quality });
-      }
-    });
-    clock.configure({ duration: scene.totalMs, progress: 0 });
-    return () => { clock.pause(); unsubscribe(); };
-  }, [renderAt]);
-
-  useEffect(() => {
-    const api = Object.freeze({
-      version: 'cinematic-globehoppers.v1',
-      durationMs: scene.totalMs,
-      stopCount: scene.stops.length,
-      seekMs(ms) {
-        const clock = engineRef.current;
-        clock.pause();
-        const normalized = clamp(Number(ms) || 0, 0, scene.totalMs);
-        clock.seek(normalized / scene.totalMs);
-        return scene.sample(normalized);
-      },
-      sampleAtMs(ms) { return scene.sample(ms); },
-      projectAircraftAtMs(ms) {
-        const plane = scene.planeAt(ms);
-        const map = mapRef.current;
-        if (!plane || !map || !layersReadyRef.current) return null;
-        const point = map.project(plane.coordinates);
-        return { x: point.x, y: point.y };
-      },
-      getMapDetails() {
-        return mapRef.current ? getCinematicEarthState(mapRef.current) : null;
-      },
-      setMapPreset(id) {
-        if (!validEarthPreset(id)) return false;
-        const map = mapRef.current;
-        if (map && layersReadyRef.current && !setCinematicEarthPreset(map, id)) return false;
-        mapPresetRef.current = id;
-        setMapPreset(id);
-        try { window.localStorage.setItem(MAP_STORAGE_KEY, id); } catch {}
-        return true;
-      },
-      getPresentationAtMs(ms) {
-        return {
-          visibleStops: scene.visibleStops(ms).map(s => s.id),
-          visibleRouteCount: scene.visibleRoutes(ms).length,
-          plane: scene.planeAt(ms),
-          arrival: scene.arrivalAt(ms)
-        };
-      },
-      getState() { return {
-        elapsedMs: currentMsRef.current, ready: layersReadyRef.current,
-        mapPreset: mapPresetRef.current
-      }; }
-    });
-    window.__CINEMATIC_GLOBEHOPPERS__ = api;
-    return () => { delete window.__CINEMATIC_GLOBEHOPPERS__; };
-  }, []);
-
-  const togglePlay = () => {
-    const clock = engineRef.current;
-    if (clock.snapshot().playing) clock.pause();
-    else {
-      if (clock.snapshot().progress >= 1) clock.stop(0);
-      clock.play();
-    }
+  const cancelGate=()=>{
+    gateRef.current.active=false;
+    gateRef.current.token++;
+    setWarming(false);
   };
-  const seek = ms => engineRef.current.seek(clamp(ms, 0, scene.totalMs) / scene.totalMs);
-  const changeSpeed = value => {
-    const next = Number(value);
-    if (![0.5, 1, 1.5, 2].includes(next)) return;
-    const clock = engineRef.current;
-    const progress = clock.snapshot().progress;
-    clock.configure({ duration: scene.totalMs / next, progress });
+  const seek=ms=>{
+    cancelGate();
+    routeUpdatedRef.current=-Infinity;
+    engineRef.current.seek(clamp(ms,0,playlist.totalMs)/playlist.totalMs);
+  };
+  const choosePreset=id=>{
+    if(!validEarthPreset(id))return;
+    if(mapRef.current&&layersReady.current)setCinematicEarthPreset(mapRef.current,id);
+    presetRef.current=id;setMapPreset(id);
+    try{localStorage.setItem(MAP_STORAGE_KEY,id);}catch{}
+  };
+  const togglePlay=()=>{
+    if(gateRef.current.active){cancelGate();return;}
+    const clock=engineRef.current;
+    if(clock.snapshot().playing)clock.pause();
+    else{if(clock.snapshot().progress>=1)clock.stop(0);clock.play();}
+  };
+  const changeSpeed=value=>{
+    const next=Number(value);
+    if(![.5,1,1.5,2].includes(next))return;
+    const clock=engineRef.current;
+    clock.configure({duration:playlist.totalMs/next,progress:clock.snapshot().progress});
     setSpeed(next);
   };
-  const changeMapPreset = value => {
-    if (!validEarthPreset(value)) return;
-    const map = mapRef.current;
-    if (map && layersReadyRef.current) setCinematicEarthPreset(map, value);
-    mapPresetRef.current = value;
-    setMapPreset(value);
-    try { window.localStorage.setItem(MAP_STORAGE_KEY, value); } catch {}
-  };
-  const pose = scene.sample(screen.ms);
-  const currentStop = pose.segmentType === 'travel'
-    ? scene.stops[pose.legIndex + 1]
-    : scene.stops[pose.stopIndex];
-  const arrival = scene.arrivalAt(screen.ms);
 
+  useEffect(()=>{
+    const api=Object.freeze({
+      version:'cinematic-globehoppers.wp3',
+      durationMs:playlist.totalMs,stopCount:playlist.stopCount,
+      tripCount:playlist.tripCount,legCount:playlist.legCount,
+      seekMs(ms){
+        const time=clamp(Number(ms)||0,0,playlist.totalMs);
+        gateRef.current.active=false;gateRef.current.token++;
+        setWarming(false);
+        engineRef.current.pause();
+        engineRef.current.seek(time/playlist.totalMs);
+        return playlist.sample(time);
+      },
+      sampleAtMs:ms=>playlist.sample(ms),
+      projectAircraftAtMs(ms){
+        const actor=playlist.planeAt(ms),map=mapRef.current;
+        if(!actor||!map||!layersReady.current)return null;
+        const point=map.project(actor.coordinates);return{x:point.x,y:point.y};
+      },
+      getPresentationAtMs(ms){
+        return{visibleStops:playlist.visibleStops(ms).map(s=>s.id),
+          visibleRouteCount:playlist.visibleRoutes(ms).length,
+          plane:playlist.planeAt(ms),arrival:playlist.arrivalAt(ms)};
+      },
+      getMapDetails:()=>mapRef.current?getCinematicEarthState(mapRef.current):null,
+      setMapPreset(id){if(!validEarthPreset(id))return false;choosePreset(id);return true;},
+      getPlaylistDetails(){return{...playlist.stats(),durationMs:playlist.totalMs,
+        tripCount:playlist.tripCount,legCount:playlist.legCount,stopCount:playlist.stopCount,
+        current:playlist.context(elapsedRef.current),preflight:warmup.stats()};},
+      getState(){return{elapsedMs:elapsedRef.current,ready:layersReady.current,
+        mapPreset:presetRef.current,buffering:gateRef.current.active};}
+    });
+    window.__CINEMATIC_GLOBEHOPPERS__=api;
+    return()=>{delete window.__CINEMATIC_GLOBEHOPPERS__;};
+  },[]);
+
+  const pose=playlist.sample(display.ms);
+  const info=playlist.context(display.ms);
+  const currentStop=info.stop;
+  const currentStops=info.stops;
+  const stopTimes=playlist.currentStopTimes(display.ms);
+  const arrival=playlist.arrivalAt(display.ms);
   return (
-    <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}
-      data-map-preset={mapPreset}>
-      <div ref={mapEl} className="cg-map" aria-label="Animated globe showing an eight-stop travel route" />
-      <div className="cg-vignette" aria-hidden="true" />
+    <div className="cg-app" data-capture={CAPTURE_MODE?'true':'false'} data-map-preset={mapPreset}>
+      <div ref={mapContainer} className="cg-map" aria-label="Cinematic globe with chronological travel history"/>
+      <div className="cg-vignette" aria-hidden="true"/>
       <div className="cg-actors" aria-hidden="true">
-        <div className="cg-aircraft" ref={planeRootRef} style={{ visibility: 'hidden' }}>
-          <img ref={planeVisualRef} className="cg-aircraft-img"
-            src={airplaneBluePng} alt="" draggable={false} />
+        <div className="cg-aircraft" ref={planeRef} style={{visibility:'hidden'}}>
+          <img ref={planeImageRef} className="cg-aircraft-img"
+            src={airplanePng} alt="" draggable={false}/>
         </div>
-        <div className="cg-arrival-anchor" ref={arrivalRootRef}
-          style={{ visibility: 'hidden' }}>
+        <div className="cg-arrival-anchor" ref={arrivalRef} style={{visibility:'hidden'}}>
           <div className="cg-arrival-label">
-            <strong ref={arrivalNameRef} className="cg-arrival-place" />
-            <span className="cg-arrival-stem" />
+            <strong ref={arrivalNameRef} className="cg-arrival-place"/>
+            <span className="cg-arrival-stem"/>
           </div>
         </div>
       </div>
-      {!CAPTURE_MODE && (
-        <>
-          <header className="cg-topbar">
-            <div className="cg-brand">
-              <span className="cg-brand-icon" aria-hidden="true">✦</span>
-              <div>
-                <div className="cg-kicker">GLOBEHOPPERS · EXPERIMENTAL VIEWER</div>
-                <h1>Cinematic <span>GlobeHoppers</span></h1>
-              </div>
-            </div>
-            <div className="cg-meta">
-              <span className="cg-dataset">8 stops · demo route</span>
-              <label className="cg-map-selector">
-                <span>Globe</span>
-                <select value={mapPreset} aria-label="Globe appearance"
-                  onChange={e => changeMapPreset(e.target.value)}>
-                  {EARTH_PRESETS.map(preset => (
-                    <option key={preset.id} value={preset.id}>{preset.name}</option>
-                  ))}
-                </select>
-              </label>
-              <button type="button" onClick={() => setShowDiagnostics(v => !v)}
-                aria-pressed={showDiagnostics}>Diagnostics</button>
-            </div>
-          </header>
-          {error && <div className="cg-alert" role="alert">{error}</div>}
-          {!ready && !error && <div className="cg-loading" role="status">Preparing cinematic globe…</div>}
-          <div className={'cg-flyout' + (arrival ? ' is-arriving' : '')} aria-live="off">
-            <div className="cg-flyout-kicker">{pose.segmentType === 'travel' ? 'NOW FLYING TO' : 'EXPLORING'}</div>
-            <div className="cg-flyout-place">{currentStop.name}</div>
-            <div className="cg-flyout-sub">{pose.segmentType === 'travel' ? 'Cinematic flight path' : 'A globe of possibilities'}</div>
+      {warming&&<div className="cg-preloading" role="status">Preparing destination imagery…</div>}
+      {!CAPTURE_MODE&&<>
+        <header className="cg-topbar">
+          <div className="cg-brand">
+            <span className="cg-brand-icon" aria-hidden="true">✦</span>
+            <div><div className="cg-kicker">GLOBEHOPPERS · CINEMATIC VIEWER</div>
+              <h1>Cinematic <span>GlobeHoppers</span></h1></div>
           </div>
-          {showDiagnostics && (
-            <aside className="cg-diagnostics" aria-label="Camera diagnostics">
-              <div>Camera {pose.segmentType}</div>
-              <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
-              <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
-              <div>Aircraft {scene.planeAt(screen.ms) ? 'v9 PNG · route-anchored' : 'hidden'}</div>
-              <div>Visible stops {scene.visibleStops(screen.ms).length} / {scene.stops.length}</div>
-              <div>Frame {screen.fps} FPS · {screen.quality}</div>
-              <div>Clock {Math.round(screen.ms)} ms</div>
-              <div>Map {mapPreset}</div>
-              <div>Imagery {mapPreset === 'midnight' ? 'vector' : 'NASA + Sentinel-2'}</div>
-            </aside>
-          )}
-          <section className="cg-console" aria-label="Cinematic playback controls">
-            <div className="cg-controls">
-              <button className="cg-play" type="button" disabled={!ready}
-                onClick={togglePlay} aria-label={screen.playing ? 'Pause playback' : 'Play cinematic route'}>
-                {screen.playing ? 'Ⅱ' : '▶'}
-              </button>
-              <button className="cg-restart" type="button" disabled={!ready}
-                onClick={() => { engineRef.current.pause(); seek(0); }}
-                aria-label="Restart cinematic route">↺</button>
-              <div className="cg-clock">{formatClock(screen.ms)} <span>/ {formatClock(scene.totalMs)}</span></div>
-              <label className="cg-speed">
-                Speed
-                <select value={speed} onChange={e => changeSpeed(e.target.value)} aria-label="Playback speed">
-                  <option value="0.5">0.5×</option>
-                  <option value="1">1×</option>
-                  <option value="1.5">1.5×</option>
-                  <option value="2">2×</option>
-                </select>
-              </label>
+          <div className="cg-meta">
+            <span className="cg-dataset">{DEMO_MODE?'8 stops · demo route':
+              playlist.tripCount+' trips · '+playlist.legCount+' legs'}</span>
+            <label className="cg-map-selector">
+              <span>Globe</span>
+              <select value={mapPreset} aria-label="Globe appearance"
+                onChange={e=>choosePreset(e.target.value)}>
+                {EARTH_PRESETS.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={()=>setDiagnostics(v=>!v)} aria-pressed={diagnostics}>Diagnostics</button>
+          </div>
+        </header>
+        {error&&<div className="cg-alert" role="alert">{error}</div>}
+        {!ready&&!error&&<div className="cg-loading" role="status">Preparing cinematic globe…</div>}
+        <div className={'cg-flyout'+(arrival?' is-arriving':'')} aria-live="off">
+          <div className="cg-flyout-kicker">
+            {info.kind==='bridge'?'NEXT JOURNEY':pose.segmentType==='travel'?'NOW TRAVELING TO':'EXPLORING'}
+          </div>
+          <div className="cg-flyout-place">{currentStop?.name||'GlobeHoppers'}</div>
+          <div className="cg-flyout-sub">{DEMO_MODE?'Cinematic flight path':info.date+' · '+info.title}</div>
+        </div>
+        {diagnostics&&<aside className="cg-diagnostics" aria-label="Camera diagnostics">
+          <div>Camera {pose.segmentType}</div>
+          <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
+          <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
+          <div>Vehicle {playlist.planeAt(display.ms)?.mode||'hidden'}</div>
+          <div>Trip {info.tripIndex+1} / {playlist.tripCount}</div>
+          <div>Cached scenes {playlist.stats().cachedScenes}</div>
+          <div>Visible stops {playlist.visibleStops(display.ms).length} / {currentStops.length}</div>
+          <div>Frame {display.fps} FPS · {display.quality}</div>
+          <div>Clock {Math.round(display.ms)} ms</div>
+          <div>Map {mapPreset} · Imagery {warming?'preparing':'active'}</div>
+        </aside>}
+        <section className="cg-console" aria-label="Cinematic playback controls">
+          <div className="cg-controls">
+            <button className="cg-play" type="button" disabled={!ready}
+              onClick={togglePlay} aria-label={display.playing?'Pause playback':'Play cinematic route'}>
+              {display.playing?'Ⅱ':'▶'}
+            </button>
+            <button className="cg-restart" type="button" disabled={!ready}
+              onClick={()=>{engineRef.current.pause();seek(0);}}
+              aria-label="Restart cinematic route">↺</button>
+            <div className="cg-clock">{formatClock(display.ms)}
+              <span> / {formatClock(playlist.totalMs)}</span>
             </div>
-            <input className="cg-scrubber" type="range" min="0" max={scene.totalMs}
-              step="25" value={screen.ms} disabled={!ready} aria-label="Seek cinematic playback"
-              onChange={e => seek(Number(e.target.value))} />
-            <div className="cg-stoplist" aria-label="Eight demo stops">
-              {scene.stops.map((stop, index) => (
-                <button key={stop.id} type="button" disabled={!ready}
-                  className={currentStop.id === stop.id ? 'cg-stop is-current' : 'cg-stop'}
-                  onClick={() => { engineRef.current.pause(); seek(scene.stopTimesMs[index]); }}>
-                  <span className="cg-stop-num">{String(index + 1).padStart(2, '0')}</span>
-                  <span>{stop.name}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-          <footer className="cg-footnote">NASA Blue Marble · EOX Sentinel-2 Cloudless 2016 · MapLibre / OpenFreeMap · No Mult.dev calls</footer>
-        </>
-      )}
+            <label className="cg-speed">Speed
+              <select value={speed} aria-label="Playback speed" onChange={e=>changeSpeed(e.target.value)}>
+                <option value=".5">0.5×</option><option value="1">1×</option>
+                <option value="1.5">1.5×</option><option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+          <input className="cg-scrubber" type="range" min="0" max={playlist.totalMs}
+            step="25" value={display.ms} disabled={!ready} aria-label="Seek cinematic playback"
+            onChange={e=>seek(Number(e.target.value))}/>
+          <div className="cg-stoplist" aria-label={DEMO_MODE?'Eight demo stops':'Stops in current trip'}>
+            {currentStops.map((stop,index)=>
+              <button key={stop.id} type="button" disabled={!ready}
+                className={'cg-stop'+(currentStop?.id===stop.id?' is-current':'')}
+                onClick={()=>{engineRef.current.pause();seek(stopTimes[index]??display.ms);}}>
+                <span className="cg-stop-num">{String(index+1).padStart(2,'0')}</span>
+                <span>{stop.name}</span>
+              </button>)}
+          </div>
+          {!DEMO_MODE&&<div className="cg-history-transport">
+            <button type="button" disabled={!ready||info.tripIndex===0}
+              onClick={()=>{engineRef.current.pause();seek(playlist.entries[Math.max(0,info.tripIndex-1)].startMs);}}>
+              Previous trip</button>
+            <span>{info.date} · Trip {info.tripIndex+1} of {playlist.tripCount}</span>
+            <button type="button" disabled={!ready||info.tripIndex>=playlist.entries.length-1}
+              onClick={()=>{engineRef.current.pause();seek(playlist.entries[Math.min(playlist.entries.length-1,info.tripIndex+1)].startMs);}}>
+              Next trip</button>
+          </div>}
+        </section>
+        <footer className="cg-footnote">NASA Blue Marble · EOX Sentinel-2 Cloudless · MapLibre / OpenFreeMap · No Mult.dev calls</footer>
+      </>}
     </div>
   );
 }
-createRoot(document.getElementById('cinematic-root')).render(<CinematicApp />);
+createRoot(document.getElementById('cinematic-root')).render(<CinematicApp/>);

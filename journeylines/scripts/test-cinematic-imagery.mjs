@@ -132,10 +132,10 @@ test('globe imagery automatically crossfades between NASA and satellite near zoo
   installCinematicEarth(map);
   const nasa = map.paint.get('cg-earth-blue-marble:raster-opacity');
   const sentinel = map.paint.get('cg-earth-sentinel:raster-opacity');
-  assert.equal(nasa[0], 'interpolate');
+  assert.equal(nasa, 1);
   assert.equal(sentinel[0], 'interpolate');
-  assert.equal(nasa.at(-1), 0);
+  assert.equal(nasa, 1);
   assert.equal(sentinel.at(-1), 1);
-  assert.ok(nasa.includes(4.7) && nasa.includes(6.35));
+  assert.equal(nasa, 1);
   assert.ok(sentinel.includes(4.75) && sentinel.includes(6.35));
 });

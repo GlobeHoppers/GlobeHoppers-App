@@ -162,3 +162,32 @@ button:disabled { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   .cg-app * { scroll-behavior: auto !important; }
 }
+
+/* WP3: full-history presentation. Scene updates are still single-clock. */
+.cg-history-transport {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 9px; padding-top: 9px;
+  border-top: 1px solid #a4d9e925; color: #b8d2de; font-size: 11px;
+  font-variant-numeric: tabular-nums; text-align: center;
+}
+.cg-history-transport button {
+  flex-shrink: 0; padding: 7px 11px; color: #d8f8ff;
+  background: #ffffff10; border: 1px solid #81acbe40; border-radius: 9px;
+}
+.cg-history-transport button:hover:not(:disabled) { background: #6bc9d728; }
+.cg-history-transport button:disabled { opacity: .4; cursor: default; }
+.cg-preloading {
+  position: absolute; z-index: 9; left: 50%; top: 25%;
+  transform: translateX(-50%);
+  background: #071c29dc; color: #c2fcfa;
+  border: 1px solid #91e1e98c; border-radius: 999px;
+  padding: 11px 18px; font-size: 12px;
+  letter-spacing: .055em; pointer-events: none;
+  backdrop-filter: blur(9px);
+}
+.cg-stoplist { overflow-x: auto; }
+@media (max-width: 760px) {
+  .cg-history-transport { font-size: 10px; gap: 6px; }
+  .cg-history-transport button { padding: 7px; font-size: 10px; }
+  .cg-history-transport span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}

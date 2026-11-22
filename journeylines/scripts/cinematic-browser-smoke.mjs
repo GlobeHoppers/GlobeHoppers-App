@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
-const base = process.env.CINEMATIC_BASE_URL || 'http://127.0.0.1:5173/cinematic/';
+const root = process.env.CINEMATIC_BASE_URL || 'http://127.0.0.1:5173/cinematic/';
+const base = root + '?demo=1';
 const out = process.argv[2] || '/tmp/cinematic-smoke';
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({
@@ -194,7 +195,7 @@ try {
 
 
 
-  await page.goto(base + '?capture=1&map=hybrid', { waitUntil: 'domcontentloaded' });
+  await page.goto(root + '?demo=1&capture=1&map=hybrid', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__CINEMATIC_GLOBEHOPPERS__,
     null, { timeout: 15000 });
   assert.equal(await page.locator('.cg-console').count(), 0, 'capture mode must hide playback UI');
@@ -206,6 +207,30 @@ try {
   await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(13000));
   assert.equal(await page.locator('.cg-actors').count(), 1,
     'cinematic actors remain available for headless video capture');
+
+  // WP3: production-like history mode streams all trips without compiling them all.
+  await page.goto(root+'?map=earth',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__?.getState().ready === true,
+    null,{timeout:50000});
+  const history = await page.evaluate(()=>{
+    const api=window.__CINEMATIC_GLOBEHOPPERS__;
+    const initial=api.getPlaylistDetails();
+    const atStart=api.sampleAtMs(0);
+    api.seekMs(api.durationMs*.73);
+    const later=api.getPlaylistDetails();
+    return {initial,later,durationMs:api.durationMs,
+      tripCount:api.tripCount,legCount:api.legCount,
+      atStart,now:api.getState()};
+  });
+  assert.equal(history.tripCount,178);
+  assert.ok(history.legCount>=385);
+  assert.ok(history.durationMs>30*60*1000);
+  assert.ok(history.initial.cachedScenes<=3&&history.later.cachedScenes<=3);
+  assert.ok(history.later.builds<20,'random seek should not compile the full history');
+  assert.ok(history.now.elapsedMs>history.durationMs*.72);
+  await page.screenshot({path:path.join(out,'cinematic-full-history.png')});
+
   assert.deepEqual(unexpectedHosts, [], 'unexpected Mult.dev requests');
   assert.deepEqual(runtimeErrors, [], 'browser runtime exceptions');
   console.log(JSON.stringify({ status: 'PASS', meta, screenshots: out }, null, 2));

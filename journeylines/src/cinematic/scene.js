@@ -38,7 +38,10 @@ export function normalizeCinematicStops(source) {
       throw new Error('Invalid or duplicate stop at index ' + i);
     }
     ids.add(id);
-    return { id, name: String(stop?.name || id).slice(0, 100), lon, lat };
+    const mode = ['plane','drive','boat','train'].includes(stop?.modeFromPrevious)
+      ? stop.modeFromPrevious : 'plane';
+    return { id, name: String(stop?.name || id).slice(0, 100), lon, lat,
+      modeFromPrevious: i === 0 ? null : mode };
   });
 }
 
@@ -89,6 +92,14 @@ function poseAtStop(stop, heading, preset) {
            pitch: preset.arrivalPitch, bearing: heading };
 }
 
+export function cinematicLegDurationMs(miles, mode = 'plane') {
+  const distance = Number(miles);
+  if (!Number.isFinite(distance) || distance <= 0) throw new Error('Invalid leg distance');
+  const offset = mode === 'drive' ? 1300 : mode === 'boat' ? 1800 :
+    mode === 'train' ? 1000 : 0;
+  return clamp(4400 + 45 * Math.sqrt(distance) + offset, 4600, 8800);
+}
+
 export function buildCinematicScene(rawStops, overrides = {}) {
   const preset = { ...CINEMATIC_PRESET, ...overrides };
   const stops = normalizeCinematicStops(rawStops);
@@ -113,15 +124,17 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const from = stops[index];
     const miles = milesBetween(from, to);
     if (!(miles > 0.001)) throw new Error('Adjacent cinematic stops are indistinguishable.');
-    // This is GlobeHoppers v9's deterministic geometry compiler, not third-party code.
-    const compiled = compilePlaybackLeg({ from, to, mode: 'plane', miles });
-    const path = curveAirRoute(Array.from({ length: compiled.sampleCount }, (_, p) => [
-      Number(compiled.positions[p * 2]),
-      Number(compiled.positions[p * 2 + 1])
-    ]), miles, index);
-    const durationMs = clamp(4400 + 45 * Math.sqrt(miles), 4600, 7700);
+    const mode = to.modeFromPrevious || 'plane';
+    // Reuse v9's compiled geometry; only airborne routes receive a lateral arc.
+    const compiled = compilePlaybackLeg({ from, to, mode, miles });
+    const geometry = Array.from({ length: compiled.sampleCount }, (_, p) => [
+      Number(compiled.positions[p * 2]), Number(compiled.positions[p * 2 + 1])
+    ]);
+    const path = mode === 'plane' ? curveAirRoute(geometry, miles, index) : geometry;
+    const durationMs = cinematicLegDurationMs(miles, mode);
     const cruiseZoom = clamp(6.35 - 0.7 * Math.log2(Math.max(miles, 70) / 70), 2.65, 5.5);
-    return { index, from, to, miles, path, durationMs, cruiseZoom, startMs: 0, endMs: 0 };
+    return { index, from, to, mode, miles, path, durationMs,
+      cruiseZoom: mode === 'plane' ? cruiseZoom : Math.max(5.0, cruiseZoom), startMs: 0, endMs: 0 };
   });
 
   const segments = [];
@@ -219,7 +232,8 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const elapsedFraction = clamp((pose.elapsedMs - leg.startMs) / leg.durationMs, 0, 1);
     const takeoffWindow = 1 - smooth(elapsedFraction / 0.25);
     const landingWindow = smooth((elapsedFraction - 0.70) / 0.30);
-    const pitchDegrees = Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10;
+    const pitchDegrees = leg.mode === 'plane'
+      ? Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10 : 0;
     const endpointBias = Math.max(0, 1 - Math.min(elapsedFraction, 1 - elapsedFraction) / 0.22);
     const takeoffGrow = mix(0.72, 1, smooth(elapsedFraction / 0.085));
     const landingScale = mix(1, 0.78, smooth((elapsedFraction - 0.92) / 0.08));
@@ -227,7 +241,7 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     return { coordinates: coordinate,
       behindCoordinates: a, aheadCoordinates: b,
       bearing, legIndex: leg.index, progress: u,
-      pitchDegrees, scale };
+      mode: leg.mode, pitchDegrees, scale };
   }
 
   /** Arrival timing drives both world-space ripple rings and the on-screen title. */

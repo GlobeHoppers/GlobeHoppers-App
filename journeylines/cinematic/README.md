@@ -104,3 +104,40 @@ The renderer's own code is independently authored; imagery sources have their ow
 ### Explicitly deferred to WP3/WP4
 
 Full trip database integration and multi-trip preloading are not included in WP2. The existing eight demo points remain unchanged. Continuous one-hour exhibition playback, offline caching and MP4 export remain later work packages.
+
+## WP3: Full chronological history + tile preflight
+
+### Full history playback
+
+The default /cinematic/ view now reads the existing repository-backed v9 trip and location snapshot, normalized through tripModel.js. This is **not a direct Supabase query**, and is not a mechanism for bypassing account row-level security. Trip editing and per-account live database sync remain outside this work package.
+
+All valid trips are sorted chronologically. The lightweight manifest stores only stops, modes, dates, durations and offsets. The camera and route positions are compiled on demand using a **3-scene least-recently-used cache**. It prepares current, previous and next trips in idle periods.
+
+Between trips, the view performs a 3.2-second globe-level camera repositioning with a continuous great-circle camera path. This does not invent a flight: route and airplane disappear during the inter-trip transition. The playback clock and timeline remain continuous.
+
+All four recorded leg modes are preserved: plane, drive, boat and train, using existing GlobeHoppers v9 vehicle PNGs and the same route-anchored overlay. The camera director is independent from vehicle selection.
+
+### Dedicated-screen and test modes
+
+- /cinematic/ : full historical playlist (178-trips snapshot when authored).
+- /cinematic/?demo=1 : original isolated 8-stop validation fixture.
+- /cinematic/?map=earth : rich-color natural Earth preset.
+- /cinematic/?capture=1 : UI-free rendering at a deterministic timestamp.
+
+The player exposes window.__CINEMATIC_GLOBEHOPPERS__.getPlaylistDetails() for bounded-cache, timeline and imagery-preflight diagnostics.
+
+### Tile pop-in reduction
+
+The independent imageryPreflight module computes a bounded, small neighborhood of exact future tile URLs around each destination. It uses the browser HTTP cache to request up to 27 tiles from NASA/EOX sources at z5/z7/z8, limited to four concurrent requests per destination and three destination records. It never bulk downloads entire map datasets.
+
+The preflight starts during the previous hold or on travel departure. If the destination request is still in flight at the start of the close approach, the shared playback clock pauses for the preflight or a four-and-a-half-second budget before continuing. User seeking cancels automatic resume. This is a controlled-quality tradeoff: it avoids zooming straight into wholly unrequested imagery but cannot guarantee that **every** tile covering a tilted 1440p/4K viewport is already cached. Tile providers can rate-limit or fail; playback continues rather than freezing indefinitely.
+
+Provider caching is HTTP/browser-dependent. On a full-time dedicated display, we should test observed tile hits and memory pressure and consider a permitted local tile cache before claiming no visible tile pop-in.
+
+### Tests and release boundaries
+
+- npm run test:cinematic includes history-index, chronological ordering, continuous bridge, bounded scene cache, mode preservation and imagery-preflight tests.
+- The Chromium smoke workflow keeps the 8-stop deterministic visual tests via ?demo=1, then opens full history to check the 178-trip playlist, random seeking and bounded cache.
+- Production GlobeHoppers v9 remains unchanged; all changes stay on the Cinematic development branch.
+
+WP4 unattended exhibition and looping, live authenticated trip snapshots and WP5 MP4 export remain separate work.
