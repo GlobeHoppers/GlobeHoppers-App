@@ -1,0 +1,10 @@
+{
+  "schema": "globehoppers.viewer-routes.v1",
+  "sourceSha256": "5ff03f1090864cf1db60dd092e3cebac0c4d76da4fab845e0a510befc663745e",
+  "routeCount": 401,
+  "legCount": 401,
+  "geometryPoints": 155309,
+  "asset": "route-details.json",
+  "bytes": 3811380,
+  "sha256": "42c7bebef73ceb151c1c85360fcc72405694c343d9f5253b75fa202adc03f2dc"
+}

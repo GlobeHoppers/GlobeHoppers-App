@@ -1,0 +1,10 @@
+{
+  "schema": "cinematic-globehoppers.local-earth.v1",
+  "texture": "earth-blue-marble.jpg",
+  "source": "https://portal.nccs.nasa.gov/datashare/g6dev/BMNG/world.200407.3x21600x10800.jpg",
+  "credit": "NASA Earth Observatory — Blue Marble: Next Generation",
+  "originalPublication": "2004",
+  "bytes": 19954211,
+  "quality": "high-resolution",
+  "sha256": "4317b6efe948e854f8bff9d0d6d796fc8c363118de64af52119b548779aecc45"
+}
