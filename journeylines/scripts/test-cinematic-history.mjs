@@ -283,5 +283,4 @@ test('cinematic identity preserves v9 Hopper colors and multi-traveler styles',(
     'repeated corridors are visually separated in the historical archive');
   assert.ok(full.routes.features.some(f=>f.properties.color.toLowerCase()==='#ff4fd8'));
   assert.ok(p.stats().cachedScenes<=3);
-}
 });
