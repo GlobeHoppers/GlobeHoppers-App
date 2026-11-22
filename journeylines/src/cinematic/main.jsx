@@ -633,7 +633,9 @@ function CinematicApp(){
   const pose=playlist.sample(display.ms);
   const info=playlist.context(display.ms);
   const currentStop=info.stop;
-  const currentStops=info.stops;
+  // Shared home-base markers belong to the previous trip's arrival.
+  // Do not show a second stop chip for the next trip's identical departure.
+  const currentStops=info.sharedStart?info.stops.slice(1):info.stops;
   const stopTimes=playlist.currentStopTimes(display.ms);
   const arrival=playlist.arrivalAt(display.ms);
   return (
@@ -714,7 +716,7 @@ function CinematicApp(){
         {diagnostics&&<aside className="cg-diagnostics" aria-label="Camera diagnostics">
           <div>Camera {pose.segmentType}</div>
           <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
-          <div>Bearing {pose.bearing.toFixed(1)}° (north ±45°)</div>
+          <div>Bearing {pose.bearing.toFixed(1)}° (north ±25°)</div>
           <div>Vehicle {playlist.planeAt(display.ms)?.mode||'hidden'}</div>
           <div>Trip {info.tripIndex+1} / {playlist.tripCount}</div>
           <div>Cached scenes {playlist.stats().cachedScenes}</div>

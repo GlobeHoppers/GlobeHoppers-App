@@ -214,3 +214,40 @@ test('Key West reviewed Overseas Highway route retains provider road geometry',(
   assert.deepEqual(historyLine.geometry.coordinates,leg.path,
     'completed-history line matches the detailed route being driven');
 });
+
+
+test('same-place successive trips preserve route records but share one short home-base handoff',()=>{
+  const p=createHistoryPlaylist(trips,locations);
+  const seams=p.entries.flatMap((entry,i)=>entry.sharedStart?[i]:[]);
+  assert.ok(seams.length>=2,'history must contain at least two shared home-base transitions');
+  for(const i of seams.slice(0,8)){
+    const previous=p.entries[i-1],entry=p.entries[i];
+    assert.equal(previous.sharedEnd,true);
+    assert.equal(previous.bridgeDurationMs,380);
+    assert.equal(entry.sceneOverrides.firstHoldMs,0);
+    assert.equal(previous.sceneOverrides.lastHoldMs,0);
+    assert.equal(entry.sceneOverrides.introMs,100);
+    assert.equal(previous.sceneOverrides.outroMs,100);
+    assert.ok(entry.startMs-previous.endMs<500);
+    const atPreviousEnd=p.sample(previous.endMs);
+    const atNextStart=p.sample(entry.startMs);
+    assert.ok(Math.abs(atPreviousEnd.zoom-atNextStart.zoom)<.001);
+    assert.ok(Math.abs(atPreviousEnd.pitch-atNextStart.pitch)<.001);
+    assert.equal(p.locate(previous.endMs).kind,'bridge');
+    assert.equal(p.locate(entry.startMs).kind,'trip');
+    assert.equal(p.currentStopTimes(entry.startMs).length,entry.stops.length-1);
+    assert.ok(p.planeAt(entry.startMs+entry.sceneOverrides.introMs+250),
+      'following trip starts moving immediately after shared home-base');
+  }
+  assert.equal(p.legCount,p.entries.reduce((sum,e)=>sum+e.legCount,0));
+  assert.equal(p.stats().sharedStopSeams,seams.length);
+});
+
+test('unrelated trip boundaries keep globe bridges and opening/closing holds',()=>{
+  const p=createHistoryPlaylist(trips,locations);
+  const i=p.entries.findIndex((entry,j)=>j+1<p.entries.length&&!entry.sharedEnd);
+  assert.ok(i>=0);
+  assert.equal(p.entries[i].bridgeDurationMs,3600);
+  assert.equal(p.entries[i+1].sharedStart,false);
+  assert.ok(p.entries[i+1].durationMs>p.entries[i+1].sceneOverrides.introMs);
+});

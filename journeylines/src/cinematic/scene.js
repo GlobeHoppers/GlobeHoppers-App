@@ -16,6 +16,13 @@ const degrees = r => r * 180 / Math.PI;
 export const CINEMATIC_PRESET = Object.freeze({
   introMs: 1900,
   holdMs: 1750,
+  // Scene-boundary presentation overrides; private trip records are unchanged.
+  firstHoldMs: null,
+  lastHoldMs: null,
+  introZoomStart: 4.25,
+  introPitchStart: 29,
+  outroZoomEnd: 4.35,
+  outroPitchEnd: 30,
   arrivalEffectMs: 1625,
   northLimitDegrees: 25,
   outroMs: 2200,
@@ -173,11 +180,14 @@ export function cinematicLegDurationMs(miles, mode = 'plane') {
   // Surface journeys have many bends. Trying to traverse hundreds of miles
   // in 6–8 seconds creates apparent camera cuts even with a smooth spline.
   // The unattended exhibition is intentionally allowed to be long.
-  if (mode === 'drive' || mode === 'boat' || mode === 'train') {
-    const base=mode==='boat'?8400:mode==='train'?7300:7900;
-    return clamp(base + 350*Math.sqrt(distance),8500,18500);
-  }
-  return clamp(4400 + 45*Math.sqrt(distance),4600,8800);
+  const flight=clamp(4400+45*Math.sqrt(distance),4600,8800);
+  // Surface transport should have a similar *screen* cadence to flights.
+  // The mapped path remains exact; long legs pull the camera back slightly
+  // rather than forcing viewers through a 15–19-second close-up crawl.
+  if(mode==='drive')return clamp(flight*1.13+280,5200,10300);
+  if(mode==='boat')return clamp(flight*1.22+350,5600,11100);
+  if(mode==='train')return clamp(flight*1.11+300,5200,10100);
+  return flight;
 }
 
 export function buildCinematicScene(rawStops, overrides = {}) {
@@ -186,7 +196,13 @@ export function buildCinematicScene(rawStops, overrides = {}) {
   for (const field of ['introMs', 'holdMs', 'outroMs', 'arrivalEffectMs', 'arrivalZoom', 'arrivalPitch', 'cruisingPitch', 'northLimitDegrees']) {
     if (!Number.isFinite(preset[field])) throw new Error('Invalid cinematic setting: ' + field);
   }
-  if (preset.introMs < 100 || preset.outroMs < 100 || preset.holdMs < 0 ||
+  if ((preset.firstHoldMs!==null&&(!Number.isFinite(preset.firstHoldMs)||preset.firstHoldMs<0))||
+      (preset.lastHoldMs!==null&&(!Number.isFinite(preset.lastHoldMs)||preset.lastHoldMs<0))||
+      !Number.isFinite(preset.introZoomStart)||!Number.isFinite(preset.outroZoomEnd)||
+      !Number.isFinite(preset.introPitchStart)||!Number.isFinite(preset.outroPitchEnd)||
+      preset.introZoomStart<0||preset.outroZoomEnd<0||preset.introPitchStart<0||
+      preset.outroPitchEnd<0||preset.introPitchStart>65||preset.outroPitchEnd>65||
+      preset.introMs < 100 || preset.outroMs < 100 || preset.holdMs < 0 ||
       preset.arrivalEffectMs < 100 || preset.arrivalEffectMs > 5000 ||
       preset.northLimitDegrees < 0 || preset.northLimitDegrees > 45 ||
       preset.arrivalZoom < 0 || preset.arrivalZoom > 14 ||
@@ -227,7 +243,11 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     // No repeated deep-orbital zooms. Flights retain regional detail, while
     // surface modes stay close to their reviewed road/water corridors.
     const cruiseZoom = clamp(6.5 - 0.58 * Math.log2(Math.max(miles, 70) / 70), 3.85, 5.75);
-    const surfaceZoom = mode === 'drive' ? 9.0 : mode === 'train' ? 8.8 : 8.35;
+    const distanceZoom=Math.log2(Math.max(40,miles)/40);
+    const surfaceZoom=mode==='boat'?
+      clamp(8.45-.29*distanceZoom,7.2,8.45):
+      mode==='train'?clamp(8.9-.27*distanceZoom,7.5,8.9):
+      clamp(9.0-.26*distanceZoom,7.6,9.0);
     const leg={ index, from, to, mode, miles, path, pathDistance,durationMs,
       cruiseZoom: mode === 'plane' ? cruiseZoom : surfaceZoom,
       geometrySource: reviewedGeometry ? 'v9-reviewed' : 'endpoint-fallback',
@@ -248,13 +268,15 @@ export function buildCinematicScene(rawStops, overrides = {}) {
 
   append('intro', preset.introMs, { stopIndex: 0 });
   stopTimesMs.push(elapsed);
-  append('hold', preset.holdMs, { stopIndex: 0 });
+  append('hold', preset.firstHoldMs ?? preset.holdMs, { stopIndex: 0 });
   for (const leg of legs) {
     const travel = append('travel', leg.durationMs, { legIndex: leg.index });
     leg.startMs = travel.startMs;
     leg.endMs = travel.endMs;
     stopTimesMs.push(elapsed);
-    append('hold', preset.holdMs, { stopIndex: leg.index + 1 });
+    append('hold', leg.index===legs.length-1?
+      (preset.lastHoldMs ?? preset.holdMs):preset.holdMs,
+      { stopIndex: leg.index + 1 });
   }
   append('outro', preset.outroMs, { stopIndex: stops.length - 1 });
   const totalMs = elapsed;
@@ -266,15 +288,15 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const eased = smooth(u);
     if (segment.type === 'intro') {
       const at = poseAtStop(stops[0], headings[0], preset);
-      return { ...at, zoom: mix(4.25, at.zoom, eased),
-               pitch: mix(29, at.pitch, eased), elapsedMs: timeMs,
+      return { ...at, zoom: mix(preset.introZoomStart, at.zoom, eased),
+               pitch: mix(preset.introPitchStart, at.pitch, eased), elapsedMs: timeMs,
                segmentType: 'intro', stopIndex: 0, legIndex: -1, travelProgress: 0 };
     }
     if (segment.type === 'outro') {
       const last = stops.length - 1;
       const at = poseAtStop(stops[last], headings[last], preset);
-      return { ...at, zoom: mix(at.zoom, 4.35, eased),
-               pitch: mix(at.pitch, 30, eased), elapsedMs: timeMs,
+      return { ...at, zoom: mix(at.zoom, preset.outroZoomEnd, eased),
+               pitch: mix(at.pitch, preset.outroPitchEnd, eased), elapsedMs: timeMs,
                segmentType: 'outro', stopIndex: last, legIndex: legs.length - 1, travelProgress: 1 };
     }
     if (segment.type === 'hold') {

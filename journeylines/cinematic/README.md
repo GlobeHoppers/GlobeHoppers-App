@@ -275,3 +275,22 @@ Regression tests specifically cover the Key West road geometry, history accumula
 - The WebGL map tile-cache limit is 520 for Scenic and 1500 for Local;
   no remote tile pyramid is downloaded at build time. Browser regression
   checks both mode-specific budgets and the zoom-triggered regional source.
+
+
+## WP4.5: Flight-paced surface travel and shared home-base visits
+
+- Drive, boat and train legs now use the *airplane's presentation pacing*
+  with modest mode-specific duration factors. Long surface corridors also
+  pull the camera back slightly to prevent high apparent pixel velocities.
+  All routes remain the reviewed provider geometry; travel miles unchanged.
+- Chronological trip indexing detects a shared preceding arrival and next
+  departure within 0.5 miles, or with the same city name within 12 miles.
+  It retains both real trips, their independent route legs and historical
+  bookkeeping, but compresses presentation-only adjacent scene holds to zero,
+  keeps the close-up lens and uses a 380 ms camera-angle handoff rather than
+  a 3.6-second far-zoom bridge. The final trip does not get a fictional
+  shared endpoint.
+- Stop chips for the following trip omit its redundant opening home-base stop.
+  The scene still contains its actual opening point for route calculation.
+  All timing and camera poses remain deterministic under seeking/reverse seeking.
+- Unrelated consecutive trip endpoints preserve the full geographic bridge.

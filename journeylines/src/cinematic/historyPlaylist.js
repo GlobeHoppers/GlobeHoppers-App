@@ -8,7 +8,17 @@ import { CINEMATIC_PRESET, buildCinematicScene, cinematicLegDurationMs } from '.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=x=>{const t=clamp(x,0,1);return t*t*t*(t*(t*6-15)+10);};
 const dlon=(a,b)=>((b-a+540)%360)-180;
-const BRIDGE_MS=3600, MAX_SCENES=3;
+const BRIDGE_MS=3600, SHARED_STOP_BRIDGE_MS=380, MAX_SCENES=3;
+// Same named cities can have subtly different stored coordinates; only join
+// nearby equal-name stops. Coordinates alone must match within half a mile.
+export function samePresentationLocation(a,b){
+  if(!a||!b)return false;
+  const miles=milesBetween(a,b);
+  if(miles<=.5)return true;
+  const norm=x=>String(x||'').trim().toLocaleLowerCase('en-US')
+    .replace(/\\s+/g,' ');
+  return miles<=12&&Boolean(norm(a.name))&&norm(a.name)===norm(b.name);
+}
 const dateKey=t=>String(t.year||0).padStart(4,'0')+'-'+String(t.month||1).padStart(2,'0')+'-'+String(t.day||1).padStart(2,'0');
 
 export function stopsForTrip(trip,locationMap){
@@ -29,7 +39,9 @@ export function stopsForTrip(trip,locationMap){
 }
 
 function durationFor(stops,preset){
-  let total=preset.introMs+preset.outroMs+stops.length*preset.holdMs;
+  let total=preset.introMs+preset.outroMs+
+    (preset.firstHoldMs ?? preset.holdMs)+(preset.lastHoldMs ?? preset.holdMs)+
+    Math.max(0,stops.length-2)*preset.holdMs;
   for(let i=1;i<stops.length;i++)total+=cinematicLegDurationMs(milesBetween(stops[i-1],stops[i]),stops[i].modeFromPrevious);
   return total;
 }
@@ -67,20 +79,33 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   const byId=new Map((Array.isArray(locations)?locations:[]).map(l=>[l.id,l]));
   const source=[...(Array.isArray(trips)?trips:[])].sort((a,b)=>dateKey(a).localeCompare(dateKey(b))||
     String(a.sortKey||'').localeCompare(String(b.sortKey||''))||String(a.id||'').localeCompare(String(b.id||'')));
+  // Pre-index all valid itineraries so home-base seams can be recognized
+  // before assigning durations. No underlying trip, leg, or history is merged.
+  const valid=source.map(trip=>({trip,stops:stopsForTrip(trip,byId)}))
+    .filter(item=>item.stops.length>=2);
+  if(!valid.length)throw Error('No valid trips in history');
   const entries=[];
   let elapsed=0;
-  for(const trip of source){
-    const stops=stopsForTrip(trip,byId);
-    if(stops.length<2)continue;
-    const durationMs=durationFor(stops,preset);
+  for(let i=0;i<valid.length;i++){
+    const {trip,stops}=valid[i];
+    const previous=valid[i-1]?.stops,following=valid[i+1]?.stops;
+    const sharedStart=Boolean(previous&&samePresentationLocation(previous.at(-1),stops[0]));
+    const sharedEnd=Boolean(following&&samePresentationLocation(stops.at(-1),following[0]));
+    const sceneOverrides={
+      ...(sharedStart?{introMs:100,introZoomStart:preset.arrivalZoom,
+        introPitchStart:preset.arrivalPitch,firstHoldMs:0}:{}),
+      ...(sharedEnd?{outroMs:100,outroZoomEnd:preset.arrivalZoom,
+        outroPitchEnd:preset.arrivalPitch,lastHoldMs:0}:{})
+    };
+    const durationMs=durationFor(stops,{...preset,...sceneOverrides});
+    const bridgeDurationMs=i===valid.length-1?0:sharedEnd?SHARED_STOP_BRIDGE_MS:BRIDGE_MS;
     const entry={id:String(trip.id),title:String(trip.label||'Travel memory'),
       date:String(trip.displayDate||dateKey(trip)),stops,
+      sharedStart,sharedEnd,sceneOverrides,bridgeDurationMs,
       legCount:stops.length-1,startMs:elapsed,endMs:elapsed+durationMs,
-      durationMs,bridgeEndMs:elapsed+durationMs+BRIDGE_MS};
-    entries.push(entry); elapsed=entry.bridgeEndMs;
+      durationMs,bridgeEndMs:elapsed+durationMs+bridgeDurationMs};
+    entries.push(entry);elapsed=entry.bridgeEndMs;
   }
-  if(!entries.length)throw Error('No valid trips in history');
-  entries[entries.length-1].bridgeEndMs=entries.at(-1).endMs;
   const totalMs=entries.at(-1).endMs;
   const cache=new Map();
   let builds=0,reviewedLegs=0;
@@ -161,7 +186,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   function sceneFor(index){
     if(!Number.isInteger(index)||index<0||index>=entries.length)return null;
     if(cache.has(index)){const x=cache.get(index);cache.delete(index);cache.set(index,x);return x;}
-    const scene=buildCinematicScene(entries[index].stops,overrides);
+    const scene=buildCinematicScene(entries[index].stops,
+      {...overrides,...entries[index].sceneOverrides});
     if(Math.abs(scene.totalMs-entries[index].durationMs)>.0001)throw Error('Playlist scene timing mismatch');
     builds++;cache.set(index,scene);
     while(cache.size>MAX_SCENES)cache.delete(cache.keys().next().value);
@@ -178,7 +204,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     if(t>=entry.endMs&&index+1<entries.length){
       const a=sceneFor(index),b=sceneFor(index+1);
       return {kind:'bridge',entry,index,scene:null,localMs:a.totalMs,nextEntry:entries[index+1],
-        pose:{...bridgeCamera(a.sample(a.totalMs),b.sample(0),clamp((t-entry.endMs)/BRIDGE_MS,0,1)),elapsedMs:t}};
+        pose:{...bridgeCamera(a.sample(a.totalMs),b.sample(0),
+          clamp((t-entry.endMs)/Math.max(1,entry.bridgeDurationMs),0,1)),elapsedMs:t}};
     }
     const scene=sceneFor(index),localMs=clamp(t-entry.startMs,0,scene.totalMs);
     return {kind:'trip',entry,index,scene,localMs,nextEntry:entries[index+1]||null,pose:scene.sample(localMs)};
@@ -190,6 +217,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     const i=clamp(s.kind==='bridge'?0:pose.segmentType==='travel'?pose.legIndex+1:pose.stopIndex,0,stops.length-1);
     return {tripIndex:s.kind==='bridge'?s.index+1:s.index,tripCount:entries.length,
       tripId:entry.id,title:entry.title,date:entry.date,kind:s.kind,
+      sharedStart:entry.sharedStart,
       stops,stop:stops[i]};
   }
   return {
@@ -197,7 +225,12 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     legCount:entries.reduce((n,e)=>n+e.legCount,0),
     stopCount:entries.reduce((n,e)=>n+e.stops.length,0),
     locate,sceneFor,context,currentStops,hydrateSurfaceRoutes,completedHistory,
-    currentStopTimes:ms=>{const s=locate(ms);return s.scene?s.scene.stopTimesMs.map(t=>t+s.entry.startMs):[];},
+    currentStopTimes:ms=>{
+      const s=locate(ms),entry=s.kind==='bridge'?s.nextEntry:s.entry;
+      const scene=s.scene||sceneFor(indexAt(entry.startMs));
+      const times=scene.stopTimesMs.map(t=>t+entry.startMs);
+      return entry.sharedStart?times.slice(1):times;
+    },
     sample:ms=>locate(ms).pose,
     planeAt:ms=>{const s=locate(ms);return s.scene?.planeAt(s.localMs)||null;},
     arrivalAt:ms=>{const s=locate(ms);return s.scene?.arrivalAt(s.localMs)||null;},
@@ -205,6 +238,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     visibleRoutes:ms=>{const s=locate(ms);return s.scene?.visibleRoutes(s.localMs)||[];},
     primeNear(ms){const i=indexAt(ms);sceneFor(i);if(i+1<entries.length)sceneFor(i+1);if(i>0)sceneFor(i-1);},
     stats:()=>({trips:entries.length,cachedScenes:cache.size,builds,
+      sharedStopSeams:entries.filter(e=>e.sharedStart).length,
       reviewedSurfaceLegs:reviewedLegs,maxCachedScenes:MAX_SCENES})
   };
 }

@@ -108,9 +108,9 @@ test('camera does not jump at the endpoints of a winding road leg',()=>{
 
 test('long winding surface legs are given enough screen time for continuous camera travel',()=>{
   for(const mode of ['boat','drive','train']){
-    assert.ok(cinematicLegDurationMs(200,mode)>12000,
-      mode+' should not race through 200 miles in a few seconds');
-    assert.ok(cinematicLegDurationMs(600,mode)<=18500);
+    assert.ok(cinematicLegDurationMs(200,mode)>5000,
+      mode+' needs several seconds for smooth route-following');
+    assert.ok(cinematicLegDurationMs(600,mode)<=11000);
     assert.ok(cinematicLegDurationMs(600,mode)>cinematicLegDurationMs(20,mode));
   }
   assert.ok(cinematicLegDurationMs(200,'plane')<10000,
@@ -151,4 +151,17 @@ test('surface camera derivatives stay continuous through route knots',()=>{
   const middle=scene.sample(leg.startMs+.5*leg.durationMs);
   assert.ok(Math.abs(quarter.bearing)<=25 && Math.abs(middle.bearing)<=25);
   assert.ok(middle.zoom>quarter.zoom-.5,'close-range dolly is progressive');
+});
+
+
+test('surface modes are now near flight pace without modifying reviewed path geometry',()=>{
+  const miles=200;
+  const plane=cinematicLegDurationMs(miles,'plane');
+  const drive=cinematicLegDurationMs(miles,'drive');
+  const boat=cinematicLegDurationMs(miles,'boat');
+  const train=cinematicLegDurationMs(miles,'train');
+  assert.ok(drive<plane*1.3&&drive>plane,'driving remains cinematic without crawling');
+  assert.ok(boat<plane*1.4&&boat>drive);
+  assert.ok(train<plane*1.3&&train>plane);
+  assert.ok(cinematicLegDurationMs(600,'drive')<8500);
 });
