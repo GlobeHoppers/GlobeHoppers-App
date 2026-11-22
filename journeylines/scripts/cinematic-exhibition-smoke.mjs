@@ -60,12 +60,18 @@ try {
     'fullscreen must be a user-gesture button');
   await page.screenshot({path:path.join(output,'exhibition-controls.png')});
 
+  // Headless screenshot rendering can take longer than the 6.5-second idle
+  // timeout. Wake the controls again just before interacting.
+  await page.mouse.move(417,192);
+  await page.locator('.cg-console').waitFor({state:'visible',timeout:10000});
   await page.getByRole('button',{name:'Pause playback'}).click();
   const paused=await current();
   await page.waitForTimeout(180);
   const still=await current();
   test.ok(Math.abs(still.elapsedMs-paused.elapsedMs)<75,
     'explicit manual pause must not be overridden by exhibition autoplay');
+  await page.mouse.move(422,198);
+  await page.locator('.cg-console').waitFor({state:'visible',timeout:10000});
   await page.getByRole('button',{name:'Play cinematic route'}).click();
 
   // The end-to-beginning wrap is an actual camera trajectory, not a hard cut.
