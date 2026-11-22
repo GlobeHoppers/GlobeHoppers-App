@@ -16,13 +16,14 @@ page.on('pageerror',error=>exceptions.push(error.message));
 const current=()=>page.evaluate(()=>window.__CINEMATIC_GLOBEHOPPERS__.getState());
 
 try {
-  await page.goto(base+'?demo=1&exhibition=1&map=earth&reset=1',
+  await page.goto(base+'?demo=1&exhibition=1&map=local&reset=1',
     {waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForFunction(()=>{
     const api=window.__CINEMATIC_GLOBEHOPPERS__;
     return api?.getState().ready && api.getState().exhibition &&
+      api.getMapDetails()?.localEarth?.ready &&
       api.getExhibitionDetails().enabled && api.getState().elapsedMs>100;
-  },null,{timeout:60000});
+  },null,{timeout:120000});
 
   const initial=await current();
   test.equal(initial.exhibition,true);

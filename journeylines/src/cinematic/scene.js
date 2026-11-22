@@ -55,15 +55,83 @@ function bearingBetween(a, b) {
   return (degrees(Math.atan2(y, x)) + 360) % 360;
 }
 
-function positionAlong(leg, u) {
-  if (u <= 0) return [leg.from.lon, leg.from.lat];
-  if (u >= 1) return [leg.to.lon, leg.to.lat];
-  const points = leg.path;
-  const location = u * (points.length - 1);
-  const i = Math.min(points.length - 2, Math.floor(location));
-  const t = location - i;
-  const a = points[i], b = points[i + 1];
-  return [a[0] + deltaAngle(a[0], b[0]) * t, mix(a[1], b[1], t)];
+// A geometry compiler can return points unevenly spaced by geographic
+// distance. Index-based interpolation made long car/boat journeys surge
+// forward whenever a sparse section was encountered.
+export function pathDistanceIndex(points) {
+  const cumulative=[0];
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i];
+    cumulative.push(cumulative.at(-1)+milesBetween(
+      {lon:a[0],lat:a[1]},{lon:b[0],lat:b[1]}));
+  }
+  return {cumulative,totalMiles:cumulative.at(-1)};
+}
+function positionAtDistance(leg,u) {
+  const points=leg.path;
+  const dist=leg.pathDistance;
+  if(u<=0)return {coordinate:[leg.from.lon,leg.from.lat],index:0};
+  if(u>=1)return {coordinate:[leg.to.lon,leg.to.lat],index:points.length-2};
+  const target=clamp(u,0,1)*dist.totalMiles;
+  const c=dist.cumulative;
+  let lo=0,hi=c.length-1;
+  while(lo<hi){const mid=(lo+hi)>>1;if(c[mid]<target)lo=mid+1;else hi=mid;}
+  const index=Math.max(0,Math.min(points.length-2,lo-1));
+  const span=c[index+1]-c[index];
+  const t=span>1e-10?(target-c[index])/span:0;
+  const a=points[index],b=points[index+1];
+  return {index,coordinate:[a[0]+deltaAngle(a[0],b[0])*t,mix(a[1],b[1],t)]};
+}
+function positionAlong(leg,u){return positionAtDistance(leg,u).coordinate;}
+
+// The director's camera gets its own spatially smoothed time-indexed track.
+// Vehicles always use the exact route instead of this gentle camera spline.
+const CAMERA_KNOTS=121;
+function cameraTrackFor(leg) {
+  if(leg.mode==='plane')return null;
+  const leadMiles=leg.mode==='boat'?3.0:leg.mode==='train'?1.55:1.1;
+  const raw=Array.from({length:CAMERA_KNOTS},(_,i)=>{
+    const progress=smooth(i/(CAMERA_KNOTS-1));
+    const lead=(leadMiles/Math.max(.1,leg.pathDistance.totalMiles))*
+      Math.sin(Math.PI*progress)**2;
+    return positionAlong(leg,clamp(progress+lead,0,1));
+  });
+  return raw.map((point,i)=>{
+    if(i===0||i===CAMERA_KNOTS-1)return point;
+    let x=0,y=0,total=0;
+    for(let k=-3;k<=3;k++){
+      const other=raw[clamp(i+k,0,CAMERA_KNOTS-1)];
+      const w=[1,2,3,5,3,2,1][k+3];
+      x+=deltaAngle(point[0],other[0])*w;
+      y+=(other[1]-point[1])*w;
+      total+=w;
+    }
+    const blend=.72;
+    return [point[0]+blend*x/total,point[1]+blend*y/total];
+  });
+}
+function cameraAt(leg,u) {
+  const knots=leg.cameraTrack;
+  if(!knots)return positionAlong(leg,smooth(u));
+  if(u<=0)return [...knots[0]];
+  if(u>=1)return [...knots.at(-1)];
+  const f=u*(knots.length-1),i=Math.min(knots.length-2,Math.floor(f)),t=f-i;
+  const prev=knots[Math.max(0,i-1)],a=knots[i],b=knots[i+1],
+    next=knots[Math.min(knots.length-1,i+2)];
+  // Clamped cubic Hermite: continuous first derivative at each knot,
+  // without overshooting sharply around hairpins or across the dateline.
+  const x1=deltaAngle(a[0],b[0]),x0=deltaAngle(a[0],prev[0]);
+  const x2=deltaAngle(a[0],next[0]);
+  const y1=b[1]-a[1],y0=prev[1]-a[1],y2=next[1]-a[1];
+  const hermite=(d,m0,m1)=>{
+    const t2=t*t,t3=t2*t;
+    return (2*t3-3*t2+1)*0+(t3-2*t2+t)*m0+
+      (-2*t3+3*t2)*d+(t3-t2)*m1;
+  };
+  const x=hermite(x1,(x1-x0)/2,(x2)/2);
+  const y=hermite(y1,(y1-y0)/2,(y2)/2);
+  return [a[0]+clamp(x,Math.min(0,x1),Math.max(0,x1)),
+    a[1]+clamp(y,Math.min(0,y1),Math.max(0,y1))];
 }
 
 function northBoundBearing(bearing, limit) {
@@ -134,15 +202,18 @@ export function buildCinematicScene(rawStops, overrides = {}) {
       Number(compiled.positions[p * 2]), Number(compiled.positions[p * 2 + 1])
     ]);
     const path = mode === 'plane' ? curveAirRoute(geometry, miles, index) : geometry;
+    const pathDistance=pathDistanceIndex(path);
     const durationMs = cinematicLegDurationMs(miles, mode);
     // No repeated deep-orbital zooms. Flights retain regional detail, while
     // surface modes stay close to their reviewed road/water corridors.
     const cruiseZoom = clamp(6.5 - 0.58 * Math.log2(Math.max(miles, 70) / 70), 3.85, 5.75);
     const surfaceZoom = mode === 'drive' ? 9.0 : mode === 'train' ? 8.8 : 8.35;
-    return { index, from, to, mode, miles, path, durationMs,
+    const leg={ index, from, to, mode, miles, path, pathDistance,durationMs,
       cruiseZoom: mode === 'plane' ? cruiseZoom : surfaceZoom,
       geometrySource: reviewedGeometry ? 'v9-reviewed' : 'endpoint-fallback',
       startMs: 0, endMs: 0 };
+    leg.cameraTrack=cameraTrackFor(leg);
+    return leg;
   });
 
   const segments = [];
@@ -197,8 +268,10 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const arrival = smooth((u - 0.61) / 0.39);
     const highAltitude = departure * (1 - arrival);
     const surface = leg.mode !== 'plane';
-    const pointBefore = positionAlong(leg, clamp(eased - 0.022, 0, 1));
-    const pointAfter = positionAlong(leg, clamp(eased + 0.022, 0, 1));
+    const pointBefore = surface ? cameraAt(leg,clamp(u - .025,0,1)) :
+      positionAlong(leg, clamp(eased - 0.022, 0, 1));
+    const pointAfter = surface ? cameraAt(leg,clamp(u + .025,0,1)) :
+      positionAlong(leg, clamp(eased + 0.022, 0, 1));
     const routeHeading = northBoundBearing(bearingBetween(
       {lon:pointBefore[0],lat:pointBefore[1]},
       {lon:pointAfter[0],lat:pointAfter[1]}),preset.northLimitDegrees);
@@ -209,9 +282,7 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     // A road/boat scene follows the vehicle along the actual supplied route,
     // with a small look-ahead that fades to zero at departure and arrival.
     // The vehicle itself remains anchored to the current route coordinate.
-    const lead = surface ? (leg.mode === 'boat' ? 0.042 : 0.028) *
-      Math.sin(Math.PI * eased) ** 2 : 0;
-    const follow = positionAlong(leg, clamp(eased + lead, 0, 1));
+    const follow = surface ? cameraAt(leg,u) : positionAlong(leg,eased);
     return {
       center: follow,
       zoom: mix(preset.arrivalZoom, leg.cruiseZoom, highAltitude),
@@ -288,7 +359,7 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const leg = legs.find(entry => timeMs >= entry.startMs && timeMs < entry.endMs);
     if (!leg) return { type: 'FeatureCollection', features: [] };
     const u = smooth((timeMs - leg.startMs) / leg.durationMs);
-    const end = Math.min(leg.path.length - 1, Math.floor(u * (leg.path.length - 1)));
+    const end = positionAtDistance(leg,u).index;
     const coordinates = leg.path.slice(0, end + 1);
     if (u > 0 && u < 1) coordinates.push(positionAlong(leg, u));
     return { type: 'FeatureCollection', features: coordinates.length > 1
@@ -302,7 +373,7 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     for (const leg of legs) {
       if (timeMs <= leg.startMs) break;
       const u = timeMs >= leg.endMs ? 1 : smooth((timeMs - leg.startMs) / leg.durationMs);
-      const end = Math.min(leg.path.length - 1, Math.floor(u * (leg.path.length - 1)));
+      const end = positionAtDistance(leg,u).index;
       const coords = leg.path.slice(0, end + 1);
       if (u > 0 && u < 1) coords.push(positionAlong(leg, u));
       if (coords.length < 2) continue;

@@ -10,6 +10,8 @@ on:
       - 'journeylines/scripts/test-cinematic-imagery.mjs'
       - 'journeylines/scripts/test-cinematic-history.mjs'
       - 'journeylines/scripts/test-cinematic-exhibition.mjs'
+      - 'journeylines/scripts/test-cinematic-localearth.mjs'
+      - 'journeylines/scripts/build-cinematic-local-earth.mjs'
       - 'journeylines/package.json'
       - 'journeylines/vite.config.js'
       - '.github/workflows/cinematic-validation.yml'
@@ -44,4 +46,6 @@ jobs:
           test -s dist/index.html
           test -s dist/cinematic/index.html
           test -s dist/data/cinematic/surface-routes.json
+          test -s dist/data/cinematic/earth-blue-marble.jpg
+          test -s dist/data/cinematic/earth-blue-marble.json
           test -s dist/data/v9-viewer/manifest.json

@@ -16,19 +16,23 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1, reducedMotion: 'reduce' });
 const runtimeErrors = [];
 const unexpectedHosts = [];
+const unexpectedLocalImageryRequests=[];
 page.on('pageerror', e => runtimeErrors.push(e.message));
 page.on('request', request => {
   if (/(\.|^)mult\.dev$/.test(new URL(request.url()).hostname)) unexpectedHosts.push(request.url());
+  if (page.url().includes('?demo=1') && !page.url().includes('capture=1') &&
+      /gibs\.earthdata\.nasa\.gov|tiles\.maps\.eox\.at|tiles\.openfreemap\.org/.test(request.url()))
+    unexpectedLocalImageryRequests.push(request.url());
 });
 try {
   await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => !!window.__CINEMATIC_GLOBEHOPPERS__,
     null, { timeout: 15000 });
-  await page.waitForSelector('canvas.maplibregl-canvas', { timeout: 30000 });
+  await page.waitForSelector('canvas.maplibregl-canvas', { timeout: 90000 });
   await page.waitForFunction(() => {
     const play = document.querySelector('.cg-play');
     return play && play.disabled === false;
-  }, null, { timeout: 45000 });
+  }, null, { timeout: 90000 });
 
   const first = await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.getState());
   const meta = await page.evaluate(() => {
@@ -39,14 +43,17 @@ try {
   assert.ok(meta.duration > 20000);
   assert.ok(first.ready);
 
-  // WP2: satellite Earth is default, with both licensed imagery sources installed.
+  // Local Earth is the default: all NASA imagery is compiled and served by us.
   const initialImagery = await page.evaluate(() =>
     window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
-  assert.equal(initialImagery.preset, 'earth');
+  assert.equal(initialImagery.preset, 'local');
   assert.equal(initialImagery.installed, true);
-  assert.deepEqual(initialImagery.activeLayers,
-    ['cg-earth-blue-marble', 'cg-earth-sentinel']);
-  assert.ok(initialImagery.labelLayerCount > 0, 'vector labels should remain available');
+  assert.deepEqual(initialImagery.activeLayers,['cg-earth-local']);
+  assert.equal(initialImagery.labelLayerCount,0,'local Earth requires no remote glyphs');
+  assert.equal(initialImagery.localEarth.ready,true);
+  assert.equal(initialImagery.localEarth.cachedTiles,341);
+  assert.deepEqual(unexpectedLocalImageryRequests,[],
+    'local Earth must not request NASA/EOX/OpenFreeMap tiles at runtime');
 
   await page.screenshot({ path: path.join(out, 'cinematic-initial.png') });
 
@@ -56,7 +63,9 @@ try {
     window.__CINEMATIC_GLOBEHOPPERS__.getState().elapsedMs);
   await page.getByLabel('Globe appearance').selectOption('midnight');
   await page.waitForFunction(() =>
-    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'midnight');
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().ready &&
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails()?.preset === 'midnight',
+    null,{timeout:90000});
   const midnightImagery = await page.evaluate(() =>
     window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
   assert.deepEqual(midnightImagery.activeLayers, []);
@@ -74,6 +83,12 @@ try {
   await page.getByLabel('Globe appearance').selectOption('earth');
   await page.waitForFunction(() =>
     window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'earth');
+  // Switch back across the local/remote renderer boundary while keeping time.
+  await page.getByLabel('Globe appearance').selectOption('local');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().ready &&
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails()?.preset === 'local',
+    null,{timeout:90000});
   const timeAfterStyles = await page.evaluate(() =>
     window.__CINEMATIC_GLOBEHOPPERS__.getState().elapsedMs);
   assert.ok(Math.abs(timeAfterStyles - timeBeforeStyles) < 75,

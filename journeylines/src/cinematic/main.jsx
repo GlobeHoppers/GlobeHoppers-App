@@ -11,6 +11,7 @@ import locations from '../data/locations.json';
 import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
 import { createImageryPreflight } from './imageryPreflight.js';
+import { prepareLocalEarth, getLocalEarthStatus, LOCAL_EARTH_STYLE, localEarthCameraPose } from './localEarth.js';
 import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
   installCinematicEarth, setCinematicEarthPreset, getCinematicEarthState } from './earthStyles.js';
 import airplanePng from '../Icons/Airplanes/Airplane - Blue.png?url';
@@ -61,6 +62,9 @@ const formatClock = ms => {
 function initialPreset() {
   const requested=query.get('map');
   if(validEarthPreset(requested))return requested;
+  // A dedicated screen starts with the self-contained globe regardless of
+  // what someone previously selected in the interactive viewer.
+  if(EXHIBITION_MODE)return 'local';
   try{const saved=localStorage.getItem(MAP_STORAGE_KEY);
     if(validEarthPreset(saved))return saved;}catch{}
   return DEFAULT_EARTH_PRESET;
@@ -97,6 +101,8 @@ function CinematicApp(){
   const [speed,setSpeed]=useState(1);
   const [mapPreset,setMapPreset]=useState(initialPreset);
   const presetRef=useRef(mapPreset);
+  const styleResumeRef=useRef(false);
+  const [localEarthProgress,setLocalEarthProgress]=useState({ready:false,done:0,total:341});
   const [ready,setReady]=useState(false);
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
@@ -138,7 +144,7 @@ function CinematicApp(){
   },[]);
 
   const updateAt=useCallback((ms,force=false)=>{
-    const clip=playlist.locate(ms),pose=clip.pose;
+    const clip=playlist.locate(ms),pose=localEarthCameraPose(clip.pose,presetRef.current);
     const map=mapRef.current;
     if(!map||!layersReady.current)return pose;
     // v9 clock owns camera and vehicle together, independent from GeoJSON cadence.
@@ -159,7 +165,7 @@ function CinematicApp(){
 
   useEffect(()=>{
     if(!surfaceReady)return;
-    let map;
+    let map,canvas,disposed=false;
     // Rebuilds preserve the exact playback timestamp and don't replace v9's clock.
     const recover=(message)=>{
       if(!EXHIBITION_MODE){setError(message);return;}
@@ -182,10 +188,14 @@ function CinematicApp(){
       },retryMs);
     };
     recoverHandler.current=recover;
+    const initialize=()=>{
+    if(disposed)return;
     try{
-      const start=playlist.sample(elapsedRef.current);
+      const start=localEarthCameraPose(playlist.sample(elapsedRef.current),presetRef.current);
       map=new maplibregl.Map({
-        container:mapContainer.current,style:MAP_STYLE,projection:{type:'globe'},
+        container:mapContainer.current,
+        style:presetRef.current==='local'?LOCAL_EARTH_STYLE:MAP_STYLE,
+        projection:{type:'globe'},
         center:start.center,zoom:start.zoom,pitch:start.pitch,bearing:start.bearing,
         minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
         maxTileCacheSize:80
@@ -195,7 +205,7 @@ function CinematicApp(){
       return;
     }
     mapRef.current=map;
-    const canvas=map.getCanvas();
+    canvas=map.getCanvas();
     const contextLost=event=>{
       event.preventDefault();
       recover('Restoring the globe graphics context');
@@ -230,6 +240,10 @@ function CinematicApp(){
         setError('');
         setRecoveryMessage('');
         recoveryAttempts.current=0;
+        if(styleResumeRef.current && !document.hidden){
+          styleResumeRef.current=false;
+          engineRef.current.play();
+        }
         if(EXHIBITION_MODE&&!document.hidden&&!manuallyPaused.current &&
             (!autoStarted.current||recoveryShouldResume.current||visibilityPaused.current)){
           autoStarted.current=true;
@@ -245,11 +259,29 @@ function CinematicApp(){
       if(e.error&&!layersReady.current)
         recover('Map data unavailable. Retrying when the connection allows.');
     });
+    };
+    if(presetRef.current==='local'){
+      // Decode and prepare the complete Earth before creating the map or
+      // starting the playback clock. No satellite tile requests afterwards.
+      mapAttemptStarted.current=performance.now();
+      const texture=new URL('../data/cinematic/earth-blue-marble.jpg',window.location.href);
+      prepareLocalEarth(maplibregl,texture.toString(),(done,total)=>
+        setLocalEarthProgress({ready:false,done,total}))
+        .then(status=>{
+          if(disposed)return;
+          setLocalEarthProgress({ready:true,done:status.cachedTiles,total:status.totalTiles});
+          initialize();
+        })
+        .catch(e=>{
+          if(!disposed)recover('Unable to prepare local Earth: '+e.message);
+        });
+    }else initialize();
     return ()=>{
-      canvas.removeEventListener('webglcontextlost',contextLost,false);
+      disposed=true;
+      if(canvas)canvas.removeEventListener('webglcontextlost',contextLost,false);
       layersReady.current=false;
       if(mapRef.current===map)mapRef.current=null;
-      try{map.remove();}catch{ /* Context may already be lost. */ }
+      if(map)try{map.remove();}catch{ /* Context may already be lost. */ }
     };
   },[updateAt,mapGeneration,surfaceReady]);
 
@@ -399,6 +431,7 @@ function CinematicApp(){
     const wentOffline=()=>setOffline(true);
     const cameOnline=()=>{
       setOffline(false);
+      if(presetRef.current==='local')return;
       warmup.clear();
       // New MapLibre sources re-request missing tiles. Keep the precise
       // cinematic timestamp and resume only if the viewer was playing.
@@ -475,10 +508,24 @@ function CinematicApp(){
     engineRef.current.seek(clamp(ms,0,playlist.totalMs)/playlist.totalMs);
   };
   const choosePreset=id=>{
-    if(!validEarthPreset(id))return;
-    if(mapRef.current&&layersReady.current)setCinematicEarthPreset(mapRef.current,id);
+    if(!validEarthPreset(id)||id===presetRef.current)return;
+    const switchRenderer=(id==='local')!==(presetRef.current==='local');
+    if(switchRenderer){
+      cancelGate();
+      const clock=engineRef.current;
+      styleResumeRef.current=clock.snapshot().playing;
+      if(styleResumeRef.current)clock.pause();
+      layersReady.current=false;
+      setReady(false);
+    } else if(mapRef.current&&layersReady.current) {
+      setCinematicEarthPreset(mapRef.current,id);
+    }
     presetRef.current=id;setMapPreset(id);
     try{localStorage.setItem(MAP_STORAGE_KEY,id);}catch{}
+    if(switchRenderer) setMapGeneration(value=>{
+      mapGenerationRef.current=value+1;
+      return value+1;
+    });
   };
   const togglePlay=()=>{
     if(gateRef.current.active){cancelGate();manuallyPaused.current=true;return;}
@@ -525,7 +572,10 @@ function CinematicApp(){
           visibleRouteCount:playlist.visibleRoutes(ms).length,
           plane:playlist.planeAt(ms),arrival:playlist.arrivalAt(ms)};
       },
-      getMapDetails:()=>mapRef.current?getCinematicEarthState(mapRef.current):null,
+      getMapDetails:()=>mapRef.current?{
+        ...getCinematicEarthState(mapRef.current),
+        localEarth:getLocalEarthStatus()
+      }:null,
       setMapPreset(id){if(!validEarthPreset(id))return false;choosePreset(id);return true;},
       getExhibitionDetails(){return{
         enabled:EXHIBITION_MODE,loopCount:loopCount.current,
@@ -629,7 +679,11 @@ function CinematicApp(){
           </div>
         </header>
         {error&&<div className="cg-alert" role="alert">{error}</div>}
-        {!ready&&!error&&<div className="cg-loading" role="status">Preparing cinematic globe and reviewed routes…</div>}
+        {!ready&&!error&&<div className="cg-loading" role="status">
+          {presetRef.current==='local'&&localEarthProgress.done>0?
+            'Preparing local Earth '+localEarthProgress.done+'/'+localEarthProgress.total+' tiles…':
+            'Preparing cinematic globe and reviewed routes…'}
+        </div>}
         <div className={'cg-flyout'+(arrival?' is-arriving':'')} aria-live="off">
           <div className="cg-flyout-kicker">
             {info.kind==='bridge'?'NEXT JOURNEY':pose.segmentType==='travel'?'NOW TRAVELING TO':'EXPLORING'}

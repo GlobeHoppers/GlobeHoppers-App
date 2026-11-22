@@ -15,19 +15,24 @@ export const EOX_SENTINEL_2016_TILES =
   'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg';
 
 export const EARTH_PRESETS = Object.freeze([
+  Object.freeze({ id: 'local', name: 'Local Earth', detail: 'Preloaded NASA globe · zero remote map tiles', labels: 0 }),
   Object.freeze({ id: 'earth', name: 'Cinematic Earth', detail: 'Natural globe + detailed satellite', labels: 0.42 }),
   Object.freeze({ id: 'satellite', name: 'Satellite', detail: 'Uncluttered real-world imagery', labels: 0 }),
   Object.freeze({ id: 'hybrid', name: 'Satellite + Labels', detail: 'Imagery with geographic context', labels: 0.9 }),
   Object.freeze({ id: 'midnight', name: 'Midnight', detail: 'Original lightweight blue map', labels: 1 })
 ]);
-export const DEFAULT_EARTH_PRESET = 'earth';
+export const DEFAULT_EARTH_PRESET = 'local';
 export const validEarthPreset = id => EARTH_PRESETS.some(preset => preset.id === id);
 export const normalizedEarthPreset = id => validEarthPreset(id) ? id : DEFAULT_EARTH_PRESET;
-export const activeImageryForPreset = id => normalizedEarthPreset(id) === 'midnight'
-  ? [] : ['cg-earth-blue-marble', 'cg-earth-sentinel'];
+export const activeImageryForPreset = id => {
+  const preset = normalizedEarthPreset(id);
+  return preset==='local' ? ['cg-earth-local'] :
+    preset==='midnight' ? [] : ['cg-earth-blue-marble', 'cg-earth-sentinel'];
+};
 const presetById = Object.fromEntries(EARTH_PRESETS.map(item => [item.id, item]));
 const stateByMap = new WeakMap();
 
+const LOCAL_SOURCE = 'cg-earth-local';
 const NASA_SOURCE = 'cg-earth-blue-marble';
 const SENTINEL_SOURCE = 'cg-earth-sentinel';
 const CREDITS = {
@@ -63,6 +68,19 @@ function setAtmosphere(map, mode) {
 
 export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
   if (stateByMap.has(map)) return setCinematicEarthPreset(map, selected);
+
+  if (selected==='local') {
+    map.addSource(LOCAL_SOURCE,{
+      type:'raster',tiles:['cg-local-earth://{z}/{x}/{y}'],tileSize:256,
+      minzoom:0,maxzoom:4,
+      attribution:'NASA Earth Observatory — Blue Marble: Next Generation'
+    });
+    map.addLayer({id:LOCAL_SOURCE,type:'raster',source:LOCAL_SOURCE,
+      paint:{'raster-opacity':1,'raster-fade-duration':0,
+        'raster-saturation':0.14,'raster-contrast':0.09}});
+    stateByMap.set(map,{labels:[],preset:'local',skySupported:setAtmosphere(map,'local'),kind:'local'});
+    return true;
+  }
 
   const baseLayers = (map.getStyle()?.layers || []).filter(layer => !layer.id.startsWith('cg-'));
   const labelLayers = baseLayers.filter(layer => layer.type === 'symbol')
@@ -102,6 +120,8 @@ export function setCinematicEarthPreset(map, requested) {
   const state = stateByMap.get(map);
   if (!state) return false;
   const preset = normalizedEarthPreset(requested);
+  if (state.kind==='local') return preset==='local';
+  if (preset==='local') return false; // Requires one controlled renderer rebuild.
   const config = presetById[preset];
 
   if (state.preset === preset) return true;
@@ -131,9 +151,10 @@ export function getCinematicEarthState(map) {
   return {
     preset: state?.preset ?? null,
     installed: Boolean(state),
-    sourceIds: state ? [NASA_SOURCE, SENTINEL_SOURCE] : [],
+    sourceIds: state ? (state.kind==='local' ? [LOCAL_SOURCE] : [NASA_SOURCE,SENTINEL_SOURCE]) : [],
     activeLayers: state ? activeImageryForPreset(state.preset) : [],
     skySupported: state?.skySupported ?? false,
-    labelLayerCount: state?.labels.length ?? 0
+    labelLayerCount: state?.labels.length ?? 0,
+    local: state?.kind==='local'
   };
 }

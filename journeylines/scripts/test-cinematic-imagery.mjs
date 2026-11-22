@@ -49,11 +49,12 @@ function mockMap() {
 
 test('all WP2 presets are unique, bounded and have safe defaults', () => {
   assert.deepEqual(EARTH_PRESETS.map(preset => preset.id), [
-    'earth', 'satellite', 'hybrid', 'midnight'
+    'local', 'earth', 'satellite', 'hybrid', 'midnight'
   ]);
-  assert.equal(DEFAULT_EARTH_PRESET, 'earth');
+  assert.equal(DEFAULT_EARTH_PRESET, 'local');
   assert.equal(normalizedEarthPreset('midnight'), 'midnight');
-  assert.equal(normalizedEarthPreset('invalid-id'), 'earth');
+  assert.equal(normalizedEarthPreset('invalid-id'), 'local');
+  assert.deepEqual(activeImageryForPreset('local'), ['cg-earth-local']);
   assert.deepEqual(activeImageryForPreset('midnight'), []);
   assert.deepEqual(activeImageryForPreset('earth'),
     ['cg-earth-blue-marble', 'cg-earth-sentinel']);
@@ -71,7 +72,7 @@ test('public NASA and CC BY 4.0 Sentinel-2 2016 endpoints are explicit and provi
 
 test('install layers above basemap fills, below labels, without replacing the map style', () => {
   const map = mockMap();
-  assert.equal(installCinematicEarth(map), true);
+  assert.equal(installCinematicEarth(map,'earth'), true);
   assert.equal(map.sources.size, 2);
   assert.equal(map.layers.size, 6);
   const nasa = map.sources.get('cg-earth-blue-marble');
@@ -121,15 +122,16 @@ test('invalid presets cannot be injected, installed sources remain idempotent', 
   const map = mockMap();
   assert.equal(setCinematicEarthPreset(map, 'earth'), false);
   installCinematicEarth(map, 'bad');
-  assert.equal(getCinematicEarthState(map).preset, 'earth');
-  assert.equal(installCinematicEarth(map, 'satellite'), true);
-  assert.equal(map.sources.size, 2);
-  assert.equal(map.layers.size, 6);
+  assert.equal(getCinematicEarthState(map).preset, 'local');
+  assert.equal(installCinematicEarth(map, 'satellite'), false,
+    'local-to-remote preset change requires a controlled map rebuild');
+  assert.equal(map.sources.size, 1);
+  assert.equal(map.layers.size, 5);
 });
 
 test('globe imagery automatically crossfades between NASA and satellite near zoom 5-6', () => {
   const map = mockMap();
-  installCinematicEarth(map);
+  installCinematicEarth(map,'earth');
   const nasa = map.paint.get('cg-earth-blue-marble:raster-opacity');
   const sentinel = map.paint.get('cg-earth-sentinel:raster-opacity');
   assert.equal(nasa, 1);
@@ -138,4 +140,18 @@ test('globe imagery automatically crossfades between NASA and satellite near zoo
   assert.equal(sentinel.at(-1), 1);
   assert.equal(nasa, 1);
   assert.ok(sentinel.includes(4.75) && sentinel.includes(6.35));
+});
+
+
+test('local Earth installs one packaged raster source without remote map tiles',()=>{
+  const map=mockMap();
+  assert.equal(installCinematicEarth(map,'local'),true);
+  const source=map.sources.get('cg-earth-local');
+  assert.ok(source);
+  assert.deepEqual(source.tiles,['cg-local-earth://{z}/{x}/{y}']);
+  assert.equal(source.maxzoom,4);
+  assert.equal(map.sources.size,1);
+  assert.equal(map.layouts.size,0);
+  assert.equal(getCinematicEarthState(map).local,true);
+  assert.equal(getCinematicEarthState(map).labelLayerCount,0);
 });

@@ -19,7 +19,7 @@ function tileXY(lon,lat,zoom){
 }
 function tileUrl(base,z,x,y){return base.replace('{z}',String(z)).replace('{x}',String(x)).replace('{y}',String(y));}
 export function destinationTiles(stop,preset='earth'){
-  if(!stop||preset==='midnight')return [];
+  if(!stop||(preset==='midnight'||preset==='local'))return [];
   const urls=new Set();
   const add=(template,z,size)=>{
     const {x,y,n}=tileXY(stop.lon,stop.lat,z);
@@ -42,7 +42,7 @@ export function createImageryPreflight(fetchTile = (url,signal) => fetch(url,
   const jobs=new Map();
   const keyFor=(stop,preset)=>String(stop?.id||'')+'|'+String(preset);
   function schedule(stop,preset='earth'){
-    if(!stop||preset==='midnight')return {status:'ready',promise:Promise.resolve(true)};
+    if(!stop||(preset==='midnight'||preset==='local'))return {status:'ready',promise:Promise.resolve(true)};
     const key=keyFor(stop,preset);
     if(jobs.has(key))return jobs.get(key);
     const urls=destinationTiles(stop,preset);
@@ -70,7 +70,7 @@ export function createImageryPreflight(fetchTile = (url,signal) => fetch(url,
   return {
     schedule,
     status(stop,preset='earth'){
-      if(!stop||preset==='midnight')return 'ready';
+      if(!stop||(preset==='midnight'||preset==='local'))return 'ready';
       return jobs.get(keyFor(stop,preset))?.status||'not-started';
     },
     stats(){return [...jobs.entries()].map(([key,j])=>({key,status:j.status,
