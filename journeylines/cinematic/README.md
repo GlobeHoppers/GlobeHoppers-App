@@ -314,3 +314,18 @@ Regression tests specifically cover the Key West road geometry, history accumula
   imagery packs are distributed.
 - EOX 2016 is available under CC BY 4.0 and its public endpoint asks for
   reasonable traffic and caching. Newer noncommercial years are not used.
+
+
+### Reusing prepared NASA tiles on the next visit
+
+- Planetary imagery preparation now persists the resulting encoded z0–z4
+  tiles as a **versioned IndexedDB record**, or z0–z5 for strict Local Earth.
+  Returning browsers can restore that mosaic without downloading the original
+  19 MiB JPEG or performing CPU-heavy reprojection again.
+- The original NASA JPEG also has a dedicated versioned browser CacheStorage
+  fallback, so even if prepared-tile persistence is unavailable, a repeat
+  visit can avoid redownloading the source atlas.
+- Both caches are optional browser storage, not permanent guarantees.
+  Private browsing, storage-pressure eviction and deployment version changes
+  may trigger a fresh download/reprojection. Neither cache changes the
+  MapLibre single-map single-playback-clock architecture.

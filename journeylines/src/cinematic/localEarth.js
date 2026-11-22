@@ -23,6 +23,10 @@ export const LOCAL_EARTH_STYLE = Object.freeze({
     paint:{'background-color':'#07111e'}}]
 });
 const store = new Map();
+const PYRAMID_DB='gh-cinematic-earth-tiles-v1';
+const PYRAMID_VERSION='hires-8k-v2';
+const ATLAS_HTTP_CACHE='gh-cinematic-nasa-atlas-hires-v2';
+let fromPersistentPyramid=false,fromPersistentAtlas=false;
 let preparePromise = null;
 let protocolRegistered = false;
 const key = (z,x,y) => z+'/'+x+'/'+y;
@@ -31,6 +35,86 @@ export const mercatorRowLatitude = (z,y) => Math.atan(Math.sinh(
   Math.PI*(1-2*y/(2**z*LOCAL_EARTH_TILE_SIZE))))*radToDeg;
 export const localEarthTileURL = (z,x,y) =>
   LOCAL_EARTH_SCHEME+'://'+z+'/'+x+'/'+y;
+
+// Store processed JPEG tiles as a single versioned IndexedDB record. On a
+// subsequent visit, restoring 341 tiles avoids both downloading the NASA JPEG
+// and reprojecting the whole globe on the main thread. Storage is optional.
+function openPyramidDb(){
+  if(typeof indexedDB==='undefined')return Promise.resolve(null);
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(PYRAMID_DB,1);
+    req.onupgradeneeded=()=>req.result.createObjectStore('pyramids');
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+    req.onblocked=()=>reject(Error('Pyramid cache blocked'));
+  });
+}
+async function readPyramidRecord(db,key){
+  return new Promise((resolve,reject)=>{
+    const req=db.transaction('pyramids','readonly').objectStore('pyramids').get(key);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function restorePyramid(targetMaxZoom,onProgress){
+  let db;
+  try{
+    db=await openPyramidDb();
+    if(!db)return false;
+    const candidates=targetMaxZoom===LOCAL_EARTH_MAX_ZOOM?['z5','z4']:['z4','z5'];
+    for(const key of candidates){
+      const record=await readPyramidRecord(db,key);
+      const expected=key==='z5'?LOCAL_EARTH_TILE_COUNT:SCENIC_EARTH_TILE_COUNT;
+      if(record?.version!==PYRAMID_VERSION||!Array.isArray(record.tiles)||
+          record.tiles.length!==expected)continue;
+      const restored=new Map(record.tiles);
+      if(restored.size!==expected||
+          [...restored.values()].some(bytes=>!(bytes instanceof Uint8Array)))
+        continue;
+      store.clear();
+      for(const [name,bytes] of restored)store.set(name,bytes);
+      fromPersistentPyramid=true;
+      onProgress?.(Math.min(expected,targetMaxZoom===5?LOCAL_EARTH_TILE_COUNT:SCENIC_EARTH_TILE_COUNT),
+        targetMaxZoom===5?LOCAL_EARTH_TILE_COUNT:SCENIC_EARTH_TILE_COUNT);
+      return true;
+    }
+  }catch{/* IndexedDB may be blocked or quota-limited. */}
+  finally{db?.close();}
+  return false;
+}
+async function persistPyramid(targetMaxZoom){
+  let db;
+  try{
+    db=await openPyramidDb();
+    if(!db)return;
+    const tiles=[...store].filter(([k])=>Number(k.split('/')[0])<=targetMaxZoom);
+    const expected=targetMaxZoom===5?LOCAL_EARTH_TILE_COUNT:SCENIC_EARTH_TILE_COUNT;
+    if(tiles.length!==expected)return;
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('pyramids','readwrite');
+      tx.objectStore('pyramids').put({version:PYRAMID_VERSION,tiles},
+        'z'+targetMaxZoom);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+      tx.onabort=()=>reject(tx.error);
+    });
+  }catch{/* Performance cache is optional; offline Local Earth still works. */}
+  finally{db?.close();}
+}
+async function fetchPackagedAtlas(url){
+  let cache=null;
+  try{
+    if(globalThis.caches?.open){
+      cache=await globalThis.caches.open(ATLAS_HTTP_CACHE);
+      const stored=await cache.match(url);
+      if(stored?.ok){fromPersistentAtlas=true;return stored;}
+    }
+  }catch{cache=null;}
+  const response=await fetch(url,{cache:'force-cache'});
+  if(response.ok&&cache){
+    try{await cache.put(url,response.clone());}catch{/* Browser may disallow quota. */}
+  }
+  return response;
+}
 
 function encodeJpeg(canvas){
   return new Promise((resolve,reject)=>{
@@ -80,11 +164,21 @@ async function rasterize(bitmap,onProgress,targetMaxZoom){
   onProgress?.(complete,targetCount);
 }
 
+const readLocalEarthProtocol=async params=>{
+  const match=/^cg-local-earth:\/\/(\d+)\/(\d+)\/(\d+)$/.exec(params.url);
+  if(!match)throw Error('Invalid local Earth tile URL');
+  const tile=store.get(key(Number(match[1]),Number(match[2]),Number(match[3])));
+  if(!tile)throw Error('Local Earth tile out of bounds');
+  return {data:tile.slice().buffer};
+};
+
 export function getLocalEarthStatus(preset='local') {
   const total=preset==='scenic'?SCENIC_EARTH_TILE_COUNT:LOCAL_EARTH_TILE_COUNT;
   return {ready:store.size>=total,
     cachedTiles:Math.min(store.size,total),totalTiles:total,
-    residentTiles:store.size,remoteRequestsDuringPlayback:0};
+    residentTiles:store.size,remoteRequestsDuringPlayback:0,
+    reusedPreparedTiles:fromPersistentPyramid,
+    reusedPackagedAtlas:fromPersistentAtlas};
 }
 
 /**
@@ -100,7 +194,17 @@ export async function prepareLocalEarth(maplibregl,url,onProgress,preset='local'
     return prepareLocalEarth(maplibregl,url,onProgress,preset);
   }
   preparePromise=(async()=>{
-    const response=await fetch(url,{cache:'force-cache'});
+    // IndexedDB contains preprojected, encoded tiles from an earlier visit.
+    // Fall back to the locally cached NASA JPEG only for missing zoom levels.
+    if(!store.size)await restorePyramid(targetMaxZoom,onProgress);
+    if(store.size>=targetCount){
+      if(!protocolRegistered){
+        maplibregl.addProtocol(LOCAL_EARTH_SCHEME,readLocalEarthProtocol);
+        protocolRegistered=true;
+      }
+      return getLocalEarthStatus(preset);
+    }
+    const response=await fetchPackagedAtlas(url);
     if(!response.ok)throw Error('Local NASA texture unavailable: HTTP '+response.status);
     const blob=await response.blob();
     if(!blob.type.startsWith('image/') || blob.size<100000)
@@ -116,16 +220,10 @@ export async function prepareLocalEarth(maplibregl,url,onProgress,preset='local'
       await rasterize(bitmap,onProgress,targetMaxZoom);
     } finally {bitmap.close?.();}
     if(!protocolRegistered){
-      maplibregl.addProtocol(LOCAL_EARTH_SCHEME,async params=>{
-        const match=new RegExp('^'+LOCAL_EARTH_SCHEME+':\\/\\/(\\d+)\\/(\\d+)\\/(\\d+)').exec(params.url);
-        if(!match)throw Error('Invalid local Earth tile URL');
-        const tile=store.get(key(Number(match[1]),Number(match[2]),Number(match[3])));
-        if(!tile)throw Error('Local Earth tile out of bounds');
-        // A copy is necessary: a MapLibre worker may transfer the buffer.
-        return {data:tile.slice().buffer};
-      });
+      maplibregl.addProtocol(LOCAL_EARTH_SCHEME,readLocalEarthProtocol);
       protocolRegistered=true;
     }
+    await persistPyramid(targetMaxZoom);
     return getLocalEarthStatus(preset);
   })().catch(error=>{
     store.clear();

@@ -249,5 +249,6 @@ test('unrelated trip boundaries keep globe bridges and opening/closing holds',()
   assert.ok(i>=0);
   assert.equal(p.entries[i].bridgeDurationMs,3600);
   assert.equal(p.entries[i+1].sharedStart,false);
-  assert.ok(p.entries[i+1].durationMs>p.entries[i+1].sceneOverrides.introMs);
+  assert.equal(p.entries[i+1].sceneOverrides.introMs,undefined);
+  assert.ok(p.entries[i+1].durationMs>3500);
 });

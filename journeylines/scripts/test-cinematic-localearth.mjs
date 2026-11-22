@@ -118,7 +118,7 @@ test('long winding surface legs are given enough screen time for continuous came
 });
 
 
-test('scenic preserves close zoom motion and preflights only ten regional tiles',()=>{
+test('scenic preserves close zoom motion and preflights bounded regional tiles',()=>{
   const p={center:[-80.5,25.6],zoom:9,pitch:60,bearing:22};
   const local=localEarthCameraPose(p,'local'),scenic=localEarthCameraPose(p,'scenic');
   assert.ok(scenic.zoom>8.55&&scenic.zoom<8.85);

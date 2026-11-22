@@ -176,3 +176,39 @@ test('scenic regional detail is bounded, hysteretic, and retains global imagery'
   assert.equal(map.layouts.get('cg-earth-regional:visibility'),'none');
   assert.equal(setCinematicEarthPreset(map,'local'),false);
 });
+
+
+test('scenic tile URLs are bounded to the approved 2016 EOX service',async()=>{
+  const {scenicRemoteTileURL}=await import('../src/cinematic/scenicTileCache.js');
+  assert.equal(scenicRemoteTileURL(4,2,6),
+    EOX_SENTINEL_2016_TILES.replace('{z}','4').replace('{x}','2').replace('{y}','6'));
+  assert.throws(()=>scenicRemoteTileURL(9,0,0),/bounds/);
+  assert.throws(()=>scenicRemoteTileURL(4,16,0),/bounds/);
+});
+
+test('regional tile cache reuses JPEG bytes across requests without another network fetch',async()=>{
+  const {loadScenicTile,SCENIC_TILE_CACHE}=await import('../src/cinematic/scenicTileCache.js');
+  const records=new Map();
+  const stored={
+    match:async url=>records.get(url)?.clone()||null,
+    put:async(url,resp)=>{records.set(url,resp.clone());},
+    keys:async()=>[...records.keys()].map(url=>({url})),
+    delete:async request=>records.delete(request.url)
+  };
+  const cacheStorage={open:async name=>{
+    assert.equal(name,SCENIC_TILE_CACHE);return stored;
+  }};
+  let requests=0;
+  const jpeg=new Uint8Array([255,216,255,224,0,1,255,217]);
+  const fetchImpl=async()=>{requests++;return new Response(jpeg,{
+    status:200,headers:{'content-type':'image/jpeg'}
+  });};
+  const url=EOX_SENTINEL_2016_TILES.replace('{z}','4')
+    .replace('{y}','4').replace('{x}','3');
+  const options={cacheStorage,fetchImpl,now:()=>100000000};
+  assert.deepEqual(await loadScenicTile(url,options),jpeg);
+  assert.deepEqual(await loadScenicTile(url,options),jpeg);
+  assert.equal(requests,1,'browser persistent tile should be served without refetch');
+  await assert.rejects(loadScenicTile('https://untrusted.example/4/4/4.jpg',options),
+    /Unapproved/);
+});
