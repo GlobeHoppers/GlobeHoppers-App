@@ -1,0 +1,62 @@
+name: Cinematic GlobeHoppers Browser Smoke (No Deploy)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'journeylines/cinematic/**'
+      - 'journeylines/src/cinematic/**'
+      - 'journeylines/scripts/cinematic-browser-smoke.mjs'
+      - 'journeylines/scripts/cinematic-exhibition-smoke.mjs'
+      - 'journeylines/vite.config.js'
+      - '.github/workflows/cinematic-browser.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: journeylines
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: journeylines/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Playwright for CI only
+        run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.56.1
+      - name: Install headless Chromium and system packages
+        run: npx playwright install chromium --with-deps
+      - name: Smoke test WebGL globe, playback, seek, pause and capture
+        run: |
+          node scripts/build-cinematic-surface-routes.mjs
+          node scripts/build-cinematic-local-earth.mjs
+          npx vite --host 127.0.0.1 > "$RUNNER_TEMP/cinematic-vite.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for n in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:5173/cinematic/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:5173/cinematic/ >/dev/null || {
+            cat "$RUNNER_TEMP/cinematic-vite.log"
+            exit 1
+          }
+          node scripts/cinematic-browser-smoke.mjs "$RUNNER_TEMP/cinematic-browser"
+          node scripts/cinematic-exhibition-smoke.mjs "$RUNNER_TEMP/cinematic-exhibition"
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinematic-globehoppers-wp1-smoke
+          path: |
+            ${{ runner.temp }}/cinematic-browser
+            ${{ runner.temp }}/cinematic-exhibition
+          if-no-files-found: ignore

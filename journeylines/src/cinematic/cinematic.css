@@ -1,0 +1,277 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #f5fcff; background: #06121c; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; overflow: hidden; }
+button, select, input { font: inherit; }
+button { cursor: pointer; }
+.cg-app { position: relative; height: 100dvh; min-height: 480px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #21445c, #07111d 80%); }
+.cg-map, .cg-vignette { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cg-vignette { pointer-events: none; background: linear-gradient(180deg, rgba(4,13,24,.72) 0, transparent 22%, transparent 62%, rgba(3,12,21,.85) 100%); }
+.cg-topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: clamp(18px, 3vw, 40px) clamp(20px, 4vw, 60px); pointer-events: none; }
+.cg-topbar button, .cg-topbar select { pointer-events: auto; }
+.cg-brand { display: flex; align-items: center; gap: 14px; text-shadow: 0 1px 15px #07111e; }
+.cg-brand-icon { display: grid; place-items: center; width: 47px; height: 47px; border: 1px solid #c4eced70; border-radius: 50%; color: #a5eff3; font-size: 24px; box-shadow: 0 0 25px #59e3f122; }
+.cg-kicker, .cg-flyout-kicker { font-size: 10px; letter-spacing: .23em; font-weight: 650; color: #94dfe7; }
+.cg-topbar h1 { font-size: clamp(21px, 2.3vw, 30px); margin: 3px 0 0; letter-spacing: -.04em; line-height: 1.05; font-weight: 500; }
+.cg-topbar h1 span { font-weight: 730; }
+.cg-meta { display: flex; align-items: center; gap: 18px; font-size: 11px; font-weight: 550; letter-spacing: .05em; color: #d7e7ed; }
+.cg-meta button, .cg-restart, .cg-speed select { color: #eef9fe; border: 1px solid #b2dce64a; background: #112636a8; border-radius: 10px; padding: 9px 12px; }
+.cg-meta button:hover, .cg-restart:hover, .cg-stop:hover { background: #1b4453bd; }
+
+/* WP2 map palette. Globe mode is a presentation choice, never a scene reset. */
+.cg-map-selector {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  pointer-events: auto; font-size: 9px; letter-spacing: .16em;
+  text-transform: uppercase; color: #b9e8ee;
+}
+.cg-map-selector select {
+  max-width: 184px; min-width: 150px;
+  color: #eefaff; background: #0e2636df;
+  border: 1px solid #a4d9e958; border-radius: 9px;
+  padding: 9px 24px 9px 11px;
+  font-size: 12px; font-weight: 620; letter-spacing: 0;
+  text-transform: none; cursor: pointer;
+  box-shadow: 0 5px 20px #02101963;
+}
+.cg-map-selector select:hover,
+.cg-map-selector select:focus-visible {
+  outline: 1px solid #96e9f1; outline-offset: 1px;
+}
+.cg-app[data-map-preset="earth"],
+.cg-app[data-map-preset="satellite"],
+.cg-app[data-map-preset="hybrid"] {
+  background: radial-gradient(circle at 54% 45%, #1d2e36 0%, #050c13 65%, #01060b 100%);
+}
+.cg-app[data-map-preset="earth"] .cg-vignette,
+.cg-app[data-map-preset="satellite"] .cg-vignette,
+.cg-app[data-map-preset="hybrid"] .cg-vignette {
+  background: linear-gradient(180deg, rgba(1,8,14,.55) 0%, rgba(2,10,16,0) 23%,
+    rgba(2,10,16,0) 59%, rgba(1,9,15,.81) 100%);
+}
+
+.cg-flyout { position: absolute; top: 34%; left: clamp(20px, 4vw, 60px); max-width: min(470px, 75vw); text-shadow: 0 3px 24px #061422; pointer-events: none; }
+.cg-flyout-place { font-size: clamp(35px, 5vw, 75px); letter-spacing: -.065em; font-weight: 720; line-height: 1.05; margin-top: 5px; }
+.cg-flyout-sub { color: #e0eef5a8; font-size: clamp(12px, 1.25vw, 15px); margin-top: 9px; letter-spacing: .015em; }
+
+/* The aircraft and small map-attached arrival accent are drawn on the
+   compositor at the SAME timestamp as the camera. No CSS travel transitions. */
+.cg-actors { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+.cg-aircraft {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  pointer-events: none; transform: translate3d(0,0,0);
+  will-change: transform;
+}
+/* Identical blue airplane PNG to GlobeHoppers v9, centred on the route.
+   Takeoff/landing are perspective rotations, never screen-space translations. */
+.cg-aircraft-img {
+  position: absolute;
+  display: block;
+  width: 86px; height: 86px;
+  left: -43px; top: -43px;
+  object-fit: contain;
+  transform-origin: 50% 55%;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  filter: drop-shadow(0 8px 5px rgba(0, 0, 0, .38));
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
+}
+.cg-arrival-anchor {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  transform: translate3d(0,0,0); will-change: transform, opacity;
+}
+.cg-arrival-label {
+  position: absolute; left: 0; top: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 12px;
+  transform: translate(-50%, calc(-100% - 30px + var(--cg-arrival-rise, 0px)))
+             scale(var(--cg-arrival-scale, 1));
+  transform-origin: 50% 100%;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+}
+.cg-arrival-place {
+  color: #f8ffff;
+  font-size: clamp(28px, 3.4vw, 43px);
+  line-height: 1.12;
+  font-weight: 715;
+  letter-spacing: -.05em;
+  -webkit-text-stroke: .35px #003244;
+  text-shadow: 0 3px 12px #041d2ee8, 0 0 22px #83eef39d, 0 0 38px #6bdeee71;
+}
+.cg-arrival-label::after {
+  content: '';
+  width: 60%;
+  height: 2px;
+  margin-top: 6px;
+  background: linear-gradient(90deg, transparent, #c3feff, transparent);
+  box-shadow: 0 0 12px #62e4e9;
+}
+.cg-arrival-stem {
+  position: absolute; top: 100%; left: 50%;
+  width: 1px; height: 24px;
+  background: linear-gradient(#c3f4f4ad, #c3f4f400);
+}
+.cg-flyout { transition: opacity 110ms ease; }
+.cg-flyout.is-arriving { opacity: 0; }
+.cg-diagnostics { position: absolute; right: 24px; top: 104px; padding: 13px 16px; border: 1px solid #7ca4b745; border-radius: 13px; background: #061523dc; font-size: 12px; line-height: 1.8; font-variant-numeric: tabular-nums; backdrop-filter: blur(14px); }
+.cg-console { position: absolute; bottom: 47px; left: 50%; transform: translateX(-50%); width: min(1100px, calc(100% - 40px)); padding: 18px 20px 14px; border: 1px solid #83bbc63d; border-radius: 18px; background: linear-gradient(140deg, #0b2234e9, #071929ec); box-shadow: 0 18px 70px #0109159e; backdrop-filter: blur(22px); }
+.cg-controls { display: flex; align-items: center; gap: 14px; }
+.cg-play { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: 50%; background: #b1f0ed; color: #0b2633; font-size: 17px; }
+.cg-play:hover { background: #e1ffff; }
+.cg-restart { width: 41px; height: 41px; flex-shrink: 0; font-size: 24px; padding: 0; }
+button:disabled { opacity: .45; cursor: default; }
+.cg-clock { font-variant-numeric: tabular-nums; letter-spacing: .04em; font-size: 14px; font-weight: 640; margin-left: 4px; }
+.cg-clock span { color: #9bb6c3; font-weight: 430; }
+.cg-speed { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: #bad3db; }
+.cg-speed select { padding: 8px 24px 8px 9px; }
+.cg-scrubber { width: 100%; height: 19px; margin: 8px 0; accent-color: #a1e8ea; cursor: pointer; }
+.cg-stoplist { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.cg-stop { min-width: 0; text-align: left; border: 1px solid transparent; background: #ffffff0a; border-radius: 9px; padding: 9px 7px 11px; color: #cadbe2; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cg-stop.is-current { background: #6ccbd71c; border-color: #85edf057; color: #ecffff; }
+.cg-stop-num { display: block; margin-bottom: 5px; color: #79c5cd; font-size: 10px; letter-spacing: .07em; }
+.cg-footnote { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); white-space: nowrap; text-align: center; font-size: 10px; letter-spacing: .03em; color: #c3d2d4a6; pointer-events: none; }
+.cg-alert, .cg-loading { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); padding: 12px 18px; background: #0a2937e8; border: 1px solid #a1dbe25c; border-radius: 12px; font-size: 13px; z-index: 10; }
+.cg-alert { color: #ffc7bf; border-color: #f7a38d85; }
+.cg-app[data-capture="true"] .cg-vignette { background: linear-gradient(180deg, rgba(3,12,22,.20), transparent 30%, transparent 70%, rgba(3,12,22,.25)); }
+.cg-app .maplibregl-ctrl-attrib { background: #081727b8 !important; color: #b0d1d8 !important; }
+@media (max-width: 760px) {
+  .cg-topbar { padding: 18px; }
+  .cg-brand-icon { width: 35px; height: 35px; font-size: 17px; }
+  .cg-kicker { font-size: 8px; }
+  .cg-topbar h1 { font-size: 20px; }
+  .cg-meta .cg-dataset { display: none; }
+  .cg-meta { gap: 7px; }
+  .cg-map-selector { font-size: 8px; }
+  .cg-map-selector select { min-width: 128px; max-width: 142px; font-size: 11px; padding: 7px 18px 7px 8px; }
+  .cg-flyout { top: 35%; left: 19px; }
+  .cg-flyout-place { font-size: 39px; }
+  .cg-arrival-label { padding: 5px 8px; }
+  .cg-arrival-place { font-size: 27px; }
+  .cg-console { width: calc(100% - 20px); bottom: 30px; padding: 11px; }
+  .cg-stoplist { display: flex; overflow-x: auto; padding-bottom: 5px; }
+  .cg-stop { flex: 0 0 100px; }
+  .cg-footnote { display: none; }
+  .cg-controls { gap: 9px; }
+  .cg-play { width: 38px; height: 38px; }
+  .cg-restart { width: 35px; height: 35px; }
+  .cg-clock { font-size: 12px; }
+  .cg-diagnostics { right: 12px; top: 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-app * { scroll-behavior: auto !important; }
+}
+
+/* WP3: full-history presentation. Scene updates are still single-clock. */
+.cg-history-transport {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 9px; padding-top: 9px;
+  border-top: 1px solid #a4d9e925; color: #b8d2de; font-size: 11px;
+  font-variant-numeric: tabular-nums; text-align: center;
+}
+.cg-history-transport button {
+  flex-shrink: 0; padding: 7px 11px; color: #d8f8ff;
+  background: #ffffff10; border: 1px solid #81acbe40; border-radius: 9px;
+}
+.cg-history-transport button:hover:not(:disabled) { background: #6bc9d728; }
+.cg-history-transport button:disabled { opacity: .4; cursor: default; }
+.cg-preloading {
+  position: absolute; z-index: 9; left: 50%; top: 25%;
+  transform: translateX(-50%);
+  background: #071c29dc; color: #c2fcfa;
+  border: 1px solid #91e1e98c; border-radius: 999px;
+  padding: 11px 18px; font-size: 12px;
+  letter-spacing: .055em; pointer-events: none;
+  backdrop-filter: blur(9px);
+}
+.cg-stoplist { overflow-x: auto; }
+@media (max-width: 760px) {
+  .cg-history-transport { font-size: 10px; gap: 6px; }
+  .cg-history-transport button { padding: 7px; font-size: 10px; }
+  .cg-history-transport span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}
+
+/* WP4: true exhibition presentation. Keep geographic labels and aircraft
+   visible; only the control chrome disappears after user inactivity. */
+.cg-app[data-exhibition="true"] .cg-topbar,
+.cg-app[data-exhibition="true"] .cg-console,
+.cg-app[data-exhibition="true"] .cg-footnote {
+  transition: opacity 240ms ease, visibility 240ms ease;
+}
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-topbar,
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-console,
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-footnote {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.cg-app[data-exhibition="true"][data-controls-visible="false"],
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .maplibregl-canvas {
+  cursor: none !important;
+}
+.cg-app[data-exhibition="true"] .cg-exhibition-progress {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+  z-index: 6; overflow: hidden; background: #0f2535bc;
+  pointer-events: none;
+}
+.cg-exhibition-progress > div {
+  width: 100%; height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #5da9bd, #a6f6ef 70%, #f4e5b9 100%);
+  box-shadow: 0 0 12px #8af1f1bb;
+  will-change: transform;
+}
+.cg-exhibition-status {
+  position: absolute;
+  left: 50%; top: 20px; z-index: 13;
+  transform: translateX(-50%);
+  max-width: min(520px, 90vw);
+  border: 1px solid #8dbcc76c;
+  border-radius: 13px;
+  padding: 11px 16px;
+  background: #071b29e8;
+  text-align: center;
+  color: #e3f8fb;
+  font-size: 12px;
+  letter-spacing: .025em;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+.cg-app[data-exhibition="true"] .cg-flyout {
+  top: 32%;
+  max-width: min(570px, 80vw);
+}
+@media (max-width: 760px) {
+  .cg-app[data-exhibition="true"] .cg-flyout {
+    top: 30%;
+  }
+  .cg-exhibition-status { top: 9px; }
+}
+
+/* Preloaded Local Earth has no remote font/glyph endpoint. Project these
+   small geographic stop labels together with the same camera/vehicle frame. */
+.cg-local-stop-labels { position: absolute; inset: 0; pointer-events: none; }
+.cg-local-stop-label {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  pointer-events: none; will-change: transform;
+}
+.cg-local-stop-label > span {
+  position: absolute; top: 12px; left: 0;
+  transform: translateX(-50%); white-space: nowrap;
+  color: #eff8ff; font: 600 11px/1.2 system-ui, sans-serif;
+  letter-spacing: -.015em;
+  text-shadow: 0 1px 3px #001020, 0 0 10px #000c19,
+    0 -1px 2px #001020;
+  opacity: .91;
+}
+
+/* Completed-trip labels appear only in regional views, behind the active
+   stop names in visual hierarchy. History dots remain visible at all zooms. */
+.cg-local-history-label > span {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: .67;
+  text-shadow: 0 1px 3px #001523,0 0 8px #001523;
+}
