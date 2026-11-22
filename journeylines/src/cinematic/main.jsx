@@ -273,6 +273,10 @@ function CinematicApp(){
       // starting the playback clock. No satellite tile requests afterwards.
       mapAttemptStarted.current=performance.now();
       const texture=new URL('../data/cinematic/earth-blue-marble.jpg',window.location.href);
+      // The previous low-resolution atlas used this same public filename.
+      // Version the request so an exhibition browser never reuses its stale
+      // 1.6 MB cached copy after deployment of the 20 MB high-res texture.
+      texture.searchParams.set('gh-atlas','hires-8k-v2');
       prepareLocalEarth(maplibregl,texture.toString(),(done,total)=>
         setLocalEarthProgress({ready:false,done,total}))
         .then(status=>{
