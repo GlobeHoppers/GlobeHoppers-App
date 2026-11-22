@@ -43,4 +43,5 @@ jobs:
         run: |
           test -s dist/index.html
           test -s dist/cinematic/index.html
+          test -s dist/data/cinematic/surface-routes.json
           test -s dist/data/v9-viewer/manifest.json

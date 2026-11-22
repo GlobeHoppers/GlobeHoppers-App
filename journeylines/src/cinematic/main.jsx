@@ -101,6 +101,8 @@ function CinematicApp(){
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
   const [warming,setWarming]=useState(false);
+  const [surfaceReady,setSurfaceReady]=useState(DEMO_MODE);
+  const [surfaceRoutesCount,setSurfaceRoutesCount]=useState(0);
   const [controlsVisible,setControlsVisible]=useState(!EXHIBITION_MODE);
   const keyboardFocus=useRef(false);
   const [mapGeneration,setMapGeneration]=useState(0);
@@ -108,6 +110,32 @@ function CinematicApp(){
   const [recoveryMessage,setRecoveryMessage]=useState('');
   const [offline,setOffline]=useState(false);
   const [fullscreen,setFullscreen]=useState(false);
+
+  // Load reviewed v9 surface routes once from our own static snapshot.
+  // Do not start the camera with placeholder straight car/boat lines.
+  useEffect(()=>{
+    if(DEMO_MODE)return;
+    const abort=new AbortController();
+    const url=new URL('../data/cinematic/surface-routes.json',window.location.href);
+    fetch(url.toString(),{signal:abort.signal,cache:'force-cache'})
+      .then(response=>{
+        if(!response.ok)throw Error('Surface snapshot HTTP '+response.status);
+        return response.json();
+      })
+      .then(data=>{
+        if(abort.signal.aborted)return;
+        if(data.schema!=='cinematic-globehoppers.surface-routes.v1')
+          throw Error('Unrecognized route snapshot');
+        setSurfaceRoutesCount(playlist.hydrateSurfaceRoutes(data));
+        setSurfaceReady(true);
+      })
+      .catch(error=>{
+        if(abort.signal.aborted)return;
+        console.warn('[Cinematic GlobeHoppers] Using endpoint geometry fallback',error);
+        setSurfaceReady(true);
+      });
+    return()=>abort.abort();
+  },[]);
 
   const updateAt=useCallback((ms,force=false)=>{
     const clip=playlist.locate(ms),pose=clip.pose;
@@ -130,6 +158,7 @@ function CinematicApp(){
   },[]);
 
   useEffect(()=>{
+    if(!surfaceReady)return;
     let map;
     // Rebuilds preserve the exact playback timestamp and don't replace v9's clock.
     const recover=(message)=>{
@@ -222,7 +251,7 @@ function CinematicApp(){
       if(mapRef.current===map)mapRef.current=null;
       try{map.remove();}catch{ /* Context may already be lost. */ }
     };
-  },[updateAt,mapGeneration]);
+  },[updateAt,mapGeneration,surfaceReady]);
 
   useEffect(()=>{
     const engine=engineRef.current;
@@ -237,6 +266,11 @@ function CinematicApp(){
           else window.setTimeout(compile,150);
         }
       }
+      // Warm the lower-zoom backdrop before every between-trip transition.
+      if(clip.kind==='bridge'&&clip.nextEntry)
+        warmup.schedule(clip.nextEntry.stops[0],presetRef.current);
+      if(clip.kind==='trip'&&clip.pose.segmentType==='outro'&&clip.nextEntry)
+        warmup.schedule(clip.nextEntry.stops[0],presetRef.current);
       if(clip.kind==='trip'&&clip.pose.segmentType==='travel'){
         const leg=clip.scene.legs[clip.pose.legIndex];
         const key=clip.entry.id+':'+leg.index+':'+presetRef.current;
@@ -513,7 +547,8 @@ function CinematicApp(){
         clock.play();return true;
       },
       pause(){manuallyPaused.current=true;engineRef.current.pause();return true;},
-      getPlaylistDetails(){return{...playlist.stats(),durationMs:playlist.totalMs,
+      getPlaylistDetails(){return{...playlist.stats(),
+        durationMs:playlist.totalMs,
         tripCount:playlist.tripCount,legCount:playlist.legCount,stopCount:playlist.stopCount,
         current:playlist.context(elapsedRef.current),preflight:warmup.stats()};},
       getState(){return{elapsedMs:elapsedRef.current,ready:layersReady.current,
@@ -594,7 +629,7 @@ function CinematicApp(){
           </div>
         </header>
         {error&&<div className="cg-alert" role="alert">{error}</div>}
-        {!ready&&!error&&<div className="cg-loading" role="status">Preparing cinematic globe…</div>}
+        {!ready&&!error&&<div className="cg-loading" role="status">Preparing cinematic globe and reviewed routes…</div>}
         <div className={'cg-flyout'+(arrival?' is-arriving':'')} aria-live="off">
           <div className="cg-flyout-kicker">
             {info.kind==='bridge'?'NEXT JOURNEY':pose.segmentType==='travel'?'NOW TRAVELING TO':'EXPLORING'}
@@ -609,6 +644,7 @@ function CinematicApp(){
           <div>Vehicle {playlist.planeAt(display.ms)?.mode||'hidden'}</div>
           <div>Trip {info.tripIndex+1} / {playlist.tripCount}</div>
           <div>Cached scenes {playlist.stats().cachedScenes}</div>
+          <div>Reviewed surface routes {playlist.stats().reviewedSurfaceLegs ?? 0}</div>
           <div>Visible stops {playlist.visibleStops(display.ms).length} / {currentStops.length}</div>
           <div>Frame {display.fps} FPS · {display.quality}</div>
           <div>Clock {Math.round(display.ms)} ms</div>

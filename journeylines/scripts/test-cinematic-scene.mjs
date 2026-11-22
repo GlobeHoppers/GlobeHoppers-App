@@ -216,3 +216,45 @@ test('projected aircraft anchor stays exactly on curved flight path for every le
     }
   }
 });
+
+test('cinematic flight camera keeps geography legible instead of deep orbital pullbacks', () => {
+  const scene=buildCinematicScene(pts);
+  assert.ok(scene.sample(0).zoom>=4.2);
+  assert.ok(scene.sample(scene.totalMs).zoom>=4.25);
+  for(const leg of scene.legs){
+    assert.ok(leg.cruiseZoom>=3.85,'long flights should not disappear into deep globe zoom');
+    const m=scene.sample((leg.startMs+leg.endMs)/2);
+    assert.ok(m.zoom>=3.8,'active flight must retain regional geography');
+    assert.ok(m.pitch>=38,'cruise camera should show cinematic terrain perspective');
+    assert.ok(Math.abs(m.bearing)<=45,'north-biased composition remains bounded');
+  }
+});
+
+test('reviewed surface routes drive vehicle and camera on real-route corridors',()=>{
+  const modes=['drive','boat','train'];
+  for(const mode of modes){
+    const scene=buildCinematicScene([
+      {id:'a',name:'Departure',lon:-80,lat:25},
+      {id:'b',name:'Arrival',lon:-78,lat:25,modeFromPrevious:mode,
+        geometryFromPrevious:[[-80,25],[-79.65,26.35],[-78.7,26.65],[-78,25]]}
+    ]);
+    const leg=scene.legs[0];
+    assert.equal(leg.geometrySource,'v9-reviewed');
+    assert.equal(leg.mode,mode);
+    assert.ok(leg.path.length>10);
+    assert.ok(Math.max(...leg.path.map(p=>p[1]))>25.7,
+      'vehicle should follow non-straight supplied surface geometry');
+    const mid=(leg.startMs+leg.endMs)/2;
+    const actor=scene.planeAt(mid),camera=scene.sample(mid);
+    assert.equal(actor.mode,mode);
+    assert.equal(actor.pitchDegrees,0);
+    assert.ok(camera.zoom>=8,'surface camera should stay close to vehicle');
+    assert.ok(camera.pitch>55,'surface camera should look obliquely ahead');
+    assert.ok(Math.hypot(camera.center[0]-actor.coordinates[0],
+      camera.center[1]-actor.coordinates[1])<0.20,'camera follows active surface segment');
+    assert.ok(Math.abs(camera.bearing)<=45);
+    assert.equal(scene.sample(leg.startMs).center[0],leg.from.lon);
+    const atEnd=scene.sample(leg.endMs);
+    assert.ok(Math.abs(atEnd.center[0]-leg.to.lon)<1e-6);
+  }
+});

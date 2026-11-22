@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import trips from '../src/data/trips.json' with {type:'json'};
 import locations from '../src/data/locations.json' with {type:'json'};
+import details from '../src/data/routeDetails.json' with {type:'json'};
 import { createHistoryPlaylist, createEightStopPlaylist } from '../src/cinematic/historyPlaylist.js';
 const demoStops = locations.slice(0,8).map(item => ({
   id:item.id,name:item.name,lon:item.lon,lat:item.lat
@@ -85,7 +86,7 @@ test('demo mode preserves exactly eight independent stops',()=>{
 test('bounded destination preflight generates limited satellite tiles',()=>{
   const stop={id:'ny',lon:-74.006,lat:40.71};
   const urls=destinationTiles(stop,'earth');
-  assert.ok(urls.length>12 && urls.length<=27);
+  assert.ok(urls.length>12 && urls.length<=28);
   assert.ok(urls.some(url=>url.includes('gibs.earthdata.nasa.gov')));
   assert.ok(urls.some(url=>url.includes('tiles.maps.eox.at')));
   assert.deepEqual(destinationTiles(stop,'midnight'),[]);
@@ -112,4 +113,40 @@ test('preflight observes concurrency limit, results, and failed tile recovery',a
   const broken=createImageryPreflight(async()=>{throw Error('offline');});
   assert.equal(await broken.schedule(stop,'earth').promise,false);
   assert.equal(broken.status(stop,'earth'),'degraded');
+});
+
+
+test('WP3.1 matches reviewed car, boat and train geometry from v9 snapshot',()=>{
+  const player=createHistoryPlaylist(trips,locations);
+  const surface=Object.fromEntries(Object.entries(details.routes).filter(([,row])=>
+    ['drive','boat','train'].includes(row.mode)&&Array.isArray(row.geometry)&&row.geometry.length>1)
+    .map(([key,row])=>[key,{mode:row.mode,geometry:row.geometry}]));
+  const matched=player.hydrateSurfaceRoutes({routes:surface});
+  assert.ok(matched>=65,'most surface legs should reuse v9 reviewed route geometry');
+  assert.ok(player.stats().reviewedSurfaceLegs>=65);
+  const entryIndex=player.entries.findIndex(entry=>entry.stops.some(stop=>
+    stop.modeFromPrevious==='drive' && stop.geometryFromPrevious?.length>2));
+  assert.ok(entryIndex>=0);
+  const scene=player.sceneFor(entryIndex);
+  const leg=scene.legs.find(row=>row.mode==='drive');
+  assert.equal(leg.geometrySource,'v9-reviewed');
+  assert.ok(leg.path.length>50);
+  const ms=player.entries[entryIndex].startMs+(leg.startMs+leg.endMs)/2;
+  const camera=player.sample(ms);
+  const actor=player.planeAt(ms);
+  assert.equal(actor.mode,'drive');
+  assert.ok(camera.zoom>8 && camera.pitch>55);
+  assert.ok(Math.hypot(camera.center[0]-actor.coordinates[0],
+    camera.center[1]-actor.coordinates[1])<0.3);
+  assert.ok(player.stats().cachedScenes<=3);
+});
+
+test('preflight warms the lower-zoom Earth backdrop before close-up tiles',()=>{
+  const urls=destinationTiles({id:'test',lon:-81,lat:25},'earth');
+  assert.ok(urls.some(url=>url.includes('BlueMarble')&&url.includes('/4/')),
+    'regional pullback must have z4 natural Earth tiles');
+  assert.ok(urls.some(url=>url.includes('s2cloudless')&&url.includes('/6/')),
+    'regional satellite zoom must be in the cache');
+  assert.ok(urls.some(url=>url.includes('s2cloudless')&&url.includes('/9/')),
+    'surface-follow close-up needs z9 tiles');
 });

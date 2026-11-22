@@ -28,10 +28,13 @@ export function destinationTiles(stop,preset='earth'){
       urls.add(tileUrl(template,z,(x+col+n)%n,yy));
     }
   };
-  add(NASA_BLUE_MARBLE_TILES,7,1); // 9 fallback tiles at arrival zoom
-  add(EOX_SENTINEL_2016_TILES,7,1); // 9 at destination approach
-  add(EOX_SENTINEL_2016_TILES,8,1); // 9 at close-up arrival
-  return [...urls]; // at most 27; never prefetch a global pyramid
+  // Warm the zoom-OUT background first. The old warmup fetched only z7/z8,
+  // so regional pullbacks exposed uncached low-zoom raster tiles.
+  add(NASA_BLUE_MARBLE_TILES,4,1); // broad Earth backdrop, 9 tiles
+  add(EOX_SENTINEL_2016_TILES,6,1); // regional satellite, 9 tiles
+  add(EOX_SENTINEL_2016_TILES,8,1); // arrival imagery, 9 tiles
+  add(EOX_SENTINEL_2016_TILES,9,0); // surface-follow center, 1 tile
+  return [...urls]; // max 28, never prefetch a global tile pyramid
 }
 
 export function createImageryPreflight(fetchTile = (url,signal) => fetch(url,

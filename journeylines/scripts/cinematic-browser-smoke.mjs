@@ -230,6 +230,8 @@ try {
       atStart,now:api.getState()};
   });
   assert.equal(history.tripCount,178);
+  assert.ok(history.initial.reviewedSurfaceLegs>=65,
+    'full history must load the reviewed v9 surface-route geometry before starting');
   assert.ok(history.legCount>=385);
   assert.ok(history.durationMs>30*60*1000);
   assert.ok(history.initial.cachedScenes<=3&&history.later.cachedScenes<=3);

@@ -8,7 +8,7 @@ import { CINEMATIC_PRESET, buildCinematicScene, cinematicLegDurationMs } from '.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=x=>{const t=clamp(x,0,1);return t*t*t*(t*(t*6-15)+10);};
 const dlon=(a,b)=>((b-a+540)%360)-180;
-const BRIDGE_MS=3200, MAX_SCENES=3;
+const BRIDGE_MS=3600, MAX_SCENES=3;
 const dateKey=t=>String(t.year||0).padStart(4,'0')+'-'+String(t.month||1).padStart(2,'0')+'-'+String(t.day||1).padStart(2,'0');
 
 export function stopsForTrip(trip,locationMap){
@@ -18,7 +18,8 @@ export function stopsForTrip(trip,locationMap){
     if(!location||!Number.isFinite(Number(location.lat))||!Number.isFinite(Number(location.lon))) return null;
     return {id:p.pointId||String(trip.id)+'-'+i,name:String(location.name||p.locationId),
       lat:Number(location.lat),lon:Number(location.lon),
-      modeFromPrevious:i ? (p.modeFromPrevious||'plane') : null};
+      modeFromPrevious:i ? (p.modeFromPrevious||'plane') : null,
+      legIdFromPrevious:i ? (p.legId||null) : null};
   }).filter(Boolean);
   const result=[];
   for(const item of raw){
@@ -49,7 +50,7 @@ function globeBetween(a,b,u){
 }
 
 function bridgeCamera(a,b,u){
-  const t=smooth(u), far=Math.min(2.25,a.zoom,b.zoom);
+  const t=smooth(u), far=Math.min(4.25,a.zoom,b.zoom);
   return {center:globeBetween(a.center,b.center,t),
     zoom:u<.5?a.zoom+(far-a.zoom)*smooth(u*2):far+(b.zoom-far)*smooth((u-.5)*2),
     pitch:a.pitch+(b.pitch-a.pitch)*t,
@@ -78,7 +79,27 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   entries[entries.length-1].bridgeEndMs=entries.at(-1).endMs;
   const totalMs=entries.at(-1).endMs;
   const cache=new Map();
-  let builds=0;
+  let builds=0,reviewedLegs=0;
+  function hydrateSurfaceRoutes(payload) {
+    const routes=payload?.routes;
+    if(!routes || typeof routes!=='object')return 0;
+    let matched=0;
+    for(const entry of entries){
+      for(const stop of entry.stops.slice(1)){
+        const key=entry.id+'::'+stop.legIdFromPrevious;
+        const source=routes[key];
+        if(source?.mode !== stop.modeFromPrevious || !Array.isArray(source.geometry) ||
+           source.geometry.length<2)continue;
+        stop.geometryFromPrevious=source.geometry;
+        matched++;
+      }
+    }
+    // Geometry is immutable within a compiled scene. Invalidate all cached
+    // scenes when the snapshot arrives, before continuing playback.
+    cache.clear();
+    reviewedLegs=matched;
+    return matched;
+  }
   function sceneFor(index){
     if(!Number.isInteger(index)||index<0||index>=entries.length)return null;
     if(cache.has(index)){const x=cache.get(index);cache.delete(index);cache.set(index,x);return x;}
@@ -117,7 +138,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     entries,totalMs,tripCount:entries.length,
     legCount:entries.reduce((n,e)=>n+e.legCount,0),
     stopCount:entries.reduce((n,e)=>n+e.stops.length,0),
-    locate,sceneFor,context,currentStops,
+    locate,sceneFor,context,currentStops,hydrateSurfaceRoutes,
     currentStopTimes:ms=>{const s=locate(ms);return s.scene?s.scene.stopTimesMs.map(t=>t+s.entry.startMs):[];},
     sample:ms=>locate(ms).pose,
     planeAt:ms=>{const s=locate(ms);return s.scene?.planeAt(s.localMs)||null;},
@@ -125,7 +146,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     visibleStops:ms=>{const s=locate(ms);return s.scene?.visibleStops(s.localMs)||[];},
     visibleRoutes:ms=>{const s=locate(ms);return s.scene?.visibleRoutes(s.localMs)||[];},
     primeNear(ms){const i=indexAt(ms);sceneFor(i);if(i+1<entries.length)sceneFor(i+1);if(i>0)sceneFor(i-1);},
-    stats:()=>({trips:entries.length,cachedScenes:cache.size,builds,maxCachedScenes:MAX_SCENES})
+    stats:()=>({trips:entries.length,cachedScenes:cache.size,builds,
+      reviewedSurfaceLegs:reviewedLegs,maxCachedScenes:MAX_SCENES})
   };
 }
 
@@ -196,6 +218,7 @@ export function createEightStopPlaylist(stops){
   return {entries:[entry],totalMs:scene.totalMs,tripCount:1,
     legCount:scene.legs.length,stopCount:scene.stops.length,
     locate,sample:ms=>locate(ms).pose,sceneFor:()=>scene,
+    hydrateSurfaceRoutes:()=>0,
     planeAt:ms=>scene.planeAt(ms),arrivalAt:ms=>scene.arrivalAt(ms),
     visibleStops:ms=>scene.visibleStops(ms),visibleRoutes:ms=>scene.visibleRoutes(ms),
     currentStops:()=>scene.stops,currentStopTimes:()=>scene.stopTimesMs,

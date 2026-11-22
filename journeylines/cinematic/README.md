@@ -180,3 +180,16 @@ The Node test suite checks wrap-camera continuity, full-history closure, bounded
 CI smoke tests exercise accelerated loop boundaries, not a literal hour of runtime. A dedicated-display soak test (several full cycles) is still required before claiming uninterrupted 24/7 operation. Tile sources still require Internet access; this implementation is resilient to short outages but does not ship a licensed offline global satellite dataset. The snapshot is versioned and deployed with the repository; Supabase is not used.
 
 WP5 MP4 export remains deferred.
+
+
+## WP4.1: Regional camera, reviewed surface routes and zoom-out imagery
+
+The WP4 cinematic viewer now favors local/regional views over repeated deep-orbital pullbacks. Flight cruise zoom has a floor of 3.85, the intro/outro stays near zoom 4.25–4.35, and inter-trip transitions use a maximum pullback of zoom 4.25. The arrival lens uses pitch 54°, while the vehicle-follow camera uses pitch 58–61° and zoom 8.35–9.0. The camera remains north-oriented within ±45°.
+
+The v9 canonical routeDetails.json contains approved, reviewed road/water/rail geometry but was not previously supplied to Cinematic GlobeHoppers. A deterministic build script now extracts *only* these surface geometries, simplifies them with the existing v9 surface presentation rules, and writes public/data/cinematic/surface-routes.json. The client loads this lightweight read-only derived artifact **before** building the first full-history scene. This is important: synthetic endpoint-to-endpoint car and boat tracks are replaced with real v9 routes. If the asset fails to load, the viewer retains the previous endpoint fallback and records zero reviewed surface legs in diagnostics; it never invents an unreviewed road route.
+
+The vehicle continues to travel on exactly the same sampled route as its luminous trail, while the camera looks a short distance ahead along the path and follows each bend. No routing requests are made at playback time. Flight geometry remains the same curved geodesic approach. All modes use the same deterministic single-clock playback.
+
+The imagery warmup previously fetched only zoom 7–8 destination tiles, which offered little protection against zoom-out pop-in. It now prioritizes NASA Blue Marble zoom 4, regional satellite zoom 6, destination satellite zoom 8 and one zoom 9 center tile; the preflight remains capped at 28 URLs and four concurrent requests per destination. The next trip's starting area is warmed during the current outro and during inter-trip bridges. At wide zooms, the always-present lower-resolution Earth raster remains visible underneath the detailed tiles.
+
+Validation now includes full-history reviewed surface coverage, road/boat/train camera and route tracking, zoom floors, regional tile warmup, the full-history browser run, existing v9 playback tests, and production build of the derived geometry asset. It does **not** guarantee every map tile is resident in every network/GPU environment; an unattended-display multi-cycle soak test is still required.

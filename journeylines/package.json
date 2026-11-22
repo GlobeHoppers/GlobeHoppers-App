@@ -4,9 +4,9 @@
   "version": "7.5.15",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/build-cinematic-surface-routes.mjs && vite",
     "test:cinematic": "node --test scripts/test-cinematic-scene.mjs scripts/test-cinematic-imagery.mjs scripts/test-cinematic-history.mjs scripts/test-cinematic-exhibition.mjs",
-    "build": "node scripts/build-v9-viewer-data.mjs --out public/data/v9-viewer && vite build",
+    "build": "node scripts/build-v9-viewer-data.mjs --out public/data/v9-viewer && node scripts/build-cinematic-surface-routes.mjs && vite build",
     "preview": "vite preview",
     "generate:routes": "node scripts/generate-mapbox-routes.mjs",
     "verify:v7.1": "node scripts/verify-v7.1.mjs .",

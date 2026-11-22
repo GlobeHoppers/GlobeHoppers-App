@@ -19,9 +19,9 @@ export const CINEMATIC_PRESET = Object.freeze({
   arrivalEffectMs: 1625,
   northLimitDegrees: 45,
   outroMs: 2200,
-  arrivalZoom: 7.6,
-  arrivalPitch: 47,
-  cruisingPitch: 26
+  arrivalZoom: 8.15,
+  arrivalPitch: 54,
+  cruisingPitch: 39
 });
 
 export function normalizeCinematicStops(source) {
@@ -41,7 +41,8 @@ export function normalizeCinematicStops(source) {
     const mode = ['plane','drive','boat','train'].includes(stop?.modeFromPrevious)
       ? stop.modeFromPrevious : 'plane';
     return { id, name: String(stop?.name || id).slice(0, 100), lon, lat,
-      modeFromPrevious: i === 0 ? null : mode };
+      modeFromPrevious: i === 0 ? null : mode,
+      geometryFromPrevious: i === 0 ? null : stop?.geometryFromPrevious || null };
   });
 }
 
@@ -126,15 +127,22 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     if (!(miles > 0.001)) throw new Error('Adjacent cinematic stops are indistinguishable.');
     const mode = to.modeFromPrevious || 'plane';
     // Reuse v9's compiled geometry; only airborne routes receive a lateral arc.
-    const compiled = compilePlaybackLeg({ from, to, mode, miles });
+    const reviewedGeometry = Array.isArray(to.geometryFromPrevious) &&
+      to.geometryFromPrevious.length >= 2 ? to.geometryFromPrevious : null;
+    const compiled = compilePlaybackLeg({ from, to, mode, miles }, reviewedGeometry);
     const geometry = Array.from({ length: compiled.sampleCount }, (_, p) => [
       Number(compiled.positions[p * 2]), Number(compiled.positions[p * 2 + 1])
     ]);
     const path = mode === 'plane' ? curveAirRoute(geometry, miles, index) : geometry;
     const durationMs = cinematicLegDurationMs(miles, mode);
-    const cruiseZoom = clamp(6.35 - 0.7 * Math.log2(Math.max(miles, 70) / 70), 2.65, 5.5);
+    // No repeated deep-orbital zooms. Flights retain regional detail, while
+    // surface modes stay close to their reviewed road/water corridors.
+    const cruiseZoom = clamp(6.5 - 0.58 * Math.log2(Math.max(miles, 70) / 70), 3.85, 5.75);
+    const surfaceZoom = mode === 'drive' ? 9.0 : mode === 'train' ? 8.8 : 8.35;
     return { index, from, to, mode, miles, path, durationMs,
-      cruiseZoom: mode === 'plane' ? cruiseZoom : Math.max(5.0, cruiseZoom), startMs: 0, endMs: 0 };
+      cruiseZoom: mode === 'plane' ? cruiseZoom : surfaceZoom,
+      geometrySource: reviewedGeometry ? 'v9-reviewed' : 'endpoint-fallback',
+      startMs: 0, endMs: 0 };
   });
 
   const segments = [];
@@ -167,15 +175,15 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const eased = smooth(u);
     if (segment.type === 'intro') {
       const at = poseAtStop(stops[0], headings[0], preset);
-      return { ...at, zoom: mix(2.25, at.zoom, eased),
-               pitch: mix(7, at.pitch, eased), elapsedMs: timeMs,
+      return { ...at, zoom: mix(4.25, at.zoom, eased),
+               pitch: mix(29, at.pitch, eased), elapsedMs: timeMs,
                segmentType: 'intro', stopIndex: 0, legIndex: -1, travelProgress: 0 };
     }
     if (segment.type === 'outro') {
       const last = stops.length - 1;
       const at = poseAtStop(stops[last], headings[last], preset);
-      return { ...at, zoom: mix(at.zoom, 2.8, eased),
-               pitch: mix(at.pitch, 12, eased), elapsedMs: timeMs,
+      return { ...at, zoom: mix(at.zoom, 4.35, eased),
+               pitch: mix(at.pitch, 30, eased), elapsedMs: timeMs,
                segmentType: 'outro', stopIndex: last, legIndex: legs.length - 1, travelProgress: 1 };
     }
     if (segment.type === 'hold') {
@@ -188,12 +196,27 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const departure = smooth(u / 0.37);
     const arrival = smooth((u - 0.61) / 0.39);
     const highAltitude = departure * (1 - arrival);
-    const bearing = clamp(mix(headings[leg.index], headings[leg.index + 1], eased) +
-      Math.sin(Math.PI * u) ** 2 * 3.5, -preset.northLimitDegrees, preset.northLimitDegrees);
+    const surface = leg.mode !== 'plane';
+    const pointBefore = positionAlong(leg, clamp(eased - 0.022, 0, 1));
+    const pointAfter = positionAlong(leg, clamp(eased + 0.022, 0, 1));
+    const routeHeading = northBoundBearing(bearingBetween(
+      {lon:pointBefore[0],lat:pointBefore[1]},
+      {lon:pointAfter[0],lat:pointAfter[1]}),preset.northLimitDegrees);
+    const steering = surface ? 0.38*Math.sin(Math.PI*u)**2 : 0;
+    const naturalBearing = mix(headings[leg.index],headings[leg.index+1],eased);
+    const bearing = clamp(mix(naturalBearing,routeHeading,steering) +
+      Math.sin(Math.PI*u)**2*3.5,-preset.northLimitDegrees,preset.northLimitDegrees);
+    // A road/boat scene follows the vehicle along the actual supplied route,
+    // with a small look-ahead that fades to zero at departure and arrival.
+    // The vehicle itself remains anchored to the current route coordinate.
+    const lead = surface ? (leg.mode === 'boat' ? 0.042 : 0.028) *
+      Math.sin(Math.PI * eased) ** 2 : 0;
+    const follow = positionAlong(leg, clamp(eased + lead, 0, 1));
     return {
-      center: positionAlong(leg, eased),
+      center: follow,
       zoom: mix(preset.arrivalZoom, leg.cruiseZoom, highAltitude),
-      pitch: mix(preset.arrivalPitch, preset.cruisingPitch, highAltitude),
+      pitch: mix(preset.arrivalPitch,
+        surface ? (leg.mode === 'boat' ? 58 : 61) : preset.cruisingPitch, highAltitude),
       bearing,
       elapsedMs: timeMs,
       segmentType: 'travel',
