@@ -223,16 +223,24 @@ test('same-place successive trips preserve route records but share one short hom
   for(const i of seams.slice(0,8)){
     const previous=p.entries[i-1],entry=p.entries[i];
     assert.equal(previous.sharedEnd,true);
-    assert.equal(previous.bridgeDurationMs,380);
+    assert.equal(previous.bridgeDurationMs,650);
     assert.equal(entry.sceneOverrides.firstHoldMs,0);
     assert.equal(previous.sceneOverrides.lastHoldMs,0);
     assert.equal(entry.sceneOverrides.introMs,100);
     assert.equal(previous.sceneOverrides.outroMs,100);
-    assert.ok(entry.startMs-previous.endMs<500);
+    assert.ok(entry.startMs-previous.endMs<700);
     const atPreviousEnd=p.sample(previous.endMs);
     const atNextStart=p.sample(entry.startMs);
     assert.ok(Math.abs(atPreviousEnd.zoom-atNextStart.zoom)<.001);
     assert.ok(Math.abs(atPreviousEnd.pitch-atNextStart.pitch)<.001);
+    const a=p.sample(previous.endMs),b=p.sample(entry.startMs);
+    for(const f of [.1,.25,.5,.75,.9]){
+      const pose=p.sample(previous.endMs+previous.bridgeDurationMs*f);
+      const eased=f*f*f*(f*(f*6-15)+10);
+      assert.ok(Math.abs(pose.zoom-(a.zoom+(b.zoom-a.zoom)*eased))<1e-5,
+        'shared-city zoom must not pulse: '+f);
+      assert.ok(pose.zoom>=Math.min(a.zoom,b.zoom)-1e-6);
+    }
     assert.equal(p.locate(previous.endMs).kind,'bridge');
     assert.equal(p.locate(entry.startMs).kind,'trip');
     assert.equal(p.currentStopTimes(entry.startMs).length,entry.stops.length-1);

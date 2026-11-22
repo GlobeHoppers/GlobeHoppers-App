@@ -279,3 +279,27 @@ test('surface vehicle sprites grow on departure and shrink again before arrival'
     assert.equal(scene.planeAt(leg.endMs),null);
   }
 });
+
+
+test('southbound road tangents never flip cinematic camera heading',()=>{
+  const scene=buildCinematicScene([
+    {id:'start',lon:-82.40,lat:29.9},
+    {id:'finish',lon:-81.58,lat:26.2,modeFromPrevious:'drive',
+      geometryFromPrevious:[
+        [-82.4,29.9],[-82.2,29.1],[-82.01,28.5],
+        [-81.9,27.9],[-82.06,27.65],[-82.15,27.3],
+        [-81.7,27.05],[-81.58,26.2]
+      ]}
+  ]);
+  const leg=scene.legs[0];
+  assert.ok(leg.cruiseZoom<7.6,'long cars must use a wider lens');
+  assert.equal(leg.steeringTrack.length,121);
+  let last=null,maxDelta=0;
+  for(let i=0;i<=600;i++){
+    const pose=scene.sample(leg.startMs+i*leg.durationMs/600);
+    if(last)maxDelta=Math.max(maxDelta,Math.abs(pose.bearing-last.bearing));
+    last=pose;
+  }
+  assert.ok(maxDelta<5,'camera cannot snap across ±25°: '+maxDelta);
+  assert.ok(scene.sample((leg.startMs+leg.endMs)/2).pitch>=55);
+});

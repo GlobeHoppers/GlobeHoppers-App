@@ -284,6 +284,7 @@ try {
   assert.equal(scenicClose.regionalDetail.visible,true,
     'regional tiles should be activated only at a close camera zoom');
   assert.equal(scenicClose.regionalDetail.maxNativeZoom,8);
+  assert.equal(scenicClose.scenicTileCache.maxCachedTiles,1152);
   await page.screenshot({path:path.join(out,'cinematic-scenic-regional.png')});
 
   // A second page visit must load the prepared world atlas from persisted

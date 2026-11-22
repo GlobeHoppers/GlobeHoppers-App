@@ -8,7 +8,7 @@ import { CINEMATIC_PRESET, buildCinematicScene, cinematicLegDurationMs } from '.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=x=>{const t=clamp(x,0,1);return t*t*t*(t*(t*6-15)+10);};
 const dlon=(a,b)=>((b-a+540)%360)-180;
-const BRIDGE_MS=3600, SHARED_STOP_BRIDGE_MS=380, MAX_SCENES=3;
+const BRIDGE_MS=3600, SHARED_STOP_BRIDGE_MS=650, MAX_SCENES=3;
 // Same named cities can have subtly different stored coordinates; only join
 // nearby equal-name stops. Coordinates alone must match within half a mile.
 export function samePresentationLocation(a,b){
@@ -16,7 +16,7 @@ export function samePresentationLocation(a,b){
   const miles=milesBetween(a,b);
   if(miles<=.5)return true;
   const norm=x=>String(x||'').trim().toLocaleLowerCase('en-US')
-    .replace(/\\s+/g,' ');
+    .replace(/\s+/g,' ');
   return miles<=12&&Boolean(norm(a.name))&&norm(a.name)===norm(b.name);
 }
 const dateKey=t=>String(t.year||0).padStart(4,'0')+'-'+String(t.month||1).padStart(2,'0')+'-'+String(t.day||1).padStart(2,'0');
@@ -61,12 +61,12 @@ function globeBetween(a,b,u){
   return [Math.atan2(v[1],v[0])*180/Math.PI,Math.atan2(v[2],Math.hypot(v[0],v[1]))*180/Math.PI];
 }
 
-function bridgeCamera(a,b,u){
-  const t=smooth(u), far=Math.min(4.25,a.zoom,b.zoom);
-  // One uninterrupted lens move instead of two easing halves with an
-  // artificial complete stop at the middle of every between-trip bridge.
+function bridgeCamera(a,b,u,sharedLocation=false){
+  const t=smooth(u),far=Math.min(4.25,a.zoom,b.zoom);
+  // Shared-city handoffs stay at the destination lens. Never execute the
+  // normal globe-scale zoom-out envelope for a same-place transition.
   const base=a.zoom+(b.zoom-a.zoom)*t;
-  const lift=Math.sin(Math.PI*u)**2;
+  const lift=sharedLocation?0:Math.sin(Math.PI*u)**2;
   return {center:globeBetween(a.center,b.center,t),
     zoom:base+(far-base)*lift,
     pitch:a.pitch+(b.pitch-a.pitch)*t,
@@ -205,7 +205,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
       const a=sceneFor(index),b=sceneFor(index+1);
       return {kind:'bridge',entry,index,scene:null,localMs:a.totalMs,nextEntry:entries[index+1],
         pose:{...bridgeCamera(a.sample(a.totalMs),b.sample(0),
-          clamp((t-entry.endMs)/Math.max(1,entry.bridgeDurationMs),0,1)),elapsedMs:t}};
+          clamp((t-entry.endMs)/Math.max(1,entry.bridgeDurationMs),0,1),
+          entry.sharedEnd),elapsedMs:t}};
     }
     const scene=sceneFor(index),localMs=clamp(t-entry.startMs,0,scene.totalMs);
     return {kind:'trip',entry,index,scene,localMs,nextEntry:entries[index+1]||null,pose:scene.sample(localMs)};

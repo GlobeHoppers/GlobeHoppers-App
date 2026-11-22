@@ -148,7 +148,34 @@ function cameraAt(leg,u) {
 }
 
 function northBoundBearing(bearing, limit) {
-  return clamp(deltaAngle(0, bearing), -limit, limit);
+  // The previous hard clamp flipped from +25° to -25° at due south.
+  // Sine projection remains continuous and bounded across the full circle.
+  return clamp(Math.sin(radians(bearing))*limit,-limit,limit);
+}
+
+/** Low-pass the directional field without changing reviewed route geometry. */
+function surfaceHeadingTrackFor(leg,limit){
+  const raw=Array.from({length:CAMERA_KNOTS},(_,i)=>{
+    const u=i/(CAMERA_KNOTS-1);
+    const a=cameraAt(leg,clamp(u-.045,0,1));
+    const b=cameraAt(leg,clamp(u+.045,0,1));
+    return northBoundBearing(bearingBetween(
+      {lon:a[0],lat:a[1]},{lon:b[0],lat:b[1]}),limit);
+  });
+  const weights=[1,2,3,4,5,4,3,2,1];
+  return raw.map((_,i)=>{
+    let total=0,sum=0;
+    for(let k=-4;k<=4;k++){
+      const w=weights[k+4];
+      sum+=raw[clamp(i+k,0,CAMERA_KNOTS-1)]*w;total+=w;
+    }
+    return sum/total;
+  });
+}
+function surfaceHeadingAt(leg,u){
+  const f=clamp(u,0,1)*(leg.steeringTrack.length-1);
+  const i=Math.min(leg.steeringTrack.length-2,Math.floor(f));
+  return mix(leg.steeringTrack[i],leg.steeringTrack[i+1],f-i);
 }
 
 /** A subtle cross-track bow over the geodesic; starts and ends exactly at the real coordinates. */
@@ -247,12 +274,15 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const surfaceZoom=mode==='boat'?
       clamp(8.45-.29*distanceZoom,7.2,8.45):
       mode==='train'?clamp(8.9-.27*distanceZoom,7.5,8.9):
-      clamp(9.0-.26*distanceZoom,7.6,9.0);
+      // Wider framing damps the apparent motion on long, fast road legs.
+      clamp(8.40-.32*distanceZoom,7.0,8.40);
     const leg={ index, from, to, mode, miles, path, pathDistance,durationMs,
       cruiseZoom: mode === 'plane' ? cruiseZoom : surfaceZoom,
       geometrySource: reviewedGeometry ? 'v9-reviewed' : 'endpoint-fallback',
       startMs: 0, endMs: 0 };
     leg.cameraTrack=cameraTrackFor(leg);
+    leg.steeringTrack=leg.cameraTrack?
+      surfaceHeadingTrackFor(leg,preset.northLimitDegrees):null;
     return leg;
   });
 
@@ -314,9 +344,10 @@ export function buildCinematicScene(rawStops, overrides = {}) {
       positionAlong(leg, clamp(eased - 0.022, 0, 1));
     const pointAfter = surface ? cameraAt(leg,clamp(u + .025,0,1)) :
       positionAlong(leg, clamp(eased + 0.022, 0, 1));
-    const routeHeading = northBoundBearing(bearingBetween(
-      {lon:pointBefore[0],lat:pointBefore[1]},
-      {lon:pointAfter[0],lat:pointAfter[1]}),preset.northLimitDegrees);
+    const routeHeading = surface?surfaceHeadingAt(leg,u):
+      northBoundBearing(bearingBetween(
+        {lon:pointBefore[0],lat:pointBefore[1]},
+        {lon:pointAfter[0],lat:pointAfter[1]}),preset.northLimitDegrees);
     const steering = surface ? 0.54*Math.sin(Math.PI*u)**2 : 0;
     const naturalBearing = mix(headings[leg.index],headings[leg.index+1],eased);
     // One restrained, end-tapered sweep makes the view feel directed rather
@@ -340,7 +371,7 @@ export function buildCinematicScene(rawStops, overrides = {}) {
       zoom: mix(preset.arrivalZoom,leg.cruiseZoom,highAltitude)+
         (surface?.18:.11)*cinematicLift,
       pitch: mix(preset.arrivalPitch,
-        surface ? (leg.mode === 'boat' ? 58 : 61) : preset.cruisingPitch, highAltitude)+
+        surface ? (leg.mode === 'boat' ? 58 : leg.mode==='drive' ? 57 : 59) : preset.cruisingPitch, highAltitude)+
         (surface?1.4:1.0)*cinematicLift,
       bearing,
       elapsedMs: timeMs,

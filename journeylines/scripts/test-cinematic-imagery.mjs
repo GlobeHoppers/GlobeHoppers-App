@@ -187,7 +187,9 @@ test('scenic tile URLs are bounded to the approved 2016 EOX service',async()=>{
 });
 
 test('regional tile cache reuses JPEG bytes across requests without another network fetch',async()=>{
-  const {loadScenicTile,SCENIC_TILE_CACHE}=await import('../src/cinematic/scenicTileCache.js');
+  const {loadScenicTile,SCENIC_TILE_CACHE,MAX_SCENIC_CACHED_TILES}=
+    await import('../src/cinematic/scenicTileCache.js');
+  assert.equal(MAX_SCENIC_CACHED_TILES,1152);
   const records=new Map();
   const stored={
     match:async url=>records.get(url)?.clone()||null,
@@ -211,4 +213,27 @@ test('regional tile cache reuses JPEG bytes across requests without another netw
   assert.equal(requests,1,'browser persistent tile should be served without refetch');
   await assert.rejects(loadScenicTile('https://untrusted.example/4/4/4.jpg',options),
     /Unapproved/);
+});
+
+
+test('preflight across multiple scenic locations shares the four-request global ceiling',async()=>{
+  const {createImageryPreflight,destinationTiles,
+    SCENIC_DESTINATION_TILE_BUDGET,SCENIC_CORRIDOR_TILE_BUDGET}=
+    await import('../src/cinematic/imageryPreflight.js');
+  assert.equal(SCENIC_DESTINATION_TILE_BUDGET,90);
+  assert.equal(SCENIC_CORRIDOR_TILE_BUDGET,20);
+  let active=0,maxActive=0;
+  const preflight=createImageryPreflight(async()=>{
+    active++;maxActive=Math.max(maxActive,active);
+    await new Promise(resolve=>setTimeout(resolve,1));active--;
+  });
+  const a={id:'a',lat:25.75,lon:-80.2},b={id:'b',lat:34.05,lon:-118.24};
+  const jobs=[preflight.schedule(a,'scenic'),
+    preflight.schedule(b,'scenic'),
+    preflight.schedule({id:'mid',lat:28,lon:-81},'scenic','corridor')];
+  await Promise.all(jobs.map(j=>j.promise));
+  assert.ok(maxActive<=4,'provider requests from concurrent scenes must stay bounded');
+  assert.ok(jobs[0].attempted<=SCENIC_DESTINATION_TILE_BUDGET);
+  assert.ok(jobs[2].attempted<=SCENIC_CORRIDOR_TILE_BUDGET);
+  assert.equal(new Set(destinationTiles(a,'scenic')).size,jobs[0].attempted);
 });

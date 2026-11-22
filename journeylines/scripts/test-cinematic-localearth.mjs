@@ -124,7 +124,12 @@ test('scenic preserves close zoom motion and preflights bounded regional tiles',
   assert.ok(scenic.zoom>8.55&&scenic.zoom<8.85);
   assert.ok(scenic.zoom>local.zoom+1.4);
   assert.deepEqual(scenic.center,p.center);
-  assert.equal(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'scenic').length,28);
+  const destination=destinationTiles({id:'miami',lat:25.7,lon:-80.2},'scenic');
+  assert.ok(destination.length>=75&&destination.length<=90);
+  assert.ok(destination.some(url=>url.includes('/5/')));
+  assert.ok(destination.some(url=>url.includes('/7/')));
+  assert.equal(destinationTiles({id:'mid',lat:25.7,lon:-80.2},
+    'scenic','corridor').length,19);
   assert.deepEqual(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'local'),[]);
 });
 

@@ -9,7 +9,7 @@ import { EOX_SENTINEL_2016_TILES } from './earthStyles.js';
 
 export const SCENIC_PROTOCOL='cg-scenic';
 export const SCENIC_TILE_CACHE='gh-cinematic-eox2016-v1';
-export const MAX_SCENIC_CACHED_TILES=384;
+export const MAX_SCENIC_CACHED_TILES=1152;
 export const SCENIC_TILE_TTL_MS=14*24*60*60*1000;
 const allowed=/^https:\/\/tiles\.maps\.eox\.at\/wmts\/1\.0\.0\/s2cloudless_3857\/default\/g\/(?:[0-9]{1,2})\/[0-9]+\/[0-9]+\.jpg$/;
 const stats={hits:0,misses:0,network:0,failed:0,cacheWrites:0};

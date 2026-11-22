@@ -287,12 +287,12 @@ function CinematicApp(){
           if(disposed)return;
           setLocalEarthProgress({ready:true,done:status.cachedTiles,total:status.totalTiles});
           if(presetRef.current==='scenic'&&!document.hidden){
-            // User prefers a warm-up to watching low-zoom satellite tiles pop.
-            // Limit the first destination preflight to 7 seconds.
+            // Allow up to 18 seconds for the expanded regional tile preflight.
+            // Persistent cache hits normally return significantly faster.
             setWarming(true);
             const first=playlist.context(elapsedRef.current).stop;
             const job=warmup.schedule(first,'scenic');
-            await Promise.race([job.promise,new Promise(resolve=>setTimeout(resolve,7000))]);
+            await Promise.race([job.promise,new Promise(resolve=>setTimeout(resolve,18000))]);
             if(disposed)return;
             setWarming(false);
           }
@@ -334,6 +334,15 @@ function CinematicApp(){
         const key=clip.entry.id+':'+leg.index+':'+presetRef.current;
         const job=warmup.schedule(leg.to,presetRef.current);
         const phase=(clip.localMs-leg.startMs)/leg.durationMs;
+        if(presetRef.current==='scenic'&&leg.mode!=='plane'&&
+           leg.miles>=75&&phase<=.12){
+          // Warm a sparse midpoint corridor without recomputing routes.
+          const middle=clip.scene.planeAt((leg.startMs+leg.endMs)/2)?.coordinates;
+          if(middle)warmup.schedule({
+            id:clip.entry.id+':'+leg.index+':corridor',
+            lon:middle[0],lat:middle[1]
+          },'scenic','corridor');
+        }
         if(state.playing&&presetRef.current!=='scenic'&&phase>=0.63&&phase<0.79&&
            job.status==='loading'&&gateRef.current.key!==key){
           const token=gateRef.current.token+1;

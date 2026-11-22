@@ -334,3 +334,24 @@ Regression tests specifically cover the Key West road geometry, history accumula
 - The Chromium smoke workflow now performs a real page reload and requires
   `localEarth.reusedPreparedTiles===true` on the second visit, validating
   IndexedDB recovery and not just a warm in-memory JavaScript map.
+
+
+## WP4.6: Same-city lens continuity, car heading smoothing, 3× tile budget
+
+- Shared-city transitions stay close: the 650 ms special bridge now **skips
+  the far-zoom envelope entirely**. Camera zoom interpolates between the
+  neighboring scene endpoint lenses without a pulse or geographic jump.
+- Car camera bearing is sampled from a spatially filtered 121-knot heading
+  field. Its north bias is sine-projected instead of hard-clipped at ±25°,
+  eliminating the heading discontinuity when a road swings across due south.
+  Cars also cruise with a wider camera zoom range of 7.0–8.4 and a slightly
+  flatter pitch. Reviewed route lines and car anchors are unchanged.
+- Scenic Earth raises its persistent EOX tile cache **384 → 1,152 tiles**,
+  expands regional destination warmup from up to 28 to up to 86 tiles, and
+  prefetches up to 19 additional tiles at the midpoint of long surface legs.
+  Regional z4/z5 and close-up z7/z8 coverage improve, while global request
+  concurrency remains bounded to four across simultaneous preflight jobs.
+  The first cold-start warmup budget increases from 7 to 18 seconds.
+- The full NASA background is still preloaded; cached EOX imagery is reused
+  on subsequent visits where browser quota permits. No wholesale global
+  high-resolution tile downloads or unauthorized provider mirrors.
