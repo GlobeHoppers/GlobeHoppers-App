@@ -11,6 +11,7 @@ import locations from '../data/locations.json';
 import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute, updateCinematicHistory } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
 import { createImageryPreflight } from './imageryPreflight.js';
+import { registerScenicTileProtocol,getScenicCacheStatus } from './scenicTileCache.js';
 import { prepareLocalEarth, getLocalEarthStatus, LOCAL_EARTH_STYLE, localEarthCameraPose } from './localEarth.js';
 import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
   installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState } from './earthStyles.js';
@@ -195,6 +196,7 @@ function CinematicApp(){
     recoverHandler.current=recover;
     const initialize=()=>{
     if(disposed)return;
+    if(presetRef.current==='scenic')registerScenicTileProtocol(maplibregl);
     try{
       const start=localEarthCameraPose(playlist.sample(elapsedRef.current),presetRef.current);
       map=new maplibregl.Map({
@@ -281,9 +283,19 @@ function CinematicApp(){
       texture.searchParams.set('gh-atlas','hires-8k-v2');
       prepareLocalEarth(maplibregl,texture.toString(),(done,total)=>
         setLocalEarthProgress({ready:false,done,total}),presetRef.current)
-        .then(status=>{
+        .then(async status=>{
           if(disposed)return;
           setLocalEarthProgress({ready:true,done:status.cachedTiles,total:status.totalTiles});
+          if(presetRef.current==='scenic'&&!document.hidden){
+            // User prefers a warm-up to watching low-zoom satellite tiles pop.
+            // Limit the first destination preflight to 7 seconds.
+            setWarming(true);
+            const first=playlist.context(elapsedRef.current).stop;
+            const job=warmup.schedule(first,'scenic');
+            await Promise.race([job.promise,new Promise(resolve=>setTimeout(resolve,7000))]);
+            if(disposed)return;
+            setWarming(false);
+          }
           initialize();
         })
         .catch(e=>{
@@ -593,7 +605,8 @@ function CinematicApp(){
       },
       getMapDetails:()=>mapRef.current?{
         ...getCinematicEarthState(mapRef.current),
-        localEarth:getLocalEarthStatus(presetRef.current)
+        localEarth:getLocalEarthStatus(presetRef.current),
+        scenicTileCache:getScenicCacheStatus()
       }:null,
       setMapPreset(id){if(!validEarthPreset(id))return false;choosePreset(id);return true;},
       getExhibitionDetails(){return{

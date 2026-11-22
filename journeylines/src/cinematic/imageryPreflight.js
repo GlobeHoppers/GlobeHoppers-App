@@ -6,6 +6,7 @@
  * No second WebGL map and no unbounded crawl of a provider's tile pyramid.
  */
 import { EOX_SENTINEL_2016_TILES, NASA_BLUE_MARBLE_TILES } from './earthStyles.js';
+import { loadScenicTile } from './scenicTileCache.js';
 
 const MAX_DESTINATIONS = 3;
 const MAX_CONCURRENT = 4;
@@ -30,9 +31,13 @@ export function destinationTiles(stop,preset='earth'){
   };
   if(preset==='scenic'){
     // Entire globe is already warm: only request a small regional footprint.
+    // Preload *both* the orbital/regional pullback and the close-up.
+    // Repeated regions are served from persistent browser CacheStorage.
+    add(EOX_SENTINEL_2016_TILES,3,1);
+    add(EOX_SENTINEL_2016_TILES,4,1);
     add(EOX_SENTINEL_2016_TILES,6,1);
     add(EOX_SENTINEL_2016_TILES,8,0);
-    return [...urls]; // 10 URLs maximum per upcoming destination
+    return [...urls]; // ≤28; never seed a whole-world pyramid
   }
   // Warm the zoom-OUT background first. The old warmup fetched only z7/z8,
   // so regional pullbacks exposed uncached low-zoom raster tiles.
@@ -43,8 +48,12 @@ export function destinationTiles(stop,preset='earth'){
   return [...urls]; // max 28, never prefetch a global tile pyramid
 }
 
-export function createImageryPreflight(fetchTile = (url,signal) => fetch(url,
-  {cache:'force-cache',mode:'cors',signal}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.arrayBuffer();})) {
+export function createImageryPreflight(fetchTile = (url,signal) =>
+  url.includes('s2cloudless_3857')?
+    loadScenicTile(url,{signal}):
+    fetch(url,{cache:'force-cache',mode:'cors',signal}).then(r=>{
+      if(!r.ok)throw Error('HTTP '+r.status);return r.arrayBuffer();
+    })) {
   const jobs=new Map();
   const keyFor=(stop,preset)=>String(stop?.id||'')+'|'+String(preset);
   function schedule(stop,preset='earth'){

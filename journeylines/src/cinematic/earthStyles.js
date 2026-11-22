@@ -36,9 +36,10 @@ const stateByMap = new WeakMap();
 
 const LOCAL_SOURCE = 'cg-earth-local';
 const REGIONAL_SOURCE = 'cg-earth-regional';
+export const SCENIC_REGIONAL_TILE_TEMPLATE='cg-scenic://{z}/{x}/{y}';
 export const SCENIC_DETAIL_MAX_ZOOM = 8;
-export const SCENIC_DETAIL_ENTER_ZOOM = 5.65;
-export const SCENIC_DETAIL_EXIT_ZOOM = 5.3;
+export const SCENIC_DETAIL_ENTER_ZOOM = 3.65;
+export const SCENIC_DETAIL_EXIT_ZOOM = 3.25;
 const NASA_SOURCE = 'cg-earth-blue-marble';
 const SENTINEL_SOURCE = 'cg-earth-sentinel';
 const CREDITS = {
@@ -89,13 +90,13 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
     // Strict Local Earth creates no remote source and remains fully offline.
     if(preset==='scenic'){
       map.addSource(REGIONAL_SOURCE,{
-        type:'raster',tiles:[EOX_SENTINEL_2016_TILES],tileSize:256,
-        minzoom:5,maxzoom:SCENIC_DETAIL_MAX_ZOOM,attribution:CREDITS.sentinel
+        type:'raster',tiles:[SCENIC_REGIONAL_TILE_TEMPLATE],tileSize:256,
+        minzoom:3,maxzoom:SCENIC_DETAIL_MAX_ZOOM,attribution:CREDITS.sentinel
       });
       map.addLayer({id:REGIONAL_SOURCE,type:'raster',source:REGIONAL_SOURCE,
         layout:{visibility:'none'},
         paint:{'raster-opacity':['interpolate',['linear'],['zoom'],
-          5.5,0,6.3,.96,7.2,1],
+          3.4,0,4.65,.94,5.3,1],
           'raster-fade-duration':620,'raster-saturation':0.2,
           'raster-contrast':0.12}});
     }

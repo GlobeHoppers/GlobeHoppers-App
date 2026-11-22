@@ -294,3 +294,23 @@ Regression tests specifically cover the Key West road geometry, history accumula
   The scene still contains its actual opening point for route calculation.
   All timing and camera poses remain deterministic under seeking/reverse seeking.
 - Unrelated consecutive trip endpoints preserve the full geographic bridge.
+
+
+### WP4.5: Zoomed-out regional detail and persistent tile caching
+
+- Scenic detail now enters at zoom 3.65 rather than 5.65, fading into EOX
+  Sentinel-2 from zoom 3.4–5.3. This addresses the muffled aerial view
+  when pulling back across Florida, the Bahamas, and other regional areas.
+- The player preflights a bounded z3/z4/z6/z8 tile neighborhood around
+  destinations (up to 28 tile URLs) with four concurrent requests. On first
+  startup, it permits up to 7 additional seconds of map warmup. Late or failed
+  imagery still falls back to the fully preloaded NASA globe.
+- `scenicTileCache.js` installs a custom MapLibre raster protocol backed by
+  the browser's CacheStorage. Both preflight and the map resolve through the
+  same bounded origin-local cache (at most 384 JPEG tiles, 14-day freshness).
+  Cached data is reusable across page reloads and can fill short offline gaps.
+  Browser storage eviction or private-mode restrictions may reduce cache
+  durability. No tile server or CDN proxy is created and no bulk world
+  imagery packs are distributed.
+- EOX 2016 is available under CC BY 4.0 and its public endpoint asks for
+  reasonable traffic and caching. Newer noncommercial years are not used.

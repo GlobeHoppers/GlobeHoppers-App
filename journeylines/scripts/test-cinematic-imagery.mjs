@@ -4,7 +4,7 @@ import {
   EARTH_PRESETS, DEFAULT_EARTH_PRESET,
   NASA_BLUE_MARBLE_TILES, EOX_SENTINEL_2016_TILES,
   activeImageryForPreset, normalizedEarthPreset,
-  installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState
+  installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState,SCENIC_REGIONAL_TILE_TEMPLATE
 } from '../src/cinematic/earthStyles.js';
 
 function mockMap() {
@@ -163,15 +163,16 @@ test('scenic regional detail is bounded, hysteretic, and retains global imagery'
   assert.equal(installCinematicEarth(map,'scenic'),true);
   assert.equal(map.sources.size,2);
   assert.equal(map.sources.get('cg-earth-regional').maxzoom,8);
-  assert.equal(map.sources.get('cg-earth-regional').minzoom,5);
+  assert.equal(map.sources.get('cg-earth-regional').minzoom,3);
+  assert.deepEqual(map.sources.get('cg-earth-regional').tiles,[SCENIC_REGIONAL_TILE_TEMPLATE]);
   assert.equal(map.sources.get('cg-earth-local').maxzoom,4);
   assert.deepEqual(getCinematicEarthState(map).activeLayers,['cg-earth-local','cg-earth-regional']);
-  assert.equal(updateScenicRegionalDetail(map,5.4),false);
-  assert.equal(updateScenicRegionalDetail(map,6),true);
+  assert.equal(updateScenicRegionalDetail(map,3.4),false);
+  assert.equal(updateScenicRegionalDetail(map,4.2),true);
   const count=map.calls.length;
-  assert.equal(updateScenicRegionalDetail(map,5.45),true);
+  assert.equal(updateScenicRegionalDetail(map,3.45),true);
   assert.equal(map.calls.length,count);
-  assert.equal(updateScenicRegionalDetail(map,5.2),false);
+  assert.equal(updateScenicRegionalDetail(map,3.1),false);
   assert.equal(map.layouts.get('cg-earth-regional:visibility'),'none');
   assert.equal(setCinematicEarthPreset(map,'local'),false);
 });
