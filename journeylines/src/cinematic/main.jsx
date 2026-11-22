@@ -8,7 +8,9 @@ import { createHistoryPlaylist, createEightStopPlaylist, withExhibitionLoop } fr
 import { EXHIBITION_IDLE_MS, EXHIBITION_WATCHDOG_MS, exhibitionRetryDelay, createExhibitionUi } from './exhibition.js';
 import tripHistory from '../data/trips.json';
 import locations from '../data/locations.json';
-import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute, updateCinematicHistory } from './mapLayers.js';
+import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute,
+  updateCinematicHistory, setCinematicRouteStacking } from './mapLayers.js';
+import {CinematicTimeline,CinematicTripQueue} from './CinematicChrome.jsx';
 import { updateCinematicActors } from './actorOverlay.js';
 import { createImageryPreflight } from './imageryPreflight.js';
 import { registerScenicTileProtocol,getScenicCacheStatus } from './scenicTileCache.js';
@@ -16,9 +18,6 @@ import { prepareLocalEarth, getLocalEarthStatus, LOCAL_EARTH_STYLE, localEarthCa
 import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
   installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState } from './earthStyles.js';
 import airplanePng from '../Icons/Airplanes/Airplane - Blue.png?url';
-import carPng from '../Icons/Cars/Car - Blue.png?url';
-import boatPng from '../Icons/Boats/Boat - Blue.png?url';
-import trainPng from '../Icons/Trains/Train - Blue.png?url';
 import './cinematic.css';
 
 const query = new URLSearchParams(window.location.search);
@@ -28,7 +27,6 @@ const EXHIBITION_MODE = query.get('exhibition') === '1' && !CAPTURE_MODE;
 const CHECKPOINT_KEY = 'cinematic-globehoppers-exhibition-checkpoint-v1';
 const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v2';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
-const VEHICLE_IMAGES = { plane: airplanePng, drive: carPng, boat: boatPng, train: trainPng };
 const sourcePlaylist = DEMO_MODE ? createEightStopPlaylist(demoStops) :
   createHistoryPlaylist(tripHistory, locations);
 const playlist = EXHIBITION_MODE ? withExhibitionLoop(sourcePlaylist) : sourcePlaylist;
@@ -108,6 +106,8 @@ function CinematicApp(){
   const [ready,setReady]=useState(false);
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
+  const [stackedLines,setStackedLines]=useState(true);
+  const stackedLinesRef=useRef(true);
   const [warming,setWarming]=useState(false);
   const [surfaceReady,setSurfaceReady]=useState(DEMO_MODE);
   const [surfaceRoutesCount,setSurfaceRoutesCount]=useState(0);
@@ -155,7 +155,6 @@ function CinematicApp(){
     updateCinematicActors(map,playlist,ms,{
       planeRoot:planeRef.current,planeVisual:planeImageRef.current,
       arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
-      vehicleImages:VEHICLE_IMAGES,
       stopLabelsRoot:stopLabelsRef.current,
       showLocalLabels:['local','scenic'].includes(presetRef.current)
     });
@@ -236,8 +235,7 @@ function CinematicApp(){
       updateCinematicActors(map,playlist,elapsedRef.current,{
         planeRoot:planeRef.current,planeVisual:planeImageRef.current,
         arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
-        vehicleImages:VEHICLE_IMAGES,
-        stopLabelsRoot:stopLabelsRef.current,
+          stopLabelsRoot:stopLabelsRef.current,
         showLocalLabels:['local','scenic'].includes(presetRef.current)
       });
     });
@@ -245,6 +243,7 @@ function CinematicApp(){
       try{
         installCinematicEarth(map,presetRef.current);
         installCinematicLayers(map,playlist.locate(elapsedRef.current).scene || playlist.sceneFor(0));
+        setCinematicRouteStacking(map,stackedLinesRef.current);
         layersReady.current=true;
         routeUpdatedRef.current=-Infinity;
         updateAt(elapsedRef.current,true);
@@ -614,6 +613,7 @@ function CinematicApp(){
       },
       getMapDetails:()=>mapRef.current?{
         ...getCinematicEarthState(mapRef.current),
+        routeStackingEnabled:stackedLinesRef.current,
         localEarth:getLocalEarthStatus(presetRef.current),
         scenicTileCache:getScenicCacheStatus()
       }:null,
@@ -659,13 +659,22 @@ function CinematicApp(){
   // Do not show a second stop chip for the next trip's identical departure.
   const currentStops=info.sharedStart?info.stops.slice(1):info.stops;
   const stopTimes=playlist.currentStopTimes(display.ms);
+  const timelineEntries=DEMO_MODE?[]:playlist.entries;
+  const jumpTrip=ms=>{engineRef.current.pause();seek(ms);};
+  const toggleStackedLines=()=>{
+    const next=!stackedLinesRef.current;
+    stackedLinesRef.current=next;setStackedLines(next);
+    if(mapRef.current&&layersReady.current)
+      setCinematicRouteStacking(mapRef.current,next);
+  };
   const arrival=playlist.arrivalAt(display.ms);
   return (
     <div ref={appRoot} className="cg-app"
       data-capture={CAPTURE_MODE?'true':'false'}
       data-exhibition={EXHIBITION_MODE?'true':'false'}
       data-controls-visible={controlsVisible?'true':'false'}
-      data-map-preset={mapPreset}>
+      data-map-preset={mapPreset}
+      data-demo={DEMO_MODE?'true':'false'}>
       <div ref={mapContainer} className="cg-map" aria-label="Cinematic globe with chronological travel history"/>
       <div className="cg-vignette" aria-hidden="true"/>
       {EXHIBITION_MODE&&<div className="cg-exhibition-progress" aria-hidden="true">
@@ -706,6 +715,10 @@ function CinematicApp(){
                 {EARTH_PRESETS.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
+            <button type="button" className="cg-stack-toggle"
+              aria-pressed={stackedLines} onClick={toggleStackedLines}>
+              {stackedLines?'Stacked lines on':'Stacked lines off'}
+            </button>
             <button type="button" onClick={()=>setDiagnostics(v=>!v)}
               aria-pressed={diagnostics}>Diagnostics</button>
             {EXHIBITION_MODE?<>
@@ -728,13 +741,16 @@ function CinematicApp(){
             'Preparing local Earth '+localEarthProgress.done+'/'+localEarthProgress.total+' tiles…':
             'Preparing cinematic globe and reviewed routes…'}
         </div>}
-        <div className={'cg-flyout'+(arrival?' is-arriving':'')} aria-live="off">
+        <div className={'cg-flyout'+(arrival?' is-arriving':'')} aria-live="off"
+          style={{'--cg-trip-accent':info.visual?.color||'#a5eff3'}}>
           <div className="cg-flyout-kicker">
             {info.kind==='bridge'?'NEXT JOURNEY':pose.segmentType==='travel'?'NOW TRAVELING TO':'EXPLORING'}
           </div>
           <div className="cg-flyout-place">{currentStop?.name||'GlobeHoppers'}</div>
           <div className="cg-flyout-sub">{DEMO_MODE?'Cinematic flight path':info.date+' · '+info.title}</div>
         </div>
+        {!DEMO_MODE&&<CinematicTripQueue entries={timelineEntries}
+          activeIndex={info.tripIndex} ready={ready} onSeek={jumpTrip}/>}
         {diagnostics&&<aside className="cg-diagnostics" aria-label="Camera diagnostics">
           <div>Camera {pose.segmentType}</div>
           <div>Zoom {pose.zoom.toFixed(2)} · Pitch {pose.pitch.toFixed(1)}°</div>
@@ -767,13 +783,19 @@ function CinematicApp(){
               </select>
             </label>
           </div>
-          <input className="cg-scrubber" type="range" min="0" max={playlist.totalMs}
-            step="25" value={display.ms} disabled={!ready} aria-label="Seek cinematic playback"
-            onChange={e=>seek(Number(e.target.value))}/>
+          {DEMO_MODE?
+            <input className="cg-scrubber" type="range" min="0" max={playlist.totalMs}
+              step="25" value={display.ms} disabled={!ready} aria-label="Seek cinematic playback"
+              onChange={e=>seek(Number(e.target.value))}/>:
+            <CinematicTimeline entries={timelineEntries} totalMs={playlist.totalMs}
+              elapsedMs={display.ms} activeIndex={info.tripIndex} playing={display.playing}
+              ready={ready} onSeek={seek}/>}
+
           <div className="cg-stoplist" aria-label={DEMO_MODE?'Eight demo stops':'Stops in current trip'}>
             {currentStops.map((stop,index)=>
               <button key={stop.id} type="button" disabled={!ready}
                 className={'cg-stop'+(currentStop?.id===stop.id?' is-current':'')}
+                style={{'--cg-trip-accent':info.visual?.color||'#a5eff3'}}
                 onClick={()=>{engineRef.current.pause();seek(stopTimes[index]??display.ms);}}>
                 <span className="cg-stop-num">{String(index+1).padStart(2,'0')}</span>
                 <span>{stop.name}</span>

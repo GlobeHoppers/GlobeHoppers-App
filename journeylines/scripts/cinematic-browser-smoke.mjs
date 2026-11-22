@@ -264,6 +264,26 @@ try {
   assert.ok(history.laterPresentation.historyStopCount>=35,
     'earlier destinations should persist as map markers');
   assert.ok(history.now.elapsedMs>history.durationMs*.72);
+  assert.equal(await page.locator('.cg-timeline-pin').count(),178,
+    'restored chronological timeline has one colored marker per trip');
+  assert.ok(await page.locator('.cg-timeline-years span').count()>5);
+  assert.equal(await page.locator('.cg-trip-queue-card').count(),3,
+    'current and two upcoming trip cards are visible on the right');
+  const firstMarker=await page.locator('.cg-timeline-pin').first()
+    .evaluate(el=>getComputedStyle(el).getPropertyValue('--pin-color').trim().toLowerCase());
+  assert.equal(firstMarker,'#ffd60a','first traveler timeline color comes from Hopper data');
+  const initialVisual=await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getPlaylistDetails().current.visual);
+  assert.ok(/^#[0-9a-f]{6}$/i.test(initialVisual.color));
+  assert.equal((await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails())).routeStackingEnabled,true);
+  await page.getByRole('button',{name:'Stacked lines on'}).click();
+  assert.equal((await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails())).routeStackingEnabled,false);
+  await page.getByRole('button',{name:'Stacked lines off'}).click();
+  await page.locator('.cg-timeline-pin').first().click();
+  await page.waitForFunction(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().elapsedMs<1000);
   await page.screenshot({path:path.join(out,'cinematic-full-history.png')});
 
   // Verify the default hybrid quality mode in real Chromium as a separate

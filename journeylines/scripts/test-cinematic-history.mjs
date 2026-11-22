@@ -261,3 +261,27 @@ test('unrelated trip boundaries keep globe bridges and opening/closing holds',()
   assert.equal(p.entries[i+1].sceneOverrides.introMs,undefined);
   assert.ok(p.entries[i+1].durationMs>3500);
 });
+
+
+test('cinematic identity preserves v9 Hopper colors and multi-traveler styles',()=>{
+  const p=createHistoryPlaylist(trips,locations);
+  const first=p.entries[0];
+  assert.equal(first.visual.color.toLowerCase(),'#ffd60a');
+  assert.equal(first.visual.traveler,'Joey');
+  const duo=p.entries.find(e=>e.visual.colors.length>1);
+  assert.ok(duo,'at least one trip includes two participants');
+  assert.ok(duo.visual.colors.some(c=>c.toLowerCase()==='#ff4fd8'));
+  assert.ok(duo.visual.colors.some(c=>c.toLowerCase()==='#ffd60a'));
+  assert.ok(['ribbon','stripe'].includes(duo.visual.style));
+  assert.equal(p.context(duo.startMs).visual.color,duo.visual.color);
+  const full=p.completedHistory(p.totalMs);
+  assert.equal(full.routeCount,p.legCount,'style splits must not inflate the logical leg count');
+  assert.ok(full.routes.features.length>full.routeCount,
+    'ribbon and stripe journeys create additional colored line features');
+  assert.ok(full.routes.features.every(f=>/^#[0-9a-f]{6}$/i.test(f.properties.color)));
+  assert.ok(full.routes.features.some(f=>f.properties.stackOffset!==0),
+    'repeated corridors are visually separated in the historical archive');
+  assert.ok(full.routes.features.some(f=>f.properties.color.toLowerCase()==='#ff4fd8'));
+  assert.ok(p.stats().cachedScenes<=3);
+}
+});

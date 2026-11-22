@@ -145,6 +145,24 @@ try {
   test.equal(capture.exhibition,false,'capture must disable exhibition autoplay');
   test.equal(await page.locator('.cg-console').count(),0,
     'capture mode must not show exhibition controls');
+
+  // The full-history exhibition differs deliberately from the eight-stop
+  // camera demo: keep its passive timeline and right-side trip stack visible.
+  await page.goto(base+'?exhibition=1&map=local&reset=1',
+    {waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__?.getState().ready===true,
+    null,{timeout:120000});
+  await page.waitForFunction(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().controlsVisible===false,
+    null,{timeout:12000});
+  test.equal(await page.locator('.cg-timeline').isVisible(),true,
+    'full-history exhibition retains the chronological timeline');
+  test.equal(await page.locator('.cg-trip-queue').isVisible(),true,
+    'full-history exhibition retains the current-trip cards');
+  test.equal(await page.locator('.cg-controls').isVisible(),false,
+    'screensaver chrome still hides interactive transport controls');
+  await page.screenshot({path:path.join(output,'exhibition-full-history-timeline.png')});
   test.deepEqual(exceptions,[], 'no uncaught browser exceptions');
 
   console.log(JSON.stringify({status:'PASS',version:metadata.version,

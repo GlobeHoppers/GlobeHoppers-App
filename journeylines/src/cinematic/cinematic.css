@@ -275,3 +275,193 @@ button:disabled { opacity: .45; cursor: default; }
   opacity: .67;
   text-shadow: 0 1px 3px #001523,0 0 8px #001523;
 }
+
+/* WP4.7: Restore v9 chronological overview and right-side trip queue.
+   They are read-only presentation controls over the same cinematic clock. */
+.cg-topbar { z-index: 8; }
+.cg-flyout { z-index: 5; }
+.cg-flyout-kicker { color: var(--cg-trip-accent, #94dfe7); }
+.cg-console {
+  z-index: 8;
+  width: min(1280px, calc(100% - 40px));
+  bottom: 25px;
+  padding: 14px 19px 12px;
+}
+.cg-stop.is-current {
+  border-color: var(--cg-trip-accent, #85edf0);
+  box-shadow: inset 0 2px 0 var(--cg-trip-accent, #85edf0);
+}
+.cg-stack-toggle[aria-pressed="true"] { border-color: #a6dfec7c; }
+.cg-timeline { margin: 12px 0 5px; min-width: 0; }
+.cg-timeline-topline {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 3px; color: #adcad8; font-size: 10px;
+}
+.cg-timeline-heading { font-weight: 700; letter-spacing: .14em; }
+.cg-timeline-heading small {
+  margin-left: 10px; font-size: 10px; font-weight: 450;
+  letter-spacing: .01em; text-transform: none; color: #86a9b6;
+}
+.cg-timeline-zoom { display: flex; align-items: center; gap: 4px; }
+.cg-timeline-zoom button {
+  min-width: 27px; padding: 3px 6px;
+  color: #e6faff; background: #173348a1; border: 1px solid #a4d9e949;
+  border-radius: 6px; font-size: 11px;
+}
+.cg-timeline-zoom button:hover:not(:disabled) { background: #276077; }
+.cg-timeline-viewport {
+  overflow-x: auto; overflow-y: visible; width: 100%;
+  scrollbar-width: thin; scrollbar-color: #689ca5a1 transparent;
+}
+.cg-timeline-content { min-width: 100%; position: relative; }
+.cg-timeline-years { position: relative; height: 25px; overflow: hidden; }
+.cg-timeline-years > div {
+  position: absolute; top: 5px; bottom: 0;
+  border-left: 1px solid #8eb4c748;
+  border-right: 1px solid #8eb4c70d;
+  background: linear-gradient(180deg,#8ed6e410,transparent);
+}
+.cg-timeline-years > div:nth-child(even) {
+  background: linear-gradient(180deg,#5690b414,transparent);
+}
+.cg-timeline-years span {
+  padding: 1px 6px; color: #a9c7d6;
+  font-size: 11px; font-weight: 610; font-variant-numeric: tabular-nums;
+}
+.cg-timeline-rail { position: relative; height: 35px; margin: 1px 6px 0; }
+.cg-timeline-rail-track,
+.cg-timeline-played {
+  position: absolute; left: 0; top: 13px; height: 5px; border-radius: 5px;
+  pointer-events: none;
+}
+.cg-timeline-rail-track { right: 0; background: #7eabb446; }
+.cg-timeline-played {
+  background: linear-gradient(90deg,#44bcdb,#a2f5e6);
+  box-shadow: 0 0 10px #5ad5df66;
+}
+.cg-timeline-range {
+  position: absolute; left: 0; top: 4px; z-index: 2;
+  width: 100%; height: 24px; margin: 0; opacity: .003;
+  cursor: pointer;
+}
+.cg-timeline-pin-row {
+  position: absolute; inset: 0; z-index: 3;
+  pointer-events: none;
+}
+.cg-timeline-pin {
+  position: absolute; top: 15px; width: 8px; height: 8px; padding: 0;
+  transform: translate(-50%,-50%); pointer-events: auto;
+  border: 1.5px solid #051827; border-radius: 50%;
+  background: var(--pin-background, var(--pin-color, #00e5ff));
+  box-shadow: 0 0 0 1px #acc9d87d;
+}
+.cg-timeline-pin i {
+  position: absolute; display: block; bottom: 8px; left: 50%;
+  width: 1px; height: 8px; background: var(--pin-color,#00e5ff);
+  opacity: .6;
+}
+.cg-timeline-pin.is-active {
+  z-index: 5; width: 17px; height: 17px;
+  border: 2px solid #edfaff;
+  box-shadow: 0 0 14px var(--pin-color, #00e5ff);
+}
+.cg-timeline-pin.is-active i { height: 14px; }
+.cg-timeline-pin > span {
+  display: none; position: absolute; bottom: 20px; left: 50%;
+  transform: translateX(-50%); width: max-content; max-width: 230px;
+  white-space: normal; padding: 6px 9px;
+  background: #071b2aee; border: 1px solid var(--pin-color,#6edfe5);
+  border-radius: 7px; box-shadow: 0 8px 22px #0009;
+  color: #f4ffff; font-size: 11px; line-height: 1.3; text-align: center;
+}
+.cg-timeline-pin:hover > span,
+.cg-timeline-pin:focus-visible > span { display: block; }
+.cg-timeline-pin:hover { z-index: 8; }
+.cg-timeline-now {
+  position: absolute; top: -4px; bottom: 0; width: 1px;
+  background: #d7fff9c9; box-shadow: 0 0 8px #68ebf2a3;
+  pointer-events: none; z-index: 4;
+}
+.cg-trip-queue {
+  position: absolute; right: clamp(18px,3vw,44px); top: 25%;
+  z-index: 6; display: flex; flex-direction: column; gap: 6px;
+  width: clamp(210px,19vw,290px); max-height: 48vh;
+  pointer-events: auto; text-shadow: 0 1px 9px #001523;
+}
+.cg-trip-queue-kicker {
+  display: flex; justify-content: space-between; align-items: center;
+  color: #b3dbe3; font-size: 10px; letter-spacing: .17em;
+  font-weight: 720; padding: 0 8px 5px;
+}
+.cg-trip-queue-kicker span { color: #8ab9c8; font-variant-numeric: tabular-nums; }
+.cg-trip-queue-card {
+  display: flex; flex-direction: column; align-items: stretch; gap: 5px;
+  position: relative; min-width: 0; width: 100%;
+  padding: 12px 14px; border: 1px solid #91b6c34d; border-radius: 12px;
+  background: linear-gradient(145deg,#061b2ce9,#09182be4);
+  box-shadow: 0 7px 21px #00101aa6;
+  color: #eaf9ff; text-align: left;
+  backdrop-filter: blur(13px);
+}
+.cg-trip-queue-card::before {
+  content: ''; position: absolute; top: 10px; bottom: 10px; left: 0;
+  width: 3px; background: var(--trip-border,var(--trip-color,#00e5ff));
+  border-radius: 2px;
+}
+.cg-trip-queue-card.is-current {
+  padding: 15px 16px; border-color: var(--trip-color,#00e5ff);
+  box-shadow: 0 8px 27px #000b, inset 0 1px 0 #ffffff16;
+}
+.cg-trip-queue-card.is-upcoming { opacity: .87; margin-left: 9px; width: calc(100% - 9px); }
+.cg-trip-queue-card:hover:not(:disabled) { background: #18374aee; opacity: 1; }
+.cg-trip-queue-card strong { font-size: 15px; line-height: 1.18; letter-spacing: -.025em; }
+.cg-trip-queue-card.is-current strong { font-size: 20px; }
+.cg-trip-queue-date { color: var(--trip-color,#a8e4ed); letter-spacing: .1em; font-size: 10px; font-weight: 750; }
+.cg-trip-queue-route {
+  display: block; font-size: 11px; line-height: 1.4;
+  color: #c5e2eb;
+}
+.cg-trip-queue-meta { font-size: 10px; color: #a7c0cb; }
+.cg-app[data-exhibition="true"] .cg-trip-queue { transition: opacity 240ms ease,visibility 240ms ease; }
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-trip-queue {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+@media (max-width: 1000px) {
+  .cg-trip-queue { width: 215px; right: 17px; top: 26%; }
+  .cg-trip-queue-card { padding: 9px 10px; }
+  .cg-trip-queue-card.is-current strong { font-size: 16px; }
+  .cg-trip-queue-card.is-upcoming:last-child { display: none; }
+}
+@media (max-width: 760px) {
+  .cg-console { width: calc(100% - 20px); bottom: 12px; padding: 10px; }
+  .cg-trip-queue { width: 170px; right: 11px; top: 88px; }
+  .cg-trip-queue-card.is-current { padding: 8px 10px; }
+  .cg-trip-queue-card.is-upcoming,
+  .cg-trip-queue-route,
+  .cg-trip-queue-kicker { display: none; }
+  .cg-trip-queue-card.is-current strong { font-size: 13px; }
+  .cg-trip-queue-date,.cg-trip-queue-meta { font-size: 9px; }
+  .cg-topbar .cg-stack-toggle { display: none; }
+  .cg-timeline-years { height: 18px; }
+  .cg-timeline-years span { font-size: 9px; }
+}
+
+/* Screensaver: keep a passive full-width timeline and current-trip cards.
+   Hide editorial controls instead of hiding the historical timeline. */
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-console {
+  opacity: 1; visibility: visible;
+  left: 0; right: 0; transform: none;
+  width: 100%; bottom: 2px; padding: 4px 14px 0;
+  border: 0; border-radius: 0; background: transparent;
+  backdrop-filter: none; box-shadow: none; pointer-events: none;
+}
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-controls,
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-stoplist,
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-history-transport,
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-timeline-topline {
+  display: none;
+}
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-timeline { margin: 0; }
+.cg-app[data-exhibition="true"][data-demo="false"][data-controls-visible="false"] .cg-trip-queue {
+  opacity: 1; visibility: visible; pointer-events: none;
+}

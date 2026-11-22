@@ -237,3 +237,35 @@ test('preflight across multiple scenic locations shares the four-request global 
   assert.ok(jobs[2].attempted<=SCENIC_CORRIDOR_TILE_BUDGET);
   assert.equal(new Set(destinationTiles(a,'scenic')).size,jobs[0].attempted);
 });
+
+
+test('cinematic historical stacking is a paint-only toggle',async()=>{
+  const {installCinematicLayers,setCinematicRouteStacking}=
+    await import('../src/cinematic/mapLayers.js');
+  const map=mockMap();
+  map.getSource=id=>map.sources.get(id);
+  installCinematicLayers(map,null);
+  const layer=map.layers.get('cg-history-route');
+  assert.equal(layer.paint['line-color'][0],'coalesce');
+  assert.equal(layer.paint['line-offset'][0],'coalesce');
+  assert.equal(setCinematicRouteStacking(map,false),false);
+  assert.equal(map.paint.get('cg-history-route:line-offset'),0);
+  assert.equal(setCinematicRouteStacking(map,true),true);
+  assert.equal(map.paint.get('cg-history-route:line-offset')[0],'coalesce');
+  const {coloredRouteFeatures,routeStackKey,stackOffsetForOccurrence}=
+    await import('../src/cinematic/routeVisuals.js');
+  const path=[[-80,26],[-80.3,26.2],[-80.6,27]];
+  const visual={color:'#ffd60a',colors:['#ffd60a','#ff4fd8'],style:'ribbon'};
+  const features=coloredRouteFeatures(path,visual,{tripId:'demo'},3);
+  assert.equal(features.length,2);
+  assert.deepEqual(features.map(f=>f.properties.color),visual.colors);
+  assert.deepEqual(features[0].geometry.coordinates,path);
+  assert.ok(features[0].properties.stackOffset<features[1].properties.stackOffset);
+  assert.equal(routeStackKey({lon:-80,lat:26},{lon:-80.6,lat:27}),
+    routeStackKey({lon:-80.6,lat:27},{lon:-80,lat:26}));
+  assert.equal(stackOffsetForOccurrence(0),0);
+  assert.ok(stackOffsetForOccurrence(1)>0&&stackOffsetForOccurrence(2)<0);
+  const stripes=coloredRouteFeatures(path,{...visual,style:'stripe'});
+  assert.ok(stripes.length>=8);
+  assert.ok(stripes.some(f=>f.properties.color==='#ff4fd8'));
+});

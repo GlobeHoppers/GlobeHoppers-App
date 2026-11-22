@@ -5,6 +5,8 @@
 import { normalizeTripForV61 } from '../utils/tripModel.js';
 import { milesBetween } from '../utils/distanceUtils.js';
 import { CINEMATIC_PRESET, buildCinematicScene, cinematicLegDurationMs } from './scene.js';
+import {visualForTrip} from './visualIdentity.js';
+import {coloredRouteFeatures,routeStackKey,stackOffsetForOccurrence} from './routeVisuals.js';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=x=>{const t=clamp(x,0,1);return t*t*t*(t*(t*6-15)+10);};
 const dlon=(a,b)=>((b-a+540)%360)-180;
@@ -101,6 +103,9 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     const bridgeDurationMs=i===valid.length-1?0:sharedEnd?SHARED_STOP_BRIDGE_MS:BRIDGE_MS;
     const entry={id:String(trip.id),title:String(trip.label||'Travel memory'),
       date:String(trip.displayDate||dateKey(trip)),stops,
+      visual:visualForTrip(trip),notes:String(trip.notes||trip.occasion||''),
+      mode:String(trip.mode||stops[1]?.modeFromPrevious||'plane'),
+      year:Number(trip.year)||null,
       sharedStart,sharedEnd,sceneOverrides,bridgeDurationMs,
       legCount:stops.length-1,startMs:elapsed,endMs:elapsed+durationMs,
       durationMs,bridgeEndMs:elapsed+durationMs+bridgeDurationMs};
@@ -112,7 +117,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   // Independent, lightweight STATIC historical display archive. Does not
   // compile playback scenes and therefore never expands the 3-scene LRU.
   let archiveBuilt=0,archiveRoutes=[],archiveStops=[],seenHistoryStops=new Set();
-  let routeOffsets=[0],stopOffsets=[0],lastHistory=null;
+  let routeOffsets=[0],legOffsets=[0],stopOffsets=[0],lastHistory=null;
+  let stackedCorridors=new Map(),archiveLegCount=0;
   const asCollection=features=>({type:'FeatureCollection',features});
   function historicalGeometry(from,to,mode){
     const supplied=to.geometryFromPrevious;
@@ -131,11 +137,15 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     for(let i=1;i<entry.stops.length;i++){
       const from=entry.stops[i-1],to=entry.stops[i];
       const mode=to.modeFromPrevious||'plane';
-      archiveRoutes.push({type:'Feature',properties:{
-        tripId:entry.id,legId:to.legIdFromPrevious||i,
-        mode,history:true
-      },geometry:{type:'LineString',
-        coordinates:historicalGeometry(from,to,mode)}});
+      const corridor=routeStackKey(from,to);
+      const occurrence=stackedCorridors.get(corridor)||0;
+      stackedCorridors.set(corridor,occurrence+1);
+      archiveRoutes.push(...coloredRouteFeatures(
+        historicalGeometry(from,to,mode),entry.visual,{
+          tripId:entry.id,legId:to.legIdFromPrevious||i,
+          mode,history:true
+        },stackOffsetForOccurrence(occurrence)));
+      archiveLegCount++;
     }
     for(const stop of entry.stops){
       const key=stop.lon.toFixed(5)+','+stop.lat.toFixed(5);
@@ -146,6 +156,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
       },geometry:{type:'Point',coordinates:[stop.lon,stop.lat]}});
     }
     routeOffsets.push(archiveRoutes.length);
+    legOffsets.push(archiveLegCount);
     stopOffsets.push(archiveStops.length);
     archiveBuilt++;
   }
@@ -156,7 +167,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
       time>=entries[i].endMs?i+1:i;
     if(lastHistory?.count===count)return lastHistory;
     while(archiveBuilt<count)archiveNextEntry();
-    lastHistory={count,routeCount:routeOffsets[count],stopCount:stopOffsets[count],
+    lastHistory={count,routeCount:legOffsets[count],stopCount:stopOffsets[count],
       routes:asCollection(archiveRoutes.slice(0,routeOffsets[count])),
       stops:asCollection(archiveStops.slice(0,stopOffsets[count]))};
     return lastHistory;
@@ -179,7 +190,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     // scenes when the snapshot arrives, before continuing playback.
     cache.clear();
     archiveBuilt=0;archiveRoutes=[];archiveStops=[];
-    seenHistoryStops=new Set();routeOffsets=[0];stopOffsets=[0];lastHistory=null;
+    seenHistoryStops=new Set();routeOffsets=[0];legOffsets=[0];
+    stopOffsets=[0];stackedCorridors=new Map();archiveLegCount=0;lastHistory=null;
     reviewedLegs=matched;
     return matched;
   }
@@ -188,6 +200,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     if(cache.has(index)){const x=cache.get(index);cache.delete(index);cache.set(index,x);return x;}
     const scene=buildCinematicScene(entries[index].stops,
       {...overrides,...entries[index].sceneOverrides});
+    // Attach appearance metadata, never change motion/geometry or clock.
+    scene.visual=entries[index].visual;
     if(Math.abs(scene.totalMs-entries[index].durationMs)>.0001)throw Error('Playlist scene timing mismatch');
     builds++;cache.set(index,scene);
     while(cache.size>MAX_SCENES)cache.delete(cache.keys().next().value);
@@ -218,7 +232,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     const i=clamp(s.kind==='bridge'?0:pose.segmentType==='travel'?pose.legIndex+1:pose.stopIndex,0,stops.length-1);
     return {tripIndex:s.kind==='bridge'?s.index+1:s.index,tripCount:entries.length,
       tripId:entry.id,title:entry.title,date:entry.date,kind:s.kind,
-      sharedStart:entry.sharedStart,
+      sharedStart:entry.sharedStart,visual:entry.visual,
       stops,stop:stops[i]};
   }
   return {

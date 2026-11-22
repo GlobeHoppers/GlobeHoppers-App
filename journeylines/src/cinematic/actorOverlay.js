@@ -5,6 +5,8 @@
  * its geographic flight line whenever the camera zoomed in.
  */
 import { applyVesselSpriteOffset } from '../utils/vehicleOrientation.js';
+import {spriteHueRotation} from './visualIdentity.js';
+import {vehicleSpriteFor} from './vehicleSprites.js';
 
 const finitePosition = point => Number.isFinite(point?.x) && Number.isFinite(point?.y);
 const show = (element, visible) => {
@@ -89,7 +91,7 @@ function updateLocalStopLabels(map,scene,ms,root,enabled) {
 }
 
 export function updateCinematicActors(map, scene, ms, {
-  planeRoot, planeVisual, arrivalRoot, arrivalName, vehicleImages,
+  planeRoot, planeVisual, arrivalRoot, arrivalName,
   stopLabelsRoot, showLocalLabels = false
 }) {
   // The self-contained style deliberately has no remote glyph endpoint.
@@ -106,10 +108,18 @@ export function updateCinematicActors(map, scene, ms, {
       show(planeRoot, true);
       // Keep the vehicle's center on the projected geographic route point.
       atPoint(planeRoot, projected);
-      const mode = aircraft.mode || 'plane';
-      if (vehicleImages?.[mode] && planeVisual.dataset.mode !== mode) {
-        planeVisual.src = vehicleImages[mode];
-        planeVisual.dataset.mode = mode;
+      const mode=aircraft.mode||'plane';
+      const visual=scene.context?.(ms)?.visual||{};
+      const key=mode+':'+(visual.colorName||'blue');
+      if(planeVisual.dataset.spriteKey!==key){
+        const selected=vehicleSpriteFor(mode,visual.colorName||'blue');
+        if(selected.url)planeVisual.src=selected.url;
+        planeVisual.style.filter=selected.tintRequired?
+          'hue-rotate('+spriteHueRotation(visual.color)+'deg) saturate(1.35) drop-shadow(0 8px 5px rgba(0,0,0,.38))':
+          'drop-shadow(0 8px 5px rgba(0,0,0,.38))';
+        planeVisual.dataset.spriteKey=key;
+        planeVisual.dataset.mode=mode;
+        planeVisual.dataset.color=visual.color||'#00e5ff';
       }
       const rotation = projectedAircraftHeading(map, aircraft);
       planeVisual.style.transform = 'rotate(' + rotation.toFixed(3) + 'deg) ' +
