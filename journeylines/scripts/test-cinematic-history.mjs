@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import trips from '../src/data/trips.json' with {type:'json'};
 import locations from '../src/data/locations.json' with {type:'json'};
 import { createHistoryPlaylist, createEightStopPlaylist } from '../src/cinematic/historyPlaylist.js';
-import { demoStops } from '../src/cinematic/demoStops.js';
+const demoStops = locations.slice(0,8).map(item => ({
+  id:item.id,name:item.name,lon:item.lon,lat:item.lat
+}));
 import { createImageryPreflight, destinationTiles } from '../src/cinematic/imageryPreflight.js';
 
 test('WP3 indexes the complete chronological trip snapshot without prebuilding all scenes',()=>{
