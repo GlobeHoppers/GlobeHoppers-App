@@ -36,9 +36,19 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Smoke test WebGL globe, playback, seek, pause and capture
         run: |
-          npm run dev -- --host 127.0.0.1 > "$RUNNER_TEMP/cinematic-vite.log" 2>&1 &
+          node scripts/build-cinematic-surface-routes.mjs
+          node scripts/build-cinematic-local-earth.mjs
+          npx vite --host 127.0.0.1 > "$RUNNER_TEMP/cinematic-vite.log" 2>&1 &
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
+          for n in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:5173/cinematic/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:5173/cinematic/ >/dev/null || {
+            cat "$RUNNER_TEMP/cinematic-vite.log"
+            exit 1
+          }
           node scripts/cinematic-browser-smoke.mjs "$RUNNER_TEMP/cinematic-browser"
           node scripts/cinematic-exhibition-smoke.mjs "$RUNNER_TEMP/cinematic-exhibition"
       - name: Upload browser screenshots
