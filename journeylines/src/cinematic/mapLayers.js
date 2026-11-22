@@ -78,7 +78,7 @@ export function installCinematicLayers(map, scene) {
     paint: { 'circle-color': '#f6e0a4', 'circle-radius': 3.2,
              'circle-stroke-color': '#122a39', 'circle-stroke-width': 0.6 } });
   // Local Earth is fully self-contained and intentionally has no glyph endpoint.
-  // City names are presented in the existing arrival overlay instead.
+  // City names are projected in the compositor overlay without remote fonts.
   if (map.getStyle()?.glyphs) map.addLayer({ id: 'cg-stop-label', type: 'symbol', source: 'cg-stops',
     layout: { 'text-field': ['get', 'name'], 'text-size': 12,
               'text-offset': [0, 1.85], 'text-anchor': 'top',

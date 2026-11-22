@@ -77,6 +77,7 @@ function CinematicApp(){
   const layersReady=useRef(false);
   const planeRef=useRef(null),planeImageRef=useRef(null);
   const arrivalRef=useRef(null),arrivalNameRef=useRef(null);
+  const stopLabelsRef=useRef(null);
   const engineRef=useRef(null);
   if(!engineRef.current)engineRef.current=new PlaybackEngine();
   const elapsedRef=useRef(START_MS);
@@ -152,7 +153,9 @@ function CinematicApp(){
     updateCinematicActors(map,playlist,ms,{
       planeRoot:planeRef.current,planeVisual:planeImageRef.current,
       arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
-      vehicleImages:VEHICLE_IMAGES
+      vehicleImages:VEHICLE_IMAGES,
+      stopLabelsRoot:stopLabelsRef.current,
+      showLocalLabels:presetRef.current==='local'
     });
     if(force||Math.abs(ms-routeUpdatedRef.current)>=65||
        pose.segmentType!==routeSegmentRef.current){
@@ -198,7 +201,9 @@ function CinematicApp(){
         projection:{type:'globe'},
         center:start.center,zoom:start.zoom,pitch:start.pitch,bearing:start.bearing,
         minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
-        maxTileCacheSize:80
+        // The packaged globe has only 341 tiles in total; retain its entire
+        // pyramid on a dedicated display instead of re-decoding evicted tiles.
+        maxTileCacheSize:presetRef.current==='local'?420:80
       });
     }catch(e){
       recover('Unable to initialize WebGL. Retrying the globe.');
@@ -226,7 +231,9 @@ function CinematicApp(){
       updateCinematicActors(map,playlist,elapsedRef.current,{
         planeRoot:planeRef.current,planeVisual:planeImageRef.current,
         arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
-        vehicleImages:VEHICLE_IMAGES
+        vehicleImages:VEHICLE_IMAGES,
+        stopLabelsRoot:stopLabelsRef.current,
+        showLocalLabels:presetRef.current==='local'
       });
     });
     map.on('load',()=>{
@@ -633,6 +640,7 @@ function CinematicApp(){
           {offline?'Internet connection unavailable. Using available map tiles.':recoveryMessage}
         </div>}
       <div className="cg-actors" aria-hidden="true">
+        <div className="cg-local-stop-labels" ref={stopLabelsRef}/>
         <div className="cg-aircraft" ref={planeRef} style={{visibility:'hidden'}}>
           <img ref={planeImageRef} className="cg-aircraft-img"
             src={airplanePng} alt="" draggable={false}/>

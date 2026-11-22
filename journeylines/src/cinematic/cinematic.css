@@ -249,3 +249,20 @@ button:disabled { opacity: .45; cursor: default; }
   }
   .cg-exhibition-status { top: 9px; }
 }
+
+/* Preloaded Local Earth has no remote font/glyph endpoint. Project these
+   small geographic stop labels together with the same camera/vehicle frame. */
+.cg-local-stop-labels { position: absolute; inset: 0; pointer-events: none; }
+.cg-local-stop-label {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  pointer-events: none; will-change: transform;
+}
+.cg-local-stop-label > span {
+  position: absolute; top: 12px; left: 0;
+  transform: translateX(-50%); white-space: nowrap;
+  color: #eff8ff; font: 600 11px/1.2 system-ui, sans-serif;
+  letter-spacing: -.015em;
+  text-shadow: 0 1px 3px #001020, 0 0 10px #000c19,
+    0 -1px 2px #001020;
+  opacity: .91;
+}

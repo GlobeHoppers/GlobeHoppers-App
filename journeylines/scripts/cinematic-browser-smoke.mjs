@@ -52,6 +52,8 @@ try {
   assert.equal(initialImagery.labelLayerCount,0,'local Earth requires no remote glyphs');
   assert.equal(initialImagery.localEarth.ready,true);
   assert.equal(initialImagery.localEarth.cachedTiles,341);
+  assert.ok(await page.locator('.cg-local-stop-label').count()>=1,
+    'the self-contained globe should retain geographically attached city labels');
   assert.deepEqual(unexpectedLocalImageryRequests,[],
     'local Earth must not request NASA/EOX/OpenFreeMap tiles at runtime');
 

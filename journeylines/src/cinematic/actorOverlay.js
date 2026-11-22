@@ -30,9 +30,46 @@ export function projectedAircraftHeading(map, plane) {
   return applyVesselSpriteOffset(plane.bearing - map.getBearing(), plane.mode || 'plane');
 }
 
+const stopLabelCache=new WeakMap();
+function updateLocalStopLabels(map,scene,ms,root,enabled) {
+  if(!root)return;
+  root.style.display=enabled?'block':'none';
+  if(!enabled)return;
+  let nodes=stopLabelCache.get(root);
+  if(!nodes){nodes=new Map();stopLabelCache.set(root,nodes);}
+  const visible=scene.visibleStops(ms);
+  const keys=new Set();
+  for(const stop of visible){
+    const id=String(stop.id);
+    keys.add(id);
+    let node=nodes.get(id);
+    if(!node){
+      node=document.createElement('div');
+      node.className='cg-local-stop-label';
+      const text=document.createElement('span');
+      text.textContent=stop.name;
+      node.append(text);
+      root.append(node);
+      nodes.set(id,node);
+    }
+    const point=map.project([stop.lon,stop.lat]);
+    if(finitePosition(point)){
+      show(node,true);
+      atPoint(node,point);
+    }else show(node,false);
+  }
+  for(const [id,node] of nodes){
+    if(!keys.has(id)){node.remove();nodes.delete(id);}
+  }
+}
+
 export function updateCinematicActors(map, scene, ms, {
-  planeRoot, planeVisual, arrivalRoot, arrivalName, vehicleImages
+  planeRoot, planeVisual, arrivalRoot, arrivalName, vehicleImages,
+  stopLabelsRoot, showLocalLabels = false
 }) {
+  // The self-contained style deliberately has no remote glyph endpoint.
+  // Keep existing city labels map-anchored using inexpensive DOM projection.
+  updateLocalStopLabels(map,scene,ms,stopLabelsRoot,showLocalLabels);
   const aircraft = scene.planeAt(ms);
   if (!aircraft || !planeRoot || !planeVisual) {
     show(planeRoot, false);
