@@ -149,7 +149,7 @@ test('local Earth installs one packaged raster source without remote map tiles',
   const source=map.sources.get('cg-earth-local');
   assert.ok(source);
   assert.deepEqual(source.tiles,['cg-local-earth://{z}/{x}/{y}']);
-  assert.equal(source.maxzoom,4);
+  assert.equal(source.maxzoom,5);
   assert.equal(map.sources.size,1);
   assert.equal(map.layouts.size,0);
   assert.equal(getCinematicEarthState(map).local,true);

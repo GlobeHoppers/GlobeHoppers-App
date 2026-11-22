@@ -266,3 +266,12 @@ button:disabled { opacity: .45; cursor: default; }
     0 -1px 2px #001020;
   opacity: .91;
 }
+
+/* Completed-trip labels appear only in regional views, behind the active
+   stop names in visual hierarchy. History dots remain visible at all zooms. */
+.cg-local-history-label > span {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: .67;
+  text-shadow: 0 1px 3px #001523,0 0 8px #001523;
+}

@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSurfacePresentationGeometry } from '../src/utils/routePresentation.js';
+import { simplifyReviewedSurfaceRoute } from '../src/cinematic/surfaceGeometry.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const source=JSON.parse(fs.readFileSync(path.join(root,'src/data/routeDetails.json'),'utf8'));
 const output=path.join(root,'public/data/cinematic/surface-routes.json');
@@ -17,12 +17,12 @@ for(const [key,entry] of Object.entries(source.routes||{})){
   const geometry=entry.geometry;
   if(!Array.isArray(geometry)||geometry.length<2)continue;
   inputs++;
-  const reduced=buildSurfacePresentationGeometry(geometry,entry.mode,{profile:'playback'});
+  const reduced=simplifyReviewedSurfaceRoute(geometry,entry.mode);
   if(!Array.isArray(reduced)||reduced.length<2)continue;
   const clean=reduced.filter(p=>Array.isArray(p)&&p.length>=2&&
     Number.isFinite(p[0])&&Number.isFinite(p[1])&&Math.abs(p[1])<=90);
   if(clean.length<2)continue;
-  const row={mode:entry.mode,geometry:clean.map(p=>[
+  const row={mode:entry.mode,source:entry.source||'reviewed-snapshot',geometry:clean.map(p=>[
     Math.round(p[0]*1e6)/1e6,Math.round(p[1]*1e6)/1e6
   ])};
   routes[key]=row;vertices+=row.geometry.length;

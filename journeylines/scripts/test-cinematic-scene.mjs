@@ -80,11 +80,11 @@ test('trip adapter reads versioned trip-route points through the existing v9 nor
 });
 
 
-test('north-biased camera remains within 45 degrees for every segment and stop', () => {
+test('north-biased camera remains within 25 degrees for every segment and stop', () => {
   const scene = buildCinematicScene(pts);
   for (let t = 0; t <= scene.totalMs; t += 67) {
     const camera = scene.sample(t);
-    assert.ok(camera.bearing >= -45.00001 && camera.bearing <= 45.00001,
+    assert.ok(camera.bearing >= -25.00001 && camera.bearing <= 25.00001,
       'north-up limit violated at ' + t + 'ms');
   }
   assert.ok(scene.headings.some(angle => Math.abs(angle) > 10),
@@ -226,7 +226,7 @@ test('cinematic flight camera keeps geography legible instead of deep orbital pu
     const m=scene.sample((leg.startMs+leg.endMs)/2);
     assert.ok(m.zoom>=3.8,'active flight must retain regional geography');
     assert.ok(m.pitch>=38,'cruise camera should show cinematic terrain perspective');
-    assert.ok(Math.abs(m.bearing)<=45,'north-biased composition remains bounded');
+    assert.ok(Math.abs(m.bearing)<=25,'north-biased composition remains bounded');
   }
 });
 
@@ -252,7 +252,7 @@ test('reviewed surface routes drive vehicle and camera on real-route corridors',
     assert.ok(camera.pitch>55,'surface camera should look obliquely ahead');
     assert.ok(Math.hypot(camera.center[0]-actor.coordinates[0],
       camera.center[1]-actor.coordinates[1])<0.20,'camera follows active surface segment');
-    assert.ok(Math.abs(camera.bearing)<=45);
+    assert.ok(Math.abs(camera.bearing)<=25);
     assert.equal(scene.sample(leg.startMs).center[0],leg.from.lon);
     const atEnd=scene.sample(leg.endMs);
     assert.ok(Math.abs(atEnd.center[0]-leg.to.lon)<1e-6);

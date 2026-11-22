@@ -37,26 +37,51 @@ function updateLocalStopLabels(map,scene,ms,root,enabled) {
   if(!enabled)return;
   let nodes=stopLabelCache.get(root);
   if(!nodes){nodes=new Map();stopLabelCache.set(root,nodes);}
-  const visible=scene.visibleStops(ms);
+  const current=scene.visibleStops(ms);
+  const historical=map.getZoom()>=5.5 && typeof scene.completedHistory==='function'
+    ? scene.completedHistory(ms).stops.features : [];
+  const places=new Map();
+  // Current places get priority over subdued historical labels.
+  for(const stop of current)places.set(
+    stop.lon.toFixed(5)+','+stop.lat.toFixed(5),
+    {lon:stop.lon,lat:stop.lat,name:stop.name,current:true});
+  for(const feature of historical){
+    const [lon,lat]=feature.geometry.coordinates;
+    const id=lon.toFixed(5)+','+lat.toFixed(5);
+    if(!places.has(id))places.set(id,{lon,lat,
+      name:feature.properties.name,current:false});
+  }
   const keys=new Set();
-  for(const stop of visible){
-    const id=String(stop.id);
+  const occupied=new Set();
+  let historyShown=0;
+  for(const [id,stop] of places){
+    const projected=map.project([stop.lon,stop.lat]);
+    if(!finitePosition(projected))continue;
+    // Avoid flooding close regional imagery with overlapping labels.
+    if(projected.x<-30||projected.y<-30||
+       projected.x>map.getCanvas().clientWidth+30||
+       projected.y>map.getCanvas().clientHeight+30)continue;
+    if(!stop.current){
+      if(historyShown>=36)continue;
+      const cell=Math.floor(projected.x/78)+','+Math.floor(projected.y/35);
+      if(occupied.has(cell))continue;
+      occupied.add(cell);historyShown++;
+    }
     keys.add(id);
     let node=nodes.get(id);
     if(!node){
       node=document.createElement('div');
       node.className='cg-local-stop-label';
       const text=document.createElement('span');
-      text.textContent=stop.name;
       node.append(text);
       root.append(node);
       nodes.set(id,node);
     }
-    const point=map.project([stop.lon,stop.lat]);
-    if(finitePosition(point)){
-      show(node,true);
-      atPoint(node,point);
-    }else show(node,false);
+    node.classList.toggle('cg-local-history-label',!stop.current);
+    if(node.firstElementChild.textContent!==stop.name)
+      node.firstElementChild.textContent=stop.name;
+    show(node,true);
+    atPoint(node,projected);
   }
   for(const [id,node] of nodes){
     if(!keys.has(id)){node.remove();nodes.delete(id);}

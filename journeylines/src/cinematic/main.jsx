@@ -8,7 +8,7 @@ import { createHistoryPlaylist, createEightStopPlaylist, withExhibitionLoop } fr
 import { EXHIBITION_IDLE_MS, EXHIBITION_WATCHDOG_MS, exhibitionRetryDelay, createExhibitionUi } from './exhibition.js';
 import tripHistory from '../data/trips.json';
 import locations from '../data/locations.json';
-import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute } from './mapLayers.js';
+import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute, updateCinematicHistory } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
 import { createImageryPreflight } from './imageryPreflight.js';
 import { prepareLocalEarth, getLocalEarthStatus, LOCAL_EARTH_STYLE, localEarthCameraPose } from './localEarth.js';
@@ -161,6 +161,7 @@ function CinematicApp(){
        pose.segmentType!==routeSegmentRef.current){
       if(clip.kind==='trip')updateCinematicRoute(map,clip.scene,clip.localMs);
       else clearCinematicRoute(map);
+      updateCinematicHistory(map,playlist,ms);
       routeUpdatedRef.current=ms;routeSegmentRef.current=pose.segmentType;
     }
     return pose;
@@ -203,7 +204,7 @@ function CinematicApp(){
         minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
         // The packaged globe has only 341 tiles in total; retain its entire
         // pyramid on a dedicated display instead of re-decoding evicted tiles.
-        maxTileCacheSize:presetRef.current==='local'?420:80
+        maxTileCacheSize:presetRef.current==='local'?1500:80
       });
     }catch(e){
       recover('Unable to initialize WebGL. Retrying the globe.');
@@ -577,6 +578,9 @@ function CinematicApp(){
       getPresentationAtMs(ms){
         return{visibleStops:playlist.visibleStops(ms).map(s=>s.id),
           visibleRouteCount:playlist.visibleRoutes(ms).length,
+          historyTripCount:playlist.completedHistory(ms).count,
+          historyRouteCount:playlist.completedHistory(ms).routeCount,
+          historyStopCount:playlist.completedHistory(ms).stopCount,
           plane:playlist.planeAt(ms),arrival:playlist.arrivalAt(ms)};
       },
       getMapDetails:()=>mapRef.current?{

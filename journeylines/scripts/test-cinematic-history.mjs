@@ -4,6 +4,7 @@ import trips from '../src/data/trips.json' with {type:'json'};
 import locations from '../src/data/locations.json' with {type:'json'};
 import details from '../src/data/routeDetails.json' with {type:'json'};
 import { createHistoryPlaylist, createEightStopPlaylist } from '../src/cinematic/historyPlaylist.js';
+import { simplifyReviewedSurfaceRoute } from '../src/cinematic/surfaceGeometry.js';
 const demoStops = locations.slice(0,8).map(item => ({
   id:item.id,name:item.name,lon:item.lon,lat:item.lat
 }));
@@ -149,4 +150,67 @@ test('preflight warms the lower-zoom Earth backdrop before close-up tiles',()=>{
     'regional satellite zoom must be in the cache');
   assert.ok(urls.some(url=>url.includes('s2cloudless')&&url.includes('/9/')),
     'surface-follow close-up needs z9 tiles');
+});
+
+
+test('completed trips accumulate historical routes and destinations without scene cache expansion',()=>{
+  const p=createHistoryPlaylist(trips,locations);
+  const before=p.completedHistory(0);
+  assert.equal(before.count,0);
+  assert.equal(before.routeCount,0);
+  assert.equal(before.stopCount,0);
+  assert.equal(p.stats().builds,0);
+  const first=p.entries[0],second=p.entries[1];
+  const bridge=p.completedHistory(first.endMs+1);
+  assert.equal(bridge.count,1);
+  assert.equal(bridge.routeCount,first.legCount);
+  assert.ok(bridge.stopCount>=2);
+  const travel=p.completedHistory(second.startMs+250);
+  assert.equal(travel.count,1);
+  assert.equal(travel.routeCount,bridge.routeCount);
+  const next=p.completedHistory(second.endMs+1);
+  assert.equal(next.count,2);
+  assert.equal(next.routeCount,first.legCount+second.legCount);
+  assert.ok(next.stopCount>=bridge.stopCount);
+  const rewound=p.completedHistory(0);
+  assert.equal(rewound.count,0);
+  assert.equal(rewound.routeCount,0,'seeking backwards removes future history');
+  const end=p.completedHistory(p.totalMs);
+  assert.equal(end.count,178);
+  assert.equal(end.routeCount,p.legCount);
+  assert.ok(end.stopCount>=50 && end.stopCount<p.stopCount);
+  assert.equal(p.stats().builds,0,'history archive does not compile all scenes');
+  assert.ok(p.stats().cachedScenes<=3);
+});
+
+test('Key West reviewed Overseas Highway route retains provider road geometry',()=>{
+  const p=createHistoryPlaylist(trips,locations);
+  const trip=trips.find(t=>t.label==='Key West May 2012');
+  assert.ok(trip,'expected original May 2012 Key West itinerary');
+  const firstDrive=trip.route.find(step=>step.modeFromPrevious==='drive');
+  const key=trip.id+'::'+firstDrive.legId;
+  const source=details.routes[key];
+  assert.equal(source?.mode,'drive');
+  assert.ok(source.geometry.length>1000,'v9 has detailed road source');
+  const compact=simplifyReviewedSurfaceRoute(source.geometry,'drive');
+  assert.ok(compact.length>12&&compact.length<=680,'keep significant road bends');
+  assert.deepEqual(compact[0],source.geometry[0]);
+  assert.deepEqual(compact.at(-1),source.geometry.at(-1));
+  const matched=p.hydrateSurfaceRoutes({routes:{[key]:{
+    mode:'drive',geometry:compact
+  }}});
+  assert.equal(matched,1);
+  const entryIndex=p.entries.findIndex(e=>e.id===trip.id);
+  const scene=p.sceneFor(entryIndex);
+  const leg=scene.legs.find(l=>l.mode==='drive'&&l.to.name==='Key West');
+  assert.ok(leg);
+  assert.equal(leg.geometrySource,'v9-reviewed');
+  assert.equal(leg.path.length,compact.length,
+    'cinematic compiler must not simplify the reviewed road a second time');
+  const after=p.completedHistory(p.entries[entryIndex].endMs+1);
+  const historyLine=after.routes.features.find(f=>
+    f.properties.tripId===trip.id&&f.properties.legId===firstDrive.legId);
+  assert.ok(historyLine);
+  assert.deepEqual(historyLine.geometry.coordinates,leg.path,
+    'completed-history line matches the detailed route being driven');
 });

@@ -240,11 +240,13 @@ try {
     const api=window.__CINEMATIC_GLOBEHOPPERS__;
     const initial=api.getPlaylistDetails();
     const atStart=api.sampleAtMs(0);
+    const early=api.getPresentationAtMs(0);
     api.seekMs(api.durationMs*.73);
     const later=api.getPlaylistDetails();
+    const laterPresentation=api.getPresentationAtMs(api.durationMs*.73);
     return {initial,later,durationMs:api.durationMs,
       tripCount:api.tripCount,legCount:api.legCount,
-      atStart,now:api.getState()};
+      atStart,early,laterPresentation,now:api.getState()};
   });
   assert.equal(history.tripCount,178);
   assert.ok(history.initial.reviewedSurfaceLegs>=65,
@@ -253,6 +255,14 @@ try {
   assert.ok(history.durationMs>30*60*1000);
   assert.ok(history.initial.cachedScenes<=3&&history.later.cachedScenes<=3);
   assert.ok(history.later.builds<20,'random seek should not compile the full history');
+  assert.equal(history.early.historyTripCount,0);
+  assert.equal(history.early.historyRouteCount,0);
+  assert.ok(history.laterPresentation.historyTripCount>=115,
+    'history should accumulate completed trips');
+  assert.ok(history.laterPresentation.historyRouteCount>=240,
+    'earlier travel lines should persist across trip transitions');
+  assert.ok(history.laterPresentation.historyStopCount>=35,
+    'earlier destinations should persist as map markers');
   assert.ok(history.now.elapsedMs>history.durationMs*.72);
   await page.screenshot({path:path.join(out,'cinematic-full-history.png')});
 

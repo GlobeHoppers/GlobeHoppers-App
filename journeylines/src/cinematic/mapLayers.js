@@ -38,13 +38,28 @@ function arrivalFeatures(arrival) {
 export function installCinematicLayers(map, scene) {
   if (map.getSource('cg-route-full')) return;
   metadata.set(map, { routes: -1, stops: -1, completed: -1,
-    trailActive: false, arrivalActive: false });
+    historyCount:-1, trailActive: false, arrivalActive: false });
+  map.addSource('cg-history-routes',{type:'geojson',data:collection([])});
+  map.addSource('cg-history-stops',{type:'geojson',data:collection([])});
   map.addSource('cg-route-full', { type: 'geojson', data: collection([]) });
   map.addSource('cg-route-completed', { type: 'geojson', data: collection([]) });
   map.addSource('cg-route-revealed', { type: 'geojson', data: collection([]) });
   map.addSource('cg-stops', { type: 'geojson', data: collection([]) });
   map.addSource('cg-arrival-rings', { type: 'geojson', data: collection([]) });
 
+  // Completed TRIPS, unlike completed LEGS in the active scene, remain
+  // visible as a subdued geographic memory throughout the exhibit. This
+  // single static archive updates at trip boundaries, not every animation
+  // frame; the existing active route layers remain above it.
+  map.addLayer({id:'cg-history-route',type:'line',source:'cg-history-routes',
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':'#7bbed0','line-width':1.35,'line-opacity':0.40}});
+  map.addLayer({id:'cg-history-halo',type:'circle',source:'cg-history-stops',
+    paint:{'circle-color':'#0a2231','circle-radius':4.2,
+      'circle-opacity':0.72,'circle-stroke-color':'#7bd0d8',
+      'circle-stroke-width':1.0,'circle-stroke-opacity':0.67}});
+  map.addLayer({id:'cg-history-center',type:'circle',source:'cg-history-stops',
+    paint:{'circle-radius':1.55,'circle-color':'#e6fbff','circle-opacity':0.76}});
   // An unrevealed route only appears when its flight starts.
   map.addLayer({ id: 'cg-route-faint', type: 'line', source: 'cg-route-full',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -133,4 +148,19 @@ export function clearCinematicRoute(map) {
   const empty = { type: 'FeatureCollection', features: [] };
   for (const id of ['cg-route-full','cg-route-completed','cg-route-revealed',
     'cg-stops','cg-arrival-rings']) map.getSource(id)?.setData(empty);
+}
+
+/**
+ * Static global history layer. Only replaces GeoJSON when the number of
+ * completed trips changes. Bridge transitions include the just-finished trip;
+ * no earlier line or destination disappears between trips.
+ */
+export function updateCinematicHistory(map,playlist,ms){
+  const state=metadata.get(map);
+  if(!state||typeof playlist.completedHistory!=='function')return;
+  const history=playlist.completedHistory(ms);
+  if(state.historyCount===history.count)return;
+  map.getSource('cg-history-routes')?.setData(history.routes);
+  map.getSource('cg-history-stops')?.setData(history.stops);
+  state.historyCount=history.count;
 }

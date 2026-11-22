@@ -9,8 +9,8 @@ import {
 } from '../src/cinematic/localEarth.js';
 
 test('local Earth is finite and complete before the display starts',()=>{
-  assert.equal(LOCAL_EARTH_MAX_ZOOM,4);
-  assert.equal(LOCAL_EARTH_TILE_COUNT,341);
+  assert.equal(LOCAL_EARTH_MAX_ZOOM,5);
+  assert.equal(LOCAL_EARTH_TILE_COUNT,1365);
   assert.equal(LOCAL_EARTH_SCHEME,'cg-local-earth');
   assert.equal(localEarthTileURL(4,9,7),'cg-local-earth://4/9/7');
   assert.equal(LOCAL_EARTH_STYLE.version,8);
@@ -23,7 +23,7 @@ test('global latitude reprojection has continuous tile-row edges and correct equ
   assert.ok(Math.abs(mercatorRowLatitude(0,0)-85.0511287798066)<1e-6);
   assert.ok(Math.abs(mercatorRowLatitude(0,128))<1e-8);
   assert.ok(Math.abs(mercatorRowLatitude(0,256)+85.0511287798066)<1e-6);
-  for(let z=0;z<=4;z++){
+  for(let z=0;z<=5;z++){
     const n=2**z;
     for(let y=0;y<n*256;y+=32) {
       assert.ok(mercatorRowLatitude(z,y)>mercatorRowLatitude(z,y+32));
@@ -40,11 +40,11 @@ test('local Earth camera soft caps zoom continuously but leaves travel timing an
     assert.equal(local.pitch,61);
     assert.equal(local.bearing,28);
     assert.ok(local.zoom<=zoom+1e-8);
-    assert.ok(local.zoom<=6.74);
+    assert.ok(local.zoom<=7.21);
     assert.deepEqual(localEarthCameraPose(pose,'satellite'),pose);
   }
-  const left=localEarthCameraPose({zoom:5.55-1e-5}).zoom;
-  const right=localEarthCameraPose({zoom:5.55+1e-5}).zoom;
+  const left=localEarthCameraPose({zoom:6.15-1e-5}).zoom;
+  const right=localEarthCameraPose({zoom:6.15+1e-5}).zoom;
   assert.ok(Math.abs(right-left)<.000025);
 });
 

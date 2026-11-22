@@ -17,7 +17,7 @@ export const CINEMATIC_PRESET = Object.freeze({
   introMs: 1900,
   holdMs: 1750,
   arrivalEffectMs: 1625,
-  northLimitDegrees: 45,
+  northLimitDegrees: 25,
   outroMs: 2200,
   arrivalZoom: 8.15,
   arrivalPitch: 54,
@@ -202,10 +202,19 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     // Reuse v9's compiled geometry; only airborne routes receive a lateral arc.
     const reviewedGeometry = Array.isArray(to.geometryFromPrevious) &&
       to.geometryFromPrevious.length >= 2 ? to.geometryFromPrevious : null;
-    const compiled = compilePlaybackLeg({ from, to, mode, miles }, reviewedGeometry);
-    const geometry = Array.from({ length: compiled.sampleCount }, (_, p) => [
+    // Reviewed v9 road/water coordinates have already been simplified once in
+    // the static snapshot. Do NOT send them through compilePlaybackLeg again:
+    // that worker simplifies surface geometry a second time, losing actual
+    // road bends (particularly the Overseas Highway to Key West).
+    const compiled = reviewedGeometry && mode !== 'plane' ? null :
+      compilePlaybackLeg({ from, to, mode, miles }, null);
+    const geometry = compiled ? Array.from({ length: compiled.sampleCount }, (_, p) => [
       Number(compiled.positions[p * 2]), Number(compiled.positions[p * 2 + 1])
-    ]);
+    ]) : reviewedGeometry.map(point=>[Number(point[0]),Number(point[1])]);
+    if(reviewedGeometry && !compiled){
+      geometry[0]=[from.lon,from.lat];
+      geometry[geometry.length-1]=[to.lon,to.lat];
+    }
     const path = mode === 'plane' ? curveAirRoute(geometry, miles, index) : geometry;
     const pathDistance=pathDistanceIndex(path);
     const durationMs = cinematicLegDurationMs(miles, mode);

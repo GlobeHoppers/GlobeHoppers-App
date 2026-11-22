@@ -80,6 +80,58 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   const totalMs=entries.at(-1).endMs;
   const cache=new Map();
   let builds=0,reviewedLegs=0;
+  // Independent, lightweight STATIC historical display archive. Does not
+  // compile playback scenes and therefore never expands the 3-scene LRU.
+  let archiveBuilt=0,archiveRoutes=[],archiveStops=[],seenHistoryStops=new Set();
+  let routeOffsets=[0],stopOffsets=[0],lastHistory=null;
+  const asCollection=features=>({type:'FeatureCollection',features});
+  function historicalGeometry(from,to,mode){
+    const supplied=to.geometryFromPrevious;
+    if(mode!=='plane'&&Array.isArray(supplied)&&supplied.length>=2){
+      const points=supplied.map(p=>[p[0],p[1]]);
+      points[0]=[from.lon,from.lat];
+      points[points.length-1]=[to.lon,to.lat];
+      return points;
+    }
+    return Array.from({length:49},(_,i)=>
+      globeBetween([from.lon,from.lat],[to.lon,to.lat],i/48));
+  }
+  function archiveNextEntry(){
+    const entry=entries[archiveBuilt];
+    if(!entry)return;
+    for(let i=1;i<entry.stops.length;i++){
+      const from=entry.stops[i-1],to=entry.stops[i];
+      const mode=to.modeFromPrevious||'plane';
+      archiveRoutes.push({type:'Feature',properties:{
+        tripId:entry.id,legId:to.legIdFromPrevious||i,
+        mode,history:true
+      },geometry:{type:'LineString',
+        coordinates:historicalGeometry(from,to,mode)}});
+    }
+    for(const stop of entry.stops){
+      const key=stop.lon.toFixed(5)+','+stop.lat.toFixed(5);
+      if(seenHistoryStops.has(key))continue;
+      seenHistoryStops.add(key);
+      archiveStops.push({type:'Feature',properties:{
+        id:key,name:stop.name,history:true
+      },geometry:{type:'Point',coordinates:[stop.lon,stop.lat]}});
+    }
+    routeOffsets.push(archiveRoutes.length);
+    stopOffsets.push(archiveStops.length);
+    archiveBuilt++;
+  }
+  function completedHistory(ms){
+    const time=clamp(Number.isFinite(ms)?ms:0,0,totalMs);
+    const i=indexAt(time);
+    const count=time>=totalMs?entries.length:
+      time>=entries[i].endMs?i+1:i;
+    if(lastHistory?.count===count)return lastHistory;
+    while(archiveBuilt<count)archiveNextEntry();
+    lastHistory={count,routeCount:routeOffsets[count],stopCount:stopOffsets[count],
+      routes:asCollection(archiveRoutes.slice(0,routeOffsets[count])),
+      stops:asCollection(archiveStops.slice(0,stopOffsets[count]))};
+    return lastHistory;
+  }
   function hydrateSurfaceRoutes(payload) {
     const routes=payload?.routes;
     if(!routes || typeof routes!=='object')return 0;
@@ -97,6 +149,8 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     // Geometry is immutable within a compiled scene. Invalidate all cached
     // scenes when the snapshot arrives, before continuing playback.
     cache.clear();
+    archiveBuilt=0;archiveRoutes=[];archiveStops=[];
+    seenHistoryStops=new Set();routeOffsets=[0];stopOffsets=[0];lastHistory=null;
     reviewedLegs=matched;
     return matched;
   }
@@ -138,7 +192,7 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
     entries,totalMs,tripCount:entries.length,
     legCount:entries.reduce((n,e)=>n+e.legCount,0),
     stopCount:entries.reduce((n,e)=>n+e.stops.length,0),
-    locate,sceneFor,context,currentStops,hydrateSurfaceRoutes,
+    locate,sceneFor,context,currentStops,hydrateSurfaceRoutes,completedHistory,
     currentStopTimes:ms=>{const s=locate(ms);return s.scene?s.scene.stopTimesMs.map(t=>t+s.entry.startMs):[];},
     sample:ms=>locate(ms).pose,
     planeAt:ms=>{const s=locate(ms);return s.scene?.planeAt(s.localMs)||null;},
@@ -195,6 +249,8 @@ export function withExhibitionLoop(base, wrapMs = EXHIBITION_WRAP_MS) {
     visibleRoutes: ms => inTrip('visibleRoutes', ms, []),
     currentStops: ms => inTrip('currentStops', ms, firstEntry.stops),
     currentStopTimes: ms => inTrip('currentStopTimes', ms, []),
+    completedHistory: ms => base.completedHistory(
+      isWrap(ms)?naturalEnd:ms),
     context(ms) {
       if (!isWrap(ms)) return base.context(ms);
       return {
@@ -219,6 +275,11 @@ export function createEightStopPlaylist(stops){
     legCount:scene.legs.length,stopCount:scene.stops.length,
     locate,sample:ms=>locate(ms).pose,sceneFor:()=>scene,
     hydrateSurfaceRoutes:()=>0,
+    completedHistory:()=>({
+      count:0,routeCount:0,stopCount:0,
+      routes:{type:'FeatureCollection',features:[]},
+      stops:{type:'FeatureCollection',features:[]}
+    }),
     planeAt:ms=>scene.planeAt(ms),arrivalAt:ms=>scene.arrivalAt(ms),
     visibleStops:ms=>scene.visibleStops(ms),visibleRoutes:ms=>scene.visibleRoutes(ms),
     currentStops:()=>scene.stops,currentStopTimes:()=>scene.stopTimesMs,

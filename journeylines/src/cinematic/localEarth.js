@@ -2,13 +2,13 @@
  * A complete, packaged NASA Blue Marble atlas for the MapLibre globe.
  *
  * The app downloads ONE first-party JPEG at startup (built into /data/cinematic)
- * and converts it into a bounded local z0–z4 raster pyramid before playback.
+ * and converts it into a bounded local z0–z5 raster pyramid before playback.
  * There are no subsequent HTTP imagery requests in this map mode.
  *
  * This keeps the tested MapLibre camera, route and vehicle architecture intact.
  */
 export const LOCAL_EARTH_SCHEME = 'cg-local-earth';
-export const LOCAL_EARTH_MAX_ZOOM = 4;
+export const LOCAL_EARTH_MAX_ZOOM = 5;
 export const LOCAL_EARTH_TILE_SIZE = 256;
 export const LOCAL_EARTH_TILE_COUNT =
   Array.from({length: LOCAL_EARTH_MAX_ZOOM+1},(_,z)=>4**z).reduce((a,b)=>a+b,0);
@@ -93,7 +93,12 @@ export async function prepareLocalEarth(maplibregl,url,onProgress){
     const blob=await response.blob();
     if(!blob.type.startsWith('image/') || blob.size<100000)
       throw Error('Invalid packaged Earth texture');
-    const bitmap=await createImageBitmap(blob);
+    // The NASA source is 21,600 × 10,800. Decode to a controlled 8K
+    // working bitmap (128 MiB RGBA) before preparing 1,365 local tiles.
+    // Retaining the full 21K source in graphics memory would be excessive.
+    const bitmap=await createImageBitmap(blob,{
+      resizeWidth:8192,resizeHeight:4096,resizeQuality:'high'
+    });
     try {
       await rasterize(bitmap,onProgress);
     } finally {bitmap.close?.();}
@@ -118,10 +123,10 @@ export async function prepareLocalEarth(maplibregl,url,onProgress){
 }
 
 
-/** Soft zoom ceiling so a 4K global texture isn't blown up to street scale. */
+/** Soft zoom ceiling matched to an 8K global texture. */
 export function localEarthCameraPose(pose,preset='local'){
   if(preset!=='local')return pose;
-  const start=5.55,span=1.18;
+  const start=6.15,span=1.05;
   const zoom=pose.zoom<=start?pose.zoom:
     start+span*(1-Math.exp(-(pose.zoom-start)/span));
   return {...pose,zoom};
