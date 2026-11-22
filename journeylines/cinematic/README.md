@@ -8,7 +8,7 @@ An independently authored, open-source cinematic camera prototype built on top o
 - First run uses eight demo locations from GlobeHoppers' existing locations catalog: San Diego, Los Angeles, Las Vegas, Miami, New York, Augusta, New Orleans and Chicago. These are not the user's private trip base.
 - Scene planner (src/cinematic/scene.js) shares v9 compiled route geometry and is purely deterministic: sample(ms) and revealedRoute(ms) do not depend on wall-clock time.
 - Playback uses v9's PlaybackEngine single-clock contract. React does not animate the camera.
-- MapLibre GL JS is the open-source WebGL renderer. OpenFreeMap's Fiord vector basemap is the default external tile source; a network connection is required for tiles. No Mult.dev requests or code.
+- MapLibre GL JS is the open-source WebGL renderer. WP2 defaults to a natural-color Cinematic Earth preset: NASA Blue Marble Next Generation (up to zoom 8) crossfades into 2016 EOX Sentinel-2 cloudless imagery (zoom 5–14) without resetting the scene. OpenFreeMap Fiord remains the underlying vector map and the optional Midnight preset. An internet connection is required for imagery. No Mult.dev requests or code.
 - Camera trajectory: continuous along v9 great-circle routes, distance-sensitive cruise zoom, fifth-order smooth easing, continuous zoom/pitch/bearing across stops, route reveal by the same playback timestamp.
 - User drag/touch/wheel pauses playback, preventing camera ownership conflicts.
 - Query flag ?capture=1 hides controls; window.__CINEMATIC_GLOBEHOPPERS__ exposes a deterministic timestamp seek/sample API for a future local headless capture tool.
@@ -70,3 +70,37 @@ WP1.1 uses a programmatically drawn aircraft glyph rather than a third-party air
 - Plane anchor is always exactly MapLibre's projection of the current curved-route coordinate. View rotation comes from the *projected* forward and backward path samples rather than geographic heading alone, so it points along its drawn route even on tilted maps.
 - The airplane's 3D takeoff/landing impression is purely local perspective rotation of the PNG and scaling. World latitude/longitude and the route line never shift as a consequence of that visual effect.
 - The browser smoke test checks that PNG pixels actually load, sprite attitude transforms exist and the rendered aircraft anchor matches the map-projected route point within a fraction of a pixel, including during approach.
+
+## WP2: Cinematic Earth Visual System
+
+### Globe appearances
+
+The globe selector offers four modes without calling map.setStyle(), reconstructing a route, or changing the playback clock.
+
+- **Cinematic Earth (default):** NASA Blue Marble at planetary distances, crossfading to 2016 Sentinel-2 cloudless imagery near zoom 5–6.35. Light geographic labels.
+- **Satellite:** The same imagery with underlying basemap labels hidden; GlobeHoppers' own stop labels remain.
+- **Satellite + Labels:** Satellite imagery with stronger geographic labels for context.
+- **Midnight:** The original OpenFreeMap Fiord vector presentation. Raster sources are hidden, avoiding needless tile requests in this mode.
+
+The selected appearance is stored in local browser settings (where available). For a reproducible kiosk or video-capture startup, URL parameters override that setting: /cinematic/?map=earth, ?map=satellite, ?map=hybrid, ?map=midnight. ?capture=1&map=earth hides the playback UI, but retains the map, aircraft, trip geometry and selected imagery. Invalid map IDs default to Cinematic Earth.
+
+### Tile sources and rights
+
+- NASA Blue Marble Next Generation: publicly available NASA EOSDIS GIBS WMTS. https://gibs.earthdata.nasa.gov/ and https://earthobservatory.nasa.gov/features/BlueMarble
+- EOX Sentinel-2 Cloudless **2016**: 10 m cloudless satellite composite, CC BY 4.0; attribution is displayed using the imagery source attribution in MapLibre. https://cloudless.eox.at/documentation/license and https://cloudless.eox.at/pricing
+- OpenFreeMap Fiord: vector labels and the Midnight basemap. https://openfreemap.org/
+
+The NASA source is designed for orbital views, not street-level orthophotography. EOX Sentinel-2 2016 improves land detail to 10 m, but does not provide sub-meter buildings/airports. A future production imagery provider may offer more detail; any provider integration must respect tile access and video/export license terms. The public EOX tile server's throughput and usage policies must be considered for a full-time installation. Do not download entire tile pyramids or assume permission to resell imagery.
+
+The renderer's own code is independently authored; imagery sources have their own attribution and license terms. MapLibre layers are installed **under** destination and route overlays. Styles only change their raster visibility and basemap-label opacity so the camera and airplane always continue from their exact scene timestamp.
+
+### WP2 validation
+
+- Run npm run test:cinematic for camera continuity and map-style source/selection tests.
+- Run the existing cinematic Chromium smoke workflow for visible map, aerial styles, switching without clock resets, airplane alignment, arrival labels and capture mode.
+- Confirm browser requests remain on expected external hosts: NASA GIBS, EOX, OpenFreeMap; none go to Mult.dev.
+- Visually review orbital Earth, regional flight, and close-up arrival. Tile availability and network performance can differ in exhibition deployments.
+
+### Explicitly deferred to WP3/WP4
+
+Full trip database integration and multi-trip preloading are not included in WP2. The existing eight demo points remain unchanged. Continuous one-hour exhibition playback, offline caching and MP4 export remain later work packages.

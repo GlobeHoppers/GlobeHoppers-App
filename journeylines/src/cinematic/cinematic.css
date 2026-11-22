@@ -16,6 +16,38 @@ button { cursor: pointer; }
 .cg-meta { display: flex; align-items: center; gap: 18px; font-size: 11px; font-weight: 550; letter-spacing: .05em; color: #d7e7ed; }
 .cg-meta button, .cg-restart, .cg-speed select { color: #eef9fe; border: 1px solid #b2dce64a; background: #112636a8; border-radius: 10px; padding: 9px 12px; }
 .cg-meta button:hover, .cg-restart:hover, .cg-stop:hover { background: #1b4453bd; }
+
+/* WP2 map palette. Globe mode is a presentation choice, never a scene reset. */
+.cg-map-selector {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  pointer-events: auto; font-size: 9px; letter-spacing: .16em;
+  text-transform: uppercase; color: #b9e8ee;
+}
+.cg-map-selector select {
+  max-width: 184px; min-width: 150px;
+  color: #eefaff; background: #0e2636df;
+  border: 1px solid #a4d9e958; border-radius: 9px;
+  padding: 9px 24px 9px 11px;
+  font-size: 12px; font-weight: 620; letter-spacing: 0;
+  text-transform: none; cursor: pointer;
+  box-shadow: 0 5px 20px #02101963;
+}
+.cg-map-selector select:hover,
+.cg-map-selector select:focus-visible {
+  outline: 1px solid #96e9f1; outline-offset: 1px;
+}
+.cg-app[data-map-preset="earth"],
+.cg-app[data-map-preset="satellite"],
+.cg-app[data-map-preset="hybrid"] {
+  background: radial-gradient(circle at 54% 45%, #1d2e36 0%, #050c13 65%, #01060b 100%);
+}
+.cg-app[data-map-preset="earth"] .cg-vignette,
+.cg-app[data-map-preset="satellite"] .cg-vignette,
+.cg-app[data-map-preset="hybrid"] .cg-vignette {
+  background: linear-gradient(180deg, rgba(1,8,14,.55) 0%, rgba(2,10,16,0) 23%,
+    rgba(2,10,16,0) 59%, rgba(1,9,15,.81) 100%);
+}
+
 .cg-flyout { position: absolute; top: 34%; left: clamp(20px, 4vw, 60px); max-width: min(470px, 75vw); text-shadow: 0 3px 24px #061422; pointer-events: none; }
 .cg-flyout-place { font-size: clamp(35px, 5vw, 75px); letter-spacing: -.065em; font-weight: 720; line-height: 1.05; margin-top: 5px; }
 .cg-flyout-sub { color: #e0eef5a8; font-size: clamp(12px, 1.25vw, 15px); margin-top: 9px; letter-spacing: .015em; }
@@ -110,6 +142,9 @@ button:disabled { opacity: .45; cursor: default; }
   .cg-kicker { font-size: 8px; }
   .cg-topbar h1 { font-size: 20px; }
   .cg-meta .cg-dataset { display: none; }
+  .cg-meta { gap: 7px; }
+  .cg-map-selector { font-size: 8px; }
+  .cg-map-selector select { min-width: 128px; max-width: 142px; font-size: 11px; padding: 7px 18px 7px 8px; }
   .cg-flyout { top: 35%; left: 19px; }
   .cg-flyout-place { font-size: 39px; }
   .cg-arrival-label { padding: 5px 8px; }

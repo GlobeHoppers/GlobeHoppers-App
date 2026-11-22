@@ -8,11 +8,24 @@ import { demoStops } from './demoStops.js';
 import { installCinematicLayers, updateCinematicRoute } from './mapLayers.js';
 import { updateCinematicActors } from './actorOverlay.js';
 import airplaneBluePng from '../Icons/Airplanes/Airplane - Blue.png?url';
+import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
+  installCinematicEarth, setCinematicEarthPreset, getCinematicEarthState } from './earthStyles.js';
 import './cinematic.css';
 
 const scene = buildCinematicScene(demoStops);
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
-const CAPTURE_MODE = new URLSearchParams(window.location.search).get('capture') === '1';
+const query = new URLSearchParams(window.location.search);
+const CAPTURE_MODE = query.get('capture') === '1';
+const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v1';
+function initialEarthPreset() {
+  const requested = query.get('map');
+  if (validEarthPreset(requested)) return requested;
+  try {
+    const saved = window.localStorage.getItem(MAP_STORAGE_KEY);
+    if (validEarthPreset(saved)) return saved;
+  } catch { /* Storage is optional in kiosk/private-browser mode. */ }
+  return DEFAULT_EARTH_PRESET;
+}
 const formatClock = ms => {
   const sec = Math.max(0, Math.floor(ms / 1000));
   return Math.floor(sec / 60).toString().padStart(2, '0') + ':' +
@@ -24,6 +37,8 @@ function CinematicApp() {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const layersReadyRef = useRef(false);
+  const [mapPreset, setMapPreset] = useState(initialEarthPreset);
+  const mapPresetRef = useRef(mapPreset);
   const planeRootRef = useRef(null);
   const planeVisualRef = useRef(null);
   const arrivalRootRef = useRef(null);
@@ -101,6 +116,7 @@ function CinematicApp() {
     });
     map.on('load', () => {
       try {
+        installCinematicEarth(map, mapPresetRef.current);
         installCinematicLayers(map, scene);
         layersReadyRef.current = true;
         renderAt(currentMsRef.current, true);
@@ -157,6 +173,18 @@ function CinematicApp() {
         const point = map.project(plane.coordinates);
         return { x: point.x, y: point.y };
       },
+      getMapDetails() {
+        return mapRef.current ? getCinematicEarthState(mapRef.current) : null;
+      },
+      setMapPreset(id) {
+        if (!validEarthPreset(id)) return false;
+        const map = mapRef.current;
+        if (map && layersReadyRef.current && !setCinematicEarthPreset(map, id)) return false;
+        mapPresetRef.current = id;
+        setMapPreset(id);
+        try { window.localStorage.setItem(MAP_STORAGE_KEY, id); } catch {}
+        return true;
+      },
       getPresentationAtMs(ms) {
         return {
           visibleStops: scene.visibleStops(ms).map(s => s.id),
@@ -165,7 +193,10 @@ function CinematicApp() {
           arrival: scene.arrivalAt(ms)
         };
       },
-      getState() { return { elapsedMs: currentMsRef.current, ready: layersReadyRef.current }; }
+      getState() { return {
+        elapsedMs: currentMsRef.current, ready: layersReadyRef.current,
+        mapPreset: mapPresetRef.current
+      }; }
     });
     window.__CINEMATIC_GLOBEHOPPERS__ = api;
     return () => { delete window.__CINEMATIC_GLOBEHOPPERS__; };
@@ -188,6 +219,14 @@ function CinematicApp() {
     clock.configure({ duration: scene.totalMs / next, progress });
     setSpeed(next);
   };
+  const changeMapPreset = value => {
+    if (!validEarthPreset(value)) return;
+    const map = mapRef.current;
+    if (map && layersReadyRef.current) setCinematicEarthPreset(map, value);
+    mapPresetRef.current = value;
+    setMapPreset(value);
+    try { window.localStorage.setItem(MAP_STORAGE_KEY, value); } catch {}
+  };
   const pose = scene.sample(screen.ms);
   const currentStop = pose.segmentType === 'travel'
     ? scene.stops[pose.legIndex + 1]
@@ -195,7 +234,8 @@ function CinematicApp() {
   const arrival = scene.arrivalAt(screen.ms);
 
   return (
-    <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}>
+    <div className="cg-app" data-capture={CAPTURE_MODE ? 'true' : 'false'}
+      data-map-preset={mapPreset}>
       <div ref={mapEl} className="cg-map" aria-label="Animated globe showing an eight-stop travel route" />
       <div className="cg-vignette" aria-hidden="true" />
       <div className="cg-actors" aria-hidden="true">
@@ -223,6 +263,15 @@ function CinematicApp() {
             </div>
             <div className="cg-meta">
               <span className="cg-dataset">8 stops · demo route</span>
+              <label className="cg-map-selector">
+                <span>Globe</span>
+                <select value={mapPreset} aria-label="Globe appearance"
+                  onChange={e => changeMapPreset(e.target.value)}>
+                  {EARTH_PRESETS.map(preset => (
+                    <option key={preset.id} value={preset.id}>{preset.name}</option>
+                  ))}
+                </select>
+              </label>
               <button type="button" onClick={() => setShowDiagnostics(v => !v)}
                 aria-pressed={showDiagnostics}>Diagnostics</button>
             </div>
@@ -243,6 +292,8 @@ function CinematicApp() {
               <div>Visible stops {scene.visibleStops(screen.ms).length} / {scene.stops.length}</div>
               <div>Frame {screen.fps} FPS · {screen.quality}</div>
               <div>Clock {Math.round(screen.ms)} ms</div>
+              <div>Map {mapPreset}</div>
+              <div>Imagery {mapPreset === 'midnight' ? 'vector' : 'NASA + Sentinel-2'}</div>
             </aside>
           )}
           <section className="cg-console" aria-label="Cinematic playback controls">
@@ -279,7 +330,7 @@ function CinematicApp() {
               ))}
             </div>
           </section>
-          <footer className="cg-footnote">Independent open-source camera prototype · MapLibre + OpenFreeMap · No Mult.dev calls</footer>
+          <footer className="cg-footnote">NASA Blue Marble · EOX Sentinel-2 Cloudless 2016 · MapLibre / OpenFreeMap · No Mult.dev calls</footer>
         </>
       )}
     </div>

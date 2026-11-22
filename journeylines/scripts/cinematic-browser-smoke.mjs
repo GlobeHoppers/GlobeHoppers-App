@@ -37,7 +37,47 @@ try {
   assert.equal(meta.stops, 8);
   assert.ok(meta.duration > 20000);
   assert.ok(first.ready);
+
+  // WP2: satellite Earth is default, with both licensed imagery sources installed.
+  const initialImagery = await page.evaluate(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
+  assert.equal(initialImagery.preset, 'earth');
+  assert.equal(initialImagery.installed, true);
+  assert.deepEqual(initialImagery.activeLayers,
+    ['cg-earth-blue-marble', 'cg-earth-sentinel']);
+  assert.ok(initialImagery.labelLayerCount > 0, 'vector labels should remain available');
+
   await page.screenshot({ path: path.join(out, 'cinematic-initial.png') });
+
+  // Changing globe appearance cannot tear down the map, reset camera progress,
+  // destroy the route layer, or interfere with the moving airplane.
+  const timeBeforeStyles = await page.evaluate(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().elapsedMs);
+  await page.getByLabel('Globe appearance').selectOption('midnight');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'midnight');
+  const midnightImagery = await page.evaluate(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
+  assert.deepEqual(midnightImagery.activeLayers, []);
+  await page.screenshot({ path: path.join(out, 'cinematic-midnight.png') });
+
+  await page.getByLabel('Globe appearance').selectOption('hybrid');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'hybrid');
+  await page.getByLabel('Globe appearance').selectOption('satellite');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'satellite');
+  assert.equal(await page.getByLabel('Globe appearance').inputValue(), 'satellite');
+  await page.screenshot({ path: path.join(out, 'cinematic-satellite.png') });
+
+  await page.getByLabel('Globe appearance').selectOption('earth');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails().preset === 'earth');
+  const timeAfterStyles = await page.evaluate(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getState().elapsedMs);
+  assert.ok(Math.abs(timeAfterStyles - timeBeforeStyles) < 75,
+    'changing imagery must not reset the playback clock');
+
 
   await page.getByRole('button', { name: 'Play cinematic route' }).click();
   await page.waitForTimeout(850);
@@ -154,10 +194,15 @@ try {
 
 
 
-  await page.goto(base + '?capture=1', { waitUntil: 'domcontentloaded' });
+  await page.goto(base + '?capture=1&map=hybrid', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__CINEMATIC_GLOBEHOPPERS__,
     null, { timeout: 15000 });
   assert.equal(await page.locator('.cg-console').count(), 0, 'capture mode must hide playback UI');
+  assert.equal(await page.locator('.cg-map-selector').count(), 0,
+    'capture mode hides globe appearance controls');
+  await page.waitForFunction(() =>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails()?.preset === 'hybrid');
+
   await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.seekMs(13000));
   assert.equal(await page.locator('.cg-actors').count(), 1,
     'cinematic actors remain available for headless video capture');
