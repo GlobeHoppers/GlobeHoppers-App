@@ -102,6 +102,7 @@ function CinematicApp(){
   const [diagnostics,setDiagnostics]=useState(false);
   const [warming,setWarming]=useState(false);
   const [controlsVisible,setControlsVisible]=useState(!EXHIBITION_MODE);
+  const keyboardFocus=useRef(false);
   const [mapGeneration,setMapGeneration]=useState(0);
   const mapGenerationRef=useRef(0);
   const [recoveryMessage,setRecoveryMessage]=useState('');
@@ -296,14 +297,18 @@ function CinematicApp(){
       show:()=>setControlsVisible(true),
       hide:()=>{
         const focused=document.activeElement;
-        if(focused?.closest?.('.cg-topbar,.cg-console'))return;
+        if(keyboardFocus.current && focused?.closest?.('.cg-topbar,.cg-console'))return;
         setControlsVisible(false);
       },
       idleMs:EXHIBITION_IDLE_MS
     });
-    const wake=()=>ui.wake();
+    const wake=()=>{
+      keyboardFocus.current=false;
+      ui.wake();
+    };
     const keydown=event=>{
-      wake();
+      keyboardFocus.current=true;
+      ui.wake();
       if(event.code==='Space'&&
          !['INPUT','SELECT','BUTTON','TEXTAREA'].includes(document.activeElement?.tagName)){
         event.preventDefault();
@@ -320,13 +325,14 @@ function CinematicApp(){
     window.addEventListener('pointerdown',wake,{passive:true});
     window.addEventListener('touchstart',wake,{passive:true});
     window.addEventListener('keydown',keydown);
-    window.addEventListener('focusin',wake);
+    const focusin=()=>ui.wake();
+    window.addEventListener('focusin',focusin);
     return ()=>{
       window.removeEventListener('pointermove',wake);
       window.removeEventListener('pointerdown',wake);
       window.removeEventListener('touchstart',wake);
       window.removeEventListener('keydown',keydown);
-      window.removeEventListener('focusin',wake);
+      window.removeEventListener('focusin',focusin);
       ui.close();
     };
   },[]);

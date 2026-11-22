@@ -54,6 +54,7 @@ try {
   await page.mouse.move(410,175);
   await page.waitForFunction(()=>window.__CINEMATIC_GLOBEHOPPERS__.getState().controlsVisible,
     null,{timeout:5000});
+  await page.locator('.cg-console').waitFor({state:'visible',timeout:10000});
   test.equal(await page.locator('.cg-console').isVisible(),true);
   test.equal(await page.getByRole('button',{name:'Enter fullscreen display'}).count(),1,
     'fullscreen must be a user-gesture button');
@@ -111,6 +112,7 @@ try {
   await page.waitForFunction(()=>
     window.__CINEMATIC_GLOBEHOPPERS__.getState().controlsVisible===false,
     null,{timeout:11000});
+  await page.locator('.cg-console').waitFor({state:'hidden',timeout:7000});
   test.equal(await page.locator('.cg-console').isVisible(),false);
 
   // Kiosk restarts should return to the last saved position, not hour zero.
