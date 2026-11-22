@@ -1,19 +1,7 @@
 name: Cinematic GlobeHoppers WP1 (No Deploy)
 
 on:
-  push:
-    branches:
-      - feature/cinematic-globehoppers-v1
-    paths:
-      - 'journeylines/cinematic/**'
-      - 'journeylines/src/cinematic/**'
-      - 'journeylines/scripts/test-cinematic-scene.mjs'
-      - 'journeylines/scripts/test-cinematic-imagery.mjs'
-      - 'journeylines/scripts/test-cinematic-history.mjs'
-      - 'journeylines/scripts/test-cinematic-exhibition.mjs'
-      - 'journeylines/package.json'
-      - 'journeylines/vite.config.js'
-      - '.github/workflows/cinematic-validation.yml'
+  workflow_dispatch:
   pull_request:
     paths:
       - 'journeylines/cinematic/**'

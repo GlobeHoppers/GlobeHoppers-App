@@ -511,6 +511,7 @@ function CinematicApp(){
         tripCount:playlist.tripCount,legCount:playlist.legCount,stopCount:playlist.stopCount,
         current:playlist.context(elapsedRef.current),preflight:warmup.stats()};},
       getState(){return{elapsedMs:elapsedRef.current,ready:layersReady.current,
+        playing:engineRef.current.snapshot().playing,
         mapPreset:presetRef.current,buffering:gateRef.current.active,
         exhibition:EXHIBITION_MODE,loopCount:loopCount.current,
         controlsVisible:!EXHIBITION_MODE||appRoot.current?.dataset.controlsVisible==='true'};}

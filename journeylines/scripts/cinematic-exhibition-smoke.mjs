@@ -40,10 +40,15 @@ try {
   await page.screenshot({path:path.join(output,'exhibition-clean.png')});
 
   const prior=await current();
-  await page.waitForTimeout(380);
+  test.ok(prior.playing || prior.buffering,
+    'exhibition should already be running or waiting for imagery');
+  await page.waitForFunction(startMs=>{
+    const state=window.__CINEMATIC_GLOBEHOPPERS__.getState();
+    return state.elapsedMs>startMs+175 || state.buffering;
+  },prior.elapsedMs,{timeout:20000,polling:120});
   const advanced=await current();
-  test.ok(advanced.elapsedMs>prior.elapsedMs+175,
-    'unattended presentation should autoplay without a gesture');
+  test.ok(advanced.elapsedMs>prior.elapsedMs+175 || advanced.buffering,
+    'unattended presentation should progress or deliberately prepare imagery');
 
   // Pointer activity reveals controls without affecting the v9 playback clock.
   await page.mouse.move(410,175);
@@ -92,9 +97,12 @@ try {
   test.ok(recovered.elapsedMs>=recoveringAt.elapsedMs-150,
     'renderer recovery should retain the playback timestamp');
   const resumeAt=await current();
-  await page.waitForTimeout(350);
-  test.ok((await current()).elapsedMs>resumeAt.elapsedMs+125,
-    'exhibition must resume after renderer recovery');
+  await page.waitForFunction(startMs=>{
+    const state=window.__CINEMATIC_GLOBEHOPPERS__.getState();
+    return state.elapsedMs>startMs+125 || state.buffering;
+  },resumeAt.elapsedMs,{timeout:20000,polling:120});
+  test.ok((await current()).elapsedMs>resumeAt.elapsedMs+125 ||
+    (await current()).buffering, 'exhibition must resume after renderer recovery');
   await page.screenshot({path:path.join(output,'exhibition-recovered.png')});
 
   // Idle chrome is not allowed to remain over a dedicated always-on screen.

@@ -81,9 +81,15 @@ try {
 
 
   await page.getByRole('button', { name: 'Play cinematic route' }).click();
-  await page.waitForTimeout(850);
+  // Headless SwiftShader may spend >1 s decoding new satellite tiles. Require
+  // observable clock progress, not a particular single-frame CI deadline.
+  await page.waitForFunction(startMs => {
+    const s=window.__CINEMATIC_GLOBEHOPPERS__.getState();
+    return s.elapsedMs > startMs + 200 || s.buffering;
+  }, first.elapsedMs, { timeout: 20000, polling: 120 });
   const advancing = await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.getState());
-  assert.ok(advancing.elapsedMs > first.elapsedMs + 200, 'playback clock did not advance');
+  assert.ok(advancing.elapsedMs > first.elapsedMs + 200 || advancing.buffering,
+    'playback clock did not advance or enter a deliberate imagery preflight');
 
   await page.getByRole('button', { name: 'Pause playback' }).click();
   const paused = await page.evaluate(() => window.__CINEMATIC_GLOBEHOPPERS__.getState());

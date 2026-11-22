@@ -1,16 +1,7 @@
 name: Cinematic GlobeHoppers Browser Smoke (No Deploy)
 
 on:
-  push:
-    branches:
-      - feature/cinematic-globehoppers-v1
-    paths:
-      - 'journeylines/cinematic/**'
-      - 'journeylines/src/cinematic/**'
-      - 'journeylines/scripts/cinematic-browser-smoke.mjs'
-      - 'journeylines/scripts/cinematic-exhibition-smoke.mjs'
-      - 'journeylines/vite.config.js'
-      - '.github/workflows/cinematic-browser.yml'
+  workflow_dispatch:
   pull_request:
     paths:
       - 'journeylines/cinematic/**'
