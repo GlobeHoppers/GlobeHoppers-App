@@ -165,7 +165,7 @@ function CinematicApp(){
 
   useEffect(()=>{
     if(!surfaceReady)return;
-    let map,canvas,disposed=false;
+    let map,canvas,contextLost,disposed=false;
     // Rebuilds preserve the exact playback timestamp and don't replace v9's clock.
     const recover=(message)=>{
       if(!EXHIBITION_MODE){setError(message);return;}
@@ -206,7 +206,7 @@ function CinematicApp(){
     }
     mapRef.current=map;
     canvas=map.getCanvas();
-    const contextLost=event=>{
+    contextLost=event=>{
       event.preventDefault();
       recover('Restoring the globe graphics context');
     };
