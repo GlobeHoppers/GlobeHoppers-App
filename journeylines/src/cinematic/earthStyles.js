@@ -67,9 +67,10 @@ function setAtmosphere(map, mode) {
 }
 
 export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
-  if (stateByMap.has(map)) return setCinematicEarthPreset(map, selected);
+  const preset=normalizedEarthPreset(selected);
+  if (stateByMap.has(map)) return setCinematicEarthPreset(map, preset);
 
-  if (selected==='local') {
+  if (preset==='local') {
     map.addSource(LOCAL_SOURCE,{
       type:'raster',tiles:['cg-local-earth://{z}/{x}/{y}'],tileSize:256,
       minzoom:0,maxzoom:4,
@@ -113,7 +114,7 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
   }, beforeId);
 
   stateByMap.set(map, { labels: labelLayers, preset: null, skySupported: false });
-  return setCinematicEarthPreset(map, selected);
+  return setCinematicEarthPreset(map, preset);
 }
 
 export function setCinematicEarthPreset(map, requested) {
