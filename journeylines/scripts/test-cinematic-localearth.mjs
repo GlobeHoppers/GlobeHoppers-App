@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCinematicScene,pathDistanceIndex } from '../src/cinematic/scene.js';
+import { buildCinematicScene,pathDistanceIndex,cinematicLegDurationMs } from '../src/cinematic/scene.js';
 import { destinationTiles,createImageryPreflight } from '../src/cinematic/imageryPreflight.js';
 import {
   LOCAL_EARTH_TILE_COUNT, LOCAL_EARTH_MAX_ZOOM,
@@ -100,4 +100,16 @@ test('camera does not jump at the endpoints of a winding road leg',()=>{
     assert.ok(Math.hypot(near.center[0]-at.center[0],
       near.center[1]-at.center[1])<.0001);
   }
+});
+
+
+test('long winding surface legs are given enough screen time for continuous camera travel',()=>{
+  for(const mode of ['boat','drive','train']){
+    assert.ok(cinematicLegDurationMs(200,mode)>12000,
+      mode+' should not race through 200 miles in a few seconds');
+    assert.ok(cinematicLegDurationMs(600,mode)<=18500);
+    assert.ok(cinematicLegDurationMs(600,mode)>cinematicLegDurationMs(20,mode));
+  }
+  assert.ok(cinematicLegDurationMs(200,'plane')<10000,
+    'existing airplane pacing stays unchanged');
 });

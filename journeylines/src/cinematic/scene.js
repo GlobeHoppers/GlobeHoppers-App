@@ -164,9 +164,14 @@ function poseAtStop(stop, heading, preset) {
 export function cinematicLegDurationMs(miles, mode = 'plane') {
   const distance = Number(miles);
   if (!Number.isFinite(distance) || distance <= 0) throw new Error('Invalid leg distance');
-  const offset = mode === 'drive' ? 1300 : mode === 'boat' ? 1800 :
-    mode === 'train' ? 1000 : 0;
-  return clamp(4400 + 45 * Math.sqrt(distance) + offset, 4600, 8800);
+  // Surface journeys have many bends. Trying to traverse hundreds of miles
+  // in 6–8 seconds creates apparent camera cuts even with a smooth spline.
+  // The unattended exhibition is intentionally allowed to be long.
+  if (mode === 'drive' || mode === 'boat' || mode === 'train') {
+    const base=mode==='boat'?8400:mode==='train'?7300:7900;
+    return clamp(base + 350*Math.sqrt(distance),8500,18500);
+  }
+  return clamp(4400 + 45*Math.sqrt(distance),4600,8800);
 }
 
 export function buildCinematicScene(rawStops, overrides = {}) {

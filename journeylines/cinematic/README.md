@@ -208,3 +208,5 @@ Build and attribution: npm run dev and npm run build execute scripts/build-cinem
 Validation covers local tile count, geographic reprojection, offline preflight, soft-zoom continuity and distance-normalized camera motion. Browser tests verify local startup, no external imagery requests, and style switching without restarting the timeline. An actual dedicated-display soak test is still required to characterize long-running memory and GPU behavior.
 
 Local Earth also projects the visible trip-stop names as small DOM labels using the same camera frame as the vehicles. This preserves map-anchored names without requesting any remote font PBF glyphs. Its MapLibre raster tile cache is set above the 341-tile local pyramid size so previously rendered regions need not be repeatedly evicted.
+
+The surface-leg director also extends long car, boat and train segments to roughly 9–18.5 seconds according to route distance. The user-approved exhibition runtime is not capped at one hour; giving the smooth camera spline enough screen time prevents hundreds of miles being traversed in a few seconds. Plane pacing remains unchanged.
