@@ -113,3 +113,14 @@ test('long winding surface legs are given enough screen time for continuous came
   assert.ok(cinematicLegDurationMs(200,'plane')<10000,
     'existing airplane pacing stays unchanged');
 });
+
+
+test('scenic preserves close zoom motion and preflights only ten regional tiles',()=>{
+  const p={center:[-80.5,25.6],zoom:9,pitch:60,bearing:22};
+  const local=localEarthCameraPose(p,'local'),scenic=localEarthCameraPose(p,'scenic');
+  assert.ok(scenic.zoom>8.55&&scenic.zoom<8.85);
+  assert.ok(scenic.zoom>local.zoom+1.4);
+  assert.deepEqual(scenic.center,p.center);
+  assert.equal(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'scenic').length,10);
+  assert.deepEqual(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'local'),[]);
+});

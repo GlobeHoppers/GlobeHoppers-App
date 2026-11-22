@@ -125,8 +125,10 @@ export async function prepareLocalEarth(maplibregl,url,onProgress){
 
 /** Soft zoom ceiling matched to an 8K global texture. */
 export function localEarthCameraPose(pose,preset='local'){
-  if(preset!=='local')return pose;
-  const start=6.15,span=1.05;
+  if(preset!=='local'&&preset!=='scenic')return pose;
+  // Preserve real close-up camera moves where bounded regional tiles exist.
+  const start=preset==='scenic'?8.25:6.15;
+  const span=preset==='scenic'?.75:1.05;
   const zoom=pose.zoom<=start?pose.zoom:
     start+span*(1-Math.exp(-(pose.zoom-start)/span));
   return {...pose,zoom};

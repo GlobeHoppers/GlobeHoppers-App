@@ -15,24 +15,30 @@ export const EOX_SENTINEL_2016_TILES =
   'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg';
 
 export const EARTH_PRESETS = Object.freeze([
+  Object.freeze({ id: 'scenic', name: 'Scenic Earth', detail: 'Preloaded globe + selective regional satellite', labels: 0 }),
   Object.freeze({ id: 'local', name: 'Local Earth', detail: 'Preloaded NASA globe · zero remote map tiles', labels: 0 }),
   Object.freeze({ id: 'earth', name: 'Cinematic Earth', detail: 'Natural globe + detailed satellite', labels: 0.42 }),
   Object.freeze({ id: 'satellite', name: 'Satellite', detail: 'Uncluttered real-world imagery', labels: 0 }),
   Object.freeze({ id: 'hybrid', name: 'Satellite + Labels', detail: 'Imagery with geographic context', labels: 0.9 }),
   Object.freeze({ id: 'midnight', name: 'Midnight', detail: 'Original lightweight blue map', labels: 1 })
 ]);
-export const DEFAULT_EARTH_PRESET = 'local';
+export const DEFAULT_EARTH_PRESET = 'scenic';
 export const validEarthPreset = id => EARTH_PRESETS.some(preset => preset.id === id);
 export const normalizedEarthPreset = id => validEarthPreset(id) ? id : DEFAULT_EARTH_PRESET;
 export const activeImageryForPreset = id => {
   const preset = normalizedEarthPreset(id);
   return preset==='local' ? ['cg-earth-local'] :
+    preset==='scenic' ? ['cg-earth-local','cg-earth-regional'] :
     preset==='midnight' ? [] : ['cg-earth-blue-marble', 'cg-earth-sentinel'];
 };
 const presetById = Object.fromEntries(EARTH_PRESETS.map(item => [item.id, item]));
 const stateByMap = new WeakMap();
 
 const LOCAL_SOURCE = 'cg-earth-local';
+const REGIONAL_SOURCE = 'cg-earth-regional';
+export const SCENIC_DETAIL_MAX_ZOOM = 8;
+export const SCENIC_DETAIL_ENTER_ZOOM = 5.65;
+export const SCENIC_DETAIL_EXIT_ZOOM = 5.3;
 const NASA_SOURCE = 'cg-earth-blue-marble';
 const SENTINEL_SOURCE = 'cg-earth-sentinel';
 const CREDITS = {
@@ -70,7 +76,7 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
   const preset=normalizedEarthPreset(selected);
   if (stateByMap.has(map)) return setCinematicEarthPreset(map, preset);
 
-  if (preset==='local') {
+  if (preset==='local'||preset==='scenic') {
     map.addSource(LOCAL_SOURCE,{
       type:'raster',tiles:['cg-local-earth://{z}/{x}/{y}'],tileSize:256,
       minzoom:0,maxzoom:5,
@@ -79,7 +85,22 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
     map.addLayer({id:LOCAL_SOURCE,type:'raster',source:LOCAL_SOURCE,
       paint:{'raster-opacity':1,'raster-fade-duration':0,
         'raster-saturation':0.14,'raster-contrast':0.09}});
-    stateByMap.set(map,{labels:[],preset:'local',skySupported:setAtmosphere(map,'local'),kind:'local'});
+    // Scenic mode is a bounded detail layer over the complete local image.
+    // Strict Local Earth creates no remote source and remains fully offline.
+    if(preset==='scenic'){
+      map.addSource(REGIONAL_SOURCE,{
+        type:'raster',tiles:[EOX_SENTINEL_2016_TILES],tileSize:256,
+        minzoom:5,maxzoom:SCENIC_DETAIL_MAX_ZOOM,attribution:CREDITS.sentinel
+      });
+      map.addLayer({id:REGIONAL_SOURCE,type:'raster',source:REGIONAL_SOURCE,
+        layout:{visibility:'none'},
+        paint:{'raster-opacity':['interpolate',['linear'],['zoom'],
+          5.5,0,6.3,.96,7.2,1],
+          'raster-fade-duration':620,'raster-saturation':0.2,
+          'raster-contrast':0.12}});
+    }
+    stateByMap.set(map,{labels:[],preset,regionalVisible:false,
+      skySupported:setAtmosphere(map,preset),kind:'packaged'});
     return true;
   }
 
@@ -121,8 +142,8 @@ export function setCinematicEarthPreset(map, requested) {
   const state = stateByMap.get(map);
   if (!state) return false;
   const preset = normalizedEarthPreset(requested);
-  if (state.kind==='local') return preset==='local';
-  if (preset==='local') return false; // Requires one controlled renderer rebuild.
+  if (state.kind==='packaged') return preset===state.preset;
+  if (preset==='local'||preset==='scenic') return false; // Requires one controlled renderer rebuild.
   const config = presetById[preset];
 
   if (state.preset === preset) return true;
@@ -147,15 +168,30 @@ export function setCinematicEarthPreset(map, requested) {
   return true;
 }
 
+/** Hysteresis prevents satellite source thrash when zooming near the threshold. */
+export function updateScenicRegionalDetail(map,zoom) {
+  const state=stateByMap.get(map);
+  if(state?.preset!=='scenic'||!Number.isFinite(zoom))return false;
+  const visible=zoom >= (state.regionalVisible?SCENIC_DETAIL_EXIT_ZOOM:SCENIC_DETAIL_ENTER_ZOOM);
+  if(visible!==state.regionalVisible){
+    map.setLayoutProperty(REGIONAL_SOURCE,'visibility',visible?'visible':'none');
+    state.regionalVisible=visible;
+  }
+  return state.regionalVisible;
+}
+
 export function getCinematicEarthState(map) {
   const state = stateByMap.get(map);
   return {
     preset: state?.preset ?? null,
     installed: Boolean(state),
-    sourceIds: state ? (state.kind==='local' ? [LOCAL_SOURCE] : [NASA_SOURCE,SENTINEL_SOURCE]) : [],
+    sourceIds: state ? (state.kind==='packaged' ? (state.preset==='scenic'?[LOCAL_SOURCE,REGIONAL_SOURCE]:[LOCAL_SOURCE]) : [NASA_SOURCE,SENTINEL_SOURCE]) : [],
     activeLayers: state ? activeImageryForPreset(state.preset) : [],
     skySupported: state?.skySupported ?? false,
     labelLayerCount: state?.labels.length ?? 0,
-    local: state?.kind==='local'
+    local: state?.kind==='packaged',
+    regionalDetail: state?.preset==='scenic' ? {visible:state.regionalVisible,
+      maxNativeZoom:SCENIC_DETAIL_MAX_ZOOM,enterZoom:SCENIC_DETAIL_ENTER_ZOOM,
+      exitZoom:SCENIC_DETAIL_EXIT_ZOOM} : null
   };
 }

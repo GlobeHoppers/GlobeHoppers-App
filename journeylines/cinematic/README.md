@@ -223,3 +223,23 @@ The previous surface geometry build ran v9's aggressively stylized presentation 
 **Sharper self-contained globe:** The build now prefers NASA's official 21,600 × 10,800 July Blue Marble global JPEG (approximately 19 MiB) with the previous 5,400 × 2,700 NASA source retained solely as a fallback. The browser downscales this to an 8,192 × 4,096 working bitmap and builds the complete z0–z5 local pyramid (1,365 images) before starting the clock. It keeps that pyramid cached across all playback, avoiding live satellite and vector-map tile requests, with a correspondingly conservative camera zoom ceiling. The tradeoff is a longer initial load and additional CPU/memory use; do not describe this as equivalent to city-level satellite maps. Use the satellite presets when high-detail street-level terrain is the priority.
 
 Regression tests specifically cover the Key West road geometry, history accumulation and backward seeking, north limit, and local tile count. Production v9 is untouched.
+
+
+## WP4.4: Scenic Earth, selectively detailed globe
+
+- **Scenic Earth** is the new default. Keep the full 8K NASA atlas
+  locally preloaded while selectively requesting regional EOX Sentinel-2
+  satellite tiles at native zooms 5–8 only when the camera needs them.
+  The NASA globe stays beneath unavailable tiles and shows through until
+  the new tiles fade in. Provider credit and CC BY 4.0 attribution remain.
+- Strict **Local Earth** (`?map=local`) remains the zero-remote-tile
+  offline-ready exhibition mode. Use `?map=scenic` to explicitly request
+  the hybrid quality mode; this mode needs Internet for regional detail.
+- Scenic detail uses zoom hysteresis and 620 ms fades. Its destination
+  warmup is bounded to 10 EOX tile URLs rather than the 28 of full remote
+  styles. A failed or late remote tile never pauses the cinematic clock.
+- Scenic's higher, smoothly limited zoom restores regional camera
+  movement suppressed by the strict offline atlas ceiling. Preset changes
+  preserve playback timestamp and playing state across renderer rebuilds.
+- Full-history soak testing, remote imagery throughput and visual acceptance
+  remain requirements before production promotion.

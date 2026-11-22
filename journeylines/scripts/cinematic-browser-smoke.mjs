@@ -4,7 +4,7 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 
 const root = process.env.CINEMATIC_BASE_URL || 'http://127.0.0.1:5173/cinematic/';
-const base = root + '?demo=1';
+const base = root + '?demo=1&map=local';
 const out = process.argv[2] || '/tmp/cinematic-smoke';
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({

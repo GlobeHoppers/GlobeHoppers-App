@@ -28,6 +28,12 @@ export function destinationTiles(stop,preset='earth'){
       urls.add(tileUrl(template,z,(x+col+n)%n,yy));
     }
   };
+  if(preset==='scenic'){
+    // Entire globe is already warm: only request a small regional footprint.
+    add(EOX_SENTINEL_2016_TILES,6,1);
+    add(EOX_SENTINEL_2016_TILES,8,0);
+    return [...urls]; // 10 URLs maximum per upcoming destination
+  }
   // Warm the zoom-OUT background first. The old warmup fetched only z7/z8,
   // so regional pullbacks exposed uncached low-zoom raster tiles.
   add(NASA_BLUE_MARBLE_TILES,4,1); // broad Earth backdrop, 9 tiles

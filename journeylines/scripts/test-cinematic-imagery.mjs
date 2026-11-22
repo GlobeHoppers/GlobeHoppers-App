@@ -4,7 +4,7 @@ import {
   EARTH_PRESETS, DEFAULT_EARTH_PRESET,
   NASA_BLUE_MARBLE_TILES, EOX_SENTINEL_2016_TILES,
   activeImageryForPreset, normalizedEarthPreset,
-  installCinematicEarth, setCinematicEarthPreset, getCinematicEarthState
+  installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState
 } from '../src/cinematic/earthStyles.js';
 
 function mockMap() {
@@ -49,11 +49,12 @@ function mockMap() {
 
 test('all WP2 presets are unique, bounded and have safe defaults', () => {
   assert.deepEqual(EARTH_PRESETS.map(preset => preset.id), [
-    'local', 'earth', 'satellite', 'hybrid', 'midnight'
+    'scenic', 'local', 'earth', 'satellite', 'hybrid', 'midnight'
   ]);
-  assert.equal(DEFAULT_EARTH_PRESET, 'local');
+  assert.equal(DEFAULT_EARTH_PRESET, 'scenic');
   assert.equal(normalizedEarthPreset('midnight'), 'midnight');
-  assert.equal(normalizedEarthPreset('invalid-id'), 'local');
+  assert.equal(normalizedEarthPreset('invalid-id'), 'scenic');
+  assert.deepEqual(activeImageryForPreset('scenic'),['cg-earth-local','cg-earth-regional']);
   assert.deepEqual(activeImageryForPreset('local'), ['cg-earth-local']);
   assert.deepEqual(activeImageryForPreset('midnight'), []);
   assert.deepEqual(activeImageryForPreset('earth'),
@@ -122,11 +123,11 @@ test('invalid presets cannot be injected, installed sources remain idempotent', 
   const map = mockMap();
   assert.equal(setCinematicEarthPreset(map, 'earth'), false);
   installCinematicEarth(map, 'bad');
-  assert.equal(getCinematicEarthState(map).preset, 'local');
+  assert.equal(getCinematicEarthState(map).preset, 'scenic');
   assert.equal(installCinematicEarth(map, 'satellite'), false,
     'local-to-remote preset change requires a controlled map rebuild');
-  assert.equal(map.sources.size, 1);
-  assert.equal(map.layers.size, 5);
+  assert.equal(map.sources.size, 2);
+  assert.equal(map.layers.size, 6);
 });
 
 test('globe imagery automatically crossfades between NASA and satellite near zoom 5-6', () => {
@@ -154,4 +155,22 @@ test('local Earth installs one packaged raster source without remote map tiles',
   assert.equal(map.layouts.size,0);
   assert.equal(getCinematicEarthState(map).local,true);
   assert.equal(getCinematicEarthState(map).labelLayerCount,0);
+});
+
+
+test('scenic regional detail is bounded, hysteretic, and retains global imagery',()=>{
+  const map=mockMap();
+  assert.equal(installCinematicEarth(map,'scenic'),true);
+  assert.equal(map.sources.size,2);
+  assert.equal(map.sources.get('cg-earth-regional').maxzoom,8);
+  assert.equal(map.sources.get('cg-earth-regional').minzoom,5);
+  assert.deepEqual(getCinematicEarthState(map).activeLayers,['cg-earth-local','cg-earth-regional']);
+  assert.equal(updateScenicRegionalDetail(map,5.4),false);
+  assert.equal(updateScenicRegionalDetail(map,6),true);
+  const count=map.calls.length;
+  assert.equal(updateScenicRegionalDetail(map,5.45),true);
+  assert.equal(map.calls.length,count);
+  assert.equal(updateScenicRegionalDetail(map,5.2),false);
+  assert.equal(map.layouts.get('cg-earth-regional:visibility'),'none');
+  assert.equal(setCinematicEarthPreset(map,'local'),false);
 });

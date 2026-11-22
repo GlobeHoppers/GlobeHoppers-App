@@ -13,7 +13,7 @@ import { updateCinematicActors } from './actorOverlay.js';
 import { createImageryPreflight } from './imageryPreflight.js';
 import { prepareLocalEarth, getLocalEarthStatus, LOCAL_EARTH_STYLE, localEarthCameraPose } from './localEarth.js';
 import { EARTH_PRESETS, DEFAULT_EARTH_PRESET, validEarthPreset,
-  installCinematicEarth, setCinematicEarthPreset, getCinematicEarthState } from './earthStyles.js';
+  installCinematicEarth, setCinematicEarthPreset, updateScenicRegionalDetail, getCinematicEarthState } from './earthStyles.js';
 import airplanePng from '../Icons/Airplanes/Airplane - Blue.png?url';
 import carPng from '../Icons/Cars/Car - Blue.png?url';
 import boatPng from '../Icons/Boats/Boat - Blue.png?url';
@@ -25,7 +25,7 @@ const DEMO_MODE = query.get('demo') === '1';
 const CAPTURE_MODE = query.get('capture') === '1';
 const EXHIBITION_MODE = query.get('exhibition') === '1' && !CAPTURE_MODE;
 const CHECKPOINT_KEY = 'cinematic-globehoppers-exhibition-checkpoint-v1';
-const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v1';
+const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v2';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
 const VEHICLE_IMAGES = { plane: airplanePng, drive: carPng, boat: boatPng, train: trainPng };
 const sourcePlaylist = DEMO_MODE ? createEightStopPlaylist(demoStops) :
@@ -64,7 +64,7 @@ function initialPreset() {
   if(validEarthPreset(requested))return requested;
   // A dedicated screen starts with the self-contained globe regardless of
   // what someone previously selected in the interactive viewer.
-  if(EXHIBITION_MODE)return 'local';
+  if(EXHIBITION_MODE)return DEFAULT_EARTH_PRESET;
   try{const saved=localStorage.getItem(MAP_STORAGE_KEY);
     if(validEarthPreset(saved))return saved;}catch{}
   return DEFAULT_EARTH_PRESET;
@@ -103,7 +103,7 @@ function CinematicApp(){
   const [mapPreset,setMapPreset]=useState(initialPreset);
   const presetRef=useRef(mapPreset);
   const styleResumeRef=useRef(false);
-  const [localEarthProgress,setLocalEarthProgress]=useState({ready:false,done:0,total:341});
+  const [localEarthProgress,setLocalEarthProgress]=useState({ready:false,done:0,total:1365});
   const [ready,setReady]=useState(false);
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
@@ -150,12 +150,13 @@ function CinematicApp(){
     if(!map||!layersReady.current)return pose;
     // v9 clock owns camera and vehicle together, independent from GeoJSON cadence.
     map.jumpTo({center:pose.center,zoom:pose.zoom,pitch:pose.pitch,bearing:pose.bearing});
+    updateScenicRegionalDetail(map,pose.zoom);
     updateCinematicActors(map,playlist,ms,{
       planeRoot:planeRef.current,planeVisual:planeImageRef.current,
       arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
       vehicleImages:VEHICLE_IMAGES,
       stopLabelsRoot:stopLabelsRef.current,
-      showLocalLabels:presetRef.current==='local'
+      showLocalLabels:['local','scenic'].includes(presetRef.current)
     });
     if(force||Math.abs(ms-routeUpdatedRef.current)>=65||
        pose.segmentType!==routeSegmentRef.current){
@@ -198,13 +199,13 @@ function CinematicApp(){
       const start=localEarthCameraPose(playlist.sample(elapsedRef.current),presetRef.current);
       map=new maplibregl.Map({
         container:mapContainer.current,
-        style:presetRef.current==='local'?LOCAL_EARTH_STYLE:MAP_STYLE,
+        style:['local','scenic'].includes(presetRef.current)?LOCAL_EARTH_STYLE:MAP_STYLE,
         projection:{type:'globe'},
         center:start.center,zoom:start.zoom,pitch:start.pitch,bearing:start.bearing,
         minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
         // The packaged globe has only 341 tiles in total; retain its entire
         // pyramid on a dedicated display instead of re-decoding evicted tiles.
-        maxTileCacheSize:presetRef.current==='local'?1500:80
+        maxTileCacheSize:['local','scenic'].includes(presetRef.current)?1500:80
       });
     }catch(e){
       recover('Unable to initialize WebGL. Retrying the globe.');
@@ -229,12 +230,13 @@ function CinematicApp(){
     map.on('mousedown',manual);map.on('touchstart',manual);map.on('wheel',manual);
     map.on('move',()=>{
       if(!layersReady.current||engineRef.current.snapshot().playing)return;
+      updateScenicRegionalDetail(map,map.getZoom());
       updateCinematicActors(map,playlist,elapsedRef.current,{
         planeRoot:planeRef.current,planeVisual:planeImageRef.current,
         arrivalRoot:arrivalRef.current,arrivalName:arrivalNameRef.current,
         vehicleImages:VEHICLE_IMAGES,
         stopLabelsRoot:stopLabelsRef.current,
-        showLocalLabels:presetRef.current==='local'
+        showLocalLabels:['local','scenic'].includes(presetRef.current)
       });
     });
     map.on('load',()=>{
@@ -268,7 +270,7 @@ function CinematicApp(){
         recover('Map data unavailable. Retrying when the connection allows.');
     });
     };
-    if(presetRef.current==='local'){
+    if(['local','scenic'].includes(presetRef.current)){
       // Decode and prepare the complete Earth before creating the map or
       // starting the playback clock. No satellite tile requests afterwards.
       mapAttemptStarted.current=performance.now();
@@ -320,7 +322,7 @@ function CinematicApp(){
         const key=clip.entry.id+':'+leg.index+':'+presetRef.current;
         const job=warmup.schedule(leg.to,presetRef.current);
         const phase=(clip.localMs-leg.startMs)/leg.durationMs;
-        if(state.playing&&phase>=0.63&&phase<0.79&&
+        if(state.playing&&presetRef.current!=='scenic'&&phase>=0.63&&phase<0.79&&
            job.status==='loading'&&gateRef.current.key!==key){
           const token=gateRef.current.token+1;
           gateRef.current={key,active:true,token};
@@ -521,7 +523,9 @@ function CinematicApp(){
   };
   const choosePreset=id=>{
     if(!validEarthPreset(id)||id===presetRef.current)return;
-    const switchRenderer=(id==='local')!==(presetRef.current==='local');
+    const packaged=value=>value==='local'||value==='scenic';
+    const switchRenderer=packaged(id)!==packaged(presetRef.current)||
+      (packaged(id)&&id!==presetRef.current);
     if(switchRenderer){
       cancelGate();
       const clock=engineRef.current;
