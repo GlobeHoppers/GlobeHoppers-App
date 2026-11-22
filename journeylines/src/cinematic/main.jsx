@@ -103,7 +103,7 @@ function CinematicApp(){
   const [mapPreset,setMapPreset]=useState(initialPreset);
   const presetRef=useRef(mapPreset);
   const styleResumeRef=useRef(false);
-  const [localEarthProgress,setLocalEarthProgress]=useState({ready:false,done:0,total:1365});
+  const [localEarthProgress,setLocalEarthProgress]=useState({ready:false,done:0,total:mapPreset==='scenic'?341:1365});
   const [ready,setReady]=useState(false);
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
@@ -205,7 +205,7 @@ function CinematicApp(){
         minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
         // The packaged globe has only 341 tiles in total; retain its entire
         // pyramid on a dedicated display instead of re-decoding evicted tiles.
-        maxTileCacheSize:['local','scenic'].includes(presetRef.current)?1500:80
+        maxTileCacheSize:presetRef.current==='local'?1500:presetRef.current==='scenic'?520:80
       });
     }catch(e){
       recover('Unable to initialize WebGL. Retrying the globe.');
@@ -280,7 +280,7 @@ function CinematicApp(){
       // 1.6 MB cached copy after deployment of the 20 MB high-res texture.
       texture.searchParams.set('gh-atlas','hires-8k-v2');
       prepareLocalEarth(maplibregl,texture.toString(),(done,total)=>
-        setLocalEarthProgress({ready:false,done,total}))
+        setLocalEarthProgress({ready:false,done,total}),presetRef.current)
         .then(status=>{
           if(disposed)return;
           setLocalEarthProgress({ready:true,done:status.cachedTiles,total:status.totalTiles});
@@ -593,7 +593,7 @@ function CinematicApp(){
       },
       getMapDetails:()=>mapRef.current?{
         ...getCinematicEarthState(mapRef.current),
-        localEarth:getLocalEarthStatus()
+        localEarth:getLocalEarthStatus(presetRef.current)
       }:null,
       setMapPreset(id){if(!validEarthPreset(id))return false;choosePreset(id);return true;},
       getExhibitionDetails(){return{
@@ -700,7 +700,7 @@ function CinematicApp(){
         </header>
         {error&&<div className="cg-alert" role="alert">{error}</div>}
         {!ready&&!error&&<div className="cg-loading" role="status">
-          {presetRef.current==='local'&&localEarthProgress.done>0?
+          {['local','scenic'].includes(presetRef.current)&&localEarthProgress.done>0?
             'Preparing local Earth '+localEarthProgress.done+'/'+localEarthProgress.total+' tiles…':
             'Preparing cinematic globe and reviewed routes…'}
         </div>}

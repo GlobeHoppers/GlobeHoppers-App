@@ -261,3 +261,17 @@ Regression tests specifically cover the Key West road geometry, history accumula
 - Between-trip globe bridges now use one continuous zoom envelope instead of
   two easing halves that stopped at the midpoint. All motion is deterministic
   from the existing playback timestamp; no extra animation loop.
+
+
+### Compact Scenic atlas (resource budget)
+
+- Scenic Earth now rasterizes only **341 planetary z0–z4 tiles** (4K working
+  image) rather than the full **1,365 z0–z5 tiles** of strict Local Earth.
+  This reduces Scenic's first-load atlas work and resident image memory while
+  keeping the globe complete under the selective regional imagery overlay.
+- `?map=local` still generates all 1,365 tiles at 8K for fully offline
+  quality. Switching from Scenic to Local reuses z0–z4 and builds only the
+  missing z5 level. Switching back cannot discard already cached detail.
+- The WebGL map tile-cache limit is 520 for Scenic and 1500 for Local;
+  no remote tile pyramid is downloaded at build time. Browser regression
+  checks both mode-specific budgets and the zoom-triggered regional source.

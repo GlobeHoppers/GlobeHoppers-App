@@ -20,7 +20,7 @@ const unexpectedLocalImageryRequests=[];
 page.on('pageerror', e => runtimeErrors.push(e.message));
 page.on('request', request => {
   if (/(\.|^)mult\.dev$/.test(new URL(request.url()).hostname)) unexpectedHosts.push(request.url());
-  if (page.url().includes('?demo=1') && !page.url().includes('capture=1') &&
+  if (page.url().includes('map=local') && !page.url().includes('capture=1') &&
       /gibs\.earthdata\.nasa\.gov|tiles\.maps\.eox\.at|tiles\.openfreemap\.org/.test(request.url()))
     unexpectedLocalImageryRequests.push(request.url());
 });
@@ -265,6 +265,26 @@ try {
     'earlier destinations should persist as map markers');
   assert.ok(history.now.elapsedMs>history.durationMs*.72);
   await page.screenshot({path:path.join(out,'cinematic-full-history.png')});
+
+  // Verify the default hybrid quality mode in real Chromium as a separate
+  // profile from the strict Local Earth zero-remote-request regression.
+  await page.goto(root+'?demo=1&map=scenic',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__?.getState().ready===true,
+    null,{timeout:90000});
+  const scenicReady=await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
+  assert.equal(scenicReady.preset,'scenic');
+  assert.equal(scenicReady.localEarth.totalTiles,341,
+    'scenic needs only the compact global z0–z4 atlas');
+  assert.equal(scenicReady.localEarth.ready,true);
+  await page.evaluate(()=>window.__CINEMATIC_GLOBEHOPPERS__.seekMs(2600));
+  const scenicClose=await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
+  assert.equal(scenicClose.regionalDetail.visible,true,
+    'regional tiles should be activated only at a close camera zoom');
+  assert.equal(scenicClose.regionalDetail.maxNativeZoom,8);
+  await page.screenshot({path:path.join(out,'cinematic-scenic-regional.png')});
 
   assert.deepEqual(unexpectedHosts, [], 'unexpected Mult.dev requests');
   assert.deepEqual(runtimeErrors, [], 'browser runtime exceptions');

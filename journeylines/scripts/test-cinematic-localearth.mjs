@@ -4,6 +4,7 @@ import { buildCinematicScene,pathDistanceIndex,cinematicLegDurationMs } from '..
 import { destinationTiles,createImageryPreflight } from '../src/cinematic/imageryPreflight.js';
 import {
   LOCAL_EARTH_TILE_COUNT, LOCAL_EARTH_MAX_ZOOM,
+  SCENIC_EARTH_TILE_COUNT, SCENIC_EARTH_MAX_ZOOM,
   LOCAL_EARTH_SCHEME, LOCAL_EARTH_STYLE,
   localEarthTileURL,localEarthCameraPose,mercatorRowLatitude,getLocalEarthStatus
 } from '../src/cinematic/localEarth.js';
@@ -11,6 +12,8 @@ import {
 test('local Earth is finite and complete before the display starts',()=>{
   assert.equal(LOCAL_EARTH_MAX_ZOOM,5);
   assert.equal(LOCAL_EARTH_TILE_COUNT,1365);
+  assert.equal(SCENIC_EARTH_MAX_ZOOM,4);
+  assert.equal(SCENIC_EARTH_TILE_COUNT,341);
   assert.equal(LOCAL_EARTH_SCHEME,'cg-local-earth');
   assert.equal(localEarthTileURL(4,9,7),'cg-local-earth://4/9/7');
   assert.equal(LOCAL_EARTH_STYLE.version,8);

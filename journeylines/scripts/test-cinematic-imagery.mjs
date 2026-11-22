@@ -164,6 +164,7 @@ test('scenic regional detail is bounded, hysteretic, and retains global imagery'
   assert.equal(map.sources.size,2);
   assert.equal(map.sources.get('cg-earth-regional').maxzoom,8);
   assert.equal(map.sources.get('cg-earth-regional').minzoom,5);
+  assert.equal(map.sources.get('cg-earth-local').maxzoom,4);
   assert.deepEqual(getCinematicEarthState(map).activeLayers,['cg-earth-local','cg-earth-regional']);
   assert.equal(updateScenicRegionalDetail(map,5.4),false);
   assert.equal(updateScenicRegionalDetail(map,6),true);
