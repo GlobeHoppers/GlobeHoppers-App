@@ -124,3 +124,28 @@ test('scenic preserves close zoom motion and preflights only ten regional tiles'
   assert.equal(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'scenic').length,10);
   assert.deepEqual(destinationTiles({id:'miami',lat:25.7,lon:-80.2},'local'),[]);
 });
+
+
+test('surface camera derivatives stay continuous through route knots',()=>{
+  const points=[[-81,25],[-80.9,25.5],[-80.5,25.55],[-80.7,25.7],
+    [-80.1,25.9],[-80.0,26.2],[-79.5,26.4]];
+  const scene=buildCinematicScene([{id:'s',lon:-81,lat:25},
+    {id:'e',lon:-79.5,lat:26.4,modeFromPrevious:'drive',
+      geometryFromPrevious:points}]);
+  const leg=scene.legs[0];
+  // Camera path has matching first derivatives on both sides of each spline knot.
+  const step=leg.durationMs/120;
+  for(let i=2;i<119;i++){
+    const center=scene.sample(leg.startMs+i*step).center;
+    const before=scene.sample(leg.startMs+i*step-.1).center;
+    const after=scene.sample(leg.startMs+i*step+.1).center;
+    const v0=[center[0]-before[0],center[1]-before[1]];
+    const v1=[after[0]-center[0],after[1]-center[1]];
+    assert.ok(Math.hypot(v1[0]-v0[0],v1[1]-v0[1])<.000015,
+      'camera velocity must not make a visible kink at knot '+i);
+  }
+  const quarter=scene.sample(leg.startMs+.25*leg.durationMs);
+  const middle=scene.sample(leg.startMs+.5*leg.durationMs);
+  assert.ok(Math.abs(quarter.bearing)<=25 && Math.abs(middle.bearing)<=25);
+  assert.ok(middle.zoom>quarter.zoom-.5,'close-range dolly is progressive');
+});

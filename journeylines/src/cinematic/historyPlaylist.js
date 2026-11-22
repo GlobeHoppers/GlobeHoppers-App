@@ -51,8 +51,12 @@ function globeBetween(a,b,u){
 
 function bridgeCamera(a,b,u){
   const t=smooth(u), far=Math.min(4.25,a.zoom,b.zoom);
+  // One uninterrupted lens move instead of two easing halves with an
+  // artificial complete stop at the middle of every between-trip bridge.
+  const base=a.zoom+(b.zoom-a.zoom)*t;
+  const lift=Math.sin(Math.PI*u)**2;
   return {center:globeBetween(a.center,b.center,t),
-    zoom:u<.5?a.zoom+(far-a.zoom)*smooth(u*2):far+(b.zoom-far)*smooth((u-.5)*2),
+    zoom:base+(far-base)*lift,
     pitch:a.pitch+(b.pitch-a.pitch)*t,
     bearing:a.bearing+dlon(a.bearing,b.bearing)*t,
     segmentType:'bridge',stopIndex:-1,legIndex:-1,travelProgress:t};

@@ -89,7 +89,11 @@ function positionAlong(leg,u){return positionAtDistance(leg,u).coordinate;}
 const CAMERA_KNOTS=121;
 function cameraTrackFor(leg) {
   if(leg.mode==='plane')return null;
-  const leadMiles=leg.mode==='boat'?3.0:leg.mode==='train'?1.55:1.1;
+  // Anticipate upcoming bends at a distance appropriate for the journey.
+  // Fractional look-ahead is bounded in real miles, not vertex count.
+  const leadMiles=leg.mode==='boat'?clamp(leg.miles*.017,1.2,7.0):
+    leg.mode==='train'?clamp(leg.miles*.012,.75,4.5):
+    clamp(leg.miles*.012,.55,3.6);
   const raw=Array.from({length:CAMERA_KNOTS},(_,i)=>{
     const progress=smooth(i/(CAMERA_KNOTS-1));
     const lead=(leadMiles/Math.max(.1,leg.pathDistance.totalMiles))*
@@ -120,18 +124,20 @@ function cameraAt(leg,u) {
     next=knots[Math.min(knots.length-1,i+2)];
   // Clamped cubic Hermite: continuous first derivative at each knot,
   // without overshooting sharply around hairpins or across the dateline.
-  const x1=deltaAngle(a[0],b[0]),x0=deltaAngle(a[0],prev[0]);
-  const x2=deltaAngle(a[0],next[0]);
-  const y1=b[1]-a[1],y0=prev[1]-a[1],y2=next[1]-a[1];
-  const hermite=(d,m0,m1)=>{
+  const xPrev=deltaAngle(prev[0],a[0]),x=deltaAngle(a[0],b[0]),
+    xNext=deltaAngle(b[0],next[0]);
+  const yPrev=a[1]-prev[1],y=b[1]-a[1],yNext=next[1]-b[1];
+  // Monotone Hermite interpolation gives shared knot tangents and removes
+  // the old per-component clamp that caused tiny flat spots at every knot.
+  const slope=(left,right)=>left*right>0?2*left*right/(left+right):0;
+  const interpolate=(before,delta,after)=>{
+    const m0=slope(before,delta),m1=slope(delta,after);
     const t2=t*t,t3=t2*t;
-    return (2*t3-3*t2+1)*0+(t3-2*t2+t)*m0+
-      (-2*t3+3*t2)*d+(t3-t2)*m1;
+    const value=(t3-2*t2+t)*m0+(-2*t3+3*t2)*delta+(t3-t2)*m1;
+    return clamp(value,Math.min(0,delta),Math.max(0,delta));
   };
-  const x=hermite(x1,(x1-x0)/2,(x2)/2);
-  const y=hermite(y1,(y1-y0)/2,(y2)/2);
-  return [a[0]+clamp(x,Math.min(0,x1),Math.max(0,x1)),
-    a[1]+clamp(y,Math.min(0,y1),Math.max(0,y1))];
+  return [a[0]+interpolate(xPrev,x,xNext),
+    a[1]+interpolate(yPrev,y,yNext)];
 }
 
 function northBoundBearing(bearing, limit) {
@@ -289,19 +295,31 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const routeHeading = northBoundBearing(bearingBetween(
       {lon:pointBefore[0],lat:pointBefore[1]},
       {lon:pointAfter[0],lat:pointAfter[1]}),preset.northLimitDegrees);
-    const steering = surface ? 0.38*Math.sin(Math.PI*u)**2 : 0;
+    const steering = surface ? 0.54*Math.sin(Math.PI*u)**2 : 0;
     const naturalBearing = mix(headings[leg.index],headings[leg.index+1],eased);
+    // One restrained, end-tapered sweep makes the view feel directed rather
+    // than locked, but preserves ±25° north-up and zero endpoint rotation.
+    const sweep=Math.sin(Math.PI*u)**2*Math.sin(2*Math.PI*u);
     const bearing = clamp(mix(naturalBearing,routeHeading,steering) +
-      Math.sin(Math.PI*u)**2*3.5,-preset.northLimitDegrees,preset.northLimitDegrees);
-    // A road/boat scene follows the vehicle along the actual supplied route,
-    // with a small look-ahead that fades to zero at departure and arrival.
-    // The vehicle itself remains anchored to the current route coordinate.
+      7.5*sweep,-preset.northLimitDegrees,preset.northLimitDegrees);
+    // Keep the vehicle on the reviewed geometry. The camera looks ahead and
+    // makes a small, smooth side-dolly to reveal more of the surrounding land.
     const follow = surface ? cameraAt(leg,u) : positionAlong(leg,eased);
+    const routeRadians=radians(bearingBetween(
+      {lon:pointBefore[0],lat:pointBefore[1]},
+      {lon:pointAfter[0],lat:pointAfter[1]}));
+    const dollyMiles=(surface?(leg.mode==='boat'?.58:.30):clamp(leg.miles*.004,.4,4.0))*sweep;
+    const latitude=clamp(follow[1]-Math.sin(routeRadians)*dollyMiles/69.05,-85,85);
+    const longitude=follow[0]+Math.cos(routeRadians)*dollyMiles/
+      (69.05*Math.max(.2,Math.cos(radians(follow[1]))));
+    const cinematicLift=Math.sin(Math.PI*u)**2;
     return {
-      center: follow,
-      zoom: mix(preset.arrivalZoom, leg.cruiseZoom, highAltitude),
+      center: [longitude,latitude],
+      zoom: mix(preset.arrivalZoom,leg.cruiseZoom,highAltitude)+
+        (surface?.18:.11)*cinematicLift,
       pitch: mix(preset.arrivalPitch,
-        surface ? (leg.mode === 'boat' ? 58 : 61) : preset.cruisingPitch, highAltitude),
+        surface ? (leg.mode === 'boat' ? 58 : 61) : preset.cruisingPitch, highAltitude)+
+        (surface?1.4:1.0)*cinematicLift,
       bearing,
       elapsedMs: timeMs,
       segmentType: 'travel',
@@ -341,11 +359,20 @@ export function buildCinematicScene(rawStops, overrides = {}) {
     const takeoffWindow = 1 - smooth(elapsedFraction / 0.25);
     const landingWindow = smooth((elapsedFraction - 0.70) / 0.30);
     const pitchDegrees = leg.mode === 'plane'
-      ? Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10 : 0;
+      ? Math.round((landingWindow * 76 - takeoffWindow * 56) * 10) / 10
+      : Math.round((-12*(1-smooth(elapsedFraction/.16))+
+        10*smooth((elapsedFraction-.85)/.15))*10)/10;
     const endpointBias = Math.max(0, 1 - Math.min(elapsedFraction, 1 - elapsedFraction) / 0.22);
     const takeoffGrow = mix(0.72, 1, smooth(elapsedFraction / 0.085));
     const landingScale = mix(1, 0.78, smooth((elapsedFraction - 0.92) / 0.08));
-    const scale = (0.76 + 0.16 * smooth(endpointBias)) * takeoffGrow * landingScale;
+    const planeScale = (0.76 + 0.16 * smooth(endpointBias)) * takeoffGrow * landingScale;
+    // A more legible, staged vehicle grow/shrink at surface departures and
+    // arrivals. Boats, cars and trains use the same deterministic choreography.
+    const surfaceDeparture=mix(.49,1.07,smooth(elapsedFraction/.16));
+    const surfaceArrival=mix(1,.49,smooth((elapsedFraction-.84)/.16));
+    const surfaceBreath=1+.04*Math.sin(Math.PI*elapsedFraction)**2;
+    const scale=leg.mode==='plane'?planeScale:
+      surfaceDeparture*surfaceArrival*surfaceBreath;
     return { coordinates: coordinate,
       behindCoordinates: a, aheadCoordinates: b,
       bearing, legIndex: leg.index, progress: u,

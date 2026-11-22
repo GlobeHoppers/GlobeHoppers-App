@@ -258,3 +258,24 @@ test('reviewed surface routes drive vehicle and camera on real-route corridors',
     assert.ok(Math.abs(atEnd.center[0]-leg.to.lon)<1e-6);
   }
 });
+
+
+test('surface vehicle sprites grow on departure and shrink again before arrival',()=>{
+  const modes=['drive','boat','train'];
+  for(const mode of modes){
+    const scene=buildCinematicScene([
+      {id:'start',lon:-80.5,lat:25.3},
+      {id:'finish',lon:-80.1,lat:26.5,modeFromPrevious:mode,
+        geometryFromPrevious:[[-80.5,25.3],[-80.3,25.9],[-80.1,26.5]]}
+    ]);
+    const leg=scene.legs[0];
+    const sprite=p=>scene.planeAt(leg.startMs+p*leg.durationMs);
+    const departure=sprite(.02),cruise=sprite(.5),approach=sprite(.97);
+    assert.equal(cruise.pitchDegrees,0);
+    assert.ok(departure.pitchDegrees<0 && approach.pitchDegrees>0);
+    assert.ok(cruise.scale>departure.scale*1.65,mode+' must grow after departure');
+    assert.ok(cruise.scale>approach.scale*1.65,mode+' must shrink on arrival');
+    assert.equal(sprite(.5).scale,cruise.scale,'fixed-time seeks stay deterministic');
+    assert.equal(scene.planeAt(leg.endMs),null);
+  }
+});

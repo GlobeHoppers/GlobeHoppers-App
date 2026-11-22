@@ -243,3 +243,21 @@ Regression tests specifically cover the Key West road geometry, history accumula
   preserve playback timestamp and playing state across renderer rebuilds.
 - Full-history soak testing, remote imagery throughput and visual acceptance
   remain requirements before production promotion.
+
+
+### WP4.4: Continuous camera and ground/water vehicle motion
+
+- Cars, boats and trains now grow from 49% to full visual scale during the
+  first 16% of travel and shrink again near arrival. A subtle bounded
+  perspective tilt reinforces motion. World coordinates stay exactly on the
+  reviewed route, just as aircraft do; sprites vanish at arrival.
+- Camera track uses distance-bounded anticipation and monotone cubic Hermite
+  tangent interpolation. It avoids the old clamped-knot velocity flattening
+  without smoothing the actual road or water path used by the vehicle.
+- Travel camera adds a small route-relative side-dolly, a single end-tapered
+  bearing sweep (still within ±25° of north), and mild zoom/pitch depth.
+  Endpoint dolly, sweep and lens offsets are all exactly zero, so adjacent
+  holds and trips remain connected without hidden camera cuts.
+- Between-trip globe bridges now use one continuous zoom envelope instead of
+  two easing halves that stopped at the midpoint. All motion is deterministic
+  from the existing playback timestamp; no extra animation loop.
