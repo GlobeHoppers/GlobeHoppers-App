@@ -4,7 +4,8 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { PlaybackEngine } from '../utils/playbackEngine.js';
 import { demoStops } from './demoStops.js';
-import { createHistoryPlaylist, createEightStopPlaylist } from './historyPlaylist.js';
+import { createHistoryPlaylist, createEightStopPlaylist, withExhibitionLoop } from './historyPlaylist.js';
+import { EXHIBITION_IDLE_MS, EXHIBITION_WATCHDOG_MS, exhibitionRetryDelay, createExhibitionUi } from './exhibition.js';
 import tripHistory from '../data/trips.json';
 import locations from '../data/locations.json';
 import { installCinematicLayers, updateCinematicRoute, clearCinematicRoute } from './mapLayers.js';
@@ -21,11 +22,32 @@ import './cinematic.css';
 const query = new URLSearchParams(window.location.search);
 const DEMO_MODE = query.get('demo') === '1';
 const CAPTURE_MODE = query.get('capture') === '1';
+const EXHIBITION_MODE = query.get('exhibition') === '1' && !CAPTURE_MODE;
+const CHECKPOINT_KEY = 'cinematic-globehoppers-exhibition-checkpoint-v1';
 const MAP_STORAGE_KEY = 'cinematic-globehoppers-earth-preset-v1';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/fiord';
 const VEHICLE_IMAGES = { plane: airplanePng, drive: carPng, boat: boatPng, train: trainPng };
-const playlist = DEMO_MODE ? createEightStopPlaylist(demoStops) :
+const sourcePlaylist = DEMO_MODE ? createEightStopPlaylist(demoStops) :
   createHistoryPlaylist(tripHistory, locations);
+const playlist = EXHIBITION_MODE ? withExhibitionLoop(sourcePlaylist) : sourcePlaylist;
+function readCheckpoint() {
+  if (!EXHIBITION_MODE || query.get('reset') === '1') return 0;
+  try {
+    const data=JSON.parse(localStorage.getItem(CHECKPOINT_KEY)||'null');
+    if (data?.durationMs !== playlist.totalMs || data?.tripCount !== playlist.tripCount ||
+        !Number.isFinite(data.ms) || data.ms < 0 || data.ms >= playlist.totalMs ||
+        Date.now()-data.savedAt > 7*24*60*60*1000 || data.savedAt>Date.now()+60000) return 0;
+    return data.ms;
+  } catch { return 0; }
+}
+const START_MS=readCheckpoint();
+function saveCheckpoint(ms) {
+  if (!EXHIBITION_MODE) return;
+  try { localStorage.setItem(CHECKPOINT_KEY,JSON.stringify({
+    durationMs:playlist.totalMs,tripCount:playlist.tripCount,
+    ms:clamp(ms,0,playlist.totalMs),savedAt:Date.now()
+  })); } catch { /* Private browsing can disable storage. */ }
+}
 const warmup = createImageryPreflight();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const formatClock = ms => {
@@ -45,6 +67,7 @@ function initialPreset() {
 }
 
 function CinematicApp(){
+  const appRoot=useRef(null);
   const mapContainer=useRef(null);
   const mapRef=useRef(null);
   const layersReady=useRef(false);
@@ -52,13 +75,25 @@ function CinematicApp(){
   const arrivalRef=useRef(null),arrivalNameRef=useRef(null);
   const engineRef=useRef(null);
   if(!engineRef.current)engineRef.current=new PlaybackEngine();
-  const elapsedRef=useRef(0);
+  const elapsedRef=useRef(START_MS);
+  const mapHeartbeat=useRef(0);
+  const mapAttemptStarted=useRef(0);
+  const recoverTimer=useRef(null);
+  const recoverHandler=useRef(null);
+  const recoveryAttempts=useRef(0);
+  const recoveryShouldResume=useRef(false);
+  const autoStarted=useRef(false);
+  const visibilityPaused=useRef(false);
+  const manuallyPaused=useRef(false);
+  const checkpointMs=useRef(START_MS);
+  const loopCount=useRef(0);
+  const wakeLock=useRef(null);
   const routeUpdatedRef=useRef(-Infinity);
   const routeSegmentRef=useRef('');
   const previousTripRef=useRef(-1);
   const uiRef=useRef(0);
   const gateRef=useRef({key:null,active:false,token:0});
-  const [display,setDisplay]=useState({playing:false,ms:0,fps:60,quality:'high'});
+  const [display,setDisplay]=useState({playing:false,ms:START_MS,fps:60,quality:'high'});
   const [speed,setSpeed]=useState(1);
   const [mapPreset,setMapPreset]=useState(initialPreset);
   const presetRef=useRef(mapPreset);
@@ -66,6 +101,12 @@ function CinematicApp(){
   const [error,setError]=useState('');
   const [diagnostics,setDiagnostics]=useState(false);
   const [warming,setWarming]=useState(false);
+  const [controlsVisible,setControlsVisible]=useState(!EXHIBITION_MODE);
+  const [mapGeneration,setMapGeneration]=useState(0);
+  const mapGenerationRef=useRef(0);
+  const [recoveryMessage,setRecoveryMessage]=useState('');
+  const [offline,setOffline]=useState(false);
+  const [fullscreen,setFullscreen]=useState(false);
 
   const updateAt=useCallback((ms,force=false)=>{
     const clip=playlist.locate(ms),pose=clip.pose;
@@ -89,16 +130,56 @@ function CinematicApp(){
 
   useEffect(()=>{
     let map;
+    // Rebuilds preserve the exact playback timestamp and don't replace v9's clock.
+    const recover=(message)=>{
+      if(!EXHIBITION_MODE){setError(message);return;}
+      if(recoverTimer.current!=null)return;
+      recoveryShouldResume.current = recoveryShouldResume.current ||
+        engineRef.current.snapshot().playing ||
+        (!autoStarted.current&&!manuallyPaused.current);
+      if(gateRef.current.active){
+        gateRef.current.active=false;gateRef.current.token++;
+        setWarming(false);
+      }
+      if(engineRef.current.snapshot().playing)engineRef.current.pause();
+      layersReady.current=false;
+      setReady(false);
+      setRecoveryMessage(message);
+      const retryMs=exhibitionRetryDelay(recoveryAttempts.current++);
+      recoverTimer.current=window.setTimeout(()=>{
+        recoverTimer.current=null;
+        setMapGeneration(value=>{mapGenerationRef.current=value+1;return value+1;});
+      },retryMs);
+    };
+    recoverHandler.current=recover;
     try{
-      const start=playlist.sample(0);
+      const start=playlist.sample(elapsedRef.current);
       map=new maplibregl.Map({
         container:mapContainer.current,style:MAP_STYLE,projection:{type:'globe'},
         center:start.center,zoom:start.zoom,pitch:start.pitch,bearing:start.bearing,
-        minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true
+        minZoom:1.5,maxZoom:14,antialias:true,attributionControl:true,
+        maxTileCacheSize:80
       });
-    }catch(e){setError('Unable to initialize WebGL. Check browser GPU acceleration.');return;}
+    }catch(e){
+      recover('Unable to initialize WebGL. Retrying the globe.');
+      return;
+    }
     mapRef.current=map;
-    const manual=()=>{if(engineRef.current.snapshot().playing)engineRef.current.pause();};
+    const canvas=map.getCanvas();
+    const contextLost=event=>{
+      event.preventDefault();
+      recover('Restoring the globe graphics context');
+    };
+    canvas.addEventListener('webglcontextlost',contextLost,false);
+    mapHeartbeat.current=performance.now();
+    mapAttemptStarted.current=performance.now();
+    map.on('render',()=>{mapHeartbeat.current=performance.now();});
+    const manual=()=>{
+      if(engineRef.current.snapshot().playing){
+        manuallyPaused.current=true;
+        engineRef.current.pause();
+      }
+    };
     map.on('mousedown',manual);map.on('touchstart',manual);map.on('wheel',manual);
     map.on('move',()=>{
       if(!layersReady.current||engineRef.current.snapshot().playing)return;
@@ -111,17 +192,36 @@ function CinematicApp(){
     map.on('load',()=>{
       try{
         installCinematicEarth(map,presetRef.current);
-        installCinematicLayers(map,playlist.locate(0).scene);
+        installCinematicLayers(map,playlist.locate(elapsedRef.current).scene || playlist.sceneFor(0));
         layersReady.current=true;
+        routeUpdatedRef.current=-Infinity;
         updateAt(elapsedRef.current,true);
         setReady(true);
-      }catch(e){setError('Unable to initialize cinematic map layers: '+(e?.message||String(e)));}
+        setError('');
+        setRecoveryMessage('');
+        recoveryAttempts.current=0;
+        if(EXHIBITION_MODE&&!document.hidden&&!manuallyPaused.current &&
+            (!autoStarted.current||recoveryShouldResume.current||visibilityPaused.current)){
+          autoStarted.current=true;
+          recoveryShouldResume.current=false;
+          visibilityPaused.current=false;
+          engineRef.current.play();
+        }
+      }catch(e){
+        recover('Unable to restore cinematic map layers. Retrying.');
+      }
     });
     map.on('error',e=>{
-      if(e.error&&!layersReady.current)setError('Base map could not load. Check your connection.');
+      if(e.error&&!layersReady.current)
+        recover('Map data unavailable. Retrying when the connection allows.');
     });
-    return ()=>{layersReady.current=false;mapRef.current=null;map.remove();};
-  },[updateAt]);
+    return ()=>{
+      canvas.removeEventListener('webglcontextlost',contextLost,false);
+      layersReady.current=false;
+      if(mapRef.current===map)mapRef.current=null;
+      try{map.remove();}catch{ /* Context may already be lost. */ }
+    };
+  },[updateAt,mapGeneration]);
 
   useEffect(()=>{
     const engine=engineRef.current;
@@ -149,7 +249,9 @@ function CinematicApp(){
           Promise.race([job.promise,new Promise(resolve=>setTimeout(resolve,4500))])
             .finally(()=>{
               if(!gateRef.current.active||gateRef.current.token!==token)return;
-              gateRef.current.active=false;setWarming(false);engine.play();
+              gateRef.current.active=false;setWarming(false);
+              if(!EXHIBITION_MODE||!document.hidden)engine.play();
+              else visibilityPaused.current=true;
             });
           return;
         }
@@ -166,9 +268,161 @@ function CinematicApp(){
           fps:Math.round(1000/Math.max(1,state.frameMs)),quality:state.quality});
       }
     });
-    engine.configure({duration:playlist.totalMs,progress:0});
-    return ()=>{engine.pause();unsubscribe();gateRef.current.active=false;};
+    engine.configure({
+      duration:playlist.totalMs,
+      progress:START_MS/playlist.totalMs,
+      onComplete:EXHIBITION_MODE?()=>{
+        if(document.hidden||!layersReady.current||manuallyPaused.current)return;
+        loopCount.current++;
+        checkpointMs.current=0;
+        saveCheckpoint(0);
+        routeUpdatedRef.current=-Infinity;
+        previousTripRef.current=-1;
+        engine.stop(0);
+        engine.play();
+      }:null
+    });
+    return ()=>{
+      engine.pause();unsubscribe();
+      gateRef.current.active=false;gateRef.current.token++;
+    };
   },[updateAt]);
+
+  // Exhibition controls are intentionally hidden until real user activity.
+  // No separate animation loop or polling of camera positions is introduced.
+  useEffect(()=>{
+    if(!EXHIBITION_MODE)return;
+    const ui=createExhibitionUi({
+      show:()=>setControlsVisible(true),
+      hide:()=>{
+        const focused=document.activeElement;
+        if(focused?.closest?.('.cg-topbar,.cg-console'))return;
+        setControlsVisible(false);
+      },
+      idleMs:EXHIBITION_IDLE_MS
+    });
+    const wake=()=>ui.wake();
+    const keydown=event=>{
+      wake();
+      if(event.code==='Space'&&
+         !['INPUT','SELECT','BUTTON','TEXTAREA'].includes(document.activeElement?.tagName)){
+        event.preventDefault();
+        const clock=engineRef.current;
+        if(clock.snapshot().playing){manuallyPaused.current=true;clock.pause();}
+        else{
+          manuallyPaused.current=false;
+          if(clock.snapshot().progress>=1)clock.stop(0);
+          clock.play();
+        }
+      }
+    };
+    window.addEventListener('pointermove',wake,{passive:true});
+    window.addEventListener('pointerdown',wake,{passive:true});
+    window.addEventListener('touchstart',wake,{passive:true});
+    window.addEventListener('keydown',keydown);
+    window.addEventListener('focusin',wake);
+    return ()=>{
+      window.removeEventListener('pointermove',wake);
+      window.removeEventListener('pointerdown',wake);
+      window.removeEventListener('touchstart',wake);
+      window.removeEventListener('keydown',keydown);
+      window.removeEventListener('focusin',wake);
+      ui.close();
+    };
+  },[]);
+
+  useEffect(()=>{
+    if(!EXHIBITION_MODE)return;
+    const onVisibility=()=>{
+      const clock=engineRef.current;
+      if(document.hidden){
+        if(clock.snapshot().playing||gateRef.current.active){
+          visibilityPaused.current=true;
+          gateRef.current.active=false;gateRef.current.token++;
+          setWarming(false);
+          clock.pause();
+        }
+      }else if(visibilityPaused.current && layersReady.current){
+        visibilityPaused.current=false;
+        if(!manuallyPaused.current)clock.play();
+      }
+      if(!document.hidden && document.fullscreenElement &&
+         !wakeLock.current && navigator.wakeLock?.request){
+        navigator.wakeLock.request('screen').then(lock=>{
+          wakeLock.current=lock;
+          lock.addEventListener?.('release',()=>{
+            if(wakeLock.current===lock)wakeLock.current=null;
+          });
+        }).catch(()=>{});
+      }
+    };
+    const wentOffline=()=>setOffline(true);
+    const cameOnline=()=>{
+      setOffline(false);
+      warmup.clear();
+      // New MapLibre sources re-request missing tiles. Keep the precise
+      // cinematic timestamp and resume only if the viewer was playing.
+      recoverHandler.current?.('Connection restored. Refreshing globe imagery.');
+    };
+    const fullscreenChange=()=>setFullscreen(Boolean(document.fullscreenElement));
+    const watchdog=window.setInterval(()=>{
+      if(document.hidden||recoverTimer.current!=null)return;
+      const now=performance.now(),clock=engineRef.current;
+      if(!layersReady.current && mapAttemptStarted.current>0 &&
+         now-mapAttemptStarted.current>45000){
+        recoverHandler.current?.('Waiting for globe data. Retrying.');
+      }else if(layersReady.current&&clock.snapshot().playing&&
+         !gateRef.current.active&&now-mapHeartbeat.current>EXHIBITION_WATCHDOG_MS){
+        recoverHandler.current?.('Rendering stopped responding. Rebuilding globe.');
+      }
+    },4000);
+    const checkpoint=window.setInterval(()=>{
+      if(!document.hidden&&layersReady.current){
+        checkpointMs.current=elapsedRef.current;
+        saveCheckpoint(elapsedRef.current);
+      }
+    },12000);
+    window.addEventListener('offline',wentOffline);
+    window.addEventListener('online',cameOnline);
+    document.addEventListener('visibilitychange',onVisibility);
+    document.addEventListener('fullscreenchange',fullscreenChange);
+    return ()=>{
+      window.clearInterval(watchdog);
+      window.clearInterval(checkpoint);
+      window.removeEventListener('offline',wentOffline);
+      window.removeEventListener('online',cameOnline);
+      document.removeEventListener('visibilitychange',onVisibility);
+      document.removeEventListener('fullscreenchange',fullscreenChange);
+      if(recoverTimer.current!=null)window.clearTimeout(recoverTimer.current);
+      recoverTimer.current=null;
+      try{wakeLock.current?.release?.();}catch{}
+    };
+  },[]);
+
+  const requestDisplayFullscreen=async()=>{
+    try{
+      if(!document.fullscreenElement && appRoot.current?.requestFullscreen)
+        await appRoot.current.requestFullscreen();
+      // A browser gesture is required for fullscreen/wake lock. Exhibition
+      // autoplay itself must never attempt privileged fullscreen access.
+      if(navigator.wakeLock?.request && !wakeLock.current){
+        const lock=await navigator.wakeLock.request('screen');
+        wakeLock.current=lock;
+        lock.addEventListener?.('release',()=>{
+          if(wakeLock.current===lock)wakeLock.current=null;
+        });
+      }
+    }catch{
+      setRecoveryMessage('Fullscreen or screen wake lock was blocked by the browser.');
+      window.setTimeout(()=>setRecoveryMessage(''),4500);
+    }
+  };
+  const exitExhibition=()=>{
+    const url=new URL(window.location.href);
+    url.searchParams.delete('exhibition');
+    url.searchParams.delete('reset');
+    window.location.assign(url.toString());
+  };
 
   const cancelGate=()=>{
     gateRef.current.active=false;
@@ -187,10 +441,16 @@ function CinematicApp(){
     try{localStorage.setItem(MAP_STORAGE_KEY,id);}catch{}
   };
   const togglePlay=()=>{
-    if(gateRef.current.active){cancelGate();return;}
+    if(gateRef.current.active){cancelGate();manuallyPaused.current=true;return;}
     const clock=engineRef.current;
-    if(clock.snapshot().playing)clock.pause();
-    else{if(clock.snapshot().progress>=1)clock.stop(0);clock.play();}
+    if(clock.snapshot().playing){
+      manuallyPaused.current=true;
+      clock.pause();
+    }else{
+      manuallyPaused.current=false;
+      if(clock.snapshot().progress>=1)clock.stop(0);
+      clock.play();
+    }
   };
   const changeSpeed=value=>{
     const next=Number(value);
@@ -202,13 +462,14 @@ function CinematicApp(){
 
   useEffect(()=>{
     const api=Object.freeze({
-      version:'cinematic-globehoppers.wp3',
+      version:'cinematic-globehoppers.wp4',
       durationMs:playlist.totalMs,stopCount:playlist.stopCount,
       tripCount:playlist.tripCount,legCount:playlist.legCount,
       seekMs(ms){
         const time=clamp(Number(ms)||0,0,playlist.totalMs);
         gateRef.current.active=false;gateRef.current.token++;
         setWarming(false);
+        manuallyPaused.current=true;
         engineRef.current.pause();
         engineRef.current.seek(time/playlist.totalMs);
         return playlist.sample(time);
@@ -226,11 +487,33 @@ function CinematicApp(){
       },
       getMapDetails:()=>mapRef.current?getCinematicEarthState(mapRef.current):null,
       setMapPreset(id){if(!validEarthPreset(id))return false;choosePreset(id);return true;},
+      getExhibitionDetails(){return{
+        enabled:EXHIBITION_MODE,loopCount:loopCount.current,
+        controlsVisible:!EXHIBITION_MODE||Boolean(appRoot.current?.dataset.controlsVisible==='true'),
+        recoveries:recoveryAttempts.current,recovering:recoverTimer.current!=null,
+        rendererGeneration:mapGenerationRef.current,fullscreen:Boolean(document.fullscreenElement),
+        hidden:document.hidden
+      };},
+      requestRendererRecovery(){
+        if(!EXHIBITION_MODE||!recoverHandler.current)return false;
+        recoverHandler.current('Refreshing cinematic display');
+        return true;
+      },
+      play(){
+        if(!layersReady.current)return false;
+        manuallyPaused.current=false;
+        const clock=engineRef.current;
+        if(clock.snapshot().progress>=1)clock.stop(0);
+        clock.play();return true;
+      },
+      pause(){manuallyPaused.current=true;engineRef.current.pause();return true;},
       getPlaylistDetails(){return{...playlist.stats(),durationMs:playlist.totalMs,
         tripCount:playlist.tripCount,legCount:playlist.legCount,stopCount:playlist.stopCount,
         current:playlist.context(elapsedRef.current),preflight:warmup.stats()};},
       getState(){return{elapsedMs:elapsedRef.current,ready:layersReady.current,
-        mapPreset:presetRef.current,buffering:gateRef.current.active};}
+        mapPreset:presetRef.current,buffering:gateRef.current.active,
+        exhibition:EXHIBITION_MODE,loopCount:loopCount.current,
+        controlsVisible:!EXHIBITION_MODE||appRoot.current?.dataset.controlsVisible==='true'};}
     });
     window.__CINEMATIC_GLOBEHOPPERS__=api;
     return()=>{delete window.__CINEMATIC_GLOBEHOPPERS__;};
@@ -243,9 +526,20 @@ function CinematicApp(){
   const stopTimes=playlist.currentStopTimes(display.ms);
   const arrival=playlist.arrivalAt(display.ms);
   return (
-    <div className="cg-app" data-capture={CAPTURE_MODE?'true':'false'} data-map-preset={mapPreset}>
+    <div ref={appRoot} className="cg-app"
+      data-capture={CAPTURE_MODE?'true':'false'}
+      data-exhibition={EXHIBITION_MODE?'true':'false'}
+      data-controls-visible={controlsVisible?'true':'false'}
+      data-map-preset={mapPreset}>
       <div ref={mapContainer} className="cg-map" aria-label="Cinematic globe with chronological travel history"/>
       <div className="cg-vignette" aria-hidden="true"/>
+      {EXHIBITION_MODE&&<div className="cg-exhibition-progress" aria-hidden="true">
+        <div style={{transform:'scaleX('+clamp(display.ms/playlist.totalMs,0,1)+')'}}/>
+      </div>}
+      {EXHIBITION_MODE&&(recoveryMessage||offline)&&
+        <div className="cg-exhibition-status" role="status">
+          {offline?'Internet connection unavailable. Using available map tiles.':recoveryMessage}
+        </div>}
       <div className="cg-actors" aria-hidden="true">
         <div className="cg-aircraft" ref={planeRef} style={{visibility:'hidden'}}>
           <img ref={planeImageRef} className="cg-aircraft-img"
@@ -276,7 +570,20 @@ function CinematicApp(){
                 {EARTH_PRESETS.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
-            <button type="button" onClick={()=>setDiagnostics(v=>!v)} aria-pressed={diagnostics}>Diagnostics</button>
+            <button type="button" onClick={()=>setDiagnostics(v=>!v)}
+              aria-pressed={diagnostics}>Diagnostics</button>
+            {EXHIBITION_MODE?<>
+              <button type="button" onClick={requestDisplayFullscreen}
+                aria-label={fullscreen?'Display is fullscreen':'Enter fullscreen display'}>
+                {fullscreen?'Fullscreen active':'Fullscreen'}
+              </button>
+              <button type="button" onClick={exitExhibition}>Exit exhibition</button>
+            </>:!CAPTURE_MODE&&
+              <button type="button" onClick={()=>{
+                const url=new URL(window.location.href);
+                url.searchParams.set('exhibition','1');
+                window.location.assign(url.toString());
+              }}>Exhibition mode</button>}
           </div>
         </header>
         {error&&<div className="cg-alert" role="alert">{error}</div>}

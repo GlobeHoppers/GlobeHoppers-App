@@ -5,7 +5,7 @@ An independently authored, open-source cinematic camera prototype built on top o
 ## Architecture and scope
 
 - Separate Vite/React entry at /cinematic/; deploys alongside the main site on GitHub Pages after merging.
-- First run uses eight demo locations from GlobeHoppers' existing locations catalog: San Diego, Los Angeles, Las Vegas, Miami, New York, Augusta, New Orleans and Chicago. These are not the user's private trip base.
+- The original WP1 fixture uses eight demo locations from GlobeHoppers' existing locations catalog: San Diego, Los Angeles, Las Vegas, Miami, New York, Augusta, New Orleans and Chicago. These are not the user's private trip base.
 - Scene planner (src/cinematic/scene.js) shares v9 compiled route geometry and is purely deterministic: sample(ms) and revealedRoute(ms) do not depend on wall-clock time.
 - Playback uses v9's PlaybackEngine single-clock contract. React does not animate the camera.
 - MapLibre GL JS is the open-source WebGL renderer. WP2 defaults to a natural-color Cinematic Earth preset: NASA Blue Marble Next Generation (up to zoom 8) crossfades into 2016 EOX Sentinel-2 cloudless imagery (zoom 5–14) without resetting the scene. OpenFreeMap Fiord remains the underlying vector map and the optional Midnight preset. An internet connection is required for imagery. No Mult.dev requests or code.
@@ -140,4 +140,43 @@ Provider caching is HTTP/browser-dependent. On a full-time dedicated display, we
 - The Chromium smoke workflow keeps the 8-stop deterministic visual tests via ?demo=1, then opens full history to check the 178-trip playlist, random seeking and bounded cache.
 - Production GlobeHoppers v9 remains unchanged; all changes stay on the Cinematic development branch.
 
-WP4 unattended exhibition and looping, live authenticated trip snapshots and WP5 MP4 export remain separate work.
+WP4 unattended exhibition and looping is implemented below. Live authenticated trip snapshots remain intentionally excluded. WP5 MP4 export is separate work.
+
+
+## WP4: Unattended Exhibition Mode
+
+### Start the dedicated display
+
+- /cinematic/?exhibition=1&map=earth : auto-start the full chronological trip snapshot on map-ready, hiding control chrome until a person moves the cursor, touches the screen, or presses a key.
+- /cinematic/?exhibition=1&map=earth&reset=1 : ignore the saved checkpoint and start at the first trip.
+- /cinematic/?demo=1&exhibition=1&map=earth&reset=1 : eight-stop exhibition fixture for testing.
+- /cinematic/ : regular interactive player; no automatic playback or looping.
+- ?capture=1 : deterministic, UI-free capture; explicitly disables exhibition autoplay even if exhibition=1 is also present.
+
+The exhibition shows the map, scene labels, vehicle, arrival treatment, and a subtle three-pixel progress rail. Top controls, playback panel, and footer remain hidden by default. Moving the cursor, touching the screen, or using the keyboard reveals them. After 6.5 seconds of inactivity, they hide again. Space toggles play/pause when focus is not on an input or button.
+
+The on-screen Fullscreen button works only following a user gesture, as browsers require. Where supported, that same gesture requests a screen wake lock and reacquires it when the fullscreen page returns to the foreground. Configure your operating system, display and Chromium kiosk session not to sleep; a web page cannot override OS-level power policies or automatic browser tab suspension.
+
+### Loop architecture
+
+The full history retains WP3's trip-sized playback planner and three-scene LRU. WP4 appends a 3.6-second closing globe camera transition from the end of the last trip back to the first frame. The closing frame is numerically equal to the opening camera pose, so a new pass does not create a geographic jump. There is no extra vehicle or fabricated travel leg during this closing transition.
+
+The existing v9 PlaybackEngine handles completion. Its generation-guarded completion callback resets to zero, increments a loop counter, and starts playing again. There is no second animation owner or duplicate React clock.
+
+### Unattended recovery
+
+- Every 12 seconds, the exhibition writes a bounded progress checkpoint to browser local storage; a same-browser reload resumes at the saved location if the snapshot duration and trip count match, and the checkpoint is less than seven days old.
+- On a hidden tab, the player pauses without jumping ahead by wall-clock time. It resumes on visibility only if it had previously been playing and the user has not explicitly paused.
+- A lost WebGL context, failed initial map, or stalled rendering for more than 22 seconds initiates a MapLibre rebuild from the exact playback time. Retry delays increase from 1.4 seconds and cap at 30 seconds. The playback clock pauses during recovery and resumes only when it should.
+- A restored network connection clears destination tile preflight results and recreates the WebGL map so missing tiles can be requested again. Offline status appears unobtrusively.
+- The MapLibre tile cache has a bounded size (maxTileCacheSize: 80), while WP3's route geometry remains limited to three trip scenes. No full-world tile downloading or background exporter runs.
+
+For diagnostics, window.__CINEMATIC_GLOBEHOPPERS__.getExhibitionDetails() reports looping and renderer generation. requestRendererRecovery() tests the controlled renderer rebuild. These hooks are local to this independent viewer and don't send data to Mult.dev.
+
+### Validation and limitations
+
+The Node test suite checks wrap-camera continuity, full-history closure, bounded scene cache, inactivity hiding, recovery backoff and visibility-resume policy. The Chromium smoke suite tests automatic start, control reveal, manual pause, loop completion, renderer recovery, idle hide, checkpoint resume, and capture isolation.
+
+CI smoke tests exercise accelerated loop boundaries, not a literal hour of runtime. A dedicated-display soak test (several full cycles) is still required before claiming uninterrupted 24/7 operation. Tile sources still require Internet access; this implementation is resilient to short outages but does not ship a licensed offline global satellite dataset. The snapshot is versioned and deployed with the repository; Supabase is not used.
+
+WP5 MP4 export remains deferred.

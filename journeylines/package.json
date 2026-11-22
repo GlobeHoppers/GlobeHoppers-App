@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test:cinematic": "node --test scripts/test-cinematic-scene.mjs scripts/test-cinematic-imagery.mjs scripts/test-cinematic-history.mjs",
+    "test:cinematic": "node --test scripts/test-cinematic-scene.mjs scripts/test-cinematic-imagery.mjs scripts/test-cinematic-history.mjs scripts/test-cinematic-exhibition.mjs",
     "build": "node scripts/build-v9-viewer-data.mjs --out public/data/v9-viewer && vite build",
     "preview": "vite preview",
     "generate:routes": "node scripts/generate-mapbox-routes.mjs",

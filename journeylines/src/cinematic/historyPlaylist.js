@@ -129,6 +129,63 @@ export function createHistoryPlaylist(trips,locations,overrides={}){
   };
 }
 
+/**
+ * WP4 loop closure: camera travels from the end of the final trip back to
+ * the very first frame, entirely at the globe level. End and start have
+ * exactly the same pose, so rewinding playback time produces no visual cut.
+ */
+export const EXHIBITION_WRAP_MS = 3600;
+
+export function withExhibitionLoop(base, wrapMs = EXHIBITION_WRAP_MS) {
+  if (!base || !Number.isFinite(base.totalMs) || base.totalMs <= 0 ||
+      !Number.isFinite(wrapMs) || wrapMs < 500 || wrapMs > 30000) {
+    throw new Error('Invalid exhibition playlist or wrap duration');
+  }
+  const naturalEnd = base.totalMs;
+  const totalMs = naturalEnd + wrapMs;
+  const last = base.sample(naturalEnd);
+  const first = base.sample(0);
+  const finalEntry = base.entries[base.entries.length - 1];
+  const firstEntry = base.entries[0];
+  function locate(ms) {
+    const time = clamp(Number.isFinite(ms) ? ms : 0, 0, totalMs);
+    if (time < naturalEnd) return base.locate(time);
+    const u = clamp((time - naturalEnd) / wrapMs, 0, 1);
+    const pose = u >= 1 ? { ...first, elapsedMs: time } :
+      { ...bridgeCamera(last, first, u), elapsedMs: time };
+    return { kind: 'bridge', index: base.entries.length - 1,
+      entry: finalEntry, nextEntry: firstEntry,
+      scene: null, localMs: finalEntry.durationMs, pose };
+  }
+  const isWrap = ms => Number(ms) >= naturalEnd;
+  const inTrip = (method, ms, fallback) =>
+    isWrap(ms) ? fallback : base[method](ms);
+  return {
+    ...base,
+    totalMs,
+    naturalEndMs: naturalEnd,
+    wrapMs,
+    locate,
+    sample: ms => locate(ms).pose,
+    planeAt: ms => inTrip('planeAt', ms, null),
+    arrivalAt: ms => inTrip('arrivalAt', ms, null),
+    visibleStops: ms => inTrip('visibleStops', ms, []),
+    visibleRoutes: ms => inTrip('visibleRoutes', ms, []),
+    currentStops: ms => inTrip('currentStops', ms, firstEntry.stops),
+    currentStopTimes: ms => inTrip('currentStopTimes', ms, []),
+    context(ms) {
+      if (!isWrap(ms)) return base.context(ms);
+      return {
+        ...base.context(0),
+        kind: 'bridge', tripIndex: 0, tripCount: base.tripCount,
+        title: firstEntry.title, date: firstEntry.date,
+        stop: firstEntry.stops[0], stops: firstEntry.stops
+      };
+    },
+    stats() { return { ...base.stats(), loopClosureMs: wrapMs }; }
+  };
+}
+
 export function createEightStopPlaylist(stops){
   const scene=buildCinematicScene(stops);
   const entry={id:'demo',title:'Eight-stop demonstration',date:'Demo route',

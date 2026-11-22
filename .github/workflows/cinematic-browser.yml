@@ -8,6 +8,7 @@ on:
       - 'journeylines/cinematic/**'
       - 'journeylines/src/cinematic/**'
       - 'journeylines/scripts/cinematic-browser-smoke.mjs'
+      - 'journeylines/scripts/cinematic-exhibition-smoke.mjs'
       - 'journeylines/vite.config.js'
       - '.github/workflows/cinematic-browser.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'journeylines/cinematic/**'
       - 'journeylines/src/cinematic/**'
       - 'journeylines/scripts/cinematic-browser-smoke.mjs'
+      - 'journeylines/scripts/cinematic-exhibition-smoke.mjs'
       - 'journeylines/vite.config.js'
       - '.github/workflows/cinematic-browser.yml'
 
@@ -47,10 +49,13 @@ jobs:
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
           node scripts/cinematic-browser-smoke.mjs "$RUNNER_TEMP/cinematic-browser"
+          node scripts/cinematic-exhibition-smoke.mjs "$RUNNER_TEMP/cinematic-exhibition"
       - name: Upload browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cinematic-globehoppers-wp1-smoke
-          path: ${{ runner.temp }}/cinematic-browser
+          path: |
+            ${{ runner.temp }}/cinematic-browser
+            ${{ runner.temp }}/cinematic-exhibition
           if-no-files-found: ignore

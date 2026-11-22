@@ -191,3 +191,61 @@ button:disabled { opacity: .45; cursor: default; }
   .cg-history-transport button { padding: 7px; font-size: 10px; }
   .cg-history-transport span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 }
+
+/* WP4: true exhibition presentation. Keep geographic labels and aircraft
+   visible; only the control chrome disappears after user inactivity. */
+.cg-app[data-exhibition="true"] .cg-topbar,
+.cg-app[data-exhibition="true"] .cg-console,
+.cg-app[data-exhibition="true"] .cg-footnote {
+  transition: opacity 240ms ease, visibility 240ms ease;
+}
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-topbar,
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-console,
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .cg-footnote {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.cg-app[data-exhibition="true"][data-controls-visible="false"],
+.cg-app[data-exhibition="true"][data-controls-visible="false"] .maplibregl-canvas {
+  cursor: none !important;
+}
+.cg-app[data-exhibition="true"] .cg-exhibition-progress {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+  z-index: 6; overflow: hidden; background: #0f2535bc;
+  pointer-events: none;
+}
+.cg-exhibition-progress > div {
+  width: 100%; height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #5da9bd, #a6f6ef 70%, #f4e5b9 100%);
+  box-shadow: 0 0 12px #8af1f1bb;
+  will-change: transform;
+}
+.cg-exhibition-status {
+  position: absolute;
+  left: 50%; top: 20px; z-index: 13;
+  transform: translateX(-50%);
+  max-width: min(520px, 90vw);
+  border: 1px solid #8dbcc76c;
+  border-radius: 13px;
+  padding: 11px 16px;
+  background: #071b29e8;
+  text-align: center;
+  color: #e3f8fb;
+  font-size: 12px;
+  letter-spacing: .025em;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+.cg-app[data-exhibition="true"] .cg-flyout {
+  top: 32%;
+  max-width: min(570px, 80vw);
+}
+@media (max-width: 760px) {
+  .cg-app[data-exhibition="true"] .cg-flyout {
+    top: 30%;
+  }
+  .cg-exhibition-status { top: 9px; }
+}
