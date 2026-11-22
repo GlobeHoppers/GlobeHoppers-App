@@ -355,3 +355,29 @@ Regression tests specifically cover the Key West road geometry, history accumula
 - The full NASA background is still preloaded; cached EOX imagery is reused
   on subsequent visits where browser quota permits. No wholesale global
   high-resolution tile downloads or unauthorized provider mirrors.
+
+
+## WP4.7: Restore the original GlobeHoppers visual language
+
+- Full chronological playback timeline: colored Hopper pins, active
+  marker, clickable trip seeking, year bands, and timeline zoom/fit.
+  All positions derive from existing deterministic playlist timestamps.
+- Passenger color palettes come from the same `hoppers.json` and
+  `resolveTrailVisual` rules as the production v9 editor. A given trip's
+  color and multi-Hopper stripe/ribbon style are consistent across
+  historical routes, current route, timeline pins, right-side cards,
+  and vehicle sprites.
+- Historical lines from repeated origin/destination corridors receive
+  deterministic screen-space stacking. This is a MapLibre paint offset
+  only; the stored provider geometry, car placement, and camera are
+  unchanged. A `Stacked lines` control toggles this rendering.
+- The right-side current/next trip cards restore traveler information,
+  chronology and transport types, including one-click jump to a trip.
+- The original color variant PNGs are reused for cars and aircraft.
+  Boats and trains currently have only blue master sprites, so a
+  hue-rotation fallback tints them to their trip color.
+- Cinematic exhibition shows a passive full-width year timeline and
+  current-trip cards after the other controls auto-hide. The original
+  eight-stop demo and deterministic capture modes remain unaffected.
+- This is a read-only visual restoration. No authentication, editing,
+  Supabase schema, route geometry, or playback timing changes.

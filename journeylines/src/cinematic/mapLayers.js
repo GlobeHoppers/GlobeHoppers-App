@@ -2,6 +2,7 @@
  * GeoJSON sources only. The airplane and destination emphasis are rendered in
  * actorOverlay.js on every camera frame, never at this source-update cadence.
  */
+import {coloredRouteFeatures} from './routeVisuals.js';
 const collection = features => ({ type: 'FeatureCollection', features });
 const point = (coordinates, properties) => ({
   type: 'Feature', properties, geometry: { type: 'Point', coordinates }
@@ -14,11 +15,13 @@ function stopFeatures(stops) {
   })));
 }
 
-function routeFeatures(legs) {
-  return collection(legs.map(leg => ({
-    type: 'Feature', properties: { index: leg.index },
-    geometry: { type: 'LineString', coordinates: leg.path }
-  })));
+function routeFeatures(legs,visual) {
+  return collection(legs.flatMap(leg =>
+    coloredRouteFeatures(leg.path,visual,{index:leg.index,mode:leg.mode})));
+}
+function revealedRouteFeatures(active,visual){
+  return collection(active.features.flatMap(feature=>
+    coloredRouteFeatures(feature.geometry.coordinates,visual,feature.properties)));
 }
 
 function arrivalFeatures(arrival) {
@@ -38,7 +41,8 @@ function arrivalFeatures(arrival) {
 export function installCinematicLayers(map, scene) {
   if (map.getSource('cg-route-full')) return;
   metadata.set(map, { routes: -1, stops: -1, completed: -1,
-    historyCount:-1, trailActive: false, arrivalActive: false });
+    historyCount:-1, trailActive: false, arrivalActive: false,
+    stacking:true });
   map.addSource('cg-history-routes',{type:'geojson',data:collection([])});
   map.addSource('cg-history-stops',{type:'geojson',data:collection([])});
   map.addSource('cg-route-full', { type: 'geojson', data: collection([]) });
@@ -53,7 +57,9 @@ export function installCinematicLayers(map, scene) {
   // frame; the existing active route layers remain above it.
   map.addLayer({id:'cg-history-route',type:'line',source:'cg-history-routes',
     layout:{'line-cap':'round','line-join':'round'},
-    paint:{'line-color':'#7bbed0','line-width':1.35,'line-opacity':0.40}});
+    paint:{'line-color':['coalesce',['get','color'],'#7bbed0'],
+      'line-width':1.7,'line-opacity':0.52,
+      'line-offset':['coalesce',['get','stackOffset'],0]}});
   map.addLayer({id:'cg-history-halo',type:'circle',source:'cg-history-stops',
     paint:{'circle-color':'#0a2231','circle-radius':4.2,
       'circle-opacity':0.72,'circle-stroke-color':'#7bd0d8',
@@ -63,18 +69,25 @@ export function installCinematicLayers(map, scene) {
   // An unrevealed route only appears when its flight starts.
   map.addLayer({ id: 'cg-route-faint', type: 'line', source: 'cg-route-full',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#8cd8e6', 'line-width': 1.15, 'line-opacity': 0.23 } });
+    paint: { 'line-color':['coalesce',['get','color'],'#8cd8e6'],
+      'line-width': 1.15, 'line-opacity': 0.25,
+      'line-offset':['coalesce',['get','stackOffset'],0] } });
   // Completed trails are static, avoiding repeated serialization on each frame.
   map.addLayer({ id: 'cg-route-completed', type: 'line', source: 'cg-route-completed',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#9beaf2', 'line-width': 2.3, 'line-opacity': 0.72 } });
+    paint: { 'line-color':['coalesce',['get','color'],'#9beaf2'],
+      'line-width': 2.3, 'line-opacity': 0.70,
+      'line-offset':['coalesce',['get','stackOffset'],0] } });
   map.addLayer({ id: 'cg-route-glow', type: 'line', source: 'cg-route-revealed',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#51e5ec', 'line-width': 8, 'line-blur': 7,
+    paint: { 'line-color':['coalesce',['get','color'],'#51e5ec'],
+      'line-width': 8, 'line-blur': 7,
              'line-opacity': 0.54 } });
   map.addLayer({ id: 'cg-route-head', type: 'line', source: 'cg-route-revealed',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#d5fdff', 'line-width': 2.8, 'line-opacity': 0.97 } });
+    paint: { 'line-color':['coalesce',['get','color'],'#d5fdff'],
+      'line-width': 2.8, 'line-opacity': 0.97,
+      'line-offset':['coalesce',['get','stackOffset'],0] } });
 
   map.addLayer({ id: 'cg-arrival-rings', type: 'circle', source: 'cg-arrival-rings',
     paint: {
@@ -113,7 +126,7 @@ export function updateCinematicRoute(map, scene, ms) {
   const routes = scene.visibleRoutes(ms);
   const stops = scene.visibleStops(ms);
   if (routes.length !== state.routes) {
-    map.getSource('cg-route-full')?.setData(routeFeatures(routes));
+    map.getSource('cg-route-full')?.setData(routeFeatures(routes,scene.visual));
     state.routes = routes.length;
   }
   if (stops.length !== state.stops) {
@@ -123,13 +136,13 @@ export function updateCinematicRoute(map, scene, ms) {
 
   const completed = scene.legs.filter(leg => ms >= leg.endMs);
   if (completed.length !== state.completed) {
-    map.getSource('cg-route-completed')?.setData(routeFeatures(completed));
+    map.getSource('cg-route-completed')?.setData(routeFeatures(completed,scene.visual));
     state.completed = completed.length;
   }
 
   const active = scene.activeRouteAt(ms);
   if (active.features.length || state.trailActive) {
-    map.getSource('cg-route-revealed')?.setData(active);
+    map.getSource('cg-route-revealed')?.setData(revealedRouteFeatures(active,scene.visual));
   }
   state.trailActive = active.features.length > 0;
 
@@ -163,4 +176,17 @@ export function updateCinematicHistory(map,playlist,ms){
   map.getSource('cg-history-routes')?.setData(history.routes);
   map.getSource('cg-history-stops')?.setData(history.stops);
   state.historyCount=history.count;
+}
+
+/**
+ * Presentation toggle only. Applied to archived paths, never to the vehicle
+ * trajectory or flight camera. Pure MapLibre paint update; no GeoJSON churn.
+ */
+export function setCinematicRouteStacking(map,enabled){
+  const state=metadata.get(map);
+  if(!state)return false;
+  state.stacking=Boolean(enabled);
+  map.setPaintProperty('cg-history-route','line-offset',
+    state.stacking?['coalesce',['get','stackOffset'],0]:0);
+  return state.stacking;
 }
