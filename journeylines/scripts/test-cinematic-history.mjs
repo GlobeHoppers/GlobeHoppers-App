@@ -136,7 +136,8 @@ test('WP3.1 matches reviewed car, boat and train geometry from v9 snapshot',()=>
   const camera=player.sample(ms);
   const actor=player.planeAt(ms);
   assert.equal(actor.mode,'drive');
-  assert.ok(camera.zoom>8 && camera.pitch>55);
+  assert.ok(camera.zoom>=7 && camera.zoom<=8.6 && camera.pitch>55,
+    'car camera uses stable, wider regional framing');
   assert.ok(Math.hypot(camera.center[0]-actor.coordinates[0],
     camera.center[1]-actor.coordinates[1])<0.3);
   assert.ok(player.stats().cachedScenes<=3);
