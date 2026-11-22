@@ -286,6 +286,19 @@ try {
   assert.equal(scenicClose.regionalDetail.maxNativeZoom,8);
   await page.screenshot({path:path.join(out,'cinematic-scenic-regional.png')});
 
+  // A second page visit must load the prepared world atlas from persisted
+  // browser storage, not regenerate or redownload the first-party mosaic.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__?.getState().ready===true,
+    null,{timeout:90000});
+  const cachedReturn=await page.evaluate(()=>
+    window.__CINEMATIC_GLOBEHOPPERS__.getMapDetails());
+  assert.equal(cachedReturn.preset,'scenic');
+  assert.equal(cachedReturn.localEarth.cachedTiles,341);
+  assert.equal(cachedReturn.localEarth.reusedPreparedTiles,true,
+    'return visits should restore prepared atlas directly from IndexedDB');
+
   assert.deepEqual(unexpectedHosts, [], 'unexpected Mult.dev requests');
   assert.deepEqual(runtimeErrors, [], 'browser runtime exceptions');
   console.log(JSON.stringify({ status: 'PASS', meta, screenshots: out }, null, 2));

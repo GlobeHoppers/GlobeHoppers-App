@@ -329,3 +329,8 @@ Regression tests specifically cover the Key West road geometry, history accumula
   Private browsing, storage-pressure eviction and deployment version changes
   may trigger a fresh download/reprojection. Neither cache changes the
   MapLibre single-map single-playback-clock architecture.
+
+
+- The Chromium smoke workflow now performs a real page reload and requires
+  `localEarth.reusedPreparedTiles===true` on the second visit, validating
+  IndexedDB recovery and not just a warm in-memory JavaScript map.
