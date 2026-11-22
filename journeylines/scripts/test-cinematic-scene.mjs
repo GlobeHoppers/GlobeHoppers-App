@@ -241,7 +241,7 @@ test('reviewed surface routes drive vehicle and camera on real-route corridors',
     const leg=scene.legs[0];
     assert.equal(leg.geometrySource,'v9-reviewed');
     assert.equal(leg.mode,mode);
-    assert.ok(leg.path.length>10);
+    assert.equal(leg.path.length,4,'preserve the reviewed source corridor without double simplification');
     assert.ok(Math.max(...leg.path.map(p=>p[1]))>25.7,
       'vehicle should follow non-straight supplied surface geometry');
     const mid=(leg.startMs+leg.endMs)/2;

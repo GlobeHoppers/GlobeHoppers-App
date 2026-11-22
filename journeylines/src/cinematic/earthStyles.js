@@ -73,7 +73,7 @@ export function installCinematicEarth(map, selected = DEFAULT_EARTH_PRESET) {
   if (preset==='local') {
     map.addSource(LOCAL_SOURCE,{
       type:'raster',tiles:['cg-local-earth://{z}/{x}/{y}'],tileSize:256,
-      minzoom:0,maxzoom:4,
+      minzoom:0,maxzoom:5,
       attribution:'NASA Earth Observatory — Blue Marble: Next Generation'
     });
     map.addLayer({id:LOCAL_SOURCE,type:'raster',source:LOCAL_SOURCE,
